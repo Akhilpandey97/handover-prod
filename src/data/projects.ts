@@ -1,3 +1,13 @@
+export type HandoffStatus = "pending" | "accepted" | "in_progress" | "completed";
+export type ProjectPhase = "scoping" | "api_build" | "integration" | "testing" | "live";
+
+export interface TeamMember {
+  id: string;
+  name: string;
+  role: "mint" | "sales" | "ms" | "ops";
+  avatar?: string;
+}
+
 export interface Project {
   id: string;
   merchantName: string;
@@ -7,18 +17,22 @@ export interface Project {
   category: string;
   kickOffDate: string;
   goLiveDate: string;
-  projectPhase: string;
-  projectState: string;
+  projectPhase: ProjectPhase;
+  handoffStatus: HandoffStatus;
   arr: number;
   txnsPerDay: number;
   aov: number;
   webPercent: number;
   mobilePercent: number | null;
   prepaidCodSplit: string;
-  mintSpoc: string;
-  salesSpoc: string;
-  msSpoc: string;
-  sales: string;
+  assignedTo: string;
+  handoffFrom: string;
+  team: {
+    mint: string;
+    salesSpoc: string;
+    ms: string;
+    sales: string;
+  };
   mobilePlatform: string | null;
   mobileCategory: string | null;
   phaseOwner: string;
@@ -42,6 +56,12 @@ export interface Project {
   merchantTime: string;
 }
 
+export const currentUser: TeamMember = {
+  id: "user1",
+  name: "Rahul Kumar",
+  role: "ms",
+};
+
 export const projects: Project[] = [
   {
     id: "1",
@@ -53,17 +73,21 @@ export const projects: Project[] = [
     kickOffDate: "13/11/2025",
     goLiveDate: "",
     projectPhase: "integration",
-    projectState: "In Progress",
+    handoffStatus: "pending",
     arr: 8.135,
     txnsPerDay: 8,
     aov: 50000,
     webPercent: 100,
     mobilePercent: null,
     prepaidCodSplit: "85-15",
-    mintSpoc: "MINT",
-    salesSpoc: "Saurabh",
-    msSpoc: "Mohit Raysoni",
-    sales: "Saurabh",
+    assignedTo: "user1",
+    handoffFrom: "MINT Team",
+    team: {
+      mint: "MINT",
+      salesSpoc: "Saurabh",
+      ms: "Mohit Raysoni",
+      sales: "Saurabh",
+    },
     mobilePlatform: null,
     mobileCategory: null,
     phaseOwner: "MINT",
@@ -72,19 +96,19 @@ export const projects: Project[] = [
     pgOnboarding: "Easebuzz",
     phase2Needed: "No",
     ageDays: 14,
-    goLivePercent: 100,
+    goLivePercent: 45,
     brandUrl: "https://www.etheradiamonds.com/",
     projectJira: "https://gokwik.atlassian.net/browse/CUST-262",
     apiQcChecklist: null,
-    brdLink: "https://docs.google.com/spreadsheets/d/1kgx4CaIrv3ib3zu37myy6C5CeVM7SE1la1JTxE7fEB0/edit?usp=sharing",
-    goLiveChecklist: "https://docs.google.com/spreadsheets/d/1kgx4CaIrv3ib3zu37myy6C5CeVM7SE1la1JTxE7fEB0/edit?usp=sharing",
+    brdLink: "https://docs.google.com/spreadsheets/d/1kgx4CaIrv3ib3zu37myy6C5CeVM7SE1la1JTxE7fEB0/edit",
+    goLiveChecklist: "https://docs.google.com/spreadsheets/d/1kgx4CaIrv3ib3zu37myy6C5CeVM7SE1la1JTxE7fEB0/edit",
     mintNotes: null,
     projectNotes: "Checkout lite, PAN card implementation and KP Integration",
-    phaseComment: "Initial scoping and API walkthrough is done.\n\nAwaiting update on API dev.\n\n16th Jan:\nIn prod testing currently, sandbox testing is done, we got the PG creds yesterday\n\n21st Jan:\nPPCOD decision pending - to decide the % of prepaid amount to be taken from the customer (they want a partial refund feature for which we are pushing back as it's not the correct way)\n\nTentative GoLive Date: 21st Jan",
+    phaseComment: "Initial scoping and API walkthrough is done.\n\nAwaiting update on API dev.\n\n16th Jan:\nIn prod testing currently, sandbox testing is done, we got the PG creds yesterday\n\n21st Jan:\nPPCOD decision pending - to decide the % of prepaid amount to be taken from the customer",
     opsComments: null,
     phase2Notes: "Coupons\nKP SSO\nThey don't have AWB tracking, currently managing on excel sheets",
     gokwikTime: "0h",
-    merchantTime: "0h"
+    merchantTime: "0h",
   },
   {
     id: "2",
@@ -95,18 +119,22 @@ export const projects: Project[] = [
     category: "Home & Living",
     kickOffDate: "14/11/2025",
     goLiveDate: "",
-    projectPhase: "API Build",
-    projectState: "In Progress",
+    projectPhase: "api_build",
+    handoffStatus: "accepted",
     arr: 0.1,
     txnsPerDay: 2,
     aov: 150000,
     webPercent: 70,
     mobilePercent: 30,
     prepaidCodSplit: "95-5",
-    mintSpoc: "MINT",
-    salesSpoc: "Rahul",
-    msSpoc: "Priya Singh",
-    sales: "Rahul",
+    assignedTo: "user1",
+    handoffFrom: "MINT Team",
+    team: {
+      mint: "MINT",
+      salesSpoc: "Rahul",
+      ms: "Priya Singh",
+      sales: "Rahul",
+    },
     mobilePlatform: "React Native",
     mobileCategory: "App",
     phaseOwner: "MINT",
@@ -127,7 +155,7 @@ export const projects: Project[] = [
     opsComments: null,
     phase2Notes: "Mobile app integration planned",
     gokwikTime: "4h",
-    merchantTime: "2h"
+    merchantTime: "2h",
   },
   {
     id: "3",
@@ -138,18 +166,22 @@ export const projects: Project[] = [
     category: "Electronics",
     kickOffDate: "01/11/2025",
     goLiveDate: "15/12/2025",
-    projectPhase: "Live",
-    projectState: "Completed",
+    projectPhase: "live",
+    handoffStatus: "completed",
     arr: 25.5,
     txnsPerDay: 150,
     aov: 8500,
     webPercent: 60,
     mobilePercent: 40,
     prepaidCodSplit: "70-30",
-    mintSpoc: "MINT",
-    salesSpoc: "Amit",
-    msSpoc: "Deepak Kumar",
-    sales: "Amit",
+    assignedTo: "user1",
+    handoffFrom: "MINT Team",
+    team: {
+      mint: "MINT",
+      salesSpoc: "Amit",
+      ms: "Deepak Kumar",
+      sales: "Amit",
+    },
     mobilePlatform: "PWA",
     mobileCategory: "Web App",
     phaseOwner: "Ops",
@@ -170,7 +202,7 @@ export const projects: Project[] = [
     opsComments: "All metrics within expected range",
     phase2Notes: "NA",
     gokwikTime: "12h",
-    merchantTime: "8h"
+    merchantTime: "8h",
   },
   {
     id: "4",
@@ -181,18 +213,22 @@ export const projects: Project[] = [
     category: "Fashion & Apparel",
     kickOffDate: "20/10/2025",
     goLiveDate: "",
-    projectPhase: "Testing",
-    projectState: "In Progress",
+    projectPhase: "testing",
+    handoffStatus: "in_progress",
     arr: 12.8,
     txnsPerDay: 45,
     aov: 2500,
     webPercent: 45,
     mobilePercent: 55,
     prepaidCodSplit: "60-40",
-    mintSpoc: "MINT",
-    salesSpoc: "Neha",
-    msSpoc: "Vikram Patel",
-    sales: "Neha",
+    assignedTo: "user1",
+    handoffFrom: "MINT Team",
+    team: {
+      mint: "MINT",
+      salesSpoc: "Neha",
+      ms: "Vikram Patel",
+      sales: "Neha",
+    },
     mobilePlatform: "Native iOS/Android",
     mobileCategory: "App",
     phaseOwner: "QA",
@@ -213,7 +249,7 @@ export const projects: Project[] = [
     opsComments: null,
     phase2Notes: "Loyalty program integration",
     gokwikTime: "20h",
-    merchantTime: "15h"
+    merchantTime: "15h",
   },
   {
     id: "5",
@@ -224,18 +260,22 @@ export const projects: Project[] = [
     category: "Food & Grocery",
     kickOffDate: "05/11/2025",
     goLiveDate: "",
-    projectPhase: "Scoping",
-    projectState: "On Hold",
+    projectPhase: "scoping",
+    handoffStatus: "pending",
     arr: 5.2,
     txnsPerDay: 80,
     aov: 1200,
     webPercent: 80,
     mobilePercent: 20,
     prepaidCodSplit: "40-60",
-    mintSpoc: "MINT",
-    salesSpoc: "Karan",
-    msSpoc: "Anjali Sharma",
-    sales: "Karan",
+    assignedTo: "user1",
+    handoffFrom: "MINT Team",
+    team: {
+      mint: "MINT",
+      salesSpoc: "Karan",
+      ms: "Anjali Sharma",
+      sales: "Karan",
+    },
     mobilePlatform: null,
     mobileCategory: null,
     phaseOwner: "Sales",
@@ -256,6 +296,27 @@ export const projects: Project[] = [
     opsComments: null,
     phase2Notes: "Subscription management system",
     gokwikTime: "2h",
-    merchantTime: "0h"
-  }
+    merchantTime: "0h",
+  },
 ];
+
+export const getPhaseLabel = (phase: ProjectPhase): string => {
+  const labels: Record<ProjectPhase, string> = {
+    scoping: "Scoping",
+    api_build: "API Build",
+    integration: "Integration",
+    testing: "Testing",
+    live: "Live",
+  };
+  return labels[phase];
+};
+
+export const getHandoffLabel = (status: HandoffStatus): string => {
+  const labels: Record<HandoffStatus, string> = {
+    pending: "Pending KT",
+    accepted: "KT Accepted",
+    in_progress: "In Progress",
+    completed: "Completed",
+  };
+  return labels[status];
+};
