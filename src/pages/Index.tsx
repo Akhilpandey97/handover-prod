@@ -1,111 +1,182 @@
 import { useState } from "react";
-import { projects, Project } from "@/data/projects";
-import { ProjectTable } from "@/components/ProjectTable";
-import { ProjectDetailPanel } from "@/components/ProjectDetailPanel";
+import { projects as initialProjects, Project, currentUser } from "@/data/projects";
+import { UserProfileCard } from "@/components/UserProfileCard";
+import { ProjectList } from "@/components/ProjectList";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, Plus, FolderKanban } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Search, Bell, Clock, CheckCircle2, Rocket, FolderKanban } from "lucide-react";
+import { toast } from "sonner";
 
 const Index = () => {
-  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+  const [projects, setProjects] = useState<Project[]>(initialProjects);
   const [searchQuery, setSearchQuery] = useState("");
+  const [activeTab, setActiveTab] = useState("pending");
+
+  const handleAcceptKT = (projectId: string) => {
+    setProjects((prev) =>
+      prev.map((p) =>
+        p.id === projectId ? { ...p, handoffStatus: "accepted" as const } : p
+      )
+    );
+    const project = projects.find((p) => p.id === projectId);
+    toast.success(`KT Accepted for ${project?.merchantName}`, {
+      description: "Project is now in your active list",
+    });
+  };
 
   const filteredProjects = projects.filter(
     (project) =>
       project.merchantName.toLowerCase().includes(searchQuery.toLowerCase()) ||
       project.mid.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      project.platform.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      project.category.toLowerCase().includes(searchQuery.toLowerCase())
+      project.platform.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  const pendingProjects = filteredProjects.filter((p) => p.handoffStatus === "pending");
+  const activeProjects = filteredProjects.filter(
+    (p) => p.handoffStatus === "accepted" || p.handoffStatus === "in_progress"
+  );
+  const completedProjects = filteredProjects.filter((p) => p.handoffStatus === "completed");
+
+  const pendingCount = projects.filter((p) => p.handoffStatus === "pending").length;
+  const activeCount = projects.filter(
+    (p) => p.handoffStatus === "accepted" || p.handoffStatus === "in_progress"
+  ).length;
+
   return (
-    <div className="min-h-screen flex flex-col">
-      {/* Header */}
-      <header className="border-b bg-card px-6 py-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="h-9 w-9 rounded-lg bg-primary flex items-center justify-center">
-              <FolderKanban className="h-5 w-5 text-primary-foreground" />
+    <div className="min-h-screen flex">
+      {/* Sidebar */}
+      <aside className="w-80 border-r bg-card flex flex-col">
+        <div className="p-4 border-b">
+          <div className="flex items-center gap-2">
+            <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
+              <FolderKanban className="h-4 w-4 text-primary-foreground" />
             </div>
-            <div>
-              <h1 className="text-xl font-semibold">Project Manager</h1>
-              <p className="text-sm text-muted-foreground">
-                Track and manage merchant integrations
-              </p>
+            <span className="font-semibold text-lg">ProjectHub</span>
+          </div>
+        </div>
+
+        <UserProfileCard pendingCount={pendingCount} activeCount={activeCount} />
+
+        <nav className="flex-1 p-4">
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">
+            Quick Stats
+          </p>
+          <div className="space-y-2">
+            <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+              <span className="text-sm">Total ARR</span>
+              <span className="font-bold">
+                {projects.reduce((sum, p) => sum + p.arr, 0).toFixed(2)} cr
+              </span>
+            </div>
+            <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+              <span className="text-sm">Avg Go Live %</span>
+              <span className="font-bold">
+                {Math.round(
+                  projects.reduce((sum, p) => sum + p.goLivePercent, 0) / projects.length
+                )}
+                %
+              </span>
             </div>
           </div>
-          <Button className="gap-2">
-            <Plus className="h-4 w-4" />
-            New Project
-          </Button>
+        </nav>
+
+        <div className="p-4 border-t text-center">
+          <p className="text-xs text-muted-foreground">
+            Handoff from: <span className="font-medium">MINT (Presales)</span>
+          </p>
         </div>
-      </header>
+      </aside>
 
       {/* Main Content */}
-      <div className="flex-1 flex">
-        <main className="flex-1 p-6">
-          {/* Search and Filters */}
-          <div className="mb-6">
-            <div className="relative max-w-md">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search projects by name, MID, platform..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
-              />
-            </div>
+      <main className="flex-1 flex flex-col">
+        {/* Header */}
+        <header className="h-16 border-b bg-card px-6 flex items-center justify-between">
+          <div className="relative w-96">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search projects..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10"
+            />
           </div>
 
-          {/* Stats */}
-          <div className="grid grid-cols-4 gap-4 mb-6">
-            <div className="p-4 rounded-lg border bg-card">
-              <p className="text-sm text-muted-foreground">Total Projects</p>
-              <p className="text-2xl font-semibold mt-1">{projects.length}</p>
-            </div>
-            <div className="p-4 rounded-lg border bg-card">
-              <p className="text-sm text-muted-foreground">In Progress</p>
-              <p className="text-2xl font-semibold mt-1 text-warning">
-                {projects.filter((p) => p.projectState === "In Progress").length}
-              </p>
-            </div>
-            <div className="p-4 rounded-lg border bg-card">
-              <p className="text-sm text-muted-foreground">Completed</p>
-              <p className="text-2xl font-semibold mt-1 text-success">
-                {projects.filter((p) => p.projectState === "Completed").length}
-              </p>
-            </div>
-            <div className="p-4 rounded-lg border bg-card">
-              <p className="text-sm text-muted-foreground">Total ARR (cr)</p>
-              <p className="text-2xl font-semibold mt-1">
-                {projects.reduce((sum, p) => sum + p.arr, 0).toFixed(2)}
-              </p>
-            </div>
+          <div className="flex items-center gap-3">
+            <Button variant="ghost" size="icon" className="relative">
+              <Bell className="h-5 w-5" />
+              {pendingCount > 0 && (
+                <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-pending text-[10px] font-bold text-pending-foreground flex items-center justify-center animate-pulse-soft">
+                  {pendingCount}
+                </span>
+              )}
+            </Button>
           </div>
+        </header>
 
-          {/* Projects Table */}
-          <ProjectTable
-            projects={filteredProjects}
-            onSelectProject={setSelectedProject}
-            selectedProjectId={selectedProject?.id ?? null}
-          />
-
-          {filteredProjects.length === 0 && (
-            <div className="text-center py-12 text-muted-foreground">
-              <FolderKanban className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p>No projects found matching your search.</p>
+        {/* Content */}
+        <div className="flex-1 overflow-auto p-6">
+          <div className="max-w-4xl mx-auto">
+            <div className="mb-6">
+              <h1 className="text-2xl font-bold">My Projects</h1>
+              <p className="text-muted-foreground mt-1">
+                Manage your project handoffs and track progress
+              </p>
             </div>
-          )}
-        </main>
 
-        {/* Detail Panel */}
-        {selectedProject && (
-          <ProjectDetailPanel
-            project={selectedProject}
-            onClose={() => setSelectedProject(null)}
-          />
-        )}
-      </div>
+            <Tabs value={activeTab} onValueChange={setActiveTab}>
+              <TabsList className="mb-6">
+                <TabsTrigger value="pending" className="gap-2">
+                  <Clock className="h-4 w-4" />
+                  Pending KT
+                  {pendingCount > 0 && (
+                    <span className="ml-1 px-1.5 py-0.5 rounded-full bg-pending/20 text-pending text-xs font-medium">
+                      {pendingCount}
+                    </span>
+                  )}
+                </TabsTrigger>
+                <TabsTrigger value="active" className="gap-2">
+                  <Rocket className="h-4 w-4" />
+                  Active
+                  {activeCount > 0 && (
+                    <span className="ml-1 px-1.5 py-0.5 rounded-full bg-primary/20 text-primary text-xs font-medium">
+                      {activeCount}
+                    </span>
+                  )}
+                </TabsTrigger>
+                <TabsTrigger value="completed" className="gap-2">
+                  <CheckCircle2 className="h-4 w-4" />
+                  Completed
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="pending" className="mt-0">
+                <ProjectList
+                  projects={pendingProjects}
+                  onAcceptKT={handleAcceptKT}
+                  emptyMessage="No pending KT handoffs"
+                />
+              </TabsContent>
+
+              <TabsContent value="active" className="mt-0">
+                <ProjectList
+                  projects={activeProjects}
+                  onAcceptKT={handleAcceptKT}
+                  emptyMessage="No active projects"
+                />
+              </TabsContent>
+
+              <TabsContent value="completed" className="mt-0">
+                <ProjectList
+                  projects={completedProjects}
+                  onAcceptKT={handleAcceptKT}
+                  emptyMessage="No completed projects yet"
+                />
+              </TabsContent>
+            </Tabs>
+          </div>
+        </div>
+      </main>
     </div>
   );
 };
