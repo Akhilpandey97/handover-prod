@@ -1,19 +1,22 @@
 import { useState } from "react";
-import { Project } from "@/data/projectsData";
-import { teamLabels, TeamRole } from "@/data/teams";
+import { Project, calculateTimeByParty, formatDuration } from "@/data/projectsData";
+import { teamLabels } from "@/data/teams";
 import { useAuth } from "@/contexts/AuthContext";
 import { useProjects } from "@/contexts/ProjectContext";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ProjectDetailsDialog } from "./ProjectDetailsDialog";
 import { ChecklistDialog } from "./ChecklistDialog";
+import { EditProjectDialog } from "./EditProjectDialog";
 import { toast } from "sonner";
 import {
   ArrowRight,
@@ -21,9 +24,11 @@ import {
   CheckCircle2,
   ChevronDown,
   ClipboardList,
-  Eye,
+  Clock,
   FileText,
+  Pencil,
   TrendingUp,
+  Users,
 } from "lucide-react";
 
 interface ProjectCardNewProps {
@@ -39,12 +44,15 @@ const phaseColors = {
 
 export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
   const { currentUser } = useAuth();
-  const { acceptProject, transferProject } = useProjects();
+  const { acceptProject, transferProject, toggleResponsibility, updateProject } = useProjects();
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [checklistOpen, setChecklistOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
 
   const completedChecklist = project.checklist.filter((c) => c.completed).length;
   const totalChecklist = project.checklist.length;
+  const timeByParty = calculateTimeByParty(project.responsibilityLog);
+  const isGoKwik = project.currentResponsibility === "gokwik";
 
   const canTransfer = currentUser?.team === project.currentOwnerTeam && 
     !project.pendingAcceptance && 
@@ -60,6 +68,17 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
     const nextTeam = project.currentOwnerTeam === "mint" ? "Integration" : "MS";
     transferProject(project.id, `Transferred to ${nextTeam} team`);
     toast.success(`Transferred ${project.merchantName} to ${nextTeam} team`);
+  };
+
+  const handleResponsibilityToggle = () => {
+    const newParty = isGoKwik ? "merchant" : "gokwik";
+    toggleResponsibility(project.id, newParty);
+    toast.success(`Action now pending on ${newParty === "gokwik" ? "GoKwik" : "Merchant"}`);
+  };
+
+  const handleSaveEdit = (updatedProject: Project) => {
+    updateProject(updatedProject);
+    toast.success("Project updated successfully");
   };
 
   return (
@@ -96,6 +115,39 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
 
             {/* Right: Metrics & Actions */}
             <div className="flex items-center gap-4 shrink-0">
+              {/* Responsibility Toggle - Compact */}
+              <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-muted/50">
+                <div className="flex items-center gap-1.5">
+                  <Building2 className={`h-3.5 w-3.5 ${isGoKwik ? "text-primary" : "text-muted-foreground"}`} />
+                  <span className={`text-xs font-medium ${isGoKwik ? "text-primary" : "text-muted-foreground"}`}>
+                    GoKwik
+                  </span>
+                </div>
+                <Switch
+                  checked={!isGoKwik}
+                  onCheckedChange={handleResponsibilityToggle}
+                  className="scale-75"
+                />
+                <div className="flex items-center gap-1.5">
+                  <Users className={`h-3.5 w-3.5 ${!isGoKwik ? "text-amber-600" : "text-muted-foreground"}`} />
+                  <span className={`text-xs font-medium ${!isGoKwik ? "text-amber-600" : "text-muted-foreground"}`}>
+                    Merchant
+                  </span>
+                </div>
+              </div>
+
+              {/* Time Stats */}
+              <div className="hidden lg:flex items-center gap-3 text-xs border-l pl-3">
+                <div className="flex items-center gap-1 text-primary">
+                  <Clock className="h-3 w-3" />
+                  <span className="font-medium">{formatDuration(timeByParty.gokwik)}</span>
+                </div>
+                <div className="flex items-center gap-1 text-amber-600">
+                  <Clock className="h-3 w-3" />
+                  <span className="font-medium">{formatDuration(timeByParty.merchant)}</span>
+                </div>
+              </div>
+
               {/* Metrics */}
               <div className="hidden sm:flex items-center gap-4 text-sm">
                 <div className="text-center">
@@ -129,6 +181,11 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
                     <ClipboardList className="h-4 w-4 mr-2" />
                     View Checklist
                   </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => setEditOpen(true)}>
+                    <Pencil className="h-4 w-4 mr-2" />
+                    Edit Project
+                  </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
 
@@ -147,6 +204,26 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
                   <ArrowRight className="h-4 w-4" />
                 </Button>
               )}
+            </div>
+          </div>
+
+          {/* Mobile Responsibility Toggle */}
+          <div className="mt-3 pt-3 border-t md:hidden">
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-muted-foreground">Action pending on:</span>
+              <div className="flex items-center gap-2">
+                <span className={`text-xs font-medium ${isGoKwik ? "text-primary" : "text-muted-foreground"}`}>
+                  GoKwik
+                </span>
+                <Switch
+                  checked={!isGoKwik}
+                  onCheckedChange={handleResponsibilityToggle}
+                  className="scale-75"
+                />
+                <span className={`text-xs font-medium ${!isGoKwik ? "text-amber-600" : "text-muted-foreground"}`}>
+                  Merchant
+                </span>
+              </div>
             </div>
           </div>
 
@@ -169,11 +246,18 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
         project={project}
         open={detailsOpen}
         onOpenChange={setDetailsOpen}
+        onResponsibilityToggle={toggleResponsibility}
       />
       <ChecklistDialog
         project={project}
         open={checklistOpen}
         onOpenChange={setChecklistOpen}
+      />
+      <EditProjectDialog
+        project={project}
+        open={editOpen}
+        onOpenChange={setEditOpen}
+        onSave={handleSaveEdit}
       />
     </>
   );
