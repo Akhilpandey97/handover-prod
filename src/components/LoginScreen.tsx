@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { teamUsers, teamLabels, teamColors } from "@/data/teams";
 import { Button } from "@/components/ui/button";
@@ -6,7 +5,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { LogIn, Users } from "lucide-react";
+import { LogIn, Users, BarChart3 } from "lucide-react";
+import { useState } from "react";
 
 export const LoginScreen = () => {
   const [email, setEmail] = useState("");
@@ -29,6 +29,10 @@ export const LoginScreen = () => {
       toast.success("Login successful!");
     }
   };
+
+  // Separate manager from team users
+  const teamMembers = teamUsers.filter(u => u.team !== "manager");
+  const managers = teamUsers.filter(u => u.team === "manager");
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted flex items-center justify-center p-4">
@@ -72,13 +76,13 @@ export const LoginScreen = () => {
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Demo Accounts</CardTitle>
+            <CardTitle className="text-base">Team Accounts</CardTitle>
             <CardDescription>
               Click to login as any team member
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
-            {teamUsers.map((user) => (
+            {teamMembers.map((user) => (
               <button
                 key={user.id}
                 onClick={() => handleQuickLogin(user.email)}
@@ -92,6 +96,38 @@ export const LoginScreen = () => {
                   <p className="text-sm text-muted-foreground truncate">{user.email}</p>
                 </div>
                 <span className="text-xs px-2 py-1 rounded-full bg-muted font-medium">
+                  {teamLabels[user.team]}
+                </span>
+              </button>
+            ))}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <BarChart3 className="h-4 w-4" />
+              Manager Account
+            </CardTitle>
+            <CardDescription>
+              Access all projects and reports
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {managers.map((user) => (
+              <button
+                key={user.id}
+                onClick={() => handleQuickLogin(user.email)}
+                className="w-full flex items-center gap-3 p-3 rounded-lg border bg-card hover:bg-muted transition-colors text-left"
+              >
+                <div className={`h-10 w-10 rounded-full ${teamColors[user.team]} flex items-center justify-center text-white font-semibold`}>
+                  {user.name.charAt(0)}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium truncate">{user.name}</p>
+                  <p className="text-sm text-muted-foreground truncate">{user.email}</p>
+                </div>
+                <span className="text-xs px-2 py-1 rounded-full bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400 font-medium">
                   {teamLabels[user.team]}
                 </span>
               </button>

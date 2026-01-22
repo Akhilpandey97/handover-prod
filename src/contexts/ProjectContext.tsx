@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, ReactNode } from "react";
-import { Project, initialProjects, TransferRecord, ResponsibilityParty } from "@/data/projectsData";
+import { Project, initialProjects, TransferRecord, ResponsibilityParty, ProjectChecklist } from "@/data/projectsData";
 import { TeamRole } from "@/data/teams";
 import { useAuth } from "./AuthContext";
 
@@ -11,10 +11,12 @@ interface ProjectContextType {
   transferProject: (projectId: string, notes?: string) => void;
   updateChecklist: (projectId: string, checklistId: string, completed: boolean) => void;
   toggleResponsibility: (projectId: string, party: ResponsibilityParty) => void;
+  toggleChecklistResponsibility: (projectId: string, checklistId: string, party: ResponsibilityParty) => void;
   getProjectsForTeam: (team: TeamRole) => Project[];
   getPendingProjects: (team: TeamRole) => Project[];
   getActiveProjects: (team: TeamRole) => Project[];
   getCompletedProjects: (team: TeamRole) => Project[];
+  getAllProjects: () => Project[];
 }
 
 const ProjectContext = createContext<ProjectContextType | undefined>(undefined);
@@ -96,14 +98,28 @@ export const ProjectProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const updateChecklist = (projectId: string, checklistId: string, completed: boolean) => {
+    if (!currentUser) return;
+    
     setProjects((prev) =>
       prev.map((p) => {
         if (p.id === projectId) {
           return {
             ...p,
-            checklist: p.checklist.map((c) =>
-              c.id === checklistId ? { ...c, completed } : c
-            ),
+            checklist: p.checklist.map((c) => {
+              if (c.id === checklistId) {
+                // Only allow the owner team to complete their items
+                if (c.ownerTeam !== currentUser.team && currentUser.team !== "manager") {
+                  return c;
+                }
+                return {
+                  ...c,
+                  completed,
+                  completedBy: completed ? currentUser.name : undefined,
+                  completedAt: completed ? new Date().toISOString() : undefined,
+                };
+              }
+              return c;
+            }),
           };
         }
         return p;
@@ -142,21 +158,64 @@ export const ProjectProvider = ({ children }: { children: ReactNode }) => {
     );
   };
 
+  const toggleChecklistResponsibility = (projectId: string, checklistId: string, newParty: ResponsibilityParty) => {
+    setProjects((prev) =>
+      prev.map((p) => {
+        if (p.id === projectId) {
+          return {
+            ...p,
+            checklist: p.checklist.map((c) => {
+              if (c.id === checklistId && c.currentResponsibility !== newParty) {
+                // Close the current responsibility log
+                const updatedLog = c.responsibilityLog.map((log, idx) => {
+                  if (idx === c.responsibilityLog.length - 1 && !log.endedAt) {
+                    return { ...log, endedAt: new Date().toISOString() };
+                  }
+                  return log;
+                });
+
+                // Add new responsibility log entry
+                const newLogEntry = {
+                  id: `cl-${Date.now()}`,
+                  party: newParty,
+                  startedAt: new Date().toISOString(),
+                };
+
+                return {
+                  ...c,
+                  currentResponsibility: newParty,
+                  responsibilityLog: [...updatedLog, newLogEntry],
+                };
+              }
+              return c;
+            }),
+          };
+        }
+        return p;
+      })
+    );
+  };
+
   const getProjectsForTeam = (team: TeamRole) => {
+    if (team === "manager") return projects;
     return projects.filter((p) => p.currentOwnerTeam === team);
   };
 
   const getPendingProjects = (team: TeamRole) => {
+    if (team === "manager") return projects.filter((p) => p.pendingAcceptance);
     return projects.filter((p) => p.currentOwnerTeam === team && p.pendingAcceptance);
   };
 
   const getActiveProjects = (team: TeamRole) => {
+    if (team === "manager") return projects.filter((p) => !p.pendingAcceptance && p.currentPhase !== "completed");
     return projects.filter((p) => p.currentOwnerTeam === team && !p.pendingAcceptance && p.currentPhase !== "completed");
   };
 
   const getCompletedProjects = (team: TeamRole) => {
     return projects.filter((p) => p.currentPhase === "completed");
   };
+
+  const getAllProjects = () => projects;
 
   return (
     <ProjectContext.Provider
@@ -168,10 +227,12 @@ export const ProjectProvider = ({ children }: { children: ReactNode }) => {
         transferProject,
         updateChecklist,
         toggleResponsibility,
+        toggleChecklistResponsibility,
         getProjectsForTeam,
         getPendingProjects,
         getActiveProjects,
         getCompletedProjects,
+        getAllProjects,
       }}
     >
       {children}
