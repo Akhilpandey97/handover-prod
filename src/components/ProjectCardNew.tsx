@@ -17,6 +17,7 @@ import {
 import { ProjectDetailsDialog } from "./ProjectDetailsDialog";
 import { ChecklistDialog } from "./ChecklistDialog";
 import { EditProjectDialog } from "./EditProjectDialog";
+import { TransferDialog } from "./TransferDialog";
 import { toast } from "sonner";
 import {
   ArrowRight,
@@ -48,6 +49,7 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [checklistOpen, setChecklistOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
+  const [transferOpen, setTransferOpen] = useState(false);
 
   const completedChecklist = project.checklist.filter((c) => c.completed).length;
   const totalChecklist = project.checklist.length;
@@ -57,17 +59,19 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
   const canTransfer = currentUser?.team === project.currentOwnerTeam && 
     !project.pendingAcceptance && 
     project.currentPhase !== "completed" &&
-    project.currentOwnerTeam !== "ms";
+    project.currentOwnerTeam !== "ms" &&
+    currentUser?.team !== "manager";
 
   const handleAccept = () => {
     acceptProject(project.id);
     toast.success(`Accepted ${project.merchantName}`);
   };
 
-  const handleTransfer = () => {
+  const handleTransfer = (assigneeId: string, assigneeName: string, notes: string) => {
     const nextTeam = project.currentOwnerTeam === "mint" ? "Integration" : "MS";
-    transferProject(project.id, `Transferred to ${nextTeam} team`);
-    toast.success(`Transferred ${project.merchantName} to ${nextTeam} team`);
+    const transferNote = notes || `Transferred to ${nextTeam} team`;
+    transferProject(project.id, `${transferNote} (Assigned to: ${assigneeName})`);
+    toast.success(`Transferred ${project.merchantName} to ${assigneeName} (${nextTeam} team)`);
   };
 
   const handleResponsibilityToggle = () => {
@@ -199,7 +203,7 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
 
               {/* Transfer Button */}
               {canTransfer && (
-                <Button size="sm" variant="secondary" onClick={handleTransfer} className="gap-1">
+                <Button size="sm" variant="secondary" onClick={() => setTransferOpen(true)} className="gap-1">
                   Transfer
                   <ArrowRight className="h-4 w-4" />
                 </Button>
@@ -258,6 +262,12 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
         open={editOpen}
         onOpenChange={setEditOpen}
         onSave={handleSaveEdit}
+      />
+      <TransferDialog
+        project={project}
+        open={transferOpen}
+        onOpenChange={setTransferOpen}
+        onTransfer={handleTransfer}
       />
     </>
   );
