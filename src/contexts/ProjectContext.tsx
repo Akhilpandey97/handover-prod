@@ -1,13 +1,16 @@
 import React, { createContext, useContext, useState, ReactNode } from "react";
-import { Project, initialProjects, TransferRecord } from "@/data/projectsData";
+import { Project, initialProjects, TransferRecord, ResponsibilityParty } from "@/data/projectsData";
 import { TeamRole } from "@/data/teams";
 import { useAuth } from "./AuthContext";
 
 interface ProjectContextType {
   projects: Project[];
+  addProject: (project: Project) => void;
+  updateProject: (project: Project) => void;
   acceptProject: (projectId: string) => void;
   transferProject: (projectId: string, notes?: string) => void;
   updateChecklist: (projectId: string, checklistId: string, completed: boolean) => void;
+  toggleResponsibility: (projectId: string, party: ResponsibilityParty) => void;
   getProjectsForTeam: (team: TeamRole) => Project[];
   getPendingProjects: (team: TeamRole) => Project[];
   getActiveProjects: (team: TeamRole) => Project[];
@@ -25,6 +28,16 @@ const getNextTeam = (current: TeamRole): TeamRole | null => {
 export const ProjectProvider = ({ children }: { children: ReactNode }) => {
   const [projects, setProjects] = useState<Project[]>(initialProjects);
   const { currentUser } = useAuth();
+
+  const addProject = (project: Project) => {
+    setProjects((prev) => [...prev, project]);
+  };
+
+  const updateProject = (updatedProject: Project) => {
+    setProjects((prev) =>
+      prev.map((p) => (p.id === updatedProject.id ? updatedProject : p))
+    );
+  };
 
   const acceptProject = (projectId: string) => {
     if (!currentUser) return;
@@ -98,6 +111,37 @@ export const ProjectProvider = ({ children }: { children: ReactNode }) => {
     );
   };
 
+  const toggleResponsibility = (projectId: string, newParty: ResponsibilityParty) => {
+    setProjects((prev) =>
+      prev.map((p) => {
+        if (p.id === projectId && p.currentResponsibility !== newParty) {
+          // Close the current responsibility log
+          const updatedLog = p.responsibilityLog.map((log, idx) => {
+            if (idx === p.responsibilityLog.length - 1 && !log.endedAt) {
+              return { ...log, endedAt: new Date().toISOString() };
+            }
+            return log;
+          });
+
+          // Add new responsibility log entry
+          const newLogEntry = {
+            id: `r-${Date.now()}`,
+            party: newParty,
+            startedAt: new Date().toISOString(),
+            phase: p.currentPhase,
+          };
+
+          return {
+            ...p,
+            currentResponsibility: newParty,
+            responsibilityLog: [...updatedLog, newLogEntry],
+          };
+        }
+        return p;
+      })
+    );
+  };
+
   const getProjectsForTeam = (team: TeamRole) => {
     return projects.filter((p) => p.currentOwnerTeam === team);
   };
@@ -118,9 +162,12 @@ export const ProjectProvider = ({ children }: { children: ReactNode }) => {
     <ProjectContext.Provider
       value={{
         projects,
+        addProject,
+        updateProject,
         acceptProject,
         transferProject,
         updateChecklist,
+        toggleResponsibility,
         getProjectsForTeam,
         getPendingProjects,
         getActiveProjects,

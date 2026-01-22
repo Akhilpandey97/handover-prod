@@ -1,4 +1,4 @@
-import { Project } from "@/data/projectsData";
+import { Project, calculateTimeByParty, formatDuration } from "@/data/projectsData";
 import { teamLabels } from "@/data/teams";
 import {
   Dialog,
@@ -9,9 +9,11 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { ResponsibilityToggle } from "./ResponsibilityToggle";
 import {
   Building2,
   Calendar,
+  Clock,
   DollarSign,
   ExternalLink,
   Globe,
@@ -26,14 +28,18 @@ interface ProjectDetailsDialogProps {
   project: Project | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onResponsibilityToggle?: (projectId: string, party: "gokwik" | "merchant") => void;
 }
 
 export const ProjectDetailsDialog = ({
   project,
   open,
   onOpenChange,
+  onResponsibilityToggle,
 }: ProjectDetailsDialogProps) => {
   if (!project) return null;
+
+  const timeByParty = calculateTimeByParty(project.responsibilityLog);
 
   const DetailRow = ({ icon: Icon, label, value, isLink }: { icon: any; label: string; value?: string; isLink?: boolean }) => (
     <div className="flex items-start gap-3 py-2">
@@ -75,6 +81,34 @@ export const ProjectDetailsDialog = ({
 
         <ScrollArea className="max-h-[60vh] pr-4">
           <div className="space-y-6">
+            {/* Responsibility Toggle */}
+            {onResponsibilityToggle && (
+              <ResponsibilityToggle
+                project={project}
+                onToggle={onResponsibilityToggle}
+              />
+            )}
+
+            {/* Time Summary */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="p-3 rounded-lg bg-primary/5 border border-primary/20">
+                <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
+                  <Clock className="h-3 w-3" />
+                  GoKwik Time
+                </div>
+                <p className="text-lg font-bold text-primary">{formatDuration(timeByParty.gokwik)}</p>
+              </div>
+              <div className="p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
+                <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
+                  <Clock className="h-3 w-3" />
+                  Merchant Time
+                </div>
+                <p className="text-lg font-bold text-amber-600 dark:text-amber-400">{formatDuration(timeByParty.merchant)}</p>
+              </div>
+            </div>
+
+            <Separator />
+
             {/* Business Metrics */}
             <div>
               <h4 className="text-sm font-semibold mb-3 flex items-center gap-2">
@@ -131,12 +165,17 @@ export const ProjectDetailsDialog = ({
                 <DetailRow
                   icon={Calendar}
                   label="Kick Off Date"
-                  value={format(new Date(project.kickOffDate), "dd MMM yyyy")}
+                  value={format(new Date(project.dates.kickOffDate), "dd MMM yyyy")}
                 />
                 <DetailRow
                   icon={Calendar}
-                  label="Go Live Date"
-                  value={project.goLiveDate ? format(new Date(project.goLiveDate), "dd MMM yyyy") : "TBD"}
+                  label="Expected Go Live"
+                  value={project.dates.expectedGoLiveDate ? format(new Date(project.dates.expectedGoLiveDate), "dd MMM yyyy") : "TBD"}
+                />
+                <DetailRow
+                  icon={Calendar}
+                  label="Actual Go Live"
+                  value={project.dates.goLiveDate ? format(new Date(project.dates.goLiveDate), "dd MMM yyyy") : "TBD"}
                 />
               </div>
             </div>
@@ -150,9 +189,11 @@ export const ProjectDetailsDialog = ({
                 Links
               </h4>
               <div className="grid grid-cols-2 gap-x-4">
-                <DetailRow icon={Globe} label="Brand URL" value={project.brandUrl} isLink />
-                <DetailRow icon={Link2} label="JIRA Link" value={project.jiraLink} isLink />
-                <DetailRow icon={Link2} label="BRD Link" value={project.brdLink} isLink />
+                <DetailRow icon={Globe} label="Brand URL" value={project.links.brandUrl} isLink />
+                <DetailRow icon={Link2} label="JIRA Link" value={project.links.jiraLink} isLink />
+                <DetailRow icon={Link2} label="BRD Link" value={project.links.brdLink} isLink />
+                <DetailRow icon={Link2} label="MINT Checklist" value={project.links.mintChecklistLink} isLink />
+                <DetailRow icon={Link2} label="Integration Checklist" value={project.links.integrationChecklistLink} isLink />
               </div>
             </div>
 
@@ -162,22 +203,28 @@ export const ProjectDetailsDialog = ({
             <div>
               <h4 className="text-sm font-semibold mb-3">Notes</h4>
               <div className="space-y-3">
-                {project.mintNotes && (
+                {project.notes.mintNotes && (
                   <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900">
                     <p className="text-xs font-medium text-blue-700 dark:text-blue-400 mb-1">MINT Notes</p>
-                    <p className="text-sm">{project.mintNotes}</p>
+                    <p className="text-sm">{project.notes.mintNotes}</p>
                   </div>
                 )}
-                {project.projectNotes && (
+                {project.notes.projectNotes && (
                   <div className="p-3 rounded-lg bg-muted/50 border">
                     <p className="text-xs font-medium text-muted-foreground mb-1">Project Notes</p>
-                    <p className="text-sm">{project.projectNotes}</p>
+                    <p className="text-sm">{project.notes.projectNotes}</p>
                   </div>
                 )}
-                {project.phaseComment && (
+                {project.notes.currentPhaseComment && (
                   <div className="p-3 rounded-lg bg-muted/50 border">
-                    <p className="text-xs font-medium text-muted-foreground mb-1">Phase Comment</p>
-                    <p className="text-sm whitespace-pre-wrap">{project.phaseComment}</p>
+                    <p className="text-xs font-medium text-muted-foreground mb-1">Current Phase Comment</p>
+                    <p className="text-sm whitespace-pre-wrap">{project.notes.currentPhaseComment}</p>
+                  </div>
+                )}
+                {project.notes.phase2Comment && (
+                  <div className="p-3 rounded-lg bg-purple-50 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-900">
+                    <p className="text-xs font-medium text-purple-700 dark:text-purple-400 mb-1">Phase 2 Comment</p>
+                    <p className="text-sm whitespace-pre-wrap">{project.notes.phase2Comment}</p>
                   </div>
                 )}
               </div>

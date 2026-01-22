@@ -2,7 +2,9 @@ import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useProjects } from "@/contexts/ProjectContext";
 import { teamLabels, teamColors } from "@/data/teams";
+import { Project } from "@/data/projectsData";
 import { ProjectCardNew } from "./ProjectCardNew";
+import { AddProjectDialog } from "./AddProjectDialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -13,15 +15,18 @@ import {
   Clock,
   FolderKanban,
   LogOut,
+  Plus,
   Rocket,
   Search,
 } from "lucide-react";
+import { toast } from "sonner";
 
 export const TeamDashboard = () => {
   const { currentUser, logout } = useAuth();
-  const { getPendingProjects, getActiveProjects, projects } = useProjects();
+  const { getPendingProjects, getActiveProjects, projects, addProject } = useProjects();
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("pending");
+  const [addDialogOpen, setAddDialogOpen] = useState(false);
 
   if (!currentUser) return null;
 
@@ -48,6 +53,11 @@ export const TeamDashboard = () => {
       )
   );
   const filteredAll = filterProjects(allTeamProjects);
+
+  const handleAddProject = (project: Project) => {
+    addProject(project);
+    toast.success(`Added ${project.merchantName}`);
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -83,6 +93,14 @@ export const TeamDashboard = () => {
 
             {/* User & Actions */}
             <div className="flex items-center gap-3">
+              {/* Add Project Button - Only for MINT */}
+              {currentUser.team === "mint" && (
+                <Button onClick={() => setAddDialogOpen(true)} size="sm" className="gap-1">
+                  <Plus className="h-4 w-4" />
+                  Add Project
+                </Button>
+              )}
+
               <Button variant="ghost" size="icon" className="relative">
                 <Bell className="h-5 w-5" />
                 {pendingProjects.length > 0 && (
@@ -205,6 +223,13 @@ export const TeamDashboard = () => {
           </Tabs>
         </div>
       </main>
+
+      {/* Add Project Dialog */}
+      <AddProjectDialog
+        open={addDialogOpen}
+        onOpenChange={setAddDialogOpen}
+        onSave={handleAddProject}
+      />
     </div>
   );
 };
