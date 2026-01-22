@@ -1,4 +1,4 @@
-export type TeamRole = "mint" | "integration" | "ms";
+export type TeamRole = "mint" | "integration" | "ms" | "manager";
 
 export interface TeamUser {
   id: string;
@@ -27,16 +27,24 @@ export const teamUsers: TeamUser[] = [
     email: "anjali@ms.com",
     team: "ms",
   },
+  {
+    id: "user-manager-1",
+    name: "Vikram Singh",
+    email: "vikram@manager.com",
+    team: "manager",
+  },
 ];
 
 export const teamLabels: Record<TeamRole, string> = {
   mint: "MINT (Presales)",
   integration: "Integration Team",
   ms: "MS (Merchant Success)",
+  manager: "Manager",
 };
 
 export const teamColors: Record<TeamRole, string> = {
   mint: "bg-blue-500",
   integration: "bg-purple-500",
   ms: "bg-green-500",
+  manager: "bg-orange-500",
 };

@@ -22,11 +22,23 @@ export interface ResponsibilityLog {
   phase: ProjectPhase;
 }
 
+export interface ChecklistResponsibilityLog {
+  id: string;
+  party: ResponsibilityParty;
+  startedAt: string;
+  endedAt?: string;
+}
+
 export interface ProjectChecklist {
   id: string;
   title: string;
   completed: boolean;
+  completedBy?: string;
+  completedAt?: string;
   phase: ProjectPhase;
+  ownerTeam: TeamRole; // Which team can complete this item
+  currentResponsibility: ResponsibilityParty;
+  responsibilityLog: ChecklistResponsibilityLog[];
 }
 
 export interface ProjectLinks {
@@ -76,7 +88,7 @@ export interface Project {
 }
 
 // Helper to calculate time spent by each party
-export const calculateTimeByParty = (logs: ResponsibilityLog[]): { gokwik: number; merchant: number } => {
+export const calculateTimeByParty = (logs: ResponsibilityLog[] | ChecklistResponsibilityLog[]): { gokwik: number; merchant: number } => {
   const result = { gokwik: 0, merchant: 0 };
   
   logs.forEach(log => {
@@ -98,6 +110,72 @@ export const formatDuration = (ms: number): string => {
     return `${days}d ${remainingHours}h`;
   }
   return `${hours}h`;
+};
+
+// MINT Checklist Items
+const mintChecklistItems = [
+  "Requirement gathering",
+  "Feasibility Analysis",
+  "BRD Details",
+  "Technical Scoping",
+  "Technical Walkthrough",
+  "API Validation",
+  "LCNC Config",
+  "Create JIRA",
+  "Transfer to Integration",
+];
+
+// Integration Checklist Items
+const integrationChecklistItems = [
+  "BRD Validation",
+  "Integration Checklist",
+  "Sandbox Testing",
+  "Production Testing",
+  "Dashboard Walkthrough with MS",
+  "Go-Live",
+];
+
+export const createDefaultChecklist = (): ProjectChecklist[] => {
+  const now = new Date().toISOString();
+  const checklist: ProjectChecklist[] = [];
+
+  mintChecklistItems.forEach((title, idx) => {
+    checklist.push({
+      id: `c-mint-${Date.now()}-${idx}`,
+      title,
+      completed: false,
+      phase: "mint",
+      ownerTeam: "mint",
+      currentResponsibility: "gokwik",
+      responsibilityLog: [
+        {
+          id: `cl-${Date.now()}-${idx}`,
+          party: "gokwik",
+          startedAt: now,
+        },
+      ],
+    });
+  });
+
+  integrationChecklistItems.forEach((title, idx) => {
+    checklist.push({
+      id: `c-int-${Date.now()}-${idx}`,
+      title,
+      completed: false,
+      phase: "integration",
+      ownerTeam: "integration",
+      currentResponsibility: "gokwik",
+      responsibilityLog: [
+        {
+          id: `cl-${Date.now()}-${idx}`,
+          party: "gokwik",
+          startedAt: now,
+        },
+      ],
+    });
+  });
+
+  return checklist;
 };
 
 export const createDefaultProject = (overrides?: Partial<Project>): Project => ({
@@ -132,12 +210,7 @@ export const createDefaultProject = (overrides?: Partial<Project>): Project => (
     phase2Comment: "",
   },
   transferHistory: [],
-  checklist: [
-    { id: `c-${Date.now()}-1`, title: "Initial client meeting completed", completed: false, phase: "mint" },
-    { id: `c-${Date.now()}-2`, title: "Requirements documented", completed: false, phase: "mint" },
-    { id: `c-${Date.now()}-3`, title: "BRD prepared", completed: false, phase: "mint" },
-    { id: `c-${Date.now()}-4`, title: "API walkthrough done", completed: false, phase: "mint" },
-  ],
+  checklist: createDefaultChecklist(),
   salesSpoc: "",
   integrationType: "Standard",
   pgOnboarding: "",
@@ -152,6 +225,54 @@ export const createDefaultProject = (overrides?: Partial<Project>): Project => (
   ],
   ...overrides,
 });
+
+// Helper to create checklist for existing projects
+const createChecklistForProject = (projectId: string, completedItems: { title: string; phase: ProjectPhase }[]): ProjectChecklist[] => {
+  const now = new Date().toISOString();
+  const checklist: ProjectChecklist[] = [];
+
+  mintChecklistItems.forEach((title, idx) => {
+    const isCompleted = completedItems.some(item => item.title === title);
+    checklist.push({
+      id: `${projectId}-c-mint-${idx}`,
+      title,
+      completed: isCompleted,
+      completedAt: isCompleted ? now : undefined,
+      phase: "mint",
+      ownerTeam: "mint",
+      currentResponsibility: "gokwik",
+      responsibilityLog: [
+        {
+          id: `${projectId}-cl-mint-${idx}`,
+          party: "gokwik",
+          startedAt: now,
+        },
+      ],
+    });
+  });
+
+  integrationChecklistItems.forEach((title, idx) => {
+    const isCompleted = completedItems.some(item => item.title === title);
+    checklist.push({
+      id: `${projectId}-c-int-${idx}`,
+      title,
+      completed: isCompleted,
+      completedAt: isCompleted ? now : undefined,
+      phase: "integration",
+      ownerTeam: "integration",
+      currentResponsibility: "gokwik",
+      responsibilityLog: [
+        {
+          id: `${projectId}-cl-int-${idx}`,
+          party: "gokwik",
+          startedAt: now,
+        },
+      ],
+    });
+  });
+
+  return checklist;
+};
 
 export const initialProjects: Project[] = [
   {
@@ -189,12 +310,10 @@ export const initialProjects: Project[] = [
     integrationType: "Advanced",
     pgOnboarding: "Easebuzz",
     transferHistory: [],
-    checklist: [
-      { id: "c1", title: "Initial client meeting completed", completed: true, phase: "mint" },
-      { id: "c2", title: "Requirements documented", completed: true, phase: "mint" },
-      { id: "c3", title: "BRD prepared", completed: false, phase: "mint" },
-      { id: "c4", title: "API walkthrough done", completed: false, phase: "mint" },
-    ],
+    checklist: createChecklistForProject("proj-1", [
+      { title: "Requirement gathering", phase: "mint" },
+      { title: "Feasibility Analysis", phase: "mint" },
+    ]),
     currentResponsibility: "merchant",
     responsibilityLog: [
       { id: "r1", party: "gokwik", startedAt: "2025-01-13T09:00:00Z", endedAt: "2025-01-15T14:00:00Z", phase: "mint" },
@@ -245,13 +364,17 @@ export const initialProjects: Project[] = [
         notes: "All documentation complete, ready for integration",
       },
     ],
-    checklist: [
-      { id: "c1", title: "Initial client meeting completed", completed: true, phase: "mint" },
-      { id: "c2", title: "Requirements documented", completed: true, phase: "mint" },
-      { id: "c3", title: "BRD prepared", completed: true, phase: "mint" },
-      { id: "c4", title: "API credentials received", completed: false, phase: "integration" },
-      { id: "c5", title: "Sandbox testing complete", completed: false, phase: "integration" },
-    ],
+    checklist: createChecklistForProject("proj-2", [
+      { title: "Requirement gathering", phase: "mint" },
+      { title: "Feasibility Analysis", phase: "mint" },
+      { title: "BRD Details", phase: "mint" },
+      { title: "Technical Scoping", phase: "mint" },
+      { title: "Technical Walkthrough", phase: "mint" },
+      { title: "API Validation", phase: "mint" },
+      { title: "LCNC Config", phase: "mint" },
+      { title: "Create JIRA", phase: "mint" },
+      { title: "Transfer to Integration", phase: "mint" },
+    ]),
     currentResponsibility: "gokwik",
     responsibilityLog: [
       { id: "r1", party: "gokwik", startedAt: "2025-01-14T09:00:00Z", endedAt: "2025-01-15T16:00:00Z", phase: "mint" },
@@ -313,14 +436,23 @@ export const initialProjects: Project[] = [
         notes: "Integration complete, ready for go-live support",
       },
     ],
-    checklist: [
-      { id: "c1", title: "Initial client meeting completed", completed: true, phase: "mint" },
-      { id: "c2", title: "Requirements documented", completed: true, phase: "mint" },
-      { id: "c3", title: "API integration complete", completed: true, phase: "integration" },
-      { id: "c4", title: "UAT sign-off", completed: true, phase: "integration" },
-      { id: "c5", title: "Go-live checklist reviewed", completed: false, phase: "ms" },
-      { id: "c6", title: "Merchant training scheduled", completed: false, phase: "ms" },
-    ],
+    checklist: createChecklistForProject("proj-3", [
+      { title: "Requirement gathering", phase: "mint" },
+      { title: "Feasibility Analysis", phase: "mint" },
+      { title: "BRD Details", phase: "mint" },
+      { title: "Technical Scoping", phase: "mint" },
+      { title: "Technical Walkthrough", phase: "mint" },
+      { title: "API Validation", phase: "mint" },
+      { title: "LCNC Config", phase: "mint" },
+      { title: "Create JIRA", phase: "mint" },
+      { title: "Transfer to Integration", phase: "mint" },
+      { title: "BRD Validation", phase: "integration" },
+      { title: "Integration Checklist", phase: "integration" },
+      { title: "Sandbox Testing", phase: "integration" },
+      { title: "Production Testing", phase: "integration" },
+      { title: "Dashboard Walkthrough with MS", phase: "integration" },
+      { title: "Go-Live", phase: "integration" },
+    ]),
     currentResponsibility: "gokwik",
     responsibilityLog: [
       { id: "r1", party: "gokwik", startedAt: "2024-12-01T09:00:00Z", endedAt: "2024-12-05T17:00:00Z", phase: "mint" },

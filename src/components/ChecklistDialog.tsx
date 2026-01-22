@@ -1,5 +1,7 @@
-import { Project } from "@/data/projectsData";
+import { Project, calculateTimeByParty, formatDuration, ResponsibilityParty } from "@/data/projectsData";
 import { useProjects } from "@/contexts/ProjectContext";
+import { useAuth } from "@/contexts/AuthContext";
+import { teamLabels } from "@/data/teams";
 import {
   Dialog,
   DialogContent,
@@ -9,7 +11,9 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { CheckCircle2, Circle, ClipboardList } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { CheckCircle2, ClipboardList, Clock, Timer } from "lucide-react";
 
 interface ChecklistDialogProps {
   project: Project | null;
@@ -31,14 +35,22 @@ const phaseColors = {
   completed: "bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400",
 };
 
+const ownerTeamLabels = {
+  mint: "MINT Team",
+  integration: "Integration Team",
+  ms: "MS Team",
+  manager: "Manager",
+};
+
 export const ChecklistDialog = ({
   project,
   open,
   onOpenChange,
 }: ChecklistDialogProps) => {
-  const { updateChecklist } = useProjects();
+  const { updateChecklist, toggleChecklistResponsibility } = useProjects();
+  const { currentUser } = useAuth();
 
-  if (!project) return null;
+  if (!project || !currentUser) return null;
 
   const completedCount = project.checklist.filter((c) => c.completed).length;
   const totalCount = project.checklist.length;
@@ -50,9 +62,19 @@ export const ChecklistDialog = ({
     return acc;
   }, {} as Record<string, typeof project.checklist>);
 
+  const canEditChecklistItem = (ownerTeam: string) => {
+    if (currentUser.team === "manager") return true;
+    return currentUser.team === ownerTeam;
+  };
+
+  const handleResponsibilityToggle = (checklistId: string, currentParty: ResponsibilityParty) => {
+    const newParty = currentParty === "gokwik" ? "merchant" : "gokwik";
+    toggleChecklistResponsibility(project.id, checklistId, newParty);
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg max-h-[85vh]">
+      <DialogContent className="max-w-2xl max-h-[85vh]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-3">
             <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
@@ -81,7 +103,7 @@ export const ChecklistDialog = ({
           </div>
         </div>
 
-        <ScrollArea className="max-h-[50vh] pr-4">
+        <ScrollArea className="max-h-[55vh] pr-4">
           <div className="space-y-6">
             {Object.entries(groupedChecklist).map(([phase, items]) => (
               <div key={phase}>
@@ -92,28 +114,87 @@ export const ChecklistDialog = ({
                   <span className="text-xs text-muted-foreground">
                     {items.filter((i) => i.completed).length}/{items.length}
                   </span>
+                  <span className="text-xs text-muted-foreground ml-auto">
+                    Owner: {ownerTeamLabels[items[0]?.ownerTeam as keyof typeof ownerTeamLabels]}
+                  </span>
                 </div>
-                <div className="space-y-2">
-                  {items.map((item) => (
-                    <label
-                      key={item.id}
-                      className="flex items-start gap-3 p-3 rounded-lg border bg-card hover:bg-muted/50 transition-colors cursor-pointer"
-                    >
-                      <Checkbox
-                        checked={item.completed}
-                        onCheckedChange={(checked) =>
-                          updateChecklist(project.id, item.id, checked as boolean)
-                        }
-                        className="mt-0.5"
-                      />
-                      <span className={`text-sm ${item.completed ? "line-through text-muted-foreground" : ""}`}>
-                        {item.title}
-                      </span>
-                      {item.completed && (
-                        <CheckCircle2 className="h-4 w-4 text-green-500 ml-auto shrink-0" />
-                      )}
-                    </label>
-                  ))}
+                <div className="space-y-3">
+                  {items.map((item) => {
+                    const timeStats = calculateTimeByParty(item.responsibilityLog);
+                    const canEdit = canEditChecklistItem(item.ownerTeam);
+                    
+                    return (
+                      <div
+                        key={item.id}
+                        className="p-3 rounded-lg border bg-card"
+                      >
+                        <div className="flex items-start gap-3">
+                          <Checkbox
+                            checked={item.completed}
+                            onCheckedChange={(checked) => {
+                              if (canEdit) {
+                                updateChecklist(project.id, item.id, checked as boolean);
+                              }
+                            }}
+                            disabled={!canEdit}
+                            className="mt-0.5"
+                          />
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <span className={`text-sm ${item.completed ? "line-through text-muted-foreground" : ""}`}>
+                                {item.title}
+                              </span>
+                              {item.completed && (
+                                <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0" />
+                              )}
+                            </div>
+                            
+                            {item.completedBy && (
+                              <p className="text-xs text-muted-foreground mt-1">
+                                Completed by {item.completedBy}
+                              </p>
+                            )}
+                            
+                            {/* Time Stats */}
+                            <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
+                              <div className="flex items-center gap-1">
+                                <Timer className="h-3 w-3" />
+                                <span>GK: {formatDuration(timeStats.gokwik)}</span>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <Clock className="h-3 w-3" />
+                                <span>Merchant: {formatDuration(timeStats.merchant)}</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Responsibility Toggle */}
+                          <div className="flex flex-col items-end gap-1">
+                            <div className="flex items-center gap-2">
+                              <Label 
+                                htmlFor={`resp-${item.id}`} 
+                                className={`text-xs ${item.currentResponsibility === "gokwik" ? "text-primary font-medium" : "text-muted-foreground"}`}
+                              >
+                                GoKwik
+                              </Label>
+                              <Switch
+                                id={`resp-${item.id}`}
+                                checked={item.currentResponsibility === "merchant"}
+                                onCheckedChange={() => handleResponsibilityToggle(item.id, item.currentResponsibility)}
+                                disabled={item.completed}
+                              />
+                              <Label 
+                                htmlFor={`resp-${item.id}`} 
+                                className={`text-xs ${item.currentResponsibility === "merchant" ? "text-amber-600 font-medium" : "text-muted-foreground"}`}
+                              >
+                                Merchant
+                              </Label>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             ))}
