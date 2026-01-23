@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useProjects } from "@/contexts/ProjectContext";
-import { teamLabels, teamColors, TeamRole } from "@/data/teams";
-import { Project, calculateTimeByParty, formatDuration } from "@/data/projectsData";
+import { teamLabels, teamColors, TeamRole, teamUsers } from "@/data/teams";
+import { Project, ProjectChecklist, calculateTimeByParty, formatDuration } from "@/data/projectsData";
 import { ProjectCardNew } from "./ProjectCardNew";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Progress } from "@/components/ui/progress";
 import {
   BarChart3,
   Clock,
@@ -21,6 +23,9 @@ import {
   CheckCircle2,
   AlertCircle,
   Timer,
+  ListChecks,
+  User,
+  Building2,
 } from "lucide-react";
 
 export const ManagerDashboard = () => {
@@ -30,6 +35,7 @@ export const ManagerDashboard = () => {
   const [activeTab, setActiveTab] = useState("overview");
   const [teamFilter, setTeamFilter] = useState<string>("all");
   const [ownerFilter, setOwnerFilter] = useState<string>("all");
+  const [reportType, setReportType] = useState<string>("project");
 
   if (!currentUser) return null;
 
@@ -90,6 +96,148 @@ export const ManagerDashboard = () => {
     totalGokwikTime += time.gokwik;
     totalMerchantTime += time.merchant;
   });
+
+  // Checklist Time Report - all checklist items across all projects
+  const checklistTimeReport = useMemo(() => {
+    const report: {
+      checklistTitle: string;
+      projectName: string;
+      projectId: string;
+      team: TeamRole;
+      gokwikTime: number;
+      merchantTime: number;
+      totalTime: number;
+      completed: boolean;
+      owner: string;
+    }[] = [];
+
+    projects.forEach((project) => {
+      project.checklist.forEach((item) => {
+        const time = calculateTimeByParty(item.responsibilityLog);
+        report.push({
+          checklistTitle: item.title,
+          projectName: project.merchantName,
+          projectId: project.id,
+          team: item.ownerTeam,
+          gokwikTime: time.gokwik,
+          merchantTime: time.merchant,
+          totalTime: time.gokwik + time.merchant,
+          completed: item.completed,
+          owner: project.salesSpoc,
+        });
+      });
+    });
+
+    return report.sort((a, b) => b.totalTime - a.totalTime);
+  }, [projects]);
+
+  // Owner-wise Report
+  const ownerWiseReport = useMemo(() => {
+    const ownerMap = new Map<string, {
+      owner: string;
+      totalProjects: number;
+      completedTasks: number;
+      totalTasks: number;
+      gokwikTime: number;
+      merchantTime: number;
+      projects: string[];
+    }>();
+
+    projects.forEach((project) => {
+      const owner = project.salesSpoc || "Unassigned";
+      const existing = ownerMap.get(owner) || {
+        owner,
+        totalProjects: 0,
+        completedTasks: 0,
+        totalTasks: 0,
+        gokwikTime: 0,
+        merchantTime: 0,
+        projects: [],
+      };
+
+      existing.totalProjects++;
+      existing.projects.push(project.merchantName);
+      existing.totalTasks += project.checklist.length;
+      existing.completedTasks += project.checklist.filter(c => c.completed).length;
+
+      const projectTime = calculateTimeByParty(project.responsibilityLog);
+      existing.gokwikTime += projectTime.gokwik;
+      existing.merchantTime += projectTime.merchant;
+
+      project.checklist.forEach((item) => {
+        const time = calculateTimeByParty(item.responsibilityLog);
+        existing.gokwikTime += time.gokwik;
+        existing.merchantTime += time.merchant;
+      });
+
+      ownerMap.set(owner, existing);
+    });
+
+    return Array.from(ownerMap.values()).sort((a, b) => b.totalProjects - a.totalProjects);
+  }, [projects]);
+
+  // Team-wise Report
+  const teamWiseReport = useMemo(() => {
+    const teams: TeamRole[] = ["mint", "integration", "ms"];
+    return teams.map((team) => {
+      const teamProjects = projects.filter(p => p.currentOwnerTeam === team);
+      let gokwikTime = 0;
+      let merchantTime = 0;
+      let completedTasks = 0;
+      let totalTasks = 0;
+
+      teamProjects.forEach((project) => {
+        const projectTime = calculateTimeByParty(project.responsibilityLog);
+        gokwikTime += projectTime.gokwik;
+        merchantTime += projectTime.merchant;
+
+        project.checklist.forEach((item) => {
+          if (item.ownerTeam === team) {
+            totalTasks++;
+            if (item.completed) completedTasks++;
+            const time = calculateTimeByParty(item.responsibilityLog);
+            gokwikTime += time.gokwik;
+            merchantTime += time.merchant;
+          }
+        });
+      });
+
+      const teamMembers = teamUsers[team] || [];
+      return {
+        team,
+        teamLabel: teamLabels[team],
+        projectCount: teamProjects.length,
+        pendingCount: teamProjects.filter(p => p.pendingAcceptance).length,
+        completedTasks,
+        totalTasks,
+        gokwikTime,
+        merchantTime,
+        memberCount: teamMembers.length,
+        avgTimePerProject: teamProjects.length > 0 ? (gokwikTime + merchantTime) / teamProjects.length : 0,
+      };
+    });
+  }, [projects]);
+
+  // Project-wise detailed report
+  const projectWiseReport = useMemo(() => {
+    return projects.map((project) => {
+      const stats = calculateProjectStats(project);
+      const mintTasks = project.checklist.filter(c => c.ownerTeam === "mint");
+      const integrationTasks = project.checklist.filter(c => c.ownerTeam === "integration");
+      
+      return {
+        ...project,
+        stats,
+        mintCompleted: mintTasks.filter(c => c.completed).length,
+        mintTotal: mintTasks.length,
+        integrationCompleted: integrationTasks.filter(c => c.completed).length,
+        integrationTotal: integrationTasks.length,
+      };
+    }).sort((a, b) => 
+      (b.stats.projectTime.gokwik + b.stats.projectTime.merchant) - 
+      (a.stats.projectTime.gokwik + a.stats.projectTime.merchant)
+    );
+  }, [projects]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -320,61 +468,295 @@ export const ManagerDashboard = () => {
           </TabsContent>
 
           <TabsContent value="reports" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Project Time Analysis</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {projects.map((project) => {
-                    const stats = calculateProjectStats(project);
-                    return (
-                      <div key={project.id} className="p-4 border rounded-lg">
-                        <div className="flex items-center justify-between mb-3">
-                          <div>
-                            <h4 className="font-medium">{project.merchantName}</h4>
-                            <p className="text-sm text-muted-foreground">
-                              {teamLabels[project.currentOwnerTeam as keyof typeof teamLabels]} • {project.salesSpoc}
-                            </p>
+            {/* Report Type Selector */}
+            <div className="flex gap-2 flex-wrap">
+              <Button
+                variant={reportType === "project" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setReportType("project")}
+                className="gap-2"
+              >
+                <FolderKanban className="h-4 w-4" />
+                Project Wise
+              </Button>
+              <Button
+                variant={reportType === "checklist" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setReportType("checklist")}
+                className="gap-2"
+              >
+                <ListChecks className="h-4 w-4" />
+                Checklist Wise
+              </Button>
+              <Button
+                variant={reportType === "owner" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setReportType("owner")}
+                className="gap-2"
+              >
+                <User className="h-4 w-4" />
+                Owner Wise
+              </Button>
+              <Button
+                variant={reportType === "team" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setReportType("team")}
+                className="gap-2"
+              >
+                <Building2 className="h-4 w-4" />
+                Team Wise
+              </Button>
+            </div>
+
+            {/* Project-wise Report */}
+            {reportType === "project" && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <FolderKanban className="h-5 w-5" />
+                    Project Time Analysis
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Project</TableHead>
+                        <TableHead>Team</TableHead>
+                        <TableHead>Owner</TableHead>
+                        <TableHead>MINT Tasks</TableHead>
+                        <TableHead>Integration Tasks</TableHead>
+                        <TableHead>GoKwik Time</TableHead>
+                        <TableHead>Merchant Time</TableHead>
+                        <TableHead>Progress</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {projectWiseReport.map((project) => (
+                        <TableRow key={project.id}>
+                          <TableCell className="font-medium">{project.merchantName}</TableCell>
+                          <TableCell>
+                            <Badge className={teamColors[project.currentOwnerTeam]}>
+                              {teamLabels[project.currentOwnerTeam]}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>{project.salesSpoc}</TableCell>
+                          <TableCell>
+                            <span className="text-blue-600 font-medium">{project.mintCompleted}/{project.mintTotal}</span>
+                          </TableCell>
+                          <TableCell>
+                            <span className="text-purple-600 font-medium">{project.integrationCompleted}/{project.integrationTotal}</span>
+                          </TableCell>
+                          <TableCell>{formatDuration(project.stats.projectTime.gokwik)}</TableCell>
+                          <TableCell>{formatDuration(project.stats.projectTime.merchant)}</TableCell>
+                          <TableCell className="min-w-[120px]">
+                            <div className="flex items-center gap-2">
+                              <Progress value={project.stats.checklistProgress} className="h-2" />
+                              <span className="text-xs text-muted-foreground">{project.stats.checklistProgress}%</span>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Checklist-wise Report */}
+            {reportType === "checklist" && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <ListChecks className="h-5 w-5" />
+                    Checklist Time Analysis
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Checklist Item</TableHead>
+                        <TableHead>Project</TableHead>
+                        <TableHead>Team</TableHead>
+                        <TableHead>Owner</TableHead>
+                        <TableHead>GoKwik Time</TableHead>
+                        <TableHead>Merchant Time</TableHead>
+                        <TableHead>Total Time</TableHead>
+                        <TableHead>Status</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {checklistTimeReport.map((item, idx) => (
+                        <TableRow key={`${item.projectId}-${item.checklistTitle}-${idx}`}>
+                          <TableCell className="font-medium">{item.checklistTitle}</TableCell>
+                          <TableCell>{item.projectName}</TableCell>
+                          <TableCell>
+                            <Badge variant="outline" className={teamColors[item.team]}>
+                              {teamLabels[item.team]}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>{item.owner}</TableCell>
+                          <TableCell>{formatDuration(item.gokwikTime)}</TableCell>
+                          <TableCell>{formatDuration(item.merchantTime)}</TableCell>
+                          <TableCell className="font-medium">{formatDuration(item.totalTime)}</TableCell>
+                          <TableCell>
+                            {item.completed ? (
+                              <Badge className="bg-green-100 text-green-700">
+                                <CheckCircle2 className="h-3 w-3 mr-1" />
+                                Done
+                              </Badge>
+                            ) : (
+                              <Badge variant="secondary">
+                                <Clock className="h-3 w-3 mr-1" />
+                                Pending
+                              </Badge>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Owner-wise Report */}
+            {reportType === "owner" && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <User className="h-5 w-5" />
+                    Owner Performance Report
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Owner</TableHead>
+                        <TableHead>Projects</TableHead>
+                        <TableHead>Tasks Completed</TableHead>
+                        <TableHead>GoKwik Time</TableHead>
+                        <TableHead>Merchant Time</TableHead>
+                        <TableHead>Total Time</TableHead>
+                        <TableHead>Progress</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {ownerWiseReport.map((owner) => (
+                        <TableRow key={owner.owner}>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold text-sm">
+                                {owner.owner.charAt(0)}
+                              </div>
+                              <span className="font-medium">{owner.owner}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="secondary">{owner.totalProjects}</Badge>
+                          </TableCell>
+                          <TableCell>
+                            <span className="font-medium">{owner.completedTasks}/{owner.totalTasks}</span>
+                          </TableCell>
+                          <TableCell>{formatDuration(owner.gokwikTime)}</TableCell>
+                          <TableCell>{formatDuration(owner.merchantTime)}</TableCell>
+                          <TableCell className="font-medium">
+                            {formatDuration(owner.gokwikTime + owner.merchantTime)}
+                          </TableCell>
+                          <TableCell className="min-w-[120px]">
+                            <div className="flex items-center gap-2">
+                              <Progress 
+                                value={owner.totalTasks > 0 ? (owner.completedTasks / owner.totalTasks) * 100 : 0} 
+                                className="h-2" 
+                              />
+                              <span className="text-xs text-muted-foreground">
+                                {owner.totalTasks > 0 ? Math.round((owner.completedTasks / owner.totalTasks) * 100) : 0}%
+                              </span>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Team-wise Report */}
+            {reportType === "team" && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Building2 className="h-5 w-5" />
+                    Team Performance Report
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid gap-6">
+                    {teamWiseReport.map((team) => (
+                      <div key={team.team} className="p-4 border rounded-lg">
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="flex items-center gap-3">
+                            <div className={`h-10 w-10 rounded-lg flex items-center justify-center ${
+                              team.team === "mint" ? "bg-blue-100 text-blue-600" :
+                              team.team === "integration" ? "bg-purple-100 text-purple-600" :
+                              "bg-green-100 text-green-600"
+                            }`}>
+                              <Building2 className="h-5 w-5" />
+                            </div>
+                            <div>
+                              <h4 className="font-semibold">{team.teamLabel}</h4>
+                              <p className="text-sm text-muted-foreground">{team.memberCount} members</p>
+                            </div>
                           </div>
-                          <Badge className={teamColors[project.currentOwnerTeam as keyof typeof teamColors]}>
-                            {project.currentPhase.toUpperCase()}
+                          <Badge variant="outline" className="text-lg px-3 py-1">
+                            {team.projectCount} Projects
                           </Badge>
                         </div>
 
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                          <div>
-                            <p className="text-muted-foreground">GoKwik Time</p>
-                            <p className="font-medium">{formatDuration(stats.projectTime.gokwik)}</p>
+                        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                          <div className="p-3 bg-muted/50 rounded-lg">
+                            <p className="text-xs text-muted-foreground mb-1">Pending</p>
+                            <p className="text-xl font-bold text-amber-500">{team.pendingCount}</p>
                           </div>
-                          <div>
-                            <p className="text-muted-foreground">Merchant Time</p>
-                            <p className="font-medium">{formatDuration(stats.projectTime.merchant)}</p>
+                          <div className="p-3 bg-muted/50 rounded-lg">
+                            <p className="text-xs text-muted-foreground mb-1">Tasks Done</p>
+                            <p className="text-xl font-bold text-green-500">{team.completedTasks}/{team.totalTasks}</p>
                           </div>
-                          <div>
-                            <p className="text-muted-foreground">Checklist Progress</p>
-                            <p className="font-medium">{stats.completedChecklist}/{stats.totalChecklist} ({stats.checklistProgress}%)</p>
+                          <div className="p-3 bg-muted/50 rounded-lg">
+                            <p className="text-xs text-muted-foreground mb-1">GoKwik Time</p>
+                            <p className="text-xl font-bold">{formatDuration(team.gokwikTime)}</p>
                           </div>
-                          <div>
-                            <p className="text-muted-foreground">Checklist Time (GK)</p>
-                            <p className="font-medium">{formatDuration(stats.checklistTime.gokwik)}</p>
+                          <div className="p-3 bg-muted/50 rounded-lg">
+                            <p className="text-xs text-muted-foreground mb-1">Merchant Time</p>
+                            <p className="text-xl font-bold">{formatDuration(team.merchantTime)}</p>
+                          </div>
+                          <div className="p-3 bg-muted/50 rounded-lg">
+                            <p className="text-xs text-muted-foreground mb-1">Avg/Project</p>
+                            <p className="text-xl font-bold">{formatDuration(team.avgTimePerProject)}</p>
                           </div>
                         </div>
 
-                        <div className="mt-3">
-                          <div className="h-2 rounded-full bg-muted overflow-hidden">
-                            <div
-                              className="h-full bg-primary transition-all"
-                              style={{ width: `${stats.checklistProgress}%` }}
-                            />
+                        <div className="mt-4">
+                          <div className="flex items-center justify-between text-sm mb-1">
+                            <span className="text-muted-foreground">Task Completion</span>
+                            <span className="font-medium">
+                              {team.totalTasks > 0 ? Math.round((team.completedTasks / team.totalTasks) * 100) : 0}%
+                            </span>
                           </div>
+                          <Progress 
+                            value={team.totalTasks > 0 ? (team.completedTasks / team.totalTasks) * 100 : 0} 
+                            className="h-2"
+                          />
                         </div>
                       </div>
-                    );
-                  })}
-                </div>
-              </CardContent>
-            </Card>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </TabsContent>
         </Tabs>
       </main>
