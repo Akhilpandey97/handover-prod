@@ -10,6 +10,7 @@ interface ProjectContextType {
   acceptProject: (projectId: string) => void;
   transferProject: (projectId: string, notes?: string) => void;
   updateChecklist: (projectId: string, checklistId: string, completed: boolean) => void;
+  updateChecklistComment: (projectId: string, checklistId: string, comment: string) => void;
   toggleResponsibility: (projectId: string, party: ResponsibilityParty) => void;
   toggleChecklistResponsibility: (projectId: string, checklistId: string, party: ResponsibilityParty) => void;
   getProjectsForTeam: (team: TeamRole) => Project[];
@@ -127,6 +128,32 @@ export const ProjectProvider = ({ children }: { children: ReactNode }) => {
     );
   };
 
+  const updateChecklistComment = (projectId: string, checklistId: string, comment: string) => {
+    if (!currentUser) return;
+    
+    setProjects((prev) =>
+      prev.map((p) => {
+        if (p.id === projectId) {
+          return {
+            ...p,
+            checklist: p.checklist.map((c) => {
+              if (c.id === checklistId) {
+                return {
+                  ...c,
+                  comment,
+                  commentBy: currentUser.name,
+                  commentAt: new Date().toISOString(),
+                };
+              }
+              return c;
+            }),
+          };
+        }
+        return p;
+      })
+    );
+  };
+
   const toggleResponsibility = (projectId: string, newParty: ResponsibilityParty) => {
     setProjects((prev) =>
       prev.map((p) => {
@@ -226,6 +253,7 @@ export const ProjectProvider = ({ children }: { children: ReactNode }) => {
         acceptProject,
         transferProject,
         updateChecklist,
+        updateChecklistComment,
         toggleResponsibility,
         toggleChecklistResponsibility,
         getProjectsForTeam,

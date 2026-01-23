@@ -39,6 +39,9 @@ export interface ProjectChecklist {
   ownerTeam: TeamRole; // Which team can complete this item
   currentResponsibility: ResponsibilityParty;
   responsibilityLog: ChecklistResponsibilityLog[];
+  comment?: string;
+  commentBy?: string;
+  commentAt?: string;
 }
 
 export interface ProjectLinks {

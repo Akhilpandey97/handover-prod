@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Project, calculateTimeByParty, formatDuration, ResponsibilityParty } from "@/data/projectsData";
 import { useProjects } from "@/contexts/ProjectContext";
 import { useAuth } from "@/contexts/AuthContext";
@@ -13,7 +14,9 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { CheckCircle2, ClipboardList, Clock, Timer } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
+import { CheckCircle2, ClipboardList, Clock, Timer, MessageSquare, Send } from "lucide-react";
 
 interface ChecklistDialogProps {
   project: Project | null;
@@ -47,8 +50,10 @@ export const ChecklistDialog = ({
   open,
   onOpenChange,
 }: ChecklistDialogProps) => {
-  const { updateChecklist, toggleChecklistResponsibility } = useProjects();
+  const { updateChecklist, toggleChecklistResponsibility, updateChecklistComment } = useProjects();
   const { currentUser } = useAuth();
+  const [editingComment, setEditingComment] = useState<string | null>(null);
+  const [commentText, setCommentText] = useState<string>("");
 
   if (!project || !currentUser) return null;
 
@@ -70,6 +75,19 @@ export const ChecklistDialog = ({
   const handleResponsibilityToggle = (checklistId: string, currentParty: ResponsibilityParty) => {
     const newParty = currentParty === "gokwik" ? "merchant" : "gokwik";
     toggleChecklistResponsibility(project.id, checklistId, newParty);
+  };
+
+  const handleCommentSave = (checklistId: string) => {
+    if (commentText.trim()) {
+      updateChecklistComment(project.id, checklistId, commentText.trim());
+    }
+    setEditingComment(null);
+    setCommentText("");
+  };
+
+  const startEditingComment = (checklistId: string, existingComment?: string) => {
+    setEditingComment(checklistId);
+    setCommentText(existingComment || "");
   };
 
   return (
@@ -155,7 +173,6 @@ export const ChecklistDialog = ({
                               </p>
                             )}
                             
-                            {/* Time Stats */}
                             <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
                               <div className="flex items-center gap-1">
                                 <Timer className="h-3 w-3" />
@@ -166,10 +183,70 @@ export const ChecklistDialog = ({
                                 <span>Merchant: {formatDuration(timeStats.merchant)}</span>
                               </div>
                             </div>
+
+                            {/* Comment Section */}
+                            <div className="mt-3 pt-2 border-t">
+                              {editingComment === item.id ? (
+                                <div className="flex gap-2">
+                                  <Textarea
+                                    value={commentText}
+                                    onChange={(e) => setCommentText(e.target.value)}
+                                    placeholder="Add a comment..."
+                                    className="min-h-[60px] text-xs"
+                                  />
+                                  <div className="flex flex-col gap-1">
+                                    <Button 
+                                      size="sm" 
+                                      onClick={() => handleCommentSave(item.id)}
+                                      className="h-7 px-2"
+                                    >
+                                      <Send className="h-3 w-3" />
+                                    </Button>
+                                    <Button 
+                                      size="sm" 
+                                      variant="ghost"
+                                      onClick={() => {
+                                        setEditingComment(null);
+                                        setCommentText("");
+                                      }}
+                                      className="h-7 px-2"
+                                    >
+                                      ✕
+                                    </Button>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div>
+                                  {item.comment ? (
+                                    <div 
+                                      className="text-xs p-2 bg-muted/50 rounded cursor-pointer hover:bg-muted transition-colors"
+                                      onClick={() => startEditingComment(item.id, item.comment)}
+                                    >
+                                      <div className="flex items-center gap-1 text-muted-foreground mb-1">
+                                        <MessageSquare className="h-3 w-3" />
+                                        <span className="font-medium">{item.commentBy}</span>
+                                        {item.commentAt && (
+                                          <span>• {new Date(item.commentAt).toLocaleDateString()}</span>
+                                        )}
+                                      </div>
+                                      <p className="text-foreground">{item.comment}</p>
+                                    </div>
+                                  ) : (
+                                    <button
+                                      onClick={() => startEditingComment(item.id)}
+                                      className="flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors"
+                                    >
+                                      <MessageSquare className="h-3 w-3" />
+                                      Add comment
+                                    </button>
+                                  )}
+                                </div>
+                              )}
+                            </div>
                           </div>
 
                           {/* Responsibility Toggle */}
-                          <div className="flex flex-col items-end gap-1">
+                          <div className="flex flex-col items-end gap-1 shrink-0">
                             <div className="flex items-center gap-2">
                               <Label 
                                 htmlFor={`resp-${item.id}`} 
