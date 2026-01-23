@@ -1,7 +1,7 @@
 import { TeamRole } from "./teams";
 
 export type ProjectPhase = "mint" | "integration" | "ms" | "completed";
-export type ResponsibilityParty = "gokwik" | "merchant";
+export type ResponsibilityParty = "gokwik" | "merchant" | "neutral";
 
 export interface TransferRecord {
   id: string;
@@ -90,11 +90,12 @@ export interface Project {
   responsibilityLog: ResponsibilityLog[];
 }
 
-// Helper to calculate time spent by each party
-export const calculateTimeByParty = (logs: ResponsibilityLog[] | ChecklistResponsibilityLog[]): { gokwik: number; merchant: number } => {
-  const result = { gokwik: 0, merchant: 0 };
+// Helper to calculate time spent by each party (neutral time is not counted)
+export const calculateTimeByParty = (logs: ResponsibilityLog[] | ChecklistResponsibilityLog[]): { gokwik: number; merchant: number; neutral: number } => {
+  const result = { gokwik: 0, merchant: 0, neutral: 0 };
   
   logs.forEach(log => {
+    if (log.party === "neutral") return; // Don't count neutral time
     const start = new Date(log.startedAt).getTime();
     const end = log.endedAt ? new Date(log.endedAt).getTime() : Date.now();
     const duration = end - start;
@@ -139,7 +140,6 @@ const integrationChecklistItems = [
 ];
 
 export const createDefaultChecklist = (): ProjectChecklist[] => {
-  const now = new Date().toISOString();
   const checklist: ProjectChecklist[] = [];
 
   mintChecklistItems.forEach((title, idx) => {
@@ -149,14 +149,8 @@ export const createDefaultChecklist = (): ProjectChecklist[] => {
       completed: false,
       phase: "mint",
       ownerTeam: "mint",
-      currentResponsibility: "gokwik",
-      responsibilityLog: [
-        {
-          id: `cl-${Date.now()}-${idx}`,
-          party: "gokwik",
-          startedAt: now,
-        },
-      ],
+      currentResponsibility: "neutral",
+      responsibilityLog: [],
     });
   });
 
@@ -167,14 +161,8 @@ export const createDefaultChecklist = (): ProjectChecklist[] => {
       completed: false,
       phase: "integration",
       ownerTeam: "integration",
-      currentResponsibility: "gokwik",
-      responsibilityLog: [
-        {
-          id: `cl-${Date.now()}-${idx}`,
-          party: "gokwik",
-          startedAt: now,
-        },
-      ],
+      currentResponsibility: "neutral",
+      responsibilityLog: [],
     });
   });
 
@@ -243,14 +231,8 @@ const createChecklistForProject = (projectId: string, completedItems: { title: s
       completedAt: isCompleted ? now : undefined,
       phase: "mint",
       ownerTeam: "mint",
-      currentResponsibility: "gokwik",
-      responsibilityLog: [
-        {
-          id: `${projectId}-cl-mint-${idx}`,
-          party: "gokwik",
-          startedAt: now,
-        },
-      ],
+      currentResponsibility: "neutral",
+      responsibilityLog: [],
     });
   });
 
@@ -263,14 +245,8 @@ const createChecklistForProject = (projectId: string, completedItems: { title: s
       completedAt: isCompleted ? now : undefined,
       phase: "integration",
       ownerTeam: "integration",
-      currentResponsibility: "gokwik",
-      responsibilityLog: [
-        {
-          id: `${projectId}-cl-int-${idx}`,
-          party: "gokwik",
-          startedAt: now,
-        },
-      ],
+      currentResponsibility: "neutral",
+      responsibilityLog: [],
     });
   });
 

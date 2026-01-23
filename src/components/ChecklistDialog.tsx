@@ -2,7 +2,6 @@ import { useState } from "react";
 import { Project, calculateTimeByParty, formatDuration, ResponsibilityParty } from "@/data/projectsData";
 import { useProjects } from "@/contexts/ProjectContext";
 import { useAuth } from "@/contexts/AuthContext";
-import { teamLabels } from "@/data/teams";
 import {
   Dialog,
   DialogContent,
@@ -12,11 +11,10 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { CheckCircle2, ClipboardList, Clock, Timer, MessageSquare, Send } from "lucide-react";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { CheckCircle2, ClipboardList, Clock, Timer, MessageSquare, Send, Building2, Users, Minus } from "lucide-react";
 
 interface ChecklistDialogProps {
   project: Project | null;
@@ -72,9 +70,10 @@ export const ChecklistDialog = ({
     return currentUser.team === ownerTeam;
   };
 
-  const handleResponsibilityToggle = (checklistId: string, currentParty: ResponsibilityParty) => {
-    const newParty = currentParty === "gokwik" ? "merchant" : "gokwik";
-    toggleChecklistResponsibility(project.id, checklistId, newParty);
+  const handleResponsibilityChange = (checklistId: string, newParty: string) => {
+    if (newParty && (newParty === "gokwik" || newParty === "merchant" || newParty === "neutral")) {
+      toggleChecklistResponsibility(project.id, checklistId, newParty as ResponsibilityParty);
+    }
   };
 
   const handleCommentSave = (checklistId: string) => {
@@ -245,28 +244,39 @@ export const ChecklistDialog = ({
                             </div>
                           </div>
 
-                          {/* Responsibility Toggle */}
+                          {/* Responsibility Toggle - 3 states */}
                           <div className="flex flex-col items-end gap-1 shrink-0">
-                            <div className="flex items-center gap-2">
-                              <Label 
-                                htmlFor={`resp-${item.id}`} 
-                                className={`text-xs ${item.currentResponsibility === "gokwik" ? "text-primary font-medium" : "text-muted-foreground"}`}
+                            <ToggleGroup 
+                              type="single" 
+                              value={item.currentResponsibility}
+                              onValueChange={(value) => handleResponsibilityChange(item.id, value)}
+                              disabled={item.completed}
+                              className="gap-0 border rounded-lg overflow-hidden"
+                            >
+                              <ToggleGroupItem 
+                                value="gokwik" 
+                                aria-label="GoKwik"
+                                className="text-xs px-2 py-1 h-7 rounded-none data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
                               >
+                                <Building2 className="h-3 w-3 mr-1" />
                                 GoKwik
-                              </Label>
-                              <Switch
-                                id={`resp-${item.id}`}
-                                checked={item.currentResponsibility === "merchant"}
-                                onCheckedChange={() => handleResponsibilityToggle(item.id, item.currentResponsibility)}
-                                disabled={item.completed}
-                              />
-                              <Label 
-                                htmlFor={`resp-${item.id}`} 
-                                className={`text-xs ${item.currentResponsibility === "merchant" ? "text-amber-600 font-medium" : "text-muted-foreground"}`}
+                              </ToggleGroupItem>
+                              <ToggleGroupItem 
+                                value="neutral" 
+                                aria-label="Neutral"
+                                className="text-xs px-2 py-1 h-7 rounded-none border-x data-[state=on]:bg-muted data-[state=on]:text-muted-foreground"
                               >
+                                <Minus className="h-3 w-3" />
+                              </ToggleGroupItem>
+                              <ToggleGroupItem 
+                                value="merchant" 
+                                aria-label="Merchant"
+                                className="text-xs px-2 py-1 h-7 rounded-none data-[state=on]:bg-amber-500 data-[state=on]:text-white"
+                              >
+                                <Users className="h-3 w-3 mr-1" />
                                 Merchant
-                              </Label>
-                            </div>
+                              </ToggleGroupItem>
+                            </ToggleGroup>
                           </div>
                         </div>
                       </div>
