@@ -12,6 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Progress } from "@/components/ui/progress";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
   BarChart3,
   Clock,
@@ -26,6 +27,8 @@ import {
   ListChecks,
   User,
   Building2,
+  ChevronDown,
+  ChevronRight,
 } from "lucide-react";
 
 export const ManagerDashboard = () => {
@@ -36,6 +39,19 @@ export const ManagerDashboard = () => {
   const [teamFilter, setTeamFilter] = useState<string>("all");
   const [ownerFilter, setOwnerFilter] = useState<string>("all");
   const [reportType, setReportType] = useState<string>("project");
+  const [expandedProjects, setExpandedProjects] = useState<Set<string>>(new Set());
+
+  const toggleProjectExpand = (projectId: string) => {
+    setExpandedProjects(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(projectId)) {
+        newSet.delete(projectId);
+      } else {
+        newSet.add(projectId);
+      }
+      return newSet;
+    });
+  };
 
   if (!currentUser) return null;
 
@@ -97,38 +113,39 @@ export const ManagerDashboard = () => {
     totalMerchantTime += time.merchant;
   });
 
-  // Checklist Time Report - all checklist items across all projects
-  const checklistTimeReport = useMemo(() => {
-    const report: {
-      checklistTitle: string;
-      projectName: string;
-      projectId: string;
-      team: TeamRole;
-      gokwikTime: number;
-      merchantTime: number;
-      totalTime: number;
-      completed: boolean;
-      owner: string;
-    }[] = [];
-
-    projects.forEach((project) => {
-      project.checklist.forEach((item) => {
+  // Checklist Time Report - grouped by project
+  const checklistByProjectReport = useMemo(() => {
+    return projects.map((project) => {
+      const checklistItems = project.checklist.map((item) => {
         const time = calculateTimeByParty(item.responsibilityLog);
-        report.push({
+        return {
+          id: item.id,
           checklistTitle: item.title,
-          projectName: project.merchantName,
-          projectId: project.id,
           team: item.ownerTeam,
           gokwikTime: time.gokwik,
           merchantTime: time.merchant,
           totalTime: time.gokwik + time.merchant,
           completed: item.completed,
-          owner: project.salesSpoc,
-        });
+        };
       });
-    });
 
-    return report.sort((a, b) => b.totalTime - a.totalTime);
+      const totalGokwik = checklistItems.reduce((sum, i) => sum + i.gokwikTime, 0);
+      const totalMerchant = checklistItems.reduce((sum, i) => sum + i.merchantTime, 0);
+      const completedCount = checklistItems.filter(i => i.completed).length;
+
+      return {
+        projectId: project.id,
+        projectName: project.merchantName,
+        owner: project.salesSpoc,
+        team: project.currentOwnerTeam,
+        checklistItems,
+        totalGokwik,
+        totalMerchant,
+        totalTime: totalGokwik + totalMerchant,
+        completedCount,
+        totalCount: checklistItems.length,
+      };
+    }).sort((a, b) => b.totalTime - a.totalTime);
   }, [projects]);
 
   // Owner-wise Report
@@ -563,7 +580,7 @@ export const ManagerDashboard = () => {
               </Card>
             )}
 
-            {/* Checklist-wise Report */}
+            {/* Checklist-wise Report - Grouped by Project */}
             {reportType === "checklist" && (
               <Card>
                 <CardHeader>
@@ -572,51 +589,85 @@ export const ManagerDashboard = () => {
                     Checklist Time Analysis
                   </CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Checklist Item</TableHead>
-                        <TableHead>Project</TableHead>
-                        <TableHead>Team</TableHead>
-                        <TableHead>Owner</TableHead>
-                        <TableHead>GoKwik Time</TableHead>
-                        <TableHead>Merchant Time</TableHead>
-                        <TableHead>Total Time</TableHead>
-                        <TableHead>Status</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {checklistTimeReport.map((item, idx) => (
-                        <TableRow key={`${item.projectId}-${item.checklistTitle}-${idx}`}>
-                          <TableCell className="font-medium">{item.checklistTitle}</TableCell>
-                          <TableCell>{item.projectName}</TableCell>
-                          <TableCell>
-                            <Badge variant="outline" className={teamColors[item.team]}>
-                              {teamLabels[item.team]}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>{item.owner}</TableCell>
-                          <TableCell>{formatDuration(item.gokwikTime)}</TableCell>
-                          <TableCell>{formatDuration(item.merchantTime)}</TableCell>
-                          <TableCell className="font-medium">{formatDuration(item.totalTime)}</TableCell>
-                          <TableCell>
-                            {item.completed ? (
-                              <Badge className="bg-green-100 text-green-700">
-                                <CheckCircle2 className="h-3 w-3 mr-1" />
-                                Done
-                              </Badge>
+                <CardContent className="space-y-3">
+                  {checklistByProjectReport.map((project) => (
+                    <Collapsible
+                      key={project.projectId}
+                      open={expandedProjects.has(project.projectId)}
+                      onOpenChange={() => toggleProjectExpand(project.projectId)}
+                    >
+                      <CollapsibleTrigger asChild>
+                        <div className="flex items-center justify-between p-4 border rounded-lg cursor-pointer hover:bg-muted/50 transition-colors">
+                          <div className="flex items-center gap-3">
+                            {expandedProjects.has(project.projectId) ? (
+                              <ChevronDown className="h-5 w-5 text-muted-foreground" />
                             ) : (
-                              <Badge variant="secondary">
-                                <Clock className="h-3 w-3 mr-1" />
-                                Pending
-                              </Badge>
+                              <ChevronRight className="h-5 w-5 text-muted-foreground" />
                             )}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                            <div>
+                              <h4 className="font-semibold">{project.projectName}</h4>
+                              <p className="text-sm text-muted-foreground">
+                                {project.owner} • {project.completedCount}/{project.totalCount} tasks
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-4">
+                            <Badge className={teamColors[project.team]}>
+                              {teamLabels[project.team]}
+                            </Badge>
+                            <div className="text-right">
+                              <p className="text-sm font-medium">{formatDuration(project.totalTime)}</p>
+                              <p className="text-xs text-muted-foreground">Total Time</p>
+                            </div>
+                          </div>
+                        </div>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent>
+                        <div className="mt-2 ml-8 border rounded-lg overflow-hidden">
+                          <Table>
+                            <TableHeader>
+                              <TableRow>
+                                <TableHead>Checklist Item</TableHead>
+                                <TableHead>Team</TableHead>
+                                <TableHead>GoKwik Time</TableHead>
+                                <TableHead>Merchant Time</TableHead>
+                                <TableHead>Total Time</TableHead>
+                                <TableHead>Status</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {project.checklistItems.map((item) => (
+                                <TableRow key={item.id}>
+                                  <TableCell className="font-medium">{item.checklistTitle}</TableCell>
+                                  <TableCell>
+                                    <Badge variant="outline" className={teamColors[item.team]}>
+                                      {teamLabels[item.team]}
+                                    </Badge>
+                                  </TableCell>
+                                  <TableCell>{formatDuration(item.gokwikTime)}</TableCell>
+                                  <TableCell>{formatDuration(item.merchantTime)}</TableCell>
+                                  <TableCell className="font-medium">{formatDuration(item.totalTime)}</TableCell>
+                                  <TableCell>
+                                    {item.completed ? (
+                                      <Badge className="bg-green-100 text-green-700">
+                                        <CheckCircle2 className="h-3 w-3 mr-1" />
+                                        Done
+                                      </Badge>
+                                    ) : (
+                                      <Badge variant="secondary">
+                                        <Clock className="h-3 w-3 mr-1" />
+                                        Pending
+                                      </Badge>
+                                    )}
+                                  </TableCell>
+                                </TableRow>
+                              ))}
+                            </TableBody>
+                          </Table>
+                        </div>
+                      </CollapsibleContent>
+                    </Collapsible>
+                  ))}
                 </CardContent>
               </Card>
             )}
