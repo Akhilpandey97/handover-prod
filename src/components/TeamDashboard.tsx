@@ -23,12 +23,23 @@ import { toast } from "sonner";
 
 export const TeamDashboard = () => {
   const { currentUser, logout } = useAuth();
-  const { getPendingProjects, getActiveProjects, projects, addProject } = useProjects();
+  const { getPendingProjects, getActiveProjects, projects, addProject, isLoading } = useProjects();
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("pending");
   const [addDialogOpen, setAddDialogOpen] = useState(false);
 
   if (!currentUser) return null;
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="h-8 w-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-muted-foreground">Loading projects...</p>
+        </div>
+      </div>
+    );
+  }
 
   const pendingProjects = getPendingProjects(currentUser.team);
   const activeProjects = getActiveProjects(currentUser.team);

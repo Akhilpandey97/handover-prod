@@ -33,7 +33,7 @@ import {
 
 export const ManagerDashboard = () => {
   const { currentUser, logout } = useAuth();
-  const { projects } = useProjects();
+  const { projects, isLoading } = useProjects();
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("overview");
   const [teamFilter, setTeamFilter] = useState<string>("all");
@@ -54,6 +54,17 @@ export const ManagerDashboard = () => {
   };
 
   if (!currentUser) return null;
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="h-8 w-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-muted-foreground">Loading projects...</p>
+        </div>
+      </div>
+    );
+  }
 
   // Filter projects
   const filteredProjects = projects.filter((p) => {

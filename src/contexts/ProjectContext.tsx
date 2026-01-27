@@ -1,10 +1,22 @@
-import React, { createContext, useContext, useState, ReactNode } from "react";
-import { Project, initialProjects, TransferRecord, ResponsibilityParty, ProjectChecklist } from "@/data/projectsData";
+import React, { createContext, useContext, ReactNode } from "react";
+import { Project, ResponsibilityParty } from "@/data/projectsData";
 import { TeamRole } from "@/data/teams";
 import { useAuth } from "./AuthContext";
+import {
+  useProjectsQuery,
+  useAddProject,
+  useUpdateProject,
+  useAcceptProject,
+  useTransferProject,
+  useUpdateChecklist,
+  useUpdateChecklistComment,
+  useToggleResponsibility,
+  useToggleChecklistResponsibility,
+} from "@/hooks/useProjects";
 
 interface ProjectContextType {
   projects: Project[];
+  isLoading: boolean;
   addProject: (project: Project) => void;
   updateProject: (project: Project) => void;
   acceptProject: (projectId: string) => void;
@@ -22,205 +34,62 @@ interface ProjectContextType {
 
 const ProjectContext = createContext<ProjectContextType | undefined>(undefined);
 
-const getNextTeam = (current: TeamRole): TeamRole | null => {
-  if (current === "mint") return "integration";
-  if (current === "integration") return "ms";
-  return null;
-};
-
 export const ProjectProvider = ({ children }: { children: ReactNode }) => {
-  const [projects, setProjects] = useState<Project[]>(initialProjects);
   const { currentUser } = useAuth();
+  const { data: projects = [], isLoading } = useProjectsQuery();
+  
+  const addProjectMutation = useAddProject();
+  const updateProjectMutation = useUpdateProject();
+  const acceptProjectMutation = useAcceptProject();
+  const transferProjectMutation = useTransferProject();
+  const updateChecklistMutation = useUpdateChecklist();
+  const updateChecklistCommentMutation = useUpdateChecklistComment();
+  const toggleResponsibilityMutation = useToggleResponsibility();
+  const toggleChecklistResponsibilityMutation = useToggleChecklistResponsibility();
 
   const addProject = (project: Project) => {
-    setProjects((prev) => [...prev, project]);
+    addProjectMutation.mutate(project);
   };
 
   const updateProject = (updatedProject: Project) => {
-    setProjects((prev) =>
-      prev.map((p) => (p.id === updatedProject.id ? updatedProject : p))
-    );
+    updateProjectMutation.mutate(updatedProject);
   };
 
   const acceptProject = (projectId: string) => {
     if (!currentUser) return;
-    
-    setProjects((prev) =>
-      prev.map((p) => {
-        if (p.id === projectId && p.pendingAcceptance) {
-          const updatedHistory = p.transferHistory.map((t, idx) => {
-            if (idx === p.transferHistory.length - 1 && !t.acceptedBy) {
-              return {
-                ...t,
-                acceptedBy: currentUser.name,
-                acceptedAt: new Date().toISOString(),
-              };
-            }
-            return t;
-          });
-          return { ...p, pendingAcceptance: false, transferHistory: updatedHistory };
-        }
-        return p;
-      })
-    );
+    acceptProjectMutation.mutate(projectId);
   };
 
   const transferProject = (projectId: string, notes?: string) => {
     if (!currentUser) return;
-
-    setProjects((prev) =>
-      prev.map((p) => {
-        if (p.id === projectId && p.currentOwnerTeam === currentUser.team) {
-          const nextTeam = getNextTeam(currentUser.team);
-          if (!nextTeam) return p;
-
-          const newTransfer: TransferRecord = {
-            id: `t-${Date.now()}`,
-            fromTeam: currentUser.team,
-            toTeam: nextTeam,
-            transferredBy: currentUser.name,
-            transferredAt: new Date().toISOString(),
-            notes,
-          };
-
-          const nextPhase = nextTeam === "integration" ? "integration" : nextTeam === "ms" ? "ms" : p.currentPhase;
-
-          return {
-            ...p,
-            currentOwnerTeam: nextTeam,
-            currentPhase: nextPhase,
-            pendingAcceptance: true,
-            transferHistory: [...p.transferHistory, newTransfer],
-          };
-        }
-        return p;
-      })
-    );
+    transferProjectMutation.mutate({ projectId, notes });
   };
 
   const updateChecklist = (projectId: string, checklistId: string, completed: boolean) => {
     if (!currentUser) return;
-    
-    setProjects((prev) =>
-      prev.map((p) => {
-        if (p.id === projectId) {
-          return {
-            ...p,
-            checklist: p.checklist.map((c) => {
-              if (c.id === checklistId) {
-                // Only allow the owner team to complete their items
-                if (c.ownerTeam !== currentUser.team && currentUser.team !== "manager") {
-                  return c;
-                }
-                return {
-                  ...c,
-                  completed,
-                  completedBy: completed ? currentUser.name : undefined,
-                  completedAt: completed ? new Date().toISOString() : undefined,
-                };
-              }
-              return c;
-            }),
-          };
-        }
-        return p;
-      })
-    );
+    updateChecklistMutation.mutate({ projectId, checklistId, completed });
   };
 
   const updateChecklistComment = (projectId: string, checklistId: string, comment: string) => {
     if (!currentUser) return;
-    
-    setProjects((prev) =>
-      prev.map((p) => {
-        if (p.id === projectId) {
-          return {
-            ...p,
-            checklist: p.checklist.map((c) => {
-              if (c.id === checklistId) {
-                return {
-                  ...c,
-                  comment,
-                  commentBy: currentUser.name,
-                  commentAt: new Date().toISOString(),
-                };
-              }
-              return c;
-            }),
-          };
-        }
-        return p;
-      })
-    );
+    updateChecklistCommentMutation.mutate({ checklistId, comment });
   };
 
   const toggleResponsibility = (projectId: string, newParty: ResponsibilityParty) => {
-    setProjects((prev) =>
-      prev.map((p) => {
-        if (p.id === projectId && p.currentResponsibility !== newParty) {
-          // Close the current responsibility log
-          const updatedLog = p.responsibilityLog.map((log, idx) => {
-            if (idx === p.responsibilityLog.length - 1 && !log.endedAt) {
-              return { ...log, endedAt: new Date().toISOString() };
-            }
-            return log;
-          });
-
-          // Add new responsibility log entry
-          const newLogEntry = {
-            id: `r-${Date.now()}`,
-            party: newParty,
-            startedAt: new Date().toISOString(),
-            phase: p.currentPhase,
-          };
-
-          return {
-            ...p,
-            currentResponsibility: newParty,
-            responsibilityLog: [...updatedLog, newLogEntry],
-          };
-        }
-        return p;
-      })
-    );
+    const project = projects.find(p => p.id === projectId);
+    if (!project || project.currentResponsibility === newParty) return;
+    toggleResponsibilityMutation.mutate({ 
+      projectId, 
+      party: newParty,
+      currentPhase: project.currentPhase,
+    });
   };
 
   const toggleChecklistResponsibility = (projectId: string, checklistId: string, newParty: ResponsibilityParty) => {
-    setProjects((prev) =>
-      prev.map((p) => {
-        if (p.id === projectId) {
-          return {
-            ...p,
-            checklist: p.checklist.map((c) => {
-              if (c.id === checklistId && c.currentResponsibility !== newParty) {
-                // Close the current responsibility log
-                const updatedLog = c.responsibilityLog.map((log, idx) => {
-                  if (idx === c.responsibilityLog.length - 1 && !log.endedAt) {
-                    return { ...log, endedAt: new Date().toISOString() };
-                  }
-                  return log;
-                });
-
-                // Add new responsibility log entry
-                const newLogEntry = {
-                  id: `cl-${Date.now()}`,
-                  party: newParty,
-                  startedAt: new Date().toISOString(),
-                };
-
-                return {
-                  ...c,
-                  currentResponsibility: newParty,
-                  responsibilityLog: [...updatedLog, newLogEntry],
-                };
-              }
-              return c;
-            }),
-          };
-        }
-        return p;
-      })
-    );
+    const project = projects.find(p => p.id === projectId);
+    const checklist = project?.checklist.find(c => c.id === checklistId);
+    if (!checklist || checklist.currentResponsibility === newParty) return;
+    toggleChecklistResponsibilityMutation.mutate({ checklistId, party: newParty });
   };
 
   const getProjectsForTeam = (team: TeamRole) => {
@@ -248,6 +117,7 @@ export const ProjectProvider = ({ children }: { children: ReactNode }) => {
     <ProjectContext.Provider
       value={{
         projects,
+        isLoading,
         addProject,
         updateProject,
         acceptProject,
