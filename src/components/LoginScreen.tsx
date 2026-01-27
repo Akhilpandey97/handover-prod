@@ -1,38 +1,67 @@
 import { useAuth } from "@/contexts/AuthContext";
-import { teamUsers, teamLabels, teamColors } from "@/data/teams";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { LogIn, Users, BarChart3 } from "lucide-react";
+import { LogIn, Users, UserPlus } from "lucide-react";
 import { useState } from "react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import type { Database } from "@/integrations/supabase/types";
+
+type TeamRole = Database["public"]["Enums"]["team_role"];
+
+const teamLabels: Record<TeamRole, string> = {
+  mint: "MINT (Presales)",
+  integration: "Integration Team",
+  ms: "MS (Merchant Success)",
+  manager: "Manager",
+};
 
 export const LoginScreen = () => {
   const [email, setEmail] = useState("");
-  const { login } = useAuth();
+  const [password, setPassword] = useState("");
+  const [name, setName] = useState("");
+  const [team, setTeam] = useState<TeamRole>("mint");
+  const [isSignup, setIsSignup] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const { login, signup } = useAuth();
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    const success = login(email);
-    if (success) {
+    setIsLoading(true);
+    
+    const result = await login(email, password);
+    
+    if (result.success) {
       toast.success("Login successful!");
     } else {
-      toast.error("Invalid credentials. Try one of the demo accounts.");
+      toast.error(result.error || "Invalid credentials");
     }
+    setIsLoading(false);
   };
 
-  const handleQuickLogin = (userEmail: string) => {
-    setEmail(userEmail);
-    const success = login(userEmail);
-    if (success) {
-      toast.success("Login successful!");
+  const handleSignup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    
+    if (!name.trim()) {
+      toast.error("Please enter your name");
+      setIsLoading(false);
+      return;
     }
+    
+    const result = await signup(email, password, name, team);
+    
+    if (result.success) {
+      toast.success("Account created! You can now log in.");
+      setIsSignup(false);
+      setPassword("");
+    } else {
+      toast.error(result.error || "Failed to create account");
+    }
+    setIsLoading(false);
   };
-
-  // Separate manager from team users
-  const teamMembers = teamUsers.filter(u => u.team !== "manager");
-  const managers = teamUsers.filter(u => u.team === "manager");
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted flex items-center justify-center p-4">
@@ -49,13 +78,30 @@ export const LoginScreen = () => {
 
         <Card>
           <CardHeader>
-            <CardTitle>Sign In</CardTitle>
+            <CardTitle>{isSignup ? "Create Account" : "Sign In"}</CardTitle>
             <CardDescription>
-              Enter your email to access your team dashboard
+              {isSignup 
+                ? "Create your account to get started" 
+                : "Enter your credentials to access your dashboard"
+              }
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleLogin} className="space-y-4">
+            <form onSubmit={isSignup ? handleSignup : handleLogin} className="space-y-4">
+              {isSignup && (
+                <div className="space-y-2">
+                  <Label htmlFor="name">Full Name</Label>
+                  <Input
+                    id="name"
+                    type="text"
+                    placeholder="Enter your name"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    required
+                  />
+                </div>
+              )}
+              
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
                 <Input
@@ -64,76 +110,79 @@ export const LoginScreen = () => {
                   placeholder="Enter your email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
+                  required
                 />
               </div>
-              <Button type="submit" className="w-full">
-                <LogIn className="h-4 w-4 mr-2" />
-                Sign In
+              
+              <div className="space-y-2">
+                <Label htmlFor="password">Password</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  placeholder="Enter your password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  minLength={6}
+                />
+              </div>
+
+              {isSignup && (
+                <div className="space-y-2">
+                  <Label htmlFor="team">Team</Label>
+                  <Select value={team} onValueChange={(value) => setTeam(value as TeamRole)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select your team" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {(Object.keys(teamLabels) as TeamRole[]).map((role) => (
+                        <SelectItem key={role} value={role}>
+                          {teamLabels[role]}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              <Button type="submit" className="w-full" disabled={isLoading}>
+                {isLoading ? (
+                  "Please wait..."
+                ) : isSignup ? (
+                  <>
+                    <UserPlus className="h-4 w-4 mr-2" />
+                    Create Account
+                  </>
+                ) : (
+                  <>
+                    <LogIn className="h-4 w-4 mr-2" />
+                    Sign In
+                  </>
+                )}
               </Button>
             </form>
+
+            <div className="mt-4 text-center">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsSignup(!isSignup);
+                  setPassword("");
+                }}
+                className="text-sm text-muted-foreground hover:text-primary transition-colors"
+              >
+                {isSignup 
+                  ? "Already have an account? Sign in" 
+                  : "Don't have an account? Create one"
+                }
+              </button>
+            </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Team Accounts</CardTitle>
-            <CardDescription>
-              Click to login as any team member
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {teamMembers.map((user) => (
-              <button
-                key={user.id}
-                onClick={() => handleQuickLogin(user.email)}
-                className="w-full flex items-center gap-3 p-3 rounded-lg border bg-card hover:bg-muted transition-colors text-left"
-              >
-                <div className={`h-10 w-10 rounded-full ${teamColors[user.team]} flex items-center justify-center text-white font-semibold`}>
-                  {user.name.charAt(0)}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium truncate">{user.name}</p>
-                  <p className="text-sm text-muted-foreground truncate">{user.email}</p>
-                </div>
-                <span className="text-xs px-2 py-1 rounded-full bg-muted font-medium">
-                  {teamLabels[user.team]}
-                </span>
-              </button>
-            ))}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base flex items-center gap-2">
-              <BarChart3 className="h-4 w-4" />
-              Manager Account
-            </CardTitle>
-            <CardDescription>
-              Access all projects and reports
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {managers.map((user) => (
-              <button
-                key={user.id}
-                onClick={() => handleQuickLogin(user.email)}
-                className="w-full flex items-center gap-3 p-3 rounded-lg border bg-card hover:bg-muted transition-colors text-left"
-              >
-                <div className={`h-10 w-10 rounded-full ${teamColors[user.team]} flex items-center justify-center text-white font-semibold`}>
-                  {user.name.charAt(0)}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium truncate">{user.name}</p>
-                  <p className="text-sm text-muted-foreground truncate">{user.email}</p>
-                </div>
-                <span className="text-xs px-2 py-1 rounded-full bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400 font-medium">
-                  {teamLabels[user.team]}
-                </span>
-              </button>
-            ))}
-          </CardContent>
-        </Card>
+        <p className="text-center text-sm text-muted-foreground">
+          Contact your manager if you need help accessing your account.
+        </p>
       </div>
     </div>
   );
