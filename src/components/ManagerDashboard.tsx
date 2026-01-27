@@ -1,7 +1,8 @@
 import { useState, useMemo } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useProjects } from "@/contexts/ProjectContext";
-import { teamLabels, teamColors, TeamRole, teamUsers } from "@/data/teams";
+import { teamLabels, teamColors, TeamRole } from "@/data/teams";
+import { UserManagement } from "./UserManagement";
 import { Project, ProjectChecklist, calculateTimeByParty, formatDuration } from "@/data/projectsData";
 import { ProjectCardNew } from "./ProjectCardNew";
 import { Input } from "@/components/ui/input";
@@ -230,7 +231,6 @@ export const ManagerDashboard = () => {
         });
       });
 
-      const teamMembers = teamUsers[team] || [];
       return {
         team,
         teamLabel: teamLabels[team],
@@ -240,7 +240,7 @@ export const ManagerDashboard = () => {
         totalTasks,
         gokwikTime,
         merchantTime,
-        memberCount: teamMembers.length,
+        memberCount: 0, // Will be updated when we have user data
         avgTimePerProject: teamProjects.length > 0 ? (gokwikTime + merchantTime) / teamProjects.length : 0,
       };
     });
@@ -329,6 +329,10 @@ export const ManagerDashboard = () => {
             <TabsTrigger value="reports" className="gap-2">
               <TrendingUp className="h-4 w-4" />
               Reports
+            </TabsTrigger>
+            <TabsTrigger value="users" className="gap-2">
+              <Users className="h-4 w-4" />
+              Users
             </TabsTrigger>
           </TabsList>
 
@@ -819,6 +823,10 @@ export const ManagerDashboard = () => {
                 </CardContent>
               </Card>
             )}
+          </TabsContent>
+
+          <TabsContent value="users">
+            <UserManagement />
           </TabsContent>
         </Tabs>
       </main>
