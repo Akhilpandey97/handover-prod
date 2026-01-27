@@ -76,7 +76,7 @@ const mapPhaseToTeam = (phase: string): string => {
   return "mint";
 };
 
-// Parse CSV content
+// Parse CSV content - updated to handle new format
 const parseCSV = (content: string): ParsedProject[] => {
   const lines = content.split("\n");
   if (lines.length < 2) return [];
@@ -104,17 +104,26 @@ const parseCSV = (content: string): ParsedProject[] => {
     if (values.length < 5) continue;
 
     const getVal = (name: string): string => {
-      const idx = headers.findIndex(h => h.toLowerCase() === name.toLowerCase());
+      const idx = headers.findIndex(h => h.toLowerCase().trim() === name.toLowerCase().trim());
       return idx >= 0 ? (values[idx] || "").trim() : "";
     };
 
-    const merchant = getVal("merchant");
+    // Support both old and new CSV formats
+    const merchant = getVal("merchant") || getVal("merchant_name");
     if (!merchant) continue;
 
-    const mid = getVal("mid") || `mid-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-    const kickOffDate = getVal("scoping_kick_off") || new Date().toISOString().split("T")[0];
-    const goLiveDate = getVal("go_live");
-    const phase = getVal("project_phase") || getVal("phase_comment") || "mint";
+    // Get MID - support both formats
+    let mid = getVal("mid") || getVal("merchant_id");
+    if (!mid) {
+      mid = `mid-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    }
+    
+    // Get dates - support multiple column names
+    const kickOffDate = getVal("scoping_kick_off") || getVal("kick_off_date") || new Date().toISOString().split("T")[0];
+    const goLiveDate = getVal("go_live") || getVal("expected_go_live_date") || "";
+    
+    // Get phase - support both formats
+    const phase = getVal("project_phase") || getVal("phase_comment") || getVal("current_phase") || "mint";
 
     projects.push({
       merchant_name: merchant,
@@ -122,19 +131,19 @@ const parseCSV = (content: string): ParsedProject[] => {
       platform: getVal("platform") || "Custom",
       category: getVal("category") || "",
       brand_url: getVal("brand_url") || "",
-      arr: parseFloat(getVal("arr_cr")) || 0,
+      arr: parseFloat(getVal("arr_cr") || getVal("arr")) || 0,
       txns_per_day: parseInt(getVal("txns_per_day")) || 0,
       aov: parseFloat(getVal("aov")) || 0,
-      sales_spoc: getVal("sales_spoc") || "",
+      sales_spoc: getVal("sales_spoc") || getVal("mint") || "",
       mint_notes: getVal("mint_notes") || "",
       project_notes: getVal("project_notes") || "",
-      current_phase_comment: getVal("phase_comment") || "",
+      current_phase_comment: getVal("phase_comment") || getVal("current_phase_comment") || "",
       integration_type: getVal("integration_type") || "Standard",
       pg_onboarding: getVal("pg_onboarding") || "",
-      jira_link: getVal("project_jira") || "",
+      jira_link: getVal("project_jira") || getVal("jira_link") || "",
       brd_link: getVal("brd_link") || "",
       kick_off_date: kickOffDate,
-      expected_go_live_date: goLiveDate || "",
+      expected_go_live_date: goLiveDate,
       go_live_percent: parseInt(getVal("go_live_percent")) || 0,
       current_phase: mapPhaseToEnum(phase),
       current_owner_team: mapPhaseToTeam(phase),

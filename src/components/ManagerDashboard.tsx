@@ -3,6 +3,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useProjects } from "@/contexts/ProjectContext";
 import { teamLabels, teamColors, TeamRole } from "@/data/teams";
 import { UserManagement } from "./UserManagement";
+import { ProjectAssignment } from "./ProjectAssignment";
+import { CSVUploadDialog } from "./CSVUploadDialog";
 import { Project, ProjectChecklist, calculateTimeByParty, formatDuration } from "@/data/projectsData";
 import { ProjectCardNew } from "./ProjectCardNew";
 import { Input } from "@/components/ui/input";
@@ -30,6 +32,8 @@ import {
   Building2,
   ChevronDown,
   ChevronRight,
+  Upload,
+  ArrowRightLeft,
 } from "lucide-react";
 
 export const ManagerDashboard = () => {
@@ -41,6 +45,7 @@ export const ManagerDashboard = () => {
   const [ownerFilter, setOwnerFilter] = useState<string>("all");
   const [reportType, setReportType] = useState<string>("project");
   const [expandedProjects, setExpandedProjects] = useState<Set<string>>(new Set());
+  const [csvDialogOpen, setCsvDialogOpen] = useState(false);
 
   const toggleProjectExpand = (projectId: string) => {
     setExpandedProjects(prev => {
@@ -297,6 +302,12 @@ export const ManagerDashboard = () => {
               </div>
             </div>
 
+            {/* Actions */}
+            <Button onClick={() => setCsvDialogOpen(true)} size="sm" variant="outline" className="gap-1">
+              <Upload className="h-4 w-4" />
+              Import CSV
+            </Button>
+
             {/* User */}
             <div className="flex items-center gap-2 pl-3 border-l">
               <div className="h-8 w-8 rounded-full bg-orange-500 flex items-center justify-center text-white font-semibold text-sm">
@@ -329,6 +340,10 @@ export const ManagerDashboard = () => {
             <TabsTrigger value="reports" className="gap-2">
               <TrendingUp className="h-4 w-4" />
               Reports
+            </TabsTrigger>
+            <TabsTrigger value="assign" className="gap-2">
+              <ArrowRightLeft className="h-4 w-4" />
+              Assign Projects
             </TabsTrigger>
             <TabsTrigger value="users" className="gap-2">
               <Users className="h-4 w-4" />
@@ -825,11 +840,21 @@ export const ManagerDashboard = () => {
             )}
           </TabsContent>
 
+          <TabsContent value="assign">
+            <ProjectAssignment />
+          </TabsContent>
+
           <TabsContent value="users">
             <UserManagement />
           </TabsContent>
         </Tabs>
       </main>
+
+      {/* CSV Upload Dialog */}
+      <CSVUploadDialog
+        open={csvDialogOpen}
+        onOpenChange={setCsvDialogOpen}
+      />
     </div>
   );
 };

@@ -1,0 +1,268 @@
+id,uif,canonical_website,created_at,updated_at,merchant,brand_url,platform,category,project_state,mint,sales_spoc,ms,sales,arr_cr,txns_per_day,aov,split_web_percent,split_mobile_percent,mobile_platform,mobile_category,prepaid_cod_split,mint_notes,project_phase_owner,scoping_kick_off,go_live,age,go_live_percent,project_phase,phase_comment,project_notes,integration_type,customisations,pg_onboarding,ops_comments,phase2_needed,phase2_notes,project_jira,api_qc_checklist,brd_link,go_live_checklist,mint_backup_1763040085698,mid
+040f90a6-34fc-4d3e-ae50-6976b348b5da,UID-fossil.com,fossil.com,2026-01-15T12:27:31.286293+00:00,2026-01-22T05:07:17.732661+00:00,Fossil,https://www.fossil.com,Custom,,In Progress,Rishabh,,,,0.26,,,,,,,,,Program - Anil,2026-01-06,2026-02-10,,,Sandbox Testing,,"1. Merchant end AIs are pending and team is working on it - ETA: 23-Jan
+•⁠  ⁠Front End Events Integration (‘checkout_close’, ‘order_complete’ and ‘checkout_initiation_failure' are Mandatory)
+•⁠  ⁠⁠Transaction Webhook Endpoint
+•⁠  ⁠⁠Refund Webhook Endpoint
+•⁠  ⁠⁠Update Order API
+2. Tech team has completed the Integration, Sandbox testing is completed at our end and provide the Sandbox readiness to the merchant.
+3. New UAT Sandbox environment to be configured with the respective url, Waiting for the merchant to share the correct base url.",Checkout Advanced,,,,,,https://gokwik.atlassian.net/browse/GKP-30600,,https://docs.google.com/spreadsheets/d/1qOOx2l6AD1vLsvLlZ1-hAXWMrQJrI4yb0VVxEUAMsXQ/edit?gid=0#gid=0,https://docs.google.com/spreadsheets/d/13xYvGIoDBL0X3HMehkZKs4sWQ1dt3VV291j_gCuvgzo/edit?gid=1710407485#gid=1710407485,,19x9cqj5gj4c
+a680d3ab-341b-4fda-b808-56802e47ac14,UID-in.sirphire.com,in.sirphire.com,2026-01-21T12:02:03.381205+00:00,2026-01-21T12:02:03.381205+00:00,Sirphire,https://in.sirphire.com/,Custom,,,,,,,,,,,,,,,,,2025-12-23,,,,,,,,,,,,,,,,,,
+813c6271-2ada-4973-8690-a8ca26bed8e3,UID-bookswagon.com,bookswagon.com,2026-01-21T12:02:51.00847+00:00,2026-01-21T12:02:51.00847+00:00,Bookswagon,https://www.bookswagon.com/,Custom,,,,,,,,,,,,,,,,,2025-12-16,,,,,,,,,,,,,,,,,,
+c4df4455-e03a-40c8-94ea-4c82c1d8a231,UID-iamstore.in,iamstore.in,2025-12-04T03:42:54.57667+00:00,2026-01-21T12:09:50.607844+00:00,IAMStore,https://www.iamstore.in/,Custom,Apparels,In Progress,,,,,0.15,100,3000,95,5,,,50/50,"Move under integration - ",Program - Anil,2025-11-24,,,,Integration,Merchant unresponsive,"* BRD review is done and the comments has been updated in the doc.
+* Handover is scheduled for 12:30 PM, 20-Jan
+* MINT has done the lcnc config, Tech team to test and make GK checkout functional.",Checkout Advanced,No Customisations,,KYC pending,Loyality Points and Wallet Functionality,,https://gokwik.atlassian.net/browse/GKP-30620,,https://docs.google.com/spreadsheets/d/1I2-gvBTFvK9LlHJ-xUzjaue1uaxHOnXx9qIug7frqBc/edit?usp=sharing,https://docs.google.com/spreadsheets/d/1drPzVFkkEc3HNjc-sw4QZTr8039Z-XLWCOf_A8HXTpA/edit?usp=sharing,,1967yy2yy267
+d2e72baa-7995-4b10-9218-073023ce251e,UID-fingersstore.com,fingersstore.com,2025-11-27T08:16:47.80576+00:00,2026-01-21T05:56:39.494468+00:00,Fingersstore,www.fingersstore.com,Custom,Electronics,In Progress,Piyush,Verun,Ritik Arora,Verun,0.1,100,1100,100,0,,,65-45,,Product,2025-11-21,,6,100,Integration,"15th Jan:
+
+Currently in prod testing, we have enabled discounting engine for this merchant, coupon will be managed on checkout, Freebies will be applied via coupons on the cart and passed as line items in the Get Cart API response.
+
+20st Jan:
+
+-Using GK Discounting engine
+-Google Ads connector and Product sync will be picked up in phase 2
+-Est work pending - 4 days on merchant's end
+-Tentative go-live date: 27th Jan","Vanilla integration
+",Advanced,No,EB+PayU,,NO,"Google Ads connector
+Product Sync",https://gokwik.atlassian.net/browse/CUST-276,,https://docs.google.com/spreadsheets/d/1XWoGq1pq0MyBCrPCZgpiIMVyVi2CdqtfvLWKFWbi0U8/edit?gid=742755149#gid=742755149,https://docs.google.com/spreadsheets/d/1XWoGq1pq0MyBCrPCZgpiIMVyVi2CdqtfvLWKFWbi0U8/edit?gid=742755149#gid=742755149,,19uplmoy9neh
+9e41914e-b9bc-47c2-82f9-0b8117885b74,UID-asus.com,asus.com,2025-11-27T08:16:47.80576+00:00,2026-01-21T06:35:33.399598+00:00,Asus,https://www.asus.com/in/,Magento,Electronics,On-hold,Abhishek,Madhur,Mohit Raysoni,,0.53,20,75000,100,0,,,100-0,,Sales,2025-11-20,,7,100,Scoping,Scoping and API walkthrough done,Vanilla integration,Advanced,No,EB+PayU,,NO,,https://gokwik.atlassian.net/browse/CUST-277,,,,,
+65494fe9-74b5-4fb1-8fe5-004db1eecf6c,UID-cureka.com,cureka.com,2025-11-27T08:16:47.80576+00:00,2026-01-21T06:35:33.398761+00:00,Cureka,https://www.cureka.com/,Custom,Healthcare,On- hold,Rishabh,Verun,Mohit Raysoni,,0.18,200,1700,100,0,,,50-50,,Sales,2025-11-19,,8,100,API Build,Scoping in progress,Moving from Shopify to Custom,Advanced,No,EB+PayU,,NO,,https://gokwik.atlassian.net/browse/CUST-275,,,,,
+69a5d55d-31a9-43f8-adcd-9c3ad91e3c23,UID-play.google.com,play.google.com,2025-11-27T08:16:47.80576+00:00,2026-01-21T06:35:33.366098+00:00,Handpicked,https://play.google.com/store/apps/details?id=com.sorted.consumerflutterapp&hl=en_IN,Flutter,"Food & Grocery
+",Not Started,Arvind,Rohan,Mohit Raysoni,,,5000,600,100,0,,,80-20,,Sales,2025-11-17,,10,100,Feasibility Analysis,App only merchant. determining how VD will be calculated.,App only merchant. determining how VD will be calculated.,Advanced,No,EB+PayU,,NO,,,,,,,
+9e781998-42a9-48c0-b028-5449f2e9a093,UID-shop.amul.com,shop.amul.com,2025-11-27T08:16:47.80576+00:00,2026-01-21T07:45:54.90499+00:00,Amul,https://shop.amul.com/en/,Custom,Dairy and Nutrition,On hold,Abhishek,Madhur,Mohit Raysoni,,0.59,1200,1000,90,10,,,100-0,,MINT,2025-11-14,,13,100,Feasibility Analysis,"Awaiting confirmation on solution proposed for Loyalty use case.
+
+Initial scoping and API walkthrough is done.",,,,,,,,https://gokwik.atlassian.net/browse/CUST-269,,,,,
+24672680-1de8-47b2-a80d-36c4e96a11fb,UID-livspacehome.com,livspacehome.com,2025-11-27T08:16:47.80576+00:00,2026-01-19T11:21:01.646903+00:00,Livspace,https://www.livspacehome.com/,Custom,Home Decor,In Progress,Abhishek,Saurabh,Mohit Raysoni,,0.1,20,20000,100,0,,,100-0,"Current Status (19th Jan):
+Their team is currently discussing with their internal DevOps team the feasibility of exposing the staging frontend URL to external users, as this would require access outside the VPN.
+If exposing the staging environment is not feasible, they will need to deploy the SDK changes directly to production and enable testing for specific users on the production demo URL.
+The SDK integration work has not been initiated today, as the team is currently addressing cart-related flow issues on their website.
+They will share a detailed plan with us tomorrow following their internal discussions.",MINT,2025-11-14,,13,100,API Build,"API validation is completed. SDK integration and BRD signoff pending. Staging URL yet to be received ","Prod URL: https://athfe.as1.livspace.com
+Sandbox URL: TBC
+API Validation: Completed
+SDK Integration: Not started
+BRD: Partially completed",Advanced,,,,,,https://gokwik.atlassian.net/browse/CUST-270,,,,,19u5u9kt1urj
+8e0ea90d-5e69-47e1-8d11-faf79b2abd69,UID-etheradiamonds.com,etheradiamonds.com,2025-11-27T08:16:47.80576+00:00,2026-01-22T11:59:55.077248+00:00,Ethera Diamonds,https://www.etheradiamonds.com/,Custom,Gems & Jewelley,In Progress,"Rishabh ",Saurabh,Mohit Raysoni,Saurabh,8.135,8,50000,100,0,,,85-15,,MINT,2025-11-13,,14,100,integration,"Initial scoping and API walkthrough is done.
+
+Awairing update on API dev.
+
+16th Jan:
+
+In prod testing currently, sandbox testing is done, we got the PG creds yesterday
+
+21st Jan:
+
+PPCOD decision pending - to decide the % of prepaid amount to be taken from the customer (they want a partial refund feature for which we are pushing back as it's not the correct way)
+
+22nd Jan:
+
+PPCOD will be 799 fixed
+
+Tentative GoLive Date: 23rd Jan","Checkout lite, PAN card implementation and KP Integration",Advanced,NA,Easebuzz,,No,"Coupons
+KP SSO
+They don't have AWB tracking, currently managing on excel sheets",https://gokwik.atlassian.net/browse/CUST-262,,https://docs.google.com/spreadsheets/d/1kgx4CaIrv3ib3zu37myy6C5CeVM7SE1la1JTxE7fEB0/edit?usp=sharing,https://docs.google.com/spreadsheets/d/1kgx4CaIrv3ib3zu37myy6C5CeVM7SE1la1JTxE7fEB0/edit?usp=sharing,,19tpy3qnz5dq
+a27d3954-a297-470a-a26a-fd377192ca70,UID-houseofindya.com,houseofindya.com,2025-11-27T08:16:47.80576+00:00,2025-11-27T08:16:47.80576+00:00,House of Indya (FabAlley),https://www.houseofindya.com/,Custom,Apparels,In Progress,Abhishek,Saurabh,Mohit Raysoni,,0.18,200,2000,100,0,,,70-30,,MINT,2025-11-13,,14,100,Feasibility Analysis,Initial scoping and API walkthrough is done.,,Advanced,,,,,,https://gokwik.atlassian.net/browse/CUST-267,,,,,
+2d8a2f00-4f44-4422-a5f4-01d7b924c1bb,UID-vlebazaar.in,vlebazaar.in,2025-11-27T08:16:47.80576+00:00,2025-11-27T08:16:47.80576+00:00,VLE Bazar,https://vlebazaar.in/,Custom,refurbished electronics,On-hold,Abhishek,Piyoosh,Mohit Raysoni,,0.18,250,2000,100,0,,,100-0,,MINT,2025-11-10,,17,100,API Build,"Initial scoping and API walkthrough is done.
+
+Helping merchant with the API dev. Movement is slow on their side.",,Advanced,No,EB+PayU,,NO,,https://gokwik.atlassian.net/browse/CUST-274,,,,,
+0674581c-b57f-475f-b004-1e390dc68df2,UID-muftijeans.in,muftijeans.in,2025-11-27T08:16:47.80576+00:00,2026-01-19T11:06:06.635685+00:00,Mufti,https://www.muftijeans.in/,Magento,"Men's clothing
+
+",In Progress,Abhishek,Madhur,Mohit Raysoni,,0.25,300,1500,100,0,,,60-40,,Product,2025-11-07,,20,100,Sandbox Testing,"Initial scoping and API walkthrough is done.
+Awaiting API's - Done
+Integration - Done
+New Product Requirement - Event Analytics, Multi-tab issue - QA","Merchant is in rush to go live before end of November. But slow movement on API's.
+All integration points are closed as required by merchant, awaiting headsup from them on sandbox testing.",Advanced,,,,,,https://gokwik.atlassian.net/browse/CUST-264,,,,,19ben243hvjz
+669b4f8c-13d4-4481-a5e9-745b0db5d751,UID-thewholetruthfoods.com,thewholetruthfoods.com,2025-11-11T10:47:47.433655+00:00,2025-12-04T06:28:54.388382+00:00,The Whole Truth,https://thewholetruthfoods.com/,Custom,Healthcare,In Progress,Abhishek,Saurabh,Mohit Raysoni,,0.59,600,3400,100,0,,,,28 Nov - move to integration,Product,2025-11-07,,20,100,Integration,"28 Nov - move to integration
+
+Initial scoping and API walkthrough is done.
+Awaitign API's. Per mechant, expect complete set by 25th Nov.",,Advanced,,,KYC pending,,,https://gokwik.atlassian.net/browse/CUST-251?,,,,Abhishek Yadav,
+b7d4c7d3-7fd7-41b6-b67e-5084d42baf4f,UID-buywithemi.com,buywithemi.com,2025-11-27T08:16:47.80576+00:00,2025-11-27T08:16:47.80576+00:00,BuyWithEMI,https://www.buywithemi.com/,Custom,Affordable Electronics,In Progress,Rishabh,Madhur,Mohit Raysoni,,0.36,200,5000,100,0,React,,80-20,,MINT,2025-11-06,,21,100,Feasibility Analysis,"24 Nov - Unresponsive after 4 follow ups
+
+Scoping and API walkthrough is done.Awaiting confirmation on scoping items such multi-seller cart id handling, KwikPass,",,Advanced,No,,,,,https://gokwik.atlassian.net/browse/CUST-260,,,,,
+29a0045a-2c58-4b33-9da6-acab45f9dac5,UID-mystore.in,mystore.in,2025-11-27T08:16:47.80576+00:00,2025-11-27T08:16:47.80576+00:00,MyStore,https://mystore.in/,Custom,Electronics,On-hold,Rishabh,Madhur,Mohit Raysoni,,0.19,100,3500,25,75,,,100-0,,MINT,2025-11-03,,24,100,Feasibility Analysis,"Initial kickoff done. Utilises Open Network for Digital Commerce (ONDC). 
+Has multiple custom requirements. Awaiting confirmation on ARR from sales to product can determine effort vs. yield comparison.","Uses Open network for Digital Commerce(ONDC) as middleware
+Will go for a progressive rollout.
+",Advanced,No,EB+PayU,,NO,,https://gokwik.atlassian.net/browse/CUST-273,,,,,
+7b57a7d5-60ab-4ef4-a0b2-76a28a6c35e0,UID-kuberbox.com,kuberbox.com,2025-11-27T08:16:47.80576+00:00,2026-01-19T11:01:43.194444+00:00,KuberBox,https://www.kuberbox.com/,Magento,Jewellery,Live,Rishabh,Rohan,Animisha,,0.127,20,20000,100,0,,,95-5,27 Nov - Pushed into integration,Product,2025-11-03,2026-01-19,24,100,Live,"27 Nov - Pushed into integration
+24 Nov - Default Magento API's received, except the PlaceOrder and CreateOrder.
+
+Scoping and API walkthrough is done. Reviewing Discount Engine flow.
+Awaiting the discounting engine workflow document from Monika.
+Post that, GoKwik will finalize and share the complete API and event implementation list.
+
+Also, waiting for Sales to confirm on KwikPass.","Needs product level partial payment option
+support for discount stacking and dynamic coupon generation.
+Has international orders, to be redicrected to Native checkout.",Advanced,No,EB+PayU,KYC pending - Done in last week of December,,Kuber Box go-live delay happened due to Kwik Pass integration. Merchant wanted to go-live with KP.,https://gokwik.atlassian.net/browse/CUST-258,,,,,196wsm4xda65
+c5578750-a151-438e-b814-d367cd0a643d,UID-prideofcows.com,prideofcows.com,2025-11-11T10:47:47.433655+00:00,2025-11-27T08:16:47.80576+00:00,Pride of Cows,https://prideofcows.com/,Custom,Dairy,On-hold,Abhishek,Verun,Mohit Raysoni,,0.67,2000,2000,65,35,React,,90-10,,Sales,2025-10-15,,43,100,Feasibility Analysis,"Discovery in progress.
+
+Getting clarity on ARR, feasibility, identifying customisation and efforts required","Requires Enablement of Bajaj EMI & PDP Widget
+Selling MIlk and Dairy products on subscription basis
+Has a wallet that can be set to auto-recharge, or be recharged manually. 
+Subscribers amount get deducted from it at selected frequency.",Advanced,Analysing,EB+PayU,No docs and NBOM received,Maybe,Unclear,,,,,,
+63259c52-bb54-4904-b027-f3b9eaced862,UID-sivayii.concentics.com,sivayii.concentics.com,2025-11-11T10:47:47.433655+00:00,2025-11-27T08:16:47.80576+00:00,Sivayii,https://sivayii.concentics.com/,Custom,Apparels,Live,Monika,Vikalp,Mohit Raysoni,,0.08,140,1000,100,,,,30-70,,MS,2025-10-14,2025-11-07,,100,Live,Live,"This brand was offline and they have built their online website just now, will be slowly shifting all offline sales to online and expanding their business to Pan India.
+
+1) Merchant is taking the entire GoKwik suite and is enabling it on their website. 
+2) Want to go live as soon as possible
+3) Sivayii and Saajh both brands owned by same merchant",Lite,No,EB+PayU,No docs and NBOM received,No,,https://gokwik.atlassian.net/browse/CUST-219,,,,,
+3fae407e-bbf0-4fe5-b087-46af1e600ef5,UID-saajh.concentics.com,saajh.concentics.com,2025-11-11T10:47:47.433655+00:00,2025-11-27T08:16:47.80576+00:00,Saajh,https://saajh.concentics.com/,Custom,Apparels,Live,Monika,Vikalp,Mohit Raysoni,,0.08,140,1000,100,0,,,30-70,,MS,2025-10-14,2025-11-11,,100,Live,Live,Live,Lite,No,EB+PayU,No docs and NBOM received,No,,https://gokwik.atlassian.net/browse/CUST-219,,,,,
+836ac0c8-3869-4e42-8d19-e27fc4431c6a,UID-tradexa.in,tradexa.in,2025-11-11T10:47:47.433655+00:00,2025-11-27T08:16:47.80576+00:00,Tradexa (Platform - Level),https://www.tradexa.in/,Custom,Platform,In Progress,Abhishek,Verun,Mohit Raysoni,,0.65,240,12000,100,0,,,,,MINT,2025-10-13,,45,100,Scoping,"17 Nov - Merchant will start API Dev in this week.
+
+Awaiting platform and merchant details from merchant to validate platform level approach.
+Next, we will schedule a technical API walkthrough and attain GoKwik product sign-off (agenda: confirm API payloads, feature toggles, domain whitelisting, MID provisioning).
+
+","Hyperinventory platform - requires platform level integration that can be enabled/disabled for individual merchants.
+
+",Advanced,No,EB+PayU,No docs and NBOM received,No,,https://gokwik.atlassian.net/browse/CUST-230,,,,,
+8b875ebc-d945-41b9-aebc-099cb7188d0a,UID-shoptheworld.in,shoptheworld.in,2025-11-11T10:47:47.433655+00:00,2025-11-27T08:16:47.80576+00:00,Shop The World,https://shoptheworld.in/,Custom,Electronics,Blocked,Abhishek,Madhur,Mohit Raysoni,,0.1,10,25000,,,,,,,MINT,2025-10-09,,49,100,API Build,"API's received, SDK integration in progress on merchant side. Heavy delays and irregular communications. from merchant's team.
+
+
+After a gap of almost 3 months, Merchant has resumed working on building the API's.
+
+Merchant shared the Postman workspace but it was unaccessible; Requested them to share JSON collection",Awaiting APIs,Advanced,No,Easebuzz,Merchant is selling firecrackers,No,,https://gokwik.atlassian.net/browse/CUST-231,,,,,
+30b1b0bd-cbfb-4bb7-8f45-6d38fcd7cb09,UID-bevzilla.co,bevzilla.co,2025-11-11T10:47:47.433655+00:00,2025-11-26T08:08:52.582936+00:00,Bevzilla,https://www.bevzilla.co/,Custom,,Blocked,,Aakriti,Mohit Raysoni,,0.32,,,,,,,,,MS,2025-10-09,,53,,API Build,Been unresponsive since first kickoff,"Kicked off on 10th Sep, been unresponsive since.
+Merchant has put efforts on hold until further notice.",Advanced,,Easebuzz,Approved in shopify but no mail received for custom platform,,,NA,NA,NA,NA,,
+7db1fdc0-c955-4b7d-8093-55d691fd0523,UID-whisperinghomes.com,whisperinghomes.com,2025-11-11T10:47:47.433655+00:00,2025-12-09T07:03:15.184609+00:00,Whispering Homes,https://www.whisperinghomes.com/,Magento,Home decor,Live,Monika,Rohan,Mohit Raysoni,,0.15,50,10000,100,0,,,60:30:00,,MS,2025-10-09,,49,100,Live,Under integration,"Decor Brand, High AOV (10K) at 50 Transactions/Day
+Prepaid/COD - 60/30, RTO 5%
+Has AB teasting  - KwikCheckout going live on MWeb First(traffic split 80%)
+Has Check transfer/Offline desposit options 
+Supports PPCOD",Advanced,No,EB+PayU,No docs and NBOM received,No,,https://gokwik.atlassian.net/browse/CUST-220?,,,,,
+33e2e927-5df6-4dad-a7a4-21232188c694,UID-ifbappliances.com,ifbappliances.com,2025-11-11T10:47:47.433655+00:00,2025-11-27T08:16:47.80576+00:00,IFB Appliances,https://www.ifbappliances.com/,Custom,Electronic Appliances,Blocked,Abhishek,Madhur,Mohit Raysoni,,0.18,67,1000,80,20,,,"100:0",,MINT,2025-10-08,,50,100,Scoping,"Awaiting API's from merchant, no communication from merchant on status, ETA or challenges","Electronics Brand, High AOV (10K)
+100% Prepaid Only, No COD
+Uses Pinelabs for Offers, Managed at cart level
+Merchant was unavailable last week; We will follow up to schedule API walkthrough.",Advanced,No,EB+PayU,No docs and NBOM received,No,,https://gokwik.atlassian.net/browse/CUST-228,,,,,
+2f255dcd-1e82-4d9e-9f59-eace11f573ab,UID-warranty.xtracover.com,warranty.xtracover.com,2025-11-11T10:47:47.433655+00:00,2025-12-09T07:03:33.705807+00:00,Xtracover Warranty,https://warranty.xtracover.com/,Custom,Gadget Warranty,Live,Monika,Madhur,Mohit Raysoni,,0.12,34,10000,100,0,,,"100:0",,MS,2025-10-08,,50,100,Live,"Initial kickoff done, Integration methodology and API's explained. Awaiting APIs from Merchant","Selling warranty plans (Digital Products only)
+
+Pending AI on merchant: SDK integration; Events; updateorder API; check order status API. Merchant is unresponsive on these AI. We will follow up. ",Advanced,No,Easebuzz,No docs and NBOM received,No,,https://gokwik.atlassian.net/browse/CUST-229,,,,,
+35b68b8a-e6aa-4967-b94f-abefc051d3c2,UID-zazza.in,zazza.in,2025-11-11T10:47:47.433655+00:00,2025-11-27T08:16:47.80576+00:00,Zazza(Swivo Magic),https://zazza.in/ (Zazza),Custom,,Live,Anil,Sagar T,Mohit Raysoni,,0.33,,,,,,,,,MS,2025-10-07,2025-11-10,,100,Live,Live,Merchant wants to replicate Zazza website for Swivomagic.,Advanced,No,Easebuzz,Approved,No,,https://gokwik.atlassian.net/browse/CUST-225?,,,,,
+1943f3cc-1d39-416d-b019-f8d79e3edbd6,UID-agribegri.com,agribegri.com,2025-11-11T10:47:47.433655+00:00,2026-01-19T11:06:31.036426+00:00,Agribegri,https://agribegri.com/,Custom,Agricultural products,In Progress,Abhishek,Verun,Mohit Raysoni,,0.33,416,1600,60,40,React,,65-35,,MINT,2025-09-30,,58,100,Sandbox Testing,"Merchant resumes API building this week. 
+
+Merchant is working on website, will share udpate on when theuy have begin the API Dev
+
+Merchant is on sandbox testing, will move to production testing by 20 Jan'25.",Merchant Intent and Expectations - They are currently using Fastrr and want to explore Kwik Checkout as they are not happy with the former. Client has certain queries regarding integration for which they have requested a call.,Advanced,No,EB+PayU,No docs and NBOM received,No,,https://gokwik.atlassian.net/browse/CUST-224,,,,,19wnspkvqzrt
+486acc38-93ee-4211-ad08-9a76d3167edc,UID-kisna.com,kisna.com,2025-11-11T10:47:47.433655+00:00,2026-01-21T05:56:18.631487+00:00,Kisna Diamond,https://kisna.com/ (kisna.com),Custom,Cosmetics,Live,Rishabh,Verun,Animisha Parmar,Verun,0.16,9,40000,100,0,,,100-0,,Product,2025-09-29,2026-01-07,59,97,Live,"24 Nov  - Merchant is making changes in the UI, and deciding on their checkout flow.
+
+
+Merchant came up with new requirements in already finalised checkout flow, we suggested an ameliorated flow. Awaiting confirmation on the proposed flow. Meanwhile the merchant team has paused the project until next update due to other priorities.
+
+API validation and BRd done. SDK integration in progress, but encountering errors.
+
+Merchant team will need 2 to 3 weeks to build and share API's. ETA 20th Oct.
+
+Effort estimation on In-store delivery is in discussion with product team. Merchant is working on SDK Integrationon sandbox, API validation is done
+
+15th Jan - 
+
+Specific tags to be enabled/configured to display on the payment methods? - Animisha will check this with Mx
+
+UTM parameters is getting captured - All direct orders as of now - have asked them and gave them the excat code where Mx will have to implement
+
+Refund Webhook is configured - Webhook is configured at our end, Mx is unable to get the data due to webhook issue at their end, have sent the logs to them for correction
+
+Transactiona and abandand cart - As aligned with Mint, this is not required as of now
+
+Coupons - Disabled from UI because of conflict with Digi Gold but APIs are already in place and can be enabled directly form UI
+
+Place Order API - They only use place order API and not using create order API, due to reporting issues as the order ID changes at Mx end after create order and place order
+
+Banks enabled on EMI CC - EB don't support One Card, Federal Bank and IDBI Bank (rest all banks are enabled those are configured on NOCOSTEMI offer)
+
+Offer Logic Issue: https://gokwik.atlassian.net/browse/GKP-30649 - This is closed - offer logic is also solved
+
+Bank Offers configured - ICICI 5% instant Discount and No Cost EMI
+
+Traffic - We are live on Kisna Diamonds on 97% traffic. Another 2-3% traffic which is on 'Pick up from Store from any city' will remain on Native.
+
+20th Jan:
+
+Account transferred to MS team (Animisha)","22 Sep - Awaiting update on API dev from merchant team
+
+Initital scoping call done, API walkthrough started.",Lite,No,Easebuzz and PayU,Physical CPV has been initaited at EB's end. Awaiting for the cpv report,Yes,"PDP Affordability Widget - To show bank offers to end users
+Loyalty, Gift Card and E-Voucher - Options on the cart page to be passed in get cart API schedule for later stage
+
+PAN Card - Currently their backend team calls for PAN card for offers above 2L
+
+Kwikpass SSO - Currently only KP login is implemented, not SSO
+
+Split Order API - They have product wise AWB numbers, hence Mx will not pass the AWB numbers in order update API now but will share it via Split Order API
+
+Pincode Check and EDD - Shipping API is implemented but they are delivering PAN India as of now
+
+PPCOD - They don't allow COD but PPCOD might get picked up at a later stage",https://gokwik.atlassian.net/browse/CUST-227?,,https://docs.google.com/spreadsheets/d/1TibnIWYzrwP3pEen7kZrq_9PadmRAbM83VuNa5eedq0/edit?gid=1594526022#gid=1594526022,https://docs.google.com/spreadsheets/d/1TibnIWYzrwP3pEen7kZrq_9PadmRAbM83VuNa5eedq0/edit?gid=1594526022#gid=1594526022,,19ff6zlza1rm
+a7cf1490-6bf7-4adb-b846-ce9d39bdbabc,UID-kerastase.com,kerastase.com,2025-11-11T10:47:47.433655+00:00,2026-01-22T05:18:14.722367+00:00,Kerastese(Loreal),https://www.kerastase.com/,SFCC,Dairy,Not Started,Arvind,Suarabh,Mohit Raysoni,,0.15,250,3000,100,0,,,100-0,,MS,2025-09-26,,62,100,Scoping,"1. Merchant has started the integration. They have some changes to be done internally before they integrate the catridge. Which they will complete by 28 Jan. 
+2. ","Merchant is conducting feasability checks, the integration will begin in January'26",Advanced,TBA,,No docs and NBOM received,No,,,,,,,
+9769c2ea-cebe-42c2-b5ed-e030ed799b9a,UID-shreeramkrishnaoilmills.com,shreeramkrishnaoilmills.com,2025-11-11T10:47:47.433655+00:00,2025-11-27T08:16:47.80576+00:00,Shree RamKrishna Oil Mills,https://shreeramkrishnaoilmills.com/,Custom,,Live,Monika,Vikalp,Mohit Raysoni,,0.138,,,,,,,,,MS,2025-09-17,2025-11-07,,100,Live,Live,"Aiming to go live on 14th Oct. 
+
+Project went on hold for Nov'25 -> merchant to update on next steps",Advanced,No,Easebuzz,Approved,No,,https://gokwik.atlassian.net/browse/GKP-29581,,,,,
+bf283c65-4789-40ba-abbf-3c665983bdd9,UID-asianfootwears.com,asianfootwears.com,2025-11-11T10:47:47.433655+00:00,2026-01-21T12:24:05.396466+00:00,Asian Footwear,https://www.asianfootwears.com,Custom,Footwear,Unlive,Anil,Saurabh,Mohit Raysoni,,0.2,500,1500,100,0,,,100-0,,Program - Anil,2025-09-12,,76,100,Issue Fixing at Merchant's end,"Integration is completed from GK's end, Waiting for merchant to complete the SDK integration to test on Sandbox and provide Sandbox readiness to the merchant - ETA: 23-October.","Brand is currently using address APIs via Shiprocket
+They will start with 50% traffic and shall divert 100% post observing the uplift in checkout conversion rate
+1.⁠ ⁠The cart displayed on the Asian Footwear website is different from the one displayed on the checkout.
+2.⁠ ⁠⁠Whenever I try making the payment, im getting “internal server error”. Please check the screenshot attached for your reference.
+3. Merchant to start fixing the issues reported - ETA: 20-Jan",Advanced,No,Easebuzz,Approved,No,,https://gokwik.atlassian.net/browse/CUST-209,,https://docs.google.com/spreadsheets/d/1h6lQ5n1IdQOpo7LElSVPsqRSYBh8NTDsWCLP96BI12I/edit?gid=0#gid=0,https://docs.google.com/spreadsheets/d/1hKUJ6J9vwdXmP7-sqH2yxFTR0lciRvK10fUuyyK-vDI/edit?gid=674974118#gid=674974118,Rishabh,192ry1jb6o5h
+503e54e0-259e-4306-b9fc-f79183fdcb61,UID-rashiratanbhagya.com,rashiratanbhagya.com,2025-11-11T10:47:47.433655+00:00,2026-01-05T10:20:36.718159+00:00,RashiRatanBhagya,https://rashiratanbhagya.com/ (Rashi Ratan Bhagya),Magento,Gems & Jewellery,Live,Nithya,Madhur,Mohit Raysoni,,0.12,35,5000,,,,,,,Product,2025-09-02,2025-12-11,86,100,Live,"Aligned with the merchant to take this up in 2 phases. 
+1. Phase 1 - Guest Checkout for Indian IPs and INR Currency. 
+2. Phase 2 - Logged-in user flow (Only phone/OTP authentication) + Indian IPs + INR Currency
+---
+Awaiting merchant's response to decide on Phase 1 Go Live ETA.",-,Advanced,No,Easebuzz,Approved,No,,https://gokwik.atlassian.net/browse/GKP-29522,,,,,19ugndoxi900
+a2b42d76-7538-465d-bd88-9ee0d5435ea4,UID-xtracover.com,xtracover.com,2025-11-11T10:47:47.433655+00:00,2025-11-27T08:16:47.80576+00:00,Xtracover,https://www.xtracover.com/,Custom,,Live,Monika,Madhur,Mohit Raysoni,,0.444,,,,,,,,,MS,2025-08-25,2025-10-29,,100,Live,Live,"Jewellery brand with Prodcuts having multiple customisation options
+Has store credit and wallet balance option
+",Advanced,No,Easebuzz,Approved,No,,https://gokwik.atlassian.net/browse/CUST-229,,,,,
+b38fca16-4db2-4a1a-9601-40f0f57a5e6a,UID-imfresh.in,imfresh.in,2025-11-11T10:47:47.433655+00:00,2025-11-27T08:16:47.80576+00:00,IMFRESH,https://imfresh.in/ (imfresh.in),Custom,,Live,Anil,Saurabh,Mohit Raysoni,,0.12,,,,,,,,,MS,2025-08-14,2025-10-22,,100,Live,Merchant to complete the Sandbox testing and share the feedback - ETA: 23-October EOD.,,,,,,No,,https://gokwik.atlassian.net/browse/GKP-29690,,,,,
+d71e8b9b-856e-49a7-b001-f828e4ea3529,UID-kamaayurveda.com,kamaayurveda.com,2025-11-11T10:47:47.433655+00:00,2025-11-27T08:16:47.80576+00:00,Kama Ayurveda,https://www.kamaayurveda.com/,Custom,Cosmetics,In Progress,Abhishek,Saurabh Sharma,Mohit Raysoni,,0.2,240,2200,100,0,,,70-30,,Sales,2025-08-12,,107,100,Scoping,"Resuming scoping from 18th Nov.
+Initial discovery and API walkthrough done, merchant has been quiet since.
+They need to start working on API Dev",Merchant unresponsive,Advanced,No,Easebuzz,No docs received,No,,https://gokwik.atlassian.net/browse/CUST-271,,,,,
+862d3fc3-cdd4-445a-b8a1-ea41e3088304,UID-bewakoof.com,bewakoof.com,2025-11-11T10:47:47.433655+00:00,2026-01-05T10:10:49.484906+00:00,Bewakoof,https://www.bewakoof.com/,Custom,,Live,Nithya,Saurabh,Mohit Raysoni,,1.25,,,,,,,,,MS,2025-08-12,2025-11-06,,100,Live,Live on 5% traffic,Live on 5% traffic,Lite,No,Easebuzz,Approved,No,,https://gokwik.atlassian.net/browse/CUST-151,,,,,"19g6jlmixprud "
+d9a57e37-b4e4-419f-8733-e1ae3d35c213,UID-powermaxfitness.net,powermaxfitness.net,2025-11-11T10:47:47.433655+00:00,2025-12-09T07:04:39.685435+00:00,PowerMax,https://www.powermaxfitness.net/,Custom,Healthcare,Live,Anil,Madhur,Mohit Raysoni,,0.092,18,22000,100,0,,,"30-70",,MS,2025-08-07,,112,100,Live,"Merchant needs to complete the dev of the following and share them across to start the integration at our end:
+1. Create Order API accommodating the UTM Params.
+2. ""ad_source"" to be passed in the GoKwik SDK while initiating checkout.
+3. ABC Webhook endpoint to be created and shared across for us to configure.",CreateOeder API pending,Lite,No,PayU,Approved,No,,https://gokwik.atlassian.net/browse/CUST-216,,,,,
+66c767c7-f385-4dcf-8dc2-8c96f682dd98,UID-haldirams.com,haldirams.com,2025-11-11T10:47:47.433655+00:00,2025-11-27T08:16:47.80576+00:00,Haldirams,https://www.haldirams.com/,Custom,,Live,Anil,Rohan,Mohit Raysoni,,0.109,,,,,,,,,MS,2025-08-05,2025-10-07,,100,Live,Live,Live,Advanced,No,Easebuzz,Approved,Yes,,,,,,,
+ca3d583f-c733-4389-957e-68bbbd1134bd,UID-brahmagems.com,brahmagems.com,2025-11-11T10:47:47.433655+00:00,2026-01-05T11:11:15.820514+00:00,Brahma Gems,https://brahmagems.com,Magento,,Live,Monika,Madhur,Mohit Raysoni,,0.11,,,,,,,,,MS,2025-07-25,2025-11-20,,100,Live,Live,Live,Advanced,No,Easebuzz,Approved,No,,https://gokwik.atlassian.net/browse/GKP-29534,,,,,
+97d186dc-a573-461f-8aeb-96b09ec94644,UID-kirtilal.com,kirtilal.com,2025-11-11T10:47:47.433655+00:00,2026-01-05T11:11:18.775613+00:00,Kirtilal,"https://www.kirtilal.com/ ",Custom,,Live,Anil,Madhur,Mohit Raysoni,,0.15,,,,,,,,,MS,2025-07-22,2025-11-21,,100,Live,Live,Live,Advanced,Yes,Easebuzz,Approved,Yes,,https://gokwik.atlassian.net/browse/GKP-29533,,,,,
+ed11969c-6cd8-4ef6-a0d7-7f2e02249a18,UID-offcult.com,offcult.com,2025-11-11T10:47:47.433655+00:00,2025-11-27T08:16:47.80576+00:00,OffCult,https://offcult.com,Custom,,Live,Monika,Piyoosh,Mohit Raysoni,,0.13,,,,,,,,,MS,2025-07-16,2025-10-22,,100,Live,Live,Live,Advanced,No,Easebuzz,Approved,Yes,"KP Integration required ",https://gokwik.atlassian.net/browse/GKP-29531,,,,,
+f84bd851-aec0-407e-80f2-b9e12e625c74,UID-asics.com,asics.com,2025-11-11T10:47:47.433655+00:00,2025-11-27T08:16:47.80576+00:00,Asics,https://www.asics.com/,Magento,Footwear,In Progress,Monika,Saurabh Sharma,Mohit Raysoni,,0.4,300,6000,100,,,,80-20,,Product,2025-07-15,,135,100,Integration and Unit Testing,Integration in progress; Integration is blocked as merchant's create order and Place order API is not working as per merchant's instruction; Requested agency to address this issue.,"Magento
+Managed by 18th Digitech
+
+
+Project went on hold on 29 Oct'25 -> merchant to update on next steps",Advanced,No,Easebuzz,Partial docs received,No,,https://gokwik.atlassian.net/browse/CUST-211,,,,,
+5bd0bd52-11e4-40cb-9755-98b024d846f8,UID-doodhvalefarms.com,doodhvalefarms.com,2025-11-11T10:47:47.433655+00:00,2025-12-09T07:05:05.123017+00:00,DVF(DoodhValeFarms),https://www.doodhvalefarms.com,Magento,Dairy,Live,Anil,Verun,Mohit Raysoni,,0.2,1700,500,20,80,,,100,,MS,2025-07-11,,139,100,Live,Merchant to complete Sandbox testing and their end of the changes - ETA: 24-October.,,Advanced,No,Easebuzz,Approved,No,,https://gokwik.atlassian.net/browse/CUST-64?,,,,,
+12625bd2-4d9d-452a-aa86-1d4a495ed1e9,UID-bighaat.com,bighaat.com,2025-11-11T10:47:47.433655+00:00,2025-11-26T08:08:52.582936+00:00,Big Haat,https://www.bighaat.com/,Custom (Shopify),,On-hold,,Verun,Mohit Raysoni,,0.22,,,,,,,,,Sales,2025-07-08,,87,,API Build,Awaiting first batch of API's from merchant team.,"25 Sep - Pushing merchant for faster dev of API's, ETA given by them is 6th Oct
+
+8th Sep - Merchant POC informed they have started API Dev, ETA open.
+
+28th Aug: Awaiting update from Sales
+
+25th Aug: Awaiting update from Sales
+
+20th August: Same Update as before
+
+18th August: Same Update as before
+
+14th August: Update from Verun, call might happen next week.
+
+13th Aug: Same update as before
+
+
+12th Aug: Same update as before
+
+11th August: Same Update as last week , Call might happen this week.
+
+8th Aug: 2nd call might happen in the coming week.
+
+7th Aug: Internal meeting scheduled for today at 4:30PM.
+
+4th August: The backend is on Shopify, but there’s a middleware layer that communicates with the custom frontend. The next step is to schedule an API walkthrough, but before that, I’d like to connect internally with Nithya and Saurabh.
+
+Functional feasbility check in progress""",Advanced,,Easebuzz,NBOM Not yet received - The status temains the same - 15th oct 2025,,,NA,NA,NA,NA,,
+a68e7481-13c0-4af6-ae58-59e3ff96a240,UID-arks.club,arks.club,2025-11-11T10:47:47.433655+00:00,2025-11-27T08:16:47.80576+00:00," ARKS",https://www.arks.club,Magento,,Live,Monika,Saurabh,Mohit Raysoni,,0.2,,,,,,,,,MS,2025-07-07,2025-11-17,,100,Live,Live,Live,Advanced,No,Easebuzz,Approved,No,,https://gokwik.atlassian.net/browse/GKP-29550,,,,,
+9fe8a9f5-4b4f-45bb-b0df-5f5cacbeda19,UID-tryloindia.com,tryloindia.com,2025-11-11T10:47:47.433655+00:00,2026-01-05T10:09:05.166339+00:00,Trylo,https://www.tryloindia.com,Magento,Apparels,Live,Nithya,Madhur,Mohit Raysoni,,0.1,200,1400,100,0,,,80-20,,Product,2025-06-24,2025-12-29,156,100,Live,"1. Merchant has integrated headless KP due to mandatory login
+2. Merchant has integrated Update order API
+3. Merchant has integrated Order Retry API
+4. This merchant have OTP for all due to Headless KP integration 
+5. 100 COD fee is applied via KwikFlows
+6. Merchants have integrated events listening to GK FE events
+7. They are on both Worldline & EB. EB is primary. However merchnat is inclined to keep Worldline as primary. We explained them that EB is better. 
+8. UTMs are being passed and it is verified
+9. GA/FB events are integrated by the merchant and they have to confirm if it is working as expected | Open",-,Advanced,No,Easebuzz,Approved,No,"Discussed with CSM and provided handover. Details are mentioned in the BRD. 
+AWB Details
+EDD
+Gift Charges
+PPCOD",https://gokwik.atlassian.net/browse/CUST-116,,https://docs.google.com/spreadsheets/d/1gcAwejl3PrcbfRiE9j0I3PpsfvNAcXltPn0UZ5ppZeY/edit?usp=sharing,,,194ue8h8xfbd
+d1b04342-0d98-42fb-b26c-62b2c38b78ee,UID-sigmaguys.com,sigmaguys.com,2025-11-11T10:47:47.433655+00:00,2025-12-09T07:05:21.638852+00:00,Sigma Guys,https://www.sigmaguys.com/,Custom,Healthcare,Live,Monika,Piyoosh,Mohit Raysoni,,0.16,375,600,100,0,,,"50-50",,Live,2025-06-19,,161,100,Live,"API received, SDK integrated, fixing errors in Place Order API.",Aiming to finish the validation and begin integration this week.,Advanced,No,Easebuzz,Approved,No,,https://gokwik.atlassian.net/browse/CUST-223,,,,,
+82aa0fd0-e264-4bda-8639-5768e67e0d18,UID-poshace.com,poshace.com,2025-11-11T10:47:47.433655+00:00,2025-11-27T08:16:47.80576+00:00,Poshace,https://poshace.com,Magento,,Live,Anil,Verun,Mohit Raysoni,,0.063,,,,,,,,,MS,2025-06-13,2025-10-17,,90,Live,Live,Live,Advanced,No,PayU + Worldline,Approved,Yes,,https://gokwik.atlassian.net/browse/CUST-107?,,,,,
