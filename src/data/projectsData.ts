@@ -106,14 +106,14 @@ export const calculateTimeByParty = (logs: ResponsibilityLog[] | ChecklistRespon
 };
 
 export const formatDuration = (ms: number): string => {
-  const hours = Math.floor(ms / (1000 * 60 * 60));
-  const days = Math.floor(hours / 24);
-  const remainingHours = hours % 24;
+  const totalMinutes = Math.floor(ms / (1000 * 60));
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
   
-  if (days > 0) {
-    return `${days}d ${remainingHours}h`;
+  if (hours > 0) {
+    return `${hours}h ${minutes}m`;
   }
-  return `${hours}h`;
+  return `${minutes}m`;
 };
 
 // MINT Checklist Items
