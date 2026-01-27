@@ -5,6 +5,7 @@ import { teamLabels, teamColors } from "@/data/teams";
 import { Project } from "@/data/projectsData";
 import { ProjectCardNew } from "./ProjectCardNew";
 import { AddProjectDialog } from "./AddProjectDialog";
+import { CSVUploadDialog } from "./CSVUploadDialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -18,6 +19,7 @@ import {
   Plus,
   Rocket,
   Search,
+  Upload,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -27,6 +29,7 @@ export const TeamDashboard = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("pending");
   const [addDialogOpen, setAddDialogOpen] = useState(false);
+  const [csvDialogOpen, setCsvDialogOpen] = useState(false);
 
   if (!currentUser) return null;
 
@@ -104,12 +107,18 @@ export const TeamDashboard = () => {
 
             {/* User & Actions */}
             <div className="flex items-center gap-3">
-              {/* Add Project Button - Only for MINT */}
+              {/* Add Project & CSV Upload - Only for MINT */}
               {currentUser.team === "mint" && (
-                <Button onClick={() => setAddDialogOpen(true)} size="sm" className="gap-1">
-                  <Plus className="h-4 w-4" />
-                  Add Project
-                </Button>
+                <>
+                  <Button onClick={() => setCsvDialogOpen(true)} size="sm" variant="outline" className="gap-1">
+                    <Upload className="h-4 w-4" />
+                    Import CSV
+                  </Button>
+                  <Button onClick={() => setAddDialogOpen(true)} size="sm" className="gap-1">
+                    <Plus className="h-4 w-4" />
+                    Add Project
+                  </Button>
+                </>
               )}
 
               <Button variant="ghost" size="icon" className="relative">
@@ -240,6 +249,12 @@ export const TeamDashboard = () => {
         open={addDialogOpen}
         onOpenChange={setAddDialogOpen}
         onSave={handleAddProject}
+      />
+
+      {/* CSV Upload Dialog */}
+      <CSVUploadDialog
+        open={csvDialogOpen}
+        onOpenChange={setCsvDialogOpen}
       />
     </div>
   );
