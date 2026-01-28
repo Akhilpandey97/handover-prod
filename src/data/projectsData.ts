@@ -88,6 +88,7 @@ export interface Project {
   pgOnboarding: string;
   currentResponsibility: ResponsibilityParty;
   responsibilityLog: ResponsibilityLog[];
+  assignedOwner?: string; // User ID of the assigned owner
 }
 
 // Helper to calculate time spent by each party (neutral time is not counted)

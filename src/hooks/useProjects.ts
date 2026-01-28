@@ -44,6 +44,7 @@ const transformDbProject = (row: any): Project => ({
   pgOnboarding: row.pg_onboarding || "",
   currentResponsibility: (row.current_responsibility as ResponsibilityParty) || "neutral",
   responsibilityLog: row.responsibility_logs || [],
+  assignedOwner: row.assigned_owner || undefined,
 });
 
 // Transform checklist item from database
