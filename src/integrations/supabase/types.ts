@@ -183,6 +183,7 @@ export type Database = {
         Row: {
           aov: number | null
           arr: number | null
+          assigned_owner: string | null
           brand_url: string | null
           brd_link: string | null
           category: string | null
@@ -218,6 +219,7 @@ export type Database = {
         Insert: {
           aov?: number | null
           arr?: number | null
+          assigned_owner?: string | null
           brand_url?: string | null
           brd_link?: string | null
           category?: string | null
@@ -253,6 +255,7 @@ export type Database = {
         Update: {
           aov?: number | null
           arr?: number | null
+          assigned_owner?: string | null
           brand_url?: string | null
           brd_link?: string | null
           category?: string | null

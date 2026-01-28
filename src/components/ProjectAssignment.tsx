@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useProjects } from "@/contexts/ProjectContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,20 +9,86 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
-import { ArrowRight, CheckCircle2, FolderKanban } from "lucide-react";
+import { ArrowRight, CheckCircle2, FolderKanban, User } from "lucide-react";
 import { teamLabels, TeamRole } from "@/data/teams";
+import type { Database } from "@/integrations/supabase/types";
+
+type DbTeamRole = Database["public"]["Enums"]["team_role"];
+
+interface TeamMember {
+  id: string;
+  name: string;
+  email: string;
+  team: DbTeamRole;
+}
 
 export const ProjectAssignment = () => {
   const { projects } = useProjects();
   const queryClient = useQueryClient();
   const [selectedProjects, setSelectedProjects] = useState<Set<string>>(new Set());
   const [targetTeam, setTargetTeam] = useState<TeamRole>("mint");
+  const [targetOwner, setTargetOwner] = useState<string>("");
   const [isAssigning, setIsAssigning] = useState(false);
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
+  const [isLoadingMembers, setIsLoadingMembers] = useState(false);
 
-  // Get projects that can be assigned to MINT (unassigned or need reassignment)
-  const assignableProjects = projects.filter(
-    (p) => p.currentOwnerTeam === "mint" || !p.currentOwnerTeam
-  );
+  // Fetch team members when target team changes
+  useEffect(() => {
+    const fetchTeamMembers = async () => {
+      setIsLoadingMembers(true);
+      setTargetOwner(""); // Reset owner when team changes
+      
+      try {
+        // Get profiles for the selected team
+        const { data: profiles, error: profilesError } = await supabase
+          .from("profiles")
+          .select("id, name, email, team")
+          .eq("team", targetTeam as DbTeamRole);
+
+        if (profilesError) throw profilesError;
+
+        // Also get users by their role from user_roles table
+        const { data: userRoles, error: rolesError } = await supabase
+          .from("user_roles")
+          .select("user_id, role")
+          .eq("role", targetTeam as DbTeamRole);
+
+        if (rolesError) throw rolesError;
+
+        // Combine: get all profiles that match either by team or by role
+        const roleUserIds = userRoles?.map(r => r.user_id) || [];
+        const allProfiles = profiles || [];
+        
+        // Get additional profiles for users with roles but different team in profile
+        if (roleUserIds.length > 0) {
+          const { data: additionalProfiles } = await supabase
+            .from("profiles")
+            .select("id, name, email, team")
+            .in("id", roleUserIds);
+          
+          if (additionalProfiles) {
+            additionalProfiles.forEach(p => {
+              if (!allProfiles.find(ap => ap.id === p.id)) {
+                allProfiles.push({ ...p, team: targetTeam as DbTeamRole });
+              }
+            });
+          }
+        }
+
+        setTeamMembers(allProfiles);
+      } catch (error) {
+        console.error("Error fetching team members:", error);
+        setTeamMembers([]);
+      } finally {
+        setIsLoadingMembers(false);
+      }
+    };
+
+    fetchTeamMembers();
+  }, [targetTeam]);
+
+  // Show all projects for assignment
+  const assignableProjects = projects;
 
   const toggleProject = (projectId: string) => {
     setSelectedProjects((prev) => {
@@ -54,14 +120,22 @@ export const ProjectAssignment = () => {
     try {
       const projectIds = Array.from(selectedProjects);
 
-      // Update projects to assign to MINT team
+      // Build update object
+      const updateData: Record<string, any> = {
+        current_owner_team: targetTeam,
+        pending_acceptance: true,
+        updated_at: new Date().toISOString(),
+      };
+
+      // Add assigned owner if selected
+      if (targetOwner) {
+        updateData.assigned_owner = targetOwner;
+      }
+
+      // Update projects
       const { error } = await supabase
         .from("projects")
-        .update({
-          current_owner_team: targetTeam,
-          pending_acceptance: true,
-          updated_at: new Date().toISOString(),
-        })
+        .update(updateData)
         .in("id", projectIds);
 
       if (error) throw error;
@@ -69,7 +143,12 @@ export const ProjectAssignment = () => {
       // Refresh projects
       await queryClient.invalidateQueries({ queryKey: ["projects"] });
       
-      toast.success(`Assigned ${selectedProjects.size} projects to ${teamLabels[targetTeam]}`);
+      const ownerName = teamMembers.find(m => m.id === targetOwner)?.name;
+      const assignmentMsg = targetOwner 
+        ? `Assigned ${selectedProjects.size} projects to ${ownerName} (${teamLabels[targetTeam]})`
+        : `Assigned ${selectedProjects.size} projects to ${teamLabels[targetTeam]}`;
+      
+      toast.success(assignmentMsg);
       setSelectedProjects(new Set());
     } catch (error: any) {
       console.error("Assignment error:", error);
@@ -77,6 +156,13 @@ export const ProjectAssignment = () => {
     } finally {
       setIsAssigning(false);
     }
+  };
+
+  // Get owner name for display
+  const getOwnerName = (ownerId: string | undefined) => {
+    if (!ownerId) return null;
+    const owner = teamMembers.find(m => m.id === ownerId);
+    return owner?.name;
   };
 
   return (
@@ -87,12 +173,12 @@ export const ProjectAssignment = () => {
           Assign Projects to Team
         </CardTitle>
         <CardDescription>
-          Select projects and assign them to the MINT team for processing
+          Select projects and assign them to a team and specific owner
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Target Team & Actions */}
-        <div className="flex items-center gap-4 p-4 bg-muted/50 rounded-lg">
+        {/* Target Team, Owner & Actions */}
+        <div className="flex flex-wrap items-center gap-4 p-4 bg-muted/50 rounded-lg">
           <div className="flex items-center gap-2">
             <span className="text-sm font-medium">Assign to:</span>
             <Select value={targetTeam} onValueChange={(v) => setTargetTeam(v as TeamRole)}>
@@ -106,6 +192,29 @@ export const ProjectAssignment = () => {
               </SelectContent>
             </Select>
           </div>
+
+          <div className="flex items-center gap-2">
+            <User className="h-4 w-4 text-muted-foreground" />
+            <span className="text-sm font-medium">Owner:</span>
+            <Select 
+              value={targetOwner} 
+              onValueChange={setTargetOwner}
+              disabled={isLoadingMembers}
+            >
+              <SelectTrigger className="w-56">
+                <SelectValue placeholder={isLoadingMembers ? "Loading..." : "Select owner (optional)"} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">No specific owner</SelectItem>
+                {teamMembers.map((member) => (
+                  <SelectItem key={member.id} value={member.id}>
+                    {member.name} ({member.email})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
           <ArrowRight className="h-4 w-4 text-muted-foreground" />
           <Button
             onClick={handleAssign}
@@ -130,7 +239,7 @@ export const ProjectAssignment = () => {
                 <TableRow>
                   <TableHead className="w-12">
                     <Checkbox
-                      checked={selectedProjects.size === assignableProjects.length}
+                      checked={selectedProjects.size === assignableProjects.length && assignableProjects.length > 0}
                       onCheckedChange={toggleAll}
                     />
                   </TableHead>
@@ -138,6 +247,7 @@ export const ProjectAssignment = () => {
                   <TableHead>MID</TableHead>
                   <TableHead>Platform</TableHead>
                   <TableHead>Current Team</TableHead>
+                  <TableHead>Assigned Owner</TableHead>
                   <TableHead>Phase</TableHead>
                 </TableRow>
               </TableHeader>
@@ -160,6 +270,16 @@ export const ProjectAssignment = () => {
                         </Badge>
                       ) : (
                         <Badge variant="secondary">Unassigned</Badge>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {(project as any).assignedOwner ? (
+                        <Badge variant="default" className="bg-primary/80">
+                          <User className="h-3 w-3 mr-1" />
+                          {getOwnerName((project as any).assignedOwner) || "Assigned"}
+                        </Badge>
+                      ) : (
+                        <span className="text-muted-foreground text-sm">-</span>
                       )}
                     </TableCell>
                     <TableCell>

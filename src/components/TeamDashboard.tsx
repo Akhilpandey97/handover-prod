@@ -47,6 +47,22 @@ export const TeamDashboard = () => {
   const pendingProjects = getPendingProjects(currentUser.team);
   const activeProjects = getActiveProjects(currentUser.team);
   
+  // Filter projects assigned specifically to the current user
+  const filterByOwner = (projectList: typeof projects) => {
+    return projectList.filter((p) => {
+      // If project has an assigned owner, show only to that owner
+      if (p.assignedOwner) {
+        return p.assignedOwner === currentUser.id;
+      }
+      // If no assigned owner, show to all team members
+      return true;
+    });
+  };
+  
+  // Apply owner filter first, then search filter
+  const pendingForUser = filterByOwner(pendingProjects);
+  const activeForUser = filterByOwner(activeProjects);
+
   // Filter by search
   const filterProjects = (projectList: typeof projects) =>
     projectList.filter(
@@ -55,17 +71,17 @@ export const TeamDashboard = () => {
         p.mid.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
-  const filteredPending = filterProjects(pendingProjects);
-  const filteredActive = filterProjects(activeProjects);
+  const filteredPending = filterProjects(pendingForUser);
+  const filteredActive = filterProjects(activeForUser);
 
-  // All projects this team has touched (for history)
-  const allTeamProjects = projects.filter(
+  // All projects this team has touched (for history) - also filtered by owner
+  const allTeamProjects = filterByOwner(projects.filter(
     (p) =>
       p.currentOwnerTeam === currentUser.team ||
       p.transferHistory.some(
         (t) => t.fromTeam === currentUser.team || t.toTeam === currentUser.team
       )
-  );
+  ));
   const filteredAll = filterProjects(allTeamProjects);
 
   const handleAddProject = (project: Project) => {
@@ -123,9 +139,9 @@ export const TeamDashboard = () => {
 
               <Button variant="ghost" size="icon" className="relative">
                 <Bell className="h-5 w-5" />
-                {pendingProjects.length > 0 && (
+                {pendingForUser.length > 0 && (
                   <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground flex items-center justify-center animate-pulse">
-                    {pendingProjects.length}
+                    {pendingForUser.length}
                   </span>
                 )}
               </Button>
@@ -157,14 +173,14 @@ export const TeamDashboard = () => {
                 <Clock className="h-4 w-4" />
                 <span className="text-sm">Pending</span>
               </div>
-              <p className="text-2xl font-bold">{pendingProjects.length}</p>
+              <p className="text-2xl font-bold">{pendingForUser.length}</p>
             </div>
             <div className="p-4 rounded-lg border bg-card">
               <div className="flex items-center gap-2 text-muted-foreground mb-1">
                 <Rocket className="h-4 w-4" />
                 <span className="text-sm">Active</span>
               </div>
-              <p className="text-2xl font-bold">{activeProjects.length}</p>
+              <p className="text-2xl font-bold">{activeForUser.length}</p>
             </div>
             <div className="p-4 rounded-lg border bg-card">
               <div className="flex items-center gap-2 text-muted-foreground mb-1">
@@ -181,18 +197,18 @@ export const TeamDashboard = () => {
               <TabsTrigger value="pending" className="gap-2">
                 <Clock className="h-4 w-4" />
                 Pending
-                {pendingProjects.length > 0 && (
+                {pendingForUser.length > 0 && (
                   <Badge variant="secondary" className="ml-1 bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400">
-                    {pendingProjects.length}
+                    {pendingForUser.length}
                   </Badge>
                 )}
               </TabsTrigger>
               <TabsTrigger value="active" className="gap-2">
                 <Rocket className="h-4 w-4" />
                 Active
-                {activeProjects.length > 0 && (
+                {activeForUser.length > 0 && (
                   <Badge variant="secondary" className="ml-1">
-                    {activeProjects.length}
+                    {activeForUser.length}
                   </Badge>
                 )}
               </TabsTrigger>
