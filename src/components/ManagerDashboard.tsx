@@ -47,52 +47,7 @@ export const ManagerDashboard = () => {
   const [expandedProjects, setExpandedProjects] = useState<Set<string>>(new Set());
   const [csvDialogOpen, setCsvDialogOpen] = useState(false);
 
-  const toggleProjectExpand = (projectId: string) => {
-    setExpandedProjects(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(projectId)) {
-        newSet.delete(projectId);
-      } else {
-        newSet.add(projectId);
-      }
-      return newSet;
-    });
-  };
-
-  if (!currentUser) return null;
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <div className="h-8 w-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-muted-foreground">Loading projects...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Filter projects
-  const filteredProjects = projects.filter((p) => {
-    const matchesSearch =
-      p.merchantName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      p.mid.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesTeam = teamFilter === "all" || p.currentOwnerTeam === teamFilter;
-    const matchesOwner = ownerFilter === "all" || p.salesSpoc === ownerFilter;
-    return matchesSearch && matchesTeam && matchesOwner;
-  });
-
-  // Get unique owners
-  const uniqueOwners = Array.from(new Set(projects.map((p) => p.salesSpoc).filter(Boolean)));
-
-  // Team stats
-  const teamStats = {
-    mint: projects.filter((p) => p.currentOwnerTeam === "mint").length,
-    integration: projects.filter((p) => p.currentOwnerTeam === "integration").length,
-    ms: projects.filter((p) => p.currentOwnerTeam === "ms").length,
-  };
-
-  // Calculate project time stats
+  // Calculate project time stats helper
   const calculateProjectStats = (project: Project) => {
     const projectTime = calculateTimeByParty(project.responsibilityLog);
     const checklistTime = { gokwik: 0, merchant: 0 };
@@ -115,21 +70,7 @@ export const ManagerDashboard = () => {
     };
   };
 
-  // Overall stats
-  const totalProjects = projects.length;
-  const pendingProjects = projects.filter((p) => p.pendingAcceptance).length;
-  const activeProjects = projects.filter((p) => !p.pendingAcceptance && p.currentPhase !== "completed").length;
-  const completedProjects = projects.filter((p) => p.currentPhase === "completed").length;
-
-  // Aggregate time stats
-  let totalGokwikTime = 0;
-  let totalMerchantTime = 0;
-  projects.forEach((p) => {
-    const time = calculateTimeByParty(p.responsibilityLog);
-    totalGokwikTime += time.gokwik;
-    totalMerchantTime += time.merchant;
-  });
-
+  // ALL useMemo hooks MUST be called before any conditional returns
   // Checklist Time Report - grouped by project
   const checklistByProjectReport = useMemo(() => {
     return projects.map((project) => {
@@ -245,7 +186,7 @@ export const ManagerDashboard = () => {
         totalTasks,
         gokwikTime,
         merchantTime,
-        memberCount: 0, // Will be updated when we have user data
+        memberCount: 0,
         avgTimePerProject: teamProjects.length > 0 ? (gokwikTime + merchantTime) / teamProjects.length : 0,
       };
     });
@@ -271,6 +212,67 @@ export const ManagerDashboard = () => {
       (a.stats.projectTime.gokwik + a.stats.projectTime.merchant)
     );
   }, [projects]);
+
+  const toggleProjectExpand = (projectId: string) => {
+    setExpandedProjects(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(projectId)) {
+        newSet.delete(projectId);
+      } else {
+        newSet.add(projectId);
+      }
+      return newSet;
+    });
+  };
+
+  // Early returns AFTER all hooks
+  if (!currentUser) return null;
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="h-8 w-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-muted-foreground">Loading projects...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Filter projects
+  const filteredProjects = projects.filter((p) => {
+    const matchesSearch =
+      p.merchantName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      p.mid.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesTeam = teamFilter === "all" || p.currentOwnerTeam === teamFilter;
+    const matchesOwner = ownerFilter === "all" || p.salesSpoc === ownerFilter;
+    return matchesSearch && matchesTeam && matchesOwner;
+  });
+
+  // Get unique owners
+  const uniqueOwners = Array.from(new Set(projects.map((p) => p.salesSpoc).filter(Boolean)));
+
+  // Team stats
+  const teamStats = {
+    mint: projects.filter((p) => p.currentOwnerTeam === "mint").length,
+    integration: projects.filter((p) => p.currentOwnerTeam === "integration").length,
+    ms: projects.filter((p) => p.currentOwnerTeam === "ms").length,
+  };
+
+  // Overall stats
+  const totalProjects = projects.length;
+  const pendingProjects = projects.filter((p) => p.pendingAcceptance).length;
+  const activeProjects = projects.filter((p) => !p.pendingAcceptance && p.currentPhase !== "completed").length;
+  const completedProjects = projects.filter((p) => p.currentPhase === "completed").length;
+
+  // Aggregate time stats
+  let totalGokwikTime = 0;
+  let totalMerchantTime = 0;
+  projects.forEach((p) => {
+    const time = calculateTimeByParty(p.responsibilityLog);
+    totalGokwikTime += time.gokwik;
+    totalMerchantTime += time.merchant;
+  });
 
   return (
     <div className="min-h-screen bg-background">
