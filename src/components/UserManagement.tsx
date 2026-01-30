@@ -96,20 +96,37 @@ export const UserManagement = () => {
     setIsCreating(true);
 
     try {
-      // Create user via Supabase Auth
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          emailRedirectTo: window.location.origin,
-          data: {
+      // Get the current session token
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
+
+      if (!token) {
+        throw new Error("You must be logged in to create users");
+      }
+
+      // Call the edge function to create user (manager stays logged in)
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-user`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            email,
+            password,
             name,
             team,
-          },
-        },
-      });
+          }),
+        }
+      );
 
-      if (error) throw error;
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to create user');
+      }
 
       toast.success(`User ${name} created successfully!`);
       setIsOpen(false);
@@ -118,8 +135,8 @@ export const UserManagement = () => {
       setName("");
       setTeam("mint");
       
-      // Refresh users list after a short delay to allow trigger to complete
-      setTimeout(() => fetchUsers(), 1000);
+      // Refresh users list
+      setTimeout(() => fetchUsers(), 500);
     } catch (error: any) {
       console.error("Error creating user:", error);
       toast.error(error.message || "Failed to create user");
