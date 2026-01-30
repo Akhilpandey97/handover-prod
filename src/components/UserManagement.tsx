@@ -97,16 +97,25 @@ export const UserManagement = () => {
 
     try {
       // Get the current session token
-      const { data: sessionData } = await supabase.auth.getSession();
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError) {
+        console.error("Session error:", sessionError);
+        throw new Error("Failed to get session");
+      }
+      
       const token = sessionData.session?.access_token;
 
       if (!token) {
         throw new Error("You must be logged in to create users");
       }
 
+      console.log("Creating user with edge function...");
+      
       // Call the edge function to create user (manager stays logged in)
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
       const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-user`,
+        `${supabaseUrl}/functions/v1/create-user`,
         {
           method: 'POST',
           headers: {
@@ -123,12 +132,13 @@ export const UserManagement = () => {
       );
 
       const result = await response.json();
+      console.log("Create user response:", result);
 
       if (!response.ok) {
         throw new Error(result.error || 'Failed to create user');
       }
 
-      toast.success(`User ${name} created successfully!`);
+      toast.success(`User ${name} created successfully! They can now login with email: ${email}`);
       setIsOpen(false);
       setEmail("");
       setPassword("");
