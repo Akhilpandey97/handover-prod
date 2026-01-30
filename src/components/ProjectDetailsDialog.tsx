@@ -1,4 +1,4 @@
-import { Project, calculateTimeByParty, formatDuration } from "@/data/projectsData";
+import { Project, calculateTimeFromChecklist, calculateProjectResponsibilityFromChecklist, formatDuration } from "@/data/projectsData";
 import { teamLabels } from "@/data/teams";
 import {
   Dialog,
@@ -9,7 +9,6 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { ResponsibilityToggle } from "./ResponsibilityToggle";
 import {
   Building2,
   Calendar,
@@ -19,8 +18,10 @@ import {
   Globe,
   Link2,
   MapPin,
+  Minus,
   TrendingUp,
   User,
+  Users,
 } from "lucide-react";
 import { format } from "date-fns";
 
@@ -28,18 +29,18 @@ interface ProjectDetailsDialogProps {
   project: Project | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onResponsibilityToggle?: (projectId: string, party: "gokwik" | "merchant") => void;
 }
 
 export const ProjectDetailsDialog = ({
   project,
   open,
   onOpenChange,
-  onResponsibilityToggle,
 }: ProjectDetailsDialogProps) => {
   if (!project) return null;
 
-  const timeByParty = calculateTimeByParty(project.responsibilityLog);
+  // Calculate from checklist items
+  const computedResponsibility = calculateProjectResponsibilityFromChecklist(project.checklist);
+  const timeByParty = calculateTimeFromChecklist(project.checklist);
 
   const DetailRow = ({ icon: Icon, label, value, isLink }: { icon: any; label: string; value?: string; isLink?: boolean }) => (
     <div className="flex items-start gap-3 py-2">
@@ -81,15 +82,33 @@ export const ProjectDetailsDialog = ({
 
         <ScrollArea className="max-h-[60vh] pr-4">
           <div className="space-y-6">
-            {/* Responsibility Toggle */}
-            {onResponsibilityToggle && (
-              <ResponsibilityToggle
-                project={project}
-                onToggle={onResponsibilityToggle}
-              />
-            )}
-
-            {/* Time Summary */}
+            {/* Computed Responsibility Display */}
+            <div className="p-4 rounded-lg border bg-card space-y-3">
+              <div className="flex items-center justify-between">
+                <h4 className="text-sm font-semibold flex items-center gap-2">
+                  <Clock className="h-4 w-4" />
+                  Action Pending On
+                </h4>
+                <Badge 
+                  variant="secondary"
+                  className={
+                    computedResponsibility === "gokwik" 
+                      ? "bg-primary/10 text-primary" 
+                      : computedResponsibility === "merchant"
+                      ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
+                      : "bg-muted text-muted-foreground"
+                  }
+                >
+                  {computedResponsibility === "gokwik" && <Building2 className="h-3 w-3 mr-1" />}
+                  {computedResponsibility === "merchant" && <Users className="h-3 w-3 mr-1" />}
+                  {computedResponsibility === "neutral" && <Minus className="h-3 w-3 mr-1" />}
+                  {computedResponsibility === "gokwik" ? "GoKwik" : computedResponsibility === "merchant" ? "Merchant" : "Neutral"}
+                </Badge>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Auto-calculated based on checklist item assignments
+              </p>
+            </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="p-3 rounded-lg bg-primary/5 border border-primary/20">
                 <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">

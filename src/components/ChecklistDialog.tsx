@@ -59,11 +59,32 @@ export const ChecklistDialog = ({
   const totalCount = project.checklist.length;
   const progress = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
 
-  const groupedChecklist = project.checklist.reduce((acc, item) => {
-    if (!acc[item.phase]) acc[item.phase] = [];
-    acc[item.phase].push(item);
+  // Group checklist by owner team (mint, integration) instead of phase
+  const groupedByTeam = project.checklist.reduce((acc, item) => {
+    if (!acc[item.ownerTeam]) acc[item.ownerTeam] = [];
+    acc[item.ownerTeam].push(item);
     return acc;
   }, {} as Record<string, typeof project.checklist>);
+
+  // Order teams: current user's team first, then others
+  const teamOrder = currentUser.team === "integration" 
+    ? ["integration", "mint", "ms", "manager"]
+    : currentUser.team === "mint"
+    ? ["mint", "integration", "ms", "manager"]
+    : currentUser.team === "ms"
+    ? ["ms", "integration", "mint", "manager"]
+    : ["mint", "integration", "ms", "manager"];
+
+  const orderedTeams = teamOrder.filter(team => groupedByTeam[team]?.length > 0);
+
+  // Calculate counts per team
+  const teamCounts = Object.entries(groupedByTeam).reduce((acc, [team, items]) => {
+    acc[team] = {
+      completed: items.filter(i => i.completed).length,
+      total: items.length,
+    };
+    return acc;
+  }, {} as Record<string, { completed: number; total: number }>);
 
   const canEditChecklistItem = (ownerTeam: string) => {
     if (currentUser.team === "manager") return true;
@@ -120,21 +141,41 @@ export const ChecklistDialog = ({
           </div>
         </div>
 
-        <ScrollArea className="max-h-[55vh] pr-4">
+        {/* Team Progress Summary */}
+        <div className="flex gap-2 mb-4 flex-wrap">
+          {orderedTeams.map((team) => (
+            <Badge 
+              key={team}
+              variant={team === currentUser.team ? "default" : "outline"}
+              className={team === currentUser.team ? "" : "opacity-70"}
+            >
+              {ownerTeamLabels[team as keyof typeof ownerTeamLabels]}: {teamCounts[team]?.completed || 0}/{teamCounts[team]?.total || 0}
+            </Badge>
+          ))}
+        </div>
+
+        <ScrollArea className="max-h-[50vh] pr-4">
           <div className="space-y-6">
-            {Object.entries(groupedChecklist).map(([phase, items]) => (
-              <div key={phase}>
-                <div className="flex items-center gap-2 mb-3">
-                  <Badge variant="secondary" className={phaseColors[phase as keyof typeof phaseColors]}>
-                    {phaseLabels[phase as keyof typeof phaseLabels]}
-                  </Badge>
-                  <span className="text-xs text-muted-foreground">
-                    {items.filter((i) => i.completed).length}/{items.length}
-                  </span>
-                  <span className="text-xs text-muted-foreground ml-auto">
-                    Owner: {ownerTeamLabels[items[0]?.ownerTeam as keyof typeof ownerTeamLabels]}
-                  </span>
-                </div>
+            {orderedTeams.map((team) => {
+              const items = groupedByTeam[team];
+              const isUserTeam = team === currentUser.team || currentUser.team === "manager";
+              
+              return (
+                <div key={team} className={!isUserTeam ? "opacity-75" : ""}>
+                  <div className="flex items-center gap-2 mb-3">
+                    <Badge 
+                      variant={isUserTeam ? "default" : "secondary"} 
+                      className={isUserTeam ? "" : phaseColors[team as keyof typeof phaseColors]}
+                    >
+                      {ownerTeamLabels[team as keyof typeof ownerTeamLabels]}
+                    </Badge>
+                    <span className="text-xs text-muted-foreground">
+                      {items.filter((i) => i.completed).length}/{items.length}
+                    </span>
+                    {isUserTeam && (
+                      <Badge variant="outline" className="text-xs ml-auto">Your Tasks</Badge>
+                    )}
+                  </div>
                 <div className="space-y-3">
                   {items.map((item) => {
                     const timeStats = calculateTimeByParty(item.responsibilityLog);
@@ -282,9 +323,10 @@ export const ChecklistDialog = ({
                       </div>
                     );
                   })}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </ScrollArea>
       </DialogContent>

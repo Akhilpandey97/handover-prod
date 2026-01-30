@@ -117,6 +117,38 @@ export const formatDuration = (ms: number): string => {
   return `${minutes}m`;
 };
 
+// Calculate project responsibility automatically based on checklist items
+export const calculateProjectResponsibilityFromChecklist = (checklist: ProjectChecklist[]): ResponsibilityParty => {
+  // Get all uncompleted, non-neutral items
+  const activeItems = checklist.filter(item => !item.completed && item.currentResponsibility !== "neutral");
+  
+  if (activeItems.length === 0) {
+    return "neutral";
+  }
+  
+  // If any active item is on merchant, project is on merchant
+  const hasMerchantItem = activeItems.some(item => item.currentResponsibility === "merchant");
+  if (hasMerchantItem) {
+    return "merchant";
+  }
+  
+  // Otherwise, all active items are on gokwik
+  return "gokwik";
+};
+
+// Calculate time from checklist items instead of project-level logs
+export const calculateTimeFromChecklist = (checklist: ProjectChecklist[]): { gokwik: number; merchant: number; neutral: number } => {
+  const result = { gokwik: 0, merchant: 0, neutral: 0 };
+  
+  checklist.forEach(item => {
+    const itemTime = calculateTimeByParty(item.responsibilityLog);
+    result.gokwik += itemTime.gokwik;
+    result.merchant += itemTime.merchant;
+  });
+  
+  return result;
+};
+
 // MINT Checklist Items
 const mintChecklistItems = [
   "Requirement gathering",
