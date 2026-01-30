@@ -196,23 +196,23 @@ export const ProjectAssignment = () => {
           <div className="flex items-center gap-2">
             <User className="h-4 w-4 text-muted-foreground" />
             <span className="text-sm font-medium">Owner:</span>
-            <Select 
-              value={targetOwner} 
-              onValueChange={setTargetOwner}
-              disabled={isLoadingMembers}
-            >
-              <SelectTrigger className="w-56">
-                <SelectValue placeholder={isLoadingMembers ? "Loading..." : "Select owner (optional)"} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="">No specific owner</SelectItem>
-                {teamMembers.map((member) => (
-                  <SelectItem key={member.id} value={member.id}>
-                    {member.name} ({member.email})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <Select 
+            value={targetOwner || "none"} 
+            onValueChange={(v) => setTargetOwner(v === "none" ? "" : v)}
+            disabled={isLoadingMembers}
+          >
+            <SelectTrigger className="w-56">
+              <SelectValue placeholder={isLoadingMembers ? "Loading..." : "Select owner (optional)"} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none">No specific owner</SelectItem>
+              {teamMembers.map((member) => (
+                <SelectItem key={member.id} value={member.id}>
+                  {member.name} ({member.email})
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           </div>
 
           <ArrowRight className="h-4 w-4 text-muted-foreground" />
