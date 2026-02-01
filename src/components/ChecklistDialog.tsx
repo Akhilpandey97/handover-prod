@@ -60,18 +60,23 @@ export const ChecklistDialog = ({
   const progress = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
 
   // Group checklist by owner team (mint, integration) instead of phase
+  // Normalize team values to lowercase for consistent comparison
   const groupedByTeam = project.checklist.reduce((acc, item) => {
-    if (!acc[item.ownerTeam]) acc[item.ownerTeam] = [];
-    acc[item.ownerTeam].push(item);
+    const team = (item.ownerTeam || "").toLowerCase();
+    if (!acc[team]) acc[team] = [];
+    acc[team].push(item);
     return acc;
   }, {} as Record<string, typeof project.checklist>);
 
+  // Normalize current user's team for comparison
+  const userTeam = (currentUser.team || "").toLowerCase();
+
   // Order teams: current user's team first, then others
-  const teamOrder = currentUser.team === "integration" 
+  const teamOrder = userTeam === "integration" 
     ? ["integration", "mint", "ms", "manager"]
-    : currentUser.team === "mint"
+    : userTeam === "mint"
     ? ["mint", "integration", "ms", "manager"]
-    : currentUser.team === "ms"
+    : userTeam === "ms"
     ? ["ms", "integration", "mint", "manager"]
     : ["mint", "integration", "ms", "manager"];
 
@@ -86,9 +91,10 @@ export const ChecklistDialog = ({
     return acc;
   }, {} as Record<string, { completed: number; total: number }>);
 
+  // Compare teams case-insensitively
   const canEditChecklistItem = (ownerTeam: string) => {
-    if (currentUser.team === "manager") return true;
-    return currentUser.team === ownerTeam;
+    if (userTeam === "manager") return true;
+    return userTeam === (ownerTeam || "").toLowerCase();
   };
 
   const handleResponsibilityChange = (checklistId: string, newParty: string) => {
@@ -146,8 +152,8 @@ export const ChecklistDialog = ({
           {orderedTeams.map((team) => (
             <Badge 
               key={team}
-              variant={team === currentUser.team ? "default" : "outline"}
-              className={team === currentUser.team ? "" : "opacity-70"}
+              variant={team === userTeam ? "default" : "outline"}
+              className={team === userTeam ? "" : "opacity-70"}
             >
               {ownerTeamLabels[team as keyof typeof ownerTeamLabels]}: {teamCounts[team]?.completed || 0}/{teamCounts[team]?.total || 0}
             </Badge>
@@ -158,7 +164,7 @@ export const ChecklistDialog = ({
           <div className="space-y-6">
             {orderedTeams.map((team) => {
               const items = groupedByTeam[team];
-              const isUserTeam = team === currentUser.team || currentUser.team === "manager";
+              const isUserTeam = team === userTeam || userTeam === "manager";
               
               return (
                 <div key={team} className={!isUserTeam ? "opacity-75" : ""}>
@@ -179,7 +185,8 @@ export const ChecklistDialog = ({
                 <div className="space-y-3">
                   {items.map((item) => {
                     const timeStats = calculateTimeByParty(item.responsibilityLog);
-                    const canEdit = canEditChecklistItem(item.ownerTeam);
+                    const itemTeam = (item.ownerTeam || "").toLowerCase();
+                    const canEdit = canEditChecklistItem(itemTeam);
                     
                     return (
                       <div
