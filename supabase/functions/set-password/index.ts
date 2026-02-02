@@ -12,12 +12,19 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { email, password, name, team } = await req.json();
+    const { userId, newPassword } = await req.json();
 
     // Validate required fields
-    if (!email || !password || !name || !team) {
+    if (!userId || !newPassword) {
       return new Response(
-        JSON.stringify({ error: 'Missing required fields: email, password, name, team' }),
+        JSON.stringify({ error: 'Missing required fields: userId, newPassword' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (newPassword.length < 6) {
+      return new Response(
+        JSON.stringify({ error: 'Password must be at least 6 characters' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -31,7 +38,6 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Create Supabase client with service role to check if requester is manager
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     
@@ -62,95 +68,36 @@ Deno.serve(async (req) => {
 
     if (roleError || roleData?.role !== 'manager') {
       return new Response(
-        JSON.stringify({ error: 'Only managers can create users' }),
+        JSON.stringify({ error: 'Only managers can set user passwords' }),
         { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Create the new user using admin API (doesn't affect current session)
-    const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
-      email,
-      password,
-      email_confirm: true, // Auto-confirm email
-      user_metadata: {
-        name,
-        team,
-      },
-    });
+    // Update the user's password using admin API
+    const { data: updatedUser, error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
+      userId,
+      { password: newPassword }
+    );
 
-    if (createError) {
-      console.error('Error creating user:', createError);
+    if (updateError) {
+      console.error('Error updating password:', updateError);
       return new Response(
-        JSON.stringify({ error: createError.message }),
+        JSON.stringify({ error: updateError.message }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Manually insert into profiles table (in case trigger doesn't fire)
-    const { error: profileError } = await supabaseAdmin
-      .from('profiles')
-      .upsert({
-        id: newUser.user.id,
-        email: email,
-        name: name,
-        team: team,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      }, { onConflict: 'id' });
-
-    if (profileError) {
-      console.error('Error creating profile:', profileError);
-      // Don't fail the whole operation, but log the error
-    }
-
-    // Check if user already has a role entry
-    const { data: existingRole } = await supabaseAdmin
-      .from('user_roles')
-      .select('id')
-      .eq('user_id', newUser.user.id)
-      .single();
-
-    if (existingRole) {
-      // Update existing role
-      const { error: updateRoleError } = await supabaseAdmin
-        .from('user_roles')
-        .update({ role: team })
-        .eq('user_id', newUser.user.id);
-
-      if (updateRoleError) {
-        console.error('Error updating user role:', updateRoleError);
-      }
-    } else {
-      // Insert new role
-      const { error: insertRoleError } = await supabaseAdmin
-        .from('user_roles')
-        .insert({
-          user_id: newUser.user.id,
-          role: team,
-          created_at: new Date().toISOString(),
-        });
-
-      if (insertRoleError) {
-        console.error('Error inserting user role:', insertRoleError);
-      }
-    }
-
-    console.log('User created successfully:', newUser.user.id, email, name, team);
+    console.log('Password updated for user:', userId);
 
     return new Response(
       JSON.stringify({ 
         success: true, 
-        user: {
-          id: newUser.user.id,
-          email: newUser.user.email,
-          name,
-          team,
-        }
+        message: 'Password updated successfully'
       }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error: unknown) {
-    console.error('Error in create-user function:', error);
+    console.error('Error in set-password function:', error);
     const message = error instanceof Error ? error.message : 'Internal server error';
     return new Response(
       JSON.stringify({ error: message }),

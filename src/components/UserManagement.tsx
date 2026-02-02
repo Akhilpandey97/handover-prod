@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { UserPlus, Users, RefreshCw } from "lucide-react";
+import { UserPlus, Users, RefreshCw, Key } from "lucide-react";
 import type { Database } from "@/integrations/supabase/types";
 
 type TeamRole = Database["public"]["Enums"]["team_role"];
@@ -42,11 +42,18 @@ export const UserManagement = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   
-  // Form state
+  // Form state for creating user
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [team, setTeam] = useState<TeamRole>("mint");
+
+  // Set password dialog state
+  const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
+  const [selectedUserId, setSelectedUserId] = useState<string>("");
+  const [selectedUserName, setSelectedUserName] = useState<string>("");
+  const [newPassword, setNewPassword] = useState("");
+  const [isSettingPassword, setIsSettingPassword] = useState(false);
 
   const fetchUsers = async () => {
     setIsLoading(true);
@@ -110,7 +117,7 @@ export const UserManagement = () => {
         throw new Error("You must be logged in to create users");
       }
 
-      console.log("Creating user with edge function...");
+      console.log("Creating user with edge function...", { email, name, team });
       
       // Call the edge function to create user (manager stays logged in)
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
@@ -153,6 +160,59 @@ export const UserManagement = () => {
     } finally {
       setIsCreating(false);
     }
+  };
+
+  const handleSetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSettingPassword(true);
+
+    try {
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError || !sessionData.session?.access_token) {
+        throw new Error("You must be logged in to set passwords");
+      }
+
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const response = await fetch(
+        `${supabaseUrl}/functions/v1/set-password`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${sessionData.session.access_token}`,
+          },
+          body: JSON.stringify({
+            userId: selectedUserId,
+            newPassword,
+          }),
+        }
+      );
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to set password');
+      }
+
+      toast.success(`Password updated for ${selectedUserName}`);
+      setPasswordDialogOpen(false);
+      setNewPassword("");
+      setSelectedUserId("");
+      setSelectedUserName("");
+    } catch (error: any) {
+      console.error("Error setting password:", error);
+      toast.error(error.message || "Failed to set password");
+    } finally {
+      setIsSettingPassword(false);
+    }
+  };
+
+  const openPasswordDialog = (userId: string, userName: string) => {
+    setSelectedUserId(userId);
+    setSelectedUserName(userName);
+    setNewPassword("");
+    setPasswordDialogOpen(true);
   };
 
   const handleUpdateRole = async (userId: string, newRole: TeamRole) => {
@@ -298,6 +358,7 @@ export const UserManagement = () => {
                 <TableHead>Email</TableHead>
                 <TableHead>Team</TableHead>
                 <TableHead>Created</TableHead>
+                <TableHead>Role</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -317,7 +378,7 @@ export const UserManagement = () => {
                       : "N/A"
                     }
                   </TableCell>
-                  <TableCell className="text-right">
+                  <TableCell>
                     <Select 
                       value={user.team} 
                       onValueChange={(value) => handleUpdateRole(user.id, value as TeamRole)}
@@ -334,12 +395,56 @@ export const UserManagement = () => {
                       </SelectContent>
                     </Select>
                   </TableCell>
+                  <TableCell className="text-right">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => openPasswordDialog(user.id, user.name)}
+                    >
+                      <Key className="h-4 w-4 mr-1" />
+                      Set Password
+                    </Button>
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
           </Table>
         )}
       </CardContent>
+
+      {/* Set Password Dialog */}
+      <Dialog open={passwordDialogOpen} onOpenChange={setPasswordDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Set Password</DialogTitle>
+            <DialogDescription>
+              Set a new password for {selectedUserName}
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleSetPassword} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="new-password">New Password</Label>
+              <Input
+                id="new-password"
+                type="password"
+                placeholder="Enter new password (min 6 characters)"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                required
+                minLength={6}
+              />
+            </div>
+            <div className="flex justify-end gap-2 pt-4">
+              <Button type="button" variant="outline" onClick={() => setPasswordDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={isSettingPassword}>
+                {isSettingPassword ? "Updating..." : "Update Password"}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 };
