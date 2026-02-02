@@ -48,14 +48,11 @@ export const TeamDashboard = () => {
   const activeProjects = getActiveProjects(currentUser.team);
   
   // Filter projects assigned specifically to the current user
+  // Only show projects that are explicitly assigned to this user
   const filterByOwner = (projectList: typeof projects) => {
     return projectList.filter((p) => {
-      // If project has an assigned owner, show only to that owner
-      if (p.assignedOwner) {
-        return p.assignedOwner === currentUser.id;
-      }
-      // If no assigned owner, show to all team members
-      return true;
+      // Only show projects assigned to this specific user
+      return p.assignedOwner === currentUser.id;
     });
   };
   
