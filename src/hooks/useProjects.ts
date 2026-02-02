@@ -68,6 +68,28 @@ export const useProjectsQuery = () => {
   return useQuery({
     queryKey: ["projects"],
     queryFn: async () => {
+      const PAGE_SIZE = 1000;
+
+      const fetchAllChecklistItems = async () => {
+        const all: any[] = [];
+        for (let from = 0; ; from += PAGE_SIZE) {
+          const { data, error } = await supabase
+            .from("checklist_items")
+            .select("*")
+            // IMPORTANT: ordering only by sort_order will group many projects together and,
+            // combined with the 1000-row limit, can drop later checklist rows (e.g. Integration).
+            .order("project_id", { ascending: true })
+            .order("sort_order", { ascending: true })
+            .order("id", { ascending: true })
+            .range(from, from + PAGE_SIZE - 1);
+
+          if (error) throw error;
+          all.push(...(data || []));
+          if (!data || data.length < PAGE_SIZE) break;
+        }
+        return all;
+      };
+
       // Fetch projects
       const { data: projects, error: projectsError } = await supabase
         .from("projects")
@@ -76,13 +98,8 @@ export const useProjectsQuery = () => {
 
       if (projectsError) throw projectsError;
 
-      // Fetch all checklist items
-      const { data: checklistItems, error: checklistError } = await supabase
-        .from("checklist_items")
-        .select("*")
-        .order("sort_order", { ascending: true });
-
-      if (checklistError) throw checklistError;
+      // Fetch all checklist items (paginated to avoid 1000-row limit dropping Integration rows)
+      const checklistItems = await fetchAllChecklistItems();
 
       // Fetch project responsibility logs
       const { data: projectLogs, error: projectLogsError } = await supabase
