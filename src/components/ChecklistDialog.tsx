@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Project, calculateTimeByParty, formatDuration, ResponsibilityParty } from "@/data/projectsData";
 import { useProjects } from "@/contexts/ProjectContext";
 import { useAuth } from "@/contexts/AuthContext";
@@ -13,8 +13,10 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { CheckCircle2, ClipboardList, Clock, Timer, MessageSquare, Send, Building2, Users, Minus } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { CheckCircle2, ClipboardList, Clock, Timer, MessageSquare, Send, Building2, Users, Minus, Lock, AlertCircle } from "lucide-react";
 
 interface ChecklistDialogProps {
   project: Project | null;
@@ -22,25 +24,18 @@ interface ChecklistDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
-const phaseLabels = {
-  mint: "MINT",
-  integration: "Integration",
-  ms: "MS",
-  completed: "Completed",
-};
-
-const phaseColors = {
-  mint: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
-  integration: "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400",
-  ms: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
-  completed: "bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400",
-};
-
 const ownerTeamLabels = {
   mint: "MINT Team",
   integration: "Integration Team",
   ms: "MS Team",
   manager: "Manager",
+};
+
+const teamColors = {
+  mint: "bg-blue-500",
+  integration: "bg-purple-500",
+  ms: "bg-emerald-500",
+  manager: "bg-primary",
 };
 
 export const ChecklistDialog = ({
@@ -59,8 +54,7 @@ export const ChecklistDialog = ({
   const totalCount = project.checklist.length;
   const progress = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
 
-  // Group checklist by owner team (mint, integration) instead of phase
-  // Normalize team values to lowercase for consistent comparison
+  // Group checklist by owner team
   const groupedByTeam = project.checklist.reduce((acc, item) => {
     const team = (item.ownerTeam || "").toLowerCase();
     if (!acc[team]) acc[team] = [];
@@ -97,6 +91,24 @@ export const ChecklistDialog = ({
     return userTeam === (ownerTeam || "").toLowerCase();
   };
 
+  // Check if an item can be completed (sequential logic)
+  const canCompleteItem = (team: string, itemIndex: number) => {
+    const teamItems = groupedByTeam[team] || [];
+    // Can complete if all previous items are completed
+    for (let i = 0; i < itemIndex; i++) {
+      if (!teamItems[i].completed) {
+        return false;
+      }
+    }
+    return true;
+  };
+
+  // Get the index of an item within its team group
+  const getItemIndexInTeam = (team: string, itemId: string) => {
+    const teamItems = groupedByTeam[team] || [];
+    return teamItems.findIndex(item => item.id === itemId);
+  };
+
   const handleResponsibilityChange = (checklistId: string, newParty: string) => {
     if (newParty && (newParty === "gokwik" || newParty === "merchant" || newParty === "neutral")) {
       toggleChecklistResponsibility(project.id, checklistId, newParty as ResponsibilityParty);
@@ -118,14 +130,14 @@ export const ChecklistDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[85vh]">
+      <DialogContent className="max-w-3xl max-h-[90vh]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-              <ClipboardList className="h-5 w-5 text-primary" />
+            <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-lg">
+              <ClipboardList className="h-6 w-6 text-white" />
             </div>
             <div>
-              <span>Checklist</span>
+              <span className="text-xl">Project Checklist</span>
               <p className="text-sm font-normal text-muted-foreground mt-0.5">
                 {project.merchantName}
               </p>
@@ -133,203 +145,267 @@ export const ChecklistDialog = ({
           </DialogTitle>
         </DialogHeader>
 
-        {/* Progress Bar */}
-        <div className="space-y-2">
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">Progress</span>
-            <span className="font-medium">{completedCount}/{totalCount} completed</span>
+        {/* Progress Section */}
+        <div className="bg-muted/30 rounded-xl p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium text-muted-foreground">Overall Progress</span>
+            <span className="font-bold text-lg">{completedCount}/{totalCount} completed</span>
           </div>
-          <div className="h-2 bg-muted rounded-full overflow-hidden">
-            <div
-              className="h-full bg-primary transition-all duration-300"
-              style={{ width: `${progress}%` }}
-            />
+          <Progress value={progress} className="h-3" />
+          
+          {/* Team Progress Badges */}
+          <div className="flex gap-2 flex-wrap pt-2">
+            {orderedTeams.map((team) => {
+              const count = teamCounts[team];
+              const isComplete = count?.completed === count?.total;
+              return (
+                <Badge 
+                  key={team}
+                  variant={team === userTeam ? "default" : "outline"}
+                  className={`px-3 py-1 ${team === userTeam ? "" : "opacity-70"} ${isComplete ? "bg-emerald-500 text-white border-emerald-500" : ""}`}
+                >
+                  {ownerTeamLabels[team as keyof typeof ownerTeamLabels]}: {count?.completed || 0}/{count?.total || 0}
+                  {isComplete && <CheckCircle2 className="h-3 w-3 ml-1" />}
+                </Badge>
+              );
+            })}
           </div>
         </div>
 
-        {/* Team Progress Summary */}
-        <div className="flex gap-2 mb-4 flex-wrap">
-          {orderedTeams.map((team) => (
-            <Badge 
-              key={team}
-              variant={team === userTeam ? "default" : "outline"}
-              className={team === userTeam ? "" : "opacity-70"}
-            >
-              {ownerTeamLabels[team as keyof typeof ownerTeamLabels]}: {teamCounts[team]?.completed || 0}/{teamCounts[team]?.total || 0}
-            </Badge>
-          ))}
+        {/* Sequential Note */}
+        <div className="flex items-center gap-2 text-sm text-muted-foreground bg-amber-500/10 rounded-lg p-3 border border-amber-200 dark:border-amber-800">
+          <AlertCircle className="h-4 w-4 text-amber-500 shrink-0" />
+          <span>Tasks must be completed in order. Complete previous tasks to unlock the next one.</span>
         </div>
 
         <ScrollArea className="max-h-[50vh] pr-4">
-          <div className="space-y-6">
+          <div className="space-y-8">
             {orderedTeams.map((team) => {
               const items = groupedByTeam[team];
               const isUserTeam = team === userTeam || userTeam === "manager";
+              const teamCount = teamCounts[team];
+              const teamProgress = teamCount ? Math.round((teamCount.completed / teamCount.total) * 100) : 0;
               
               return (
-                <div key={team} className={!isUserTeam ? "opacity-75" : ""}>
-                  <div className="flex items-center gap-2 mb-3">
-                    <Badge 
-                      variant={isUserTeam ? "default" : "secondary"} 
-                      className={isUserTeam ? "" : phaseColors[team as keyof typeof phaseColors]}
-                    >
-                      {ownerTeamLabels[team as keyof typeof ownerTeamLabels]}
-                    </Badge>
-                    <span className="text-xs text-muted-foreground">
-                      {items.filter((i) => i.completed).length}/{items.length}
-                    </span>
-                    {isUserTeam && (
-                      <Badge variant="outline" className="text-xs ml-auto">Your Tasks</Badge>
-                    )}
+                <div key={team} className={!isUserTeam ? "opacity-60" : ""}>
+                  {/* Team Header */}
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <div className={`h-8 w-8 rounded-lg ${teamColors[team as keyof typeof teamColors]} flex items-center justify-center text-white font-bold text-sm`}>
+                        {(ownerTeamLabels[team as keyof typeof ownerTeamLabels] || team).charAt(0)}
+                      </div>
+                      <div>
+                        <h3 className="font-semibold">{ownerTeamLabels[team as keyof typeof ownerTeamLabels]}</h3>
+                        <p className="text-xs text-muted-foreground">{teamCount?.completed}/{teamCount?.total} tasks</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {isUserTeam && (
+                        <Badge variant="default" className="text-xs">Your Tasks</Badge>
+                      )}
+                      <div className="w-24">
+                        <Progress value={teamProgress} className="h-2" />
+                      </div>
+                    </div>
                   </div>
-                <div className="space-y-3">
-                  {items.map((item) => {
-                    const timeStats = calculateTimeByParty(item.responsibilityLog);
-                    const itemTeam = (item.ownerTeam || "").toLowerCase();
-                    const canEdit = canEditChecklistItem(itemTeam);
-                    
-                    return (
-                      <div
-                        key={item.id}
-                        className="p-3 rounded-lg border bg-card"
-                      >
-                        <div className="flex items-start gap-3">
-                          <Checkbox
-                            checked={item.completed}
-                            onCheckedChange={(checked) => {
-                              if (canEdit) {
-                                updateChecklist(project.id, item.id, checked as boolean);
-                              }
-                            }}
-                            disabled={!canEdit}
-                            className="mt-0.5"
-                          />
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2">
-                              <span className={`text-sm ${item.completed ? "line-through text-muted-foreground" : ""}`}>
-                                {item.title}
-                              </span>
-                              {item.completed && (
-                                <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0" />
-                              )}
-                            </div>
-                            
-                            {item.completedBy && (
-                              <p className="text-xs text-muted-foreground mt-1">
-                                Completed by {item.completedBy}
-                              </p>
-                            )}
-                            
-                            <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
-                              <div className="flex items-center gap-1">
-                                <Timer className="h-3 w-3" />
-                                <span>GK: {formatDuration(timeStats.gokwik)}</span>
-                              </div>
-                              <div className="flex items-center gap-1">
-                                <Clock className="h-3 w-3" />
-                                <span>Merchant: {formatDuration(timeStats.merchant)}</span>
-                              </div>
-                            </div>
 
-                            {/* Comment Section */}
-                            <div className="mt-3 pt-2 border-t">
-                              {editingComment === item.id ? (
-                                <div className="flex gap-2">
-                                  <Textarea
-                                    value={commentText}
-                                    onChange={(e) => setCommentText(e.target.value)}
-                                    placeholder="Add a comment..."
-                                    className="min-h-[60px] text-xs"
-                                  />
-                                  <div className="flex flex-col gap-1">
-                                    <Button 
-                                      size="sm" 
-                                      onClick={() => handleCommentSave(item.id)}
-                                      className="h-7 px-2"
-                                    >
-                                      <Send className="h-3 w-3" />
-                                    </Button>
-                                    <Button 
-                                      size="sm" 
-                                      variant="ghost"
-                                      onClick={() => {
-                                        setEditingComment(null);
-                                        setCommentText("");
-                                      }}
-                                      className="h-7 px-2"
-                                    >
-                                      ✕
-                                    </Button>
-                                  </div>
-                                </div>
-                              ) : (
-                                <div>
-                                  {item.comment ? (
-                                    <div 
-                                      className="text-xs p-2 bg-muted/50 rounded cursor-pointer hover:bg-muted transition-colors"
-                                      onClick={() => startEditingComment(item.id, item.comment)}
-                                    >
-                                      <div className="flex items-center gap-1 text-muted-foreground mb-1">
-                                        <MessageSquare className="h-3 w-3" />
-                                        <span className="font-medium">{item.commentBy}</span>
-                                        {item.commentAt && (
-                                          <span>• {new Date(item.commentAt).toLocaleDateString()}</span>
-                                        )}
-                                      </div>
-                                      <p className="text-foreground">{item.comment}</p>
+                  {/* Checklist Items */}
+                  <div className="space-y-3 pl-2 border-l-2 border-border ml-4">
+                    {items.map((item, index) => {
+                      const timeStats = calculateTimeByParty(item.responsibilityLog);
+                      const itemTeam = (item.ownerTeam || "").toLowerCase();
+                      const canEdit = canEditChecklistItem(itemTeam);
+                      const canComplete = canCompleteItem(itemTeam, index);
+                      const isLocked = !canComplete && !item.completed;
+                      
+                      return (
+                        <div
+                          key={item.id}
+                          className={`p-4 rounded-xl border transition-all ${
+                            item.completed 
+                              ? "bg-emerald-500/5 border-emerald-200 dark:border-emerald-800" 
+                              : isLocked 
+                                ? "bg-muted/30 border-border/50 opacity-60" 
+                                : "bg-card border-border hover:border-primary/30 hover:shadow-md"
+                          }`}
+                        >
+                          <div className="flex items-start gap-4">
+                            {/* Step Number & Checkbox */}
+                            <div className="flex flex-col items-center gap-1">
+                              <Badge variant="outline" className="h-7 w-7 rounded-full flex items-center justify-center text-xs font-mono p-0">
+                                {index + 1}
+                              </Badge>
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <div>
+                                      {isLocked ? (
+                                        <div className="h-5 w-5 rounded border border-muted-foreground/30 flex items-center justify-center bg-muted/50">
+                                          <Lock className="h-3 w-3 text-muted-foreground" />
+                                        </div>
+                                      ) : (
+                                        <Checkbox
+                                          checked={item.completed}
+                                          onCheckedChange={(checked) => {
+                                            if (canEdit && canComplete) {
+                                              updateChecklist(project.id, item.id, checked as boolean);
+                                            }
+                                          }}
+                                          disabled={!canEdit || isLocked}
+                                          className="h-5 w-5"
+                                        />
+                                      )}
                                     </div>
-                                  ) : (
-                                    <button
-                                      onClick={() => startEditingComment(item.id)}
-                                      className="flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors"
-                                    >
-                                      <MessageSquare className="h-3 w-3" />
-                                      Add comment
-                                    </button>
-                                  )}
-                                </div>
-                              )}
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    {isLocked 
+                                      ? "Complete previous tasks first" 
+                                      : !canEdit 
+                                        ? "Only team members can complete this" 
+                                        : item.completed 
+                                          ? "Click to mark as incomplete" 
+                                          : "Click to mark as complete"}
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
                             </div>
-                          </div>
+                            
+                            {/* Content */}
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-2">
+                                <span className={`font-medium ${item.completed ? "line-through text-muted-foreground" : ""}`}>
+                                  {item.title}
+                                </span>
+                                {item.completed && (
+                                  <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />
+                                )}
+                                {isLocked && (
+                                  <Badge variant="outline" className="text-xs text-muted-foreground">
+                                    <Lock className="h-3 w-3 mr-1" />
+                                    Locked
+                                  </Badge>
+                                )}
+                              </div>
+                              
+                              {item.completedBy && (
+                                <p className="text-xs text-muted-foreground mb-2">
+                                  ✓ Completed by {item.completedBy}
+                                  {item.completedAt && ` on ${new Date(item.completedAt).toLocaleDateString()}`}
+                                </p>
+                              )}
+                              
+                              {/* Time Stats */}
+                              <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                                <div className="flex items-center gap-1">
+                                  <Building2 className="h-3 w-3 text-primary" />
+                                  <span>GK: {formatDuration(timeStats.gokwik)}</span>
+                                </div>
+                                <div className="flex items-center gap-1">
+                                  <Users className="h-3 w-3 text-amber-500" />
+                                  <span>M: {formatDuration(timeStats.merchant)}</span>
+                                </div>
+                              </div>
 
-                          {/* Responsibility Toggle - 3 states */}
-                          <div className="flex flex-col items-end gap-1 shrink-0">
-                            <ToggleGroup 
-                              type="single" 
-                              value={item.currentResponsibility}
-                              onValueChange={(value) => handleResponsibilityChange(item.id, value)}
-                              disabled={item.completed}
-                              className="gap-0 border rounded-lg overflow-hidden"
-                            >
-                              <ToggleGroupItem 
-                                value="gokwik" 
-                                aria-label="GoKwik"
-                                className="text-xs px-2 py-1 h-7 rounded-none data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
+                              {/* Comment Section */}
+                              <div className="mt-3 pt-3 border-t border-border/50">
+                                {editingComment === item.id ? (
+                                  <div className="flex gap-2">
+                                    <Textarea
+                                      value={commentText}
+                                      onChange={(e) => setCommentText(e.target.value)}
+                                      placeholder="Add a comment..."
+                                      className="min-h-[60px] text-xs"
+                                    />
+                                    <div className="flex flex-col gap-1">
+                                      <Button 
+                                        size="sm" 
+                                        onClick={() => handleCommentSave(item.id)}
+                                        className="h-7 px-2"
+                                      >
+                                        <Send className="h-3 w-3" />
+                                      </Button>
+                                      <Button 
+                                        size="sm" 
+                                        variant="ghost"
+                                        onClick={() => {
+                                          setEditingComment(null);
+                                          setCommentText("");
+                                        }}
+                                        className="h-7 px-2"
+                                      >
+                                        ✕
+                                      </Button>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <div>
+                                    {item.comment ? (
+                                      <div 
+                                        className="text-xs p-3 bg-muted/50 rounded-lg cursor-pointer hover:bg-muted transition-colors"
+                                        onClick={() => startEditingComment(item.id, item.comment)}
+                                      >
+                                        <div className="flex items-center gap-1 text-muted-foreground mb-1">
+                                          <MessageSquare className="h-3 w-3" />
+                                          <span className="font-medium">{item.commentBy}</span>
+                                          {item.commentAt && (
+                                            <span>• {new Date(item.commentAt).toLocaleDateString()}</span>
+                                          )}
+                                        </div>
+                                        <p className="text-foreground">{item.comment}</p>
+                                      </div>
+                                    ) : (
+                                      <button
+                                        onClick={() => startEditingComment(item.id)}
+                                        className="flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors"
+                                      >
+                                        <MessageSquare className="h-3 w-3" />
+                                        Add comment
+                                      </button>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Responsibility Toggle */}
+                            <div className="flex flex-col items-end gap-2 shrink-0">
+                              <span className="text-xs text-muted-foreground">Pending with</span>
+                              <ToggleGroup 
+                                type="single" 
+                                value={item.currentResponsibility}
+                                onValueChange={(value) => handleResponsibilityChange(item.id, value)}
+                                disabled={item.completed || isLocked}
+                                className="gap-0 border rounded-lg overflow-hidden"
                               >
-                                <Building2 className="h-3 w-3 mr-1" />
-                                GoKwik
-                              </ToggleGroupItem>
-                              <ToggleGroupItem 
-                                value="neutral" 
-                                aria-label="Neutral"
-                                className="text-xs px-2 py-1 h-7 rounded-none border-x data-[state=on]:bg-muted data-[state=on]:text-muted-foreground"
-                              >
-                                <Minus className="h-3 w-3" />
-                              </ToggleGroupItem>
-                              <ToggleGroupItem 
-                                value="merchant" 
-                                aria-label="Merchant"
-                                className="text-xs px-2 py-1 h-7 rounded-none data-[state=on]:bg-amber-500 data-[state=on]:text-white"
-                              >
-                                <Users className="h-3 w-3 mr-1" />
-                                Merchant
-                              </ToggleGroupItem>
-                            </ToggleGroup>
+                                <ToggleGroupItem 
+                                  value="gokwik" 
+                                  aria-label="GoKwik"
+                                  className="text-xs px-3 py-1.5 h-8 rounded-none data-[state=on]:bg-primary data-[state=on]:text-white"
+                                >
+                                  <Building2 className="h-3 w-3 mr-1" />
+                                  GK
+                                </ToggleGroupItem>
+                                <ToggleGroupItem 
+                                  value="neutral" 
+                                  aria-label="Neutral"
+                                  className="text-xs px-3 py-1.5 h-8 rounded-none border-x data-[state=on]:bg-muted"
+                                >
+                                  <Minus className="h-3 w-3" />
+                                </ToggleGroupItem>
+                                <ToggleGroupItem 
+                                  value="merchant" 
+                                  aria-label="Merchant"
+                                  className="text-xs px-3 py-1.5 h-8 rounded-none data-[state=on]:bg-amber-500 data-[state=on]:text-white"
+                                >
+                                  <Users className="h-3 w-3 mr-1" />
+                                  M
+                                </ToggleGroupItem>
+                              </ToggleGroup>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
                   </div>
                 </div>
               );
