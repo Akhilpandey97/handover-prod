@@ -135,16 +135,16 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
                       <Badge className={`${phaseStyle.badge} text-white text-xs px-2 py-0.5`}>
                         {project.currentPhase.toUpperCase()}
                       </Badge>
-                      <span className="text-xs opacity-70">•</span>
-                      <span className="text-xs font-mono opacity-70">{project.mid}</span>
+                      <span className="text-muted-foreground/50">•</span>
+                      <span className="text-xs text-muted-foreground/70">{project.mid}</span>
                       {project.links.brandUrl && (
                         <>
-                          <span className="text-xs opacity-70">•</span>
+                          <span className="text-muted-foreground/50">•</span>
                           <a 
                             href={project.links.brandUrl} 
                             target="_blank" 
                             rel="noopener noreferrer"
-                            className="flex items-center gap-1 hover:text-primary transition-colors text-xs"
+                            className="flex items-center gap-1 hover:text-primary transition-colors text-xs text-muted-foreground/70 hover:text-muted-foreground"
                           >
                             <ExternalLink className="h-3 w-3" />
                             Website
@@ -159,7 +159,7 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
               {/* Stats Row */}
               <div className="grid grid-cols-5 gap-4">
                 {/* ARR */}
-                <div className="bg-background/60 backdrop-blur-sm rounded-lg p-3 border border-border/50">
+                <div className="bg-background/60 backdrop-blur-sm rounded-xl p-3 border border-border/50">
                   <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
                     <TrendingUp className="h-3.5 w-3.5" />
                     ARR
@@ -168,7 +168,7 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
                 </div>
 
                 {/* Go-Live % */}
-                <div className="bg-background/60 backdrop-blur-sm rounded-lg p-3 border border-border/50">
+                <div className="bg-background/60 backdrop-blur-sm rounded-xl p-3 border border-border/50">
                   <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
                     <CheckCircle2 className="h-3.5 w-3.5" />
                     Go-Live
@@ -177,7 +177,7 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
                 </div>
 
                 {/* Pending With */}
-                <div className="bg-background/60 backdrop-blur-sm rounded-lg p-3 border border-border/50">
+                <div className="bg-background/60 backdrop-blur-sm rounded-xl p-3 border border-border/50">
                   <div className="text-xs text-muted-foreground mb-1">Pending With</div>
                   <div className={`flex items-center gap-1.5 font-semibold ${responsibility.color} px-2 py-0.5 rounded-md w-fit`}>
                     <responsibility.icon className="h-4 w-4" />
@@ -186,7 +186,7 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
                 </div>
 
                 {/* Time Tracked */}
-                <div className="bg-background/60 backdrop-blur-sm rounded-lg p-3 border border-border/50">
+                <div className="bg-background/60 backdrop-blur-sm rounded-xl p-3 border border-border/50">
                   <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
                     <Clock className="h-3.5 w-3.5" />
                     Time
@@ -199,55 +199,54 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
                 </div>
 
                 {/* Checklist Team-wise */}
-                <div className="bg-background/60 backdrop-blur-sm rounded-lg p-3 border border-border/50">
+                <div className="bg-background/60 backdrop-blur-sm rounded-xl p-3 border border-border/50">
                   <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
                     <ClipboardList className="h-3.5 w-3.5" />
                     Checklist
                   </div>
-                  <div className="flex items-center gap-2 text-xs font-semibold">
-                    <span className="text-blue-600 dark:text-blue-400" title="MINT">{mintCompleted}/{mintChecklist.length}</span>
-                    <span className="text-muted-foreground">•</span>
-                    <span className="text-purple-600 dark:text-purple-400" title="Integration">{integrationCompleted}/{integrationChecklist.length}</span>
-                    {msChecklist.length > 0 && (
-                      <>
-                        <span className="text-muted-foreground">•</span>
-                        <span className="text-emerald-600 dark:text-emerald-400" title="MS">{msCompleted}/{msChecklist.length}</span>
-                      </>
-                    )}
+                  <div className="flex flex-col gap-0.5 text-xs font-semibold">
+                    <div className="flex items-center gap-1">
+                      <span className="text-blue-600 dark:text-blue-400">{mintCompleted}/{mintChecklist.length}</span>
+                      <span className="text-muted-foreground/60 text-[10px]">MINT</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <span className="text-purple-600 dark:text-purple-400">{integrationCompleted}/{integrationChecklist.length}</span>
+                      <span className="text-muted-foreground/60 text-[10px]">Integration</span>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
 
             {/* Right Section - Actions */}
-            <div className="w-56 border-l border-border/50 bg-background/40 p-4 flex flex-col justify-between">
+            <div className="w-52 border-l border-border/50 bg-background/40 p-4 flex flex-col justify-between">
               {/* Action Buttons */}
               <div className="space-y-2">
                 <Button 
-                  variant="outline" 
+                  variant="ghost" 
                   size="sm" 
-                  className="w-full justify-start gap-2 h-9"
+                  className="w-full justify-start gap-2 h-9 bg-muted/50 hover:bg-muted border border-border/50"
                   onClick={() => setDetailsOpen(true)}
                 >
-                  <FileText className="h-4 w-4" />
+                  <FileText className="h-4 w-4 text-muted-foreground" />
                   View Details
                 </Button>
                 <Button 
-                  variant="outline" 
+                  variant="ghost" 
                   size="sm" 
-                  className="w-full justify-start gap-2 h-9"
+                  className="w-full justify-start gap-2 h-9 bg-muted/50 hover:bg-muted border border-border/50"
                   onClick={() => setChecklistOpen(true)}
                 >
-                  <ClipboardList className="h-4 w-4" />
+                  <ClipboardList className="h-4 w-4 text-muted-foreground" />
                   Open Checklist
                 </Button>
                 <Button 
                   variant="ghost" 
                   size="sm" 
-                  className="w-full justify-start gap-2 h-9 text-muted-foreground hover:text-foreground"
+                  className="w-full justify-start gap-2 h-9 bg-muted/50 hover:bg-muted border border-border/50"
                   onClick={() => setEditOpen(true)}
                 >
-                  <Pencil className="h-4 w-4" />
+                  <Pencil className="h-4 w-4 text-muted-foreground" />
                   Edit Project
                 </Button>
               </div>
@@ -264,9 +263,9 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
                   </Button>
                 ) : canTransfer ? (
                   <Button 
-                    variant="outline"
+                    variant="ghost"
                     onClick={() => setTransferOpen(true)} 
-                    className="w-full gap-2"
+                    className="w-full gap-2 h-9 bg-muted/50 hover:bg-muted border border-border/50"
                   >
                     Transfer
                     <ArrowRight className="h-4 w-4" />
