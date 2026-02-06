@@ -388,7 +388,7 @@ export const useTransferProject = () => {
   const { currentUser } = useAuth();
 
   return useMutation({
-    mutationFn: async ({ projectId, notes }: { projectId: string; notes?: string }) => {
+    mutationFn: async ({ projectId, notes, assigneeId }: { projectId: string; notes?: string; assigneeId?: string }) => {
       if (!currentUser) throw new Error("Not authenticated");
 
       const getNextTeam = (current: TeamRole): TeamRole | null => {
@@ -402,13 +402,14 @@ export const useTransferProject = () => {
 
       const nextPhase = nextTeam === "integration" ? "integration" : nextTeam === "ms" ? "ms" : undefined;
 
-      // Update project
+      // Update project with new owner
       const { error: projectError } = await supabase
         .from("projects")
         .update({
           current_owner_team: nextTeam,
           current_phase: nextPhase,
           pending_acceptance: true,
+          assigned_owner: assigneeId || null,
         })
         .eq("id", projectId);
 

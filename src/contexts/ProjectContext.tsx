@@ -20,7 +20,7 @@ interface ProjectContextType {
   addProject: (project: Project) => void;
   updateProject: (project: Project) => void;
   acceptProject: (projectId: string) => void;
-  transferProject: (projectId: string, notes?: string) => void;
+  transferProject: (projectId: string, notes?: string, assigneeId?: string) => void;
   updateChecklist: (projectId: string, checklistId: string, completed: boolean) => void;
   updateChecklistComment: (projectId: string, checklistId: string, comment: string) => void;
   toggleResponsibility: (projectId: string, party: ResponsibilityParty) => void;
@@ -60,9 +60,9 @@ export const ProjectProvider = ({ children }: { children: ReactNode }) => {
     acceptProjectMutation.mutate(projectId);
   };
 
-  const transferProject = (projectId: string, notes?: string) => {
+  const transferProject = (projectId: string, notes?: string, assigneeId?: string) => {
     if (!currentUser) return;
-    transferProjectMutation.mutate({ projectId, notes });
+    transferProjectMutation.mutate({ projectId, notes, assigneeId });
   };
 
   const updateChecklist = (projectId: string, checklistId: string, completed: boolean) => {
