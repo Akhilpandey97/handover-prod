@@ -169,55 +169,6 @@ export const TeamDashboard = () => {
             ))}
           </div>
 
-          {/* Stats Section */}
-          <div className="mt-8 space-y-4">
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-3">
-              Overview
-            </p>
-            
-            {/* Tasks Completed */}
-            <div className="px-4 py-4 bg-gradient-to-br from-emerald-500/10 to-emerald-500/5 rounded-xl border border-emerald-200/30 dark:border-emerald-800/30">
-              <div className="flex items-center gap-3 mb-2">
-                <div className="h-9 w-9 rounded-lg bg-emerald-500/20 flex items-center justify-center">
-                  <CheckCircle2 className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">Tasks Done</p>
-                  <p className="text-xl font-bold text-emerald-600 dark:text-emerald-400">
-                    {completedChecklist}/{totalChecklist}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Time Tracked */}
-            <div className="px-4 py-4 bg-gradient-to-br from-purple-500/10 to-purple-500/5 rounded-xl border border-purple-200/30 dark:border-purple-800/30">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="h-9 w-9 rounded-lg bg-purple-500/20 flex items-center justify-center">
-                  <Timer className="h-5 w-5 text-purple-600 dark:text-purple-400" />
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">Time Tracked</p>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="flex items-center gap-2 text-muted-foreground">
-                    <Building2 className="h-4 w-4 text-primary" />
-                    GoKwik
-                  </span>
-                  <span className="font-semibold text-primary">{formatDuration(totalGokwikTime)}</span>
-                </div>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="flex items-center gap-2 text-muted-foreground">
-                    <Users className="h-4 w-4 text-amber-500" />
-                    Merchant
-                  </span>
-                  <span className="font-semibold text-amber-500">{formatDuration(totalMerchantTime)}</span>
-                </div>
-              </div>
-            </div>
-          </div>
         </nav>
 
         {/* User Info */}
