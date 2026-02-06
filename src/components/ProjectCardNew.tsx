@@ -6,10 +6,12 @@ import { useProjects } from "@/contexts/ProjectContext";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ProjectDetailsDialog } from "./ProjectDetailsDialog";
@@ -21,21 +23,47 @@ import {
   ArrowRight,
   CheckCircle2,
   Clock,
-  MoreHorizontal,
+  MoreVertical,
   FileText,
   ClipboardList,
   Pencil,
+  Building2,
+  Users,
+  ExternalLink,
+  Calendar,
+  TrendingUp,
+  Sparkles,
 } from "lucide-react";
 
 interface ProjectCardNewProps {
   project: Project;
 }
 
-const phaseColors = {
-  mint: "bg-blue-500/10 text-blue-600 border-blue-200 dark:border-blue-800",
-  integration: "bg-purple-500/10 text-purple-600 border-purple-200 dark:border-purple-800",
-  ms: "bg-emerald-500/10 text-emerald-600 border-emerald-200 dark:border-emerald-800",
-  completed: "bg-muted text-muted-foreground",
+const phaseConfig = {
+  mint: { 
+    bg: "bg-gradient-to-r from-blue-500/10 to-blue-600/5", 
+    border: "border-blue-200 dark:border-blue-800",
+    badge: "bg-blue-500 text-white",
+    text: "text-blue-600 dark:text-blue-400"
+  },
+  integration: { 
+    bg: "bg-gradient-to-r from-purple-500/10 to-purple-600/5", 
+    border: "border-purple-200 dark:border-purple-800",
+    badge: "bg-purple-500 text-white",
+    text: "text-purple-600 dark:text-purple-400"
+  },
+  ms: { 
+    bg: "bg-gradient-to-r from-emerald-500/10 to-emerald-600/5", 
+    border: "border-emerald-200 dark:border-emerald-800",
+    badge: "bg-emerald-500 text-white",
+    text: "text-emerald-600 dark:text-emerald-400"
+  },
+  completed: { 
+    bg: "bg-gradient-to-r from-gray-500/10 to-gray-600/5", 
+    border: "border-gray-200 dark:border-gray-800",
+    badge: "bg-gray-500 text-white",
+    text: "text-gray-600 dark:text-gray-400"
+  },
 };
 
 export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
@@ -48,9 +76,12 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
 
   const completedChecklist = project.checklist.filter((c) => c.completed).length;
   const totalChecklist = project.checklist.length;
+  const progress = totalChecklist > 0 ? Math.round((completedChecklist / totalChecklist) * 100) : 0;
   
   const computedResponsibility = calculateProjectResponsibilityFromChecklist(project.checklist);
   const timeByParty = calculateTimeFromChecklist(project.checklist);
+
+  const phaseStyle = phaseConfig[project.currentPhase];
 
   const canTransfer = currentUser?.team === project.currentOwnerTeam && 
     !project.pendingAcceptance && 
@@ -75,112 +106,158 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
     toast.success("Project updated successfully");
   };
 
-  const getResponsibilityLabel = () => {
-    if (computedResponsibility === "gokwik") return "GoKwik";
-    if (computedResponsibility === "merchant") return "Merchant";
-    return "Neutral";
+  const getResponsibilityDisplay = () => {
+    if (computedResponsibility === "gokwik") return { label: "GoKwik", icon: Building2, color: "text-primary" };
+    if (computedResponsibility === "merchant") return { label: "Merchant", icon: Users, color: "text-amber-500" };
+    return { label: "Neutral", icon: Clock, color: "text-muted-foreground" };
   };
 
-  const getResponsibilityClass = () => {
-    if (computedResponsibility === "gokwik") return "text-primary";
-    if (computedResponsibility === "merchant") return "text-amber-600";
-    return "text-muted-foreground";
-  };
+  const responsibility = getResponsibilityDisplay();
 
   return (
     <>
-      <Card className="hover:shadow-sm transition-shadow border-border/60">
-        <CardContent className="p-3">
-          <div className="flex items-center justify-between gap-3">
-            {/* Left: Project Info */}
-            <div className="flex items-center gap-3 min-w-0 flex-1">
-              <div className="min-w-0">
-                <div className="flex items-center gap-2 mb-0.5">
-                  <h3 className="font-medium text-sm truncate">{project.merchantName}</h3>
+      <Card className={`${phaseStyle.bg} ${phaseStyle.border} hover:shadow-xl transition-all duration-300 group overflow-hidden`}>
+        <CardContent className="p-0">
+          {/* Header Row */}
+          <div className="p-5 pb-0">
+            <div className="flex items-start justify-between gap-4">
+              {/* Left: Project Info */}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-3 mb-2">
+                  <h3 className="font-bold text-lg truncate">{project.merchantName}</h3>
                   {project.pendingAcceptance && currentUser?.team === project.currentOwnerTeam && (
-                    <Badge className="bg-amber-500/90 text-white text-[10px] px-1.5 py-0 h-4 animate-pulse">
-                      New
+                    <Badge className="bg-amber-500 text-white animate-pulse px-3 py-0.5 text-xs font-semibold">
+                      <Sparkles className="h-3 w-3 mr-1" />
+                      NEW
                     </Badge>
                   )}
                 </div>
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <span className="font-mono">{project.mid.slice(0, 20)}...</span>
-                  <Badge variant="outline" className={`${phaseColors[project.currentPhase]} text-[10px] px-1.5 py-0 h-4 font-medium`}>
+                <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                  <span className="font-mono text-xs bg-muted/50 px-2 py-0.5 rounded">
+                    {project.mid.slice(0, 16)}...
+                  </span>
+                  <Badge className={`${phaseStyle.badge} text-xs px-2 py-0.5`}>
                     {project.currentPhase.toUpperCase()}
                   </Badge>
-                </div>
-              </div>
-            </div>
-
-            {/* Center: Status */}
-            <div className="hidden md:flex items-center gap-4 text-xs">
-              <div className="flex items-center gap-1">
-                <span className="text-muted-foreground">Pending:</span>
-                <span className={`font-medium ${getResponsibilityClass()}`}>{getResponsibilityLabel()}</span>
-              </div>
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <Clock className="h-3 w-3 text-primary" />
-                <span>{formatDuration(timeByParty.gokwik)}</span>
-                <span className="text-muted-foreground/50">|</span>
-                <Clock className="h-3 w-3 text-amber-500" />
-                <span>{formatDuration(timeByParty.merchant)}</span>
-              </div>
-            </div>
-
-            {/* Right: Metrics & Actions */}
-            <div className="flex items-center gap-2 shrink-0">
-              <div className="hidden sm:flex items-center gap-3 text-xs pr-2 border-r border-border/60">
-                <div className="text-center">
-                  <p className="font-semibold text-primary">{project.arr}cr</p>
-                </div>
-                <div className="text-center">
-                  <p className="font-semibold">{project.goLivePercent}%</p>
-                </div>
-                <div className="text-center">
-                  <p className="font-semibold">{completedChecklist}/{totalChecklist}</p>
+                  {project.links.brandUrl && (
+                    <a 
+                      href={project.links.brandUrl} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1 hover:text-primary transition-colors"
+                    >
+                      <ExternalLink className="h-3 w-3" />
+                      <span className="text-xs">Website</span>
+                    </a>
+                  )}
                 </div>
               </div>
 
-              {/* Actions Menu */}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-8 w-8">
-                    <MoreHorizontal className="h-4 w-4" />
+              {/* Right: Actions */}
+              <div className="flex items-center gap-2">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-9 w-9 hover:bg-muted">
+                      <MoreVertical className="h-5 w-5" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-48 bg-popover">
+                    <DropdownMenuItem onClick={() => setDetailsOpen(true)} className="gap-2">
+                      <FileText className="h-4 w-4" />
+                      View Details
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setChecklistOpen(true)} className="gap-2">
+                      <ClipboardList className="h-4 w-4" />
+                      Open Checklist
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={() => setEditOpen(true)} className="gap-2">
+                      <Pencil className="h-4 w-4" />
+                      Edit Project
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+
+                {project.pendingAcceptance && currentUser?.team === project.currentOwnerTeam && (
+                  <Button onClick={handleAccept} className="gap-2 shadow-lg hover:shadow-xl transition-shadow">
+                    <CheckCircle2 className="h-4 w-4" />
+                    Accept Project
                   </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-40 bg-popover">
-                  <DropdownMenuItem onClick={() => setDetailsOpen(true)}>
-                    <FileText className="h-3.5 w-3.5 mr-2" />
-                    Details
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setChecklistOpen(true)}>
-                    <ClipboardList className="h-3.5 w-3.5 mr-2" />
-                    Checklist
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setEditOpen(true)}>
-                    <Pencil className="h-3.5 w-3.5 mr-2" />
-                    Edit
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+                )}
 
-              {/* Accept Button */}
-              {project.pendingAcceptance && currentUser?.team === project.currentOwnerTeam && (
-                <Button size="sm" onClick={handleAccept} className="h-8 text-xs gap-1">
-                  <CheckCircle2 className="h-3.5 w-3.5" />
-                  Accept
-                </Button>
-              )}
-
-              {/* Transfer Button */}
-              {canTransfer && (
-                <Button size="sm" variant="outline" onClick={() => setTransferOpen(true)} className="h-8 text-xs gap-1">
-                  Transfer
-                  <ArrowRight className="h-3.5 w-3.5" />
-                </Button>
-              )}
+                {canTransfer && (
+                  <Button variant="outline" onClick={() => setTransferOpen(true)} className="gap-2">
+                    Transfer
+                    <ArrowRight className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
             </div>
           </div>
+
+          {/* Stats Row */}
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 p-5 pt-4">
+            {/* ARR */}
+            <div className="bg-background/60 rounded-lg p-3 backdrop-blur-sm">
+              <p className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
+                <TrendingUp className="h-3 w-3" />
+                ARR
+              </p>
+              <p className="text-lg font-bold">{project.arr} Cr</p>
+            </div>
+
+            {/* Go-Live */}
+            <div className="bg-background/60 rounded-lg p-3 backdrop-blur-sm">
+              <p className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
+                <Calendar className="h-3 w-3" />
+                Go-Live %
+              </p>
+              <p className="text-lg font-bold">{project.goLivePercent}%</p>
+            </div>
+
+            {/* Responsibility */}
+            <div className="bg-background/60 rounded-lg p-3 backdrop-blur-sm">
+              <p className="text-xs text-muted-foreground mb-1">Pending With</p>
+              <p className={`text-lg font-bold flex items-center gap-1 ${responsibility.color}`}>
+                <responsibility.icon className="h-4 w-4" />
+                {responsibility.label}
+              </p>
+            </div>
+
+            {/* Time Tracked */}
+            <div className="bg-background/60 rounded-lg p-3 backdrop-blur-sm">
+              <p className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
+                <Clock className="h-3 w-3" />
+                Time Tracked
+              </p>
+              <div className="flex items-center gap-2 text-sm">
+                <span className="font-semibold text-primary">{formatDuration(timeByParty.gokwik)}</span>
+                <span className="text-muted-foreground">/</span>
+                <span className="font-semibold text-amber-500">{formatDuration(timeByParty.merchant)}</span>
+              </div>
+            </div>
+
+            {/* Checklist Progress */}
+            <div className="bg-background/60 rounded-lg p-3 backdrop-blur-sm">
+              <p className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
+                <ClipboardList className="h-3 w-3" />
+                Checklist
+              </p>
+              <div className="flex items-center gap-2">
+                <p className="text-lg font-bold">{completedChecklist}/{totalChecklist}</p>
+                <Progress value={progress} className="flex-1 h-2" />
+              </div>
+            </div>
+          </div>
+
+          {/* Notes Preview */}
+          {project.notes.currentPhaseComment && (
+            <div className="px-5 pb-5">
+              <div className="bg-muted/30 rounded-lg p-3 text-sm text-muted-foreground italic border-l-4 border-primary/30">
+                "{project.notes.currentPhaseComment}"
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 
