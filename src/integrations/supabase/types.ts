@@ -14,6 +14,47 @@ export type Database = {
   }
   public: {
     Tables: {
+      checklist_comments: {
+        Row: {
+          attachment_name: string | null
+          attachment_url: string | null
+          checklist_item_id: string
+          comment: string
+          created_at: string
+          id: string
+          user_id: string | null
+          user_name: string
+        }
+        Insert: {
+          attachment_name?: string | null
+          attachment_url?: string | null
+          checklist_item_id: string
+          comment: string
+          created_at?: string
+          id?: string
+          user_id?: string | null
+          user_name: string
+        }
+        Update: {
+          attachment_name?: string | null
+          attachment_url?: string | null
+          checklist_item_id?: string
+          comment?: string
+          created_at?: string
+          id?: string
+          user_id?: string | null
+          user_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "checklist_comments_checklist_item_id_fkey"
+            columns: ["checklist_item_id"]
+            isOneToOne: false
+            referencedRelation: "checklist_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       checklist_items: {
         Row: {
           comment: string | null

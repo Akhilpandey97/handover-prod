@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useMemo } from "react";
 import { Project, calculateTimeByParty, formatDuration, ResponsibilityParty } from "@/data/projectsData";
 import { useProjects } from "@/contexts/ProjectContext";
 import { useAuth } from "@/contexts/AuthContext";
@@ -11,12 +11,12 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { CheckCircle2, ClipboardList, Clock, Timer, MessageSquare, Send, Building2, Users, Minus, Lock, AlertCircle } from "lucide-react";
+import { ChecklistCommentThread } from "@/components/ChecklistCommentThread";
+import { CheckCircle2, ClipboardList, Building2, Users, Minus, Lock, AlertCircle } from "lucide-react";
 
 interface ChecklistDialogProps {
   project: Project | null;
@@ -43,10 +43,8 @@ export const ChecklistDialog = ({
   open,
   onOpenChange,
 }: ChecklistDialogProps) => {
-  const { updateChecklist, toggleChecklistResponsibility, updateChecklistComment } = useProjects();
+  const { updateChecklist, toggleChecklistResponsibility } = useProjects();
   const { currentUser } = useAuth();
-  const [editingComment, setEditingComment] = useState<string | null>(null);
-  const [commentText, setCommentText] = useState<string>("");
 
   if (!project || !currentUser) return null;
 
@@ -113,19 +111,6 @@ export const ChecklistDialog = ({
     if (newParty && (newParty === "gokwik" || newParty === "merchant" || newParty === "neutral")) {
       toggleChecklistResponsibility(project.id, checklistId, newParty as ResponsibilityParty);
     }
-  };
-
-  const handleCommentSave = (checklistId: string) => {
-    if (commentText.trim()) {
-      updateChecklistComment(project.id, checklistId, commentText.trim());
-    }
-    setEditingComment(null);
-    setCommentText("");
-  };
-
-  const startEditingComment = (checklistId: string, existingComment?: string) => {
-    setEditingComment(checklistId);
-    setCommentText(existingComment || "");
   };
 
   return (
@@ -306,65 +291,8 @@ export const ChecklistDialog = ({
                                 </div>
                               </div>
 
-                              {/* Comment Section */}
-                              <div className="mt-3 pt-3 border-t border-border/50">
-                                {editingComment === item.id ? (
-                                  <div className="flex gap-2">
-                                    <Textarea
-                                      value={commentText}
-                                      onChange={(e) => setCommentText(e.target.value)}
-                                      placeholder="Add a comment..."
-                                      className="min-h-[60px] text-xs"
-                                    />
-                                    <div className="flex flex-col gap-1">
-                                      <Button 
-                                        size="sm" 
-                                        onClick={() => handleCommentSave(item.id)}
-                                        className="h-7 px-2"
-                                      >
-                                        <Send className="h-3 w-3" />
-                                      </Button>
-                                      <Button 
-                                        size="sm" 
-                                        variant="ghost"
-                                        onClick={() => {
-                                          setEditingComment(null);
-                                          setCommentText("");
-                                        }}
-                                        className="h-7 px-2"
-                                      >
-                                        ✕
-                                      </Button>
-                                    </div>
-                                  </div>
-                                ) : (
-                                  <div>
-                                    {item.comment ? (
-                                      <div 
-                                        className="text-xs p-3 bg-muted/50 rounded-lg cursor-pointer hover:bg-muted transition-colors"
-                                        onClick={() => startEditingComment(item.id, item.comment)}
-                                      >
-                                        <div className="flex items-center gap-1 text-muted-foreground mb-1">
-                                          <MessageSquare className="h-3 w-3" />
-                                          <span className="font-medium">{item.commentBy}</span>
-                                          {item.commentAt && (
-                                            <span>• {new Date(item.commentAt).toLocaleDateString()}</span>
-                                          )}
-                                        </div>
-                                        <p className="text-foreground">{item.comment}</p>
-                                      </div>
-                                    ) : (
-                                      <button
-                                        onClick={() => startEditingComment(item.id)}
-                                        className="flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors"
-                                      >
-                                        <MessageSquare className="h-3 w-3" />
-                                        Add comment
-                                      </button>
-                                    )}
-                                  </div>
-                                )}
-                              </div>
+                              {/* Comment Thread */}
+                              <ChecklistCommentThread checklistItemId={item.id} />
                             </div>
 
                             {/* Responsibility Toggle */}
