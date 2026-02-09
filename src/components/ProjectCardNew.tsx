@@ -78,11 +78,18 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
 
   const phaseStyle = phaseConfig[project.currentPhase];
 
+  // Check if all current team's checklist items are completed
+  const currentTeamChecklist = project.checklist.filter(c => c.ownerTeam === project.currentOwnerTeam);
+  const allCurrentTeamChecklistCompleted = currentTeamChecklist.length > 0 && 
+    currentTeamChecklist.every(c => c.completed);
+
   const canTransfer = currentUser?.team === project.currentOwnerTeam && 
     !project.pendingAcceptance && 
     project.currentPhase !== "completed" &&
     project.currentOwnerTeam !== "ms" &&
     currentUser?.team !== "manager";
+
+  const isTransferReady = canTransfer && allCurrentTeamChecklistCompleted;
 
   const isPending = project.pendingAcceptance && currentUser?.team === project.currentOwnerTeam;
 
@@ -265,7 +272,13 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
                   <Button 
                     variant="ghost"
                     onClick={() => setTransferOpen(true)} 
-                    className="w-full gap-2 h-9 bg-muted/50 hover:bg-muted border border-border/50"
+                    disabled={!isTransferReady}
+                    className={`w-full gap-2 h-9 border border-border/50 ${
+                      isTransferReady 
+                        ? "bg-muted/50 hover:bg-muted" 
+                        : "bg-muted/30 opacity-50 cursor-not-allowed"
+                    }`}
+                    title={!allCurrentTeamChecklistCompleted ? "Complete all checklist items before transferring" : ""}
                   >
                     Transfer
                     <ArrowRight className="h-4 w-4" />
