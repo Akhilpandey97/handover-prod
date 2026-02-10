@@ -10,6 +10,7 @@ import { ProjectDetailsDialog } from "./ProjectDetailsDialog";
 import { ChecklistDialog } from "./ChecklistDialog";
 import { EditProjectDialog } from "./EditProjectDialog";
 import { TransferDialog } from "./TransferDialog";
+import { AssignOwnerDialog } from "./AssignOwnerDialog";
 import { toast } from "sonner";
 import {
   ArrowRight,
@@ -23,6 +24,7 @@ import {
   FileText,
   ClipboardList,
   Sparkles,
+  UserPlus,
 } from "lucide-react";
 
 interface ProjectCardNewProps {
@@ -63,6 +65,7 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
   const [checklistOpen, setChecklistOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [transferOpen, setTransferOpen] = useState(false);
+  const [assignOpen, setAssignOpen] = useState(false);
 
   // Calculate checklist per team
   const mintChecklist = project.checklist.filter(c => c.ownerTeam === "mint");
@@ -256,6 +259,17 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
                   <Pencil className="h-4 w-4 text-muted-foreground" />
                   Edit Project
                 </Button>
+                {currentUser?.team === "manager" && (
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="w-full justify-start gap-2 h-9 bg-muted/50 hover:bg-muted border border-border/50"
+                    onClick={() => setAssignOpen(true)}
+                  >
+                    <UserPlus className="h-4 w-4 text-muted-foreground" />
+                    Assign Owner
+                  </Button>
+                )}
               </div>
 
               {/* Transfer/Accept */}
@@ -311,6 +325,11 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
         open={transferOpen}
         onOpenChange={setTransferOpen}
         onTransfer={handleTransfer}
+      />
+      <AssignOwnerDialog
+        project={project}
+        open={assignOpen}
+        onOpenChange={setAssignOpen}
       />
     </>
   );

@@ -1,13 +1,13 @@
-import { useState, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useProjects } from "@/contexts/ProjectContext";
 import { teamLabels, teamColors, TeamRole } from "@/data/teams";
 import { UserManagement } from "./UserManagement";
-import { ProjectAssignment } from "./ProjectAssignment";
 import { ChecklistManagement } from "./ChecklistManagement";
 import { CSVUploadDialog } from "./CSVUploadDialog";
 import { AddProjectDialog } from "./AddProjectDialog";
 import { Project, calculateTimeByParty, formatDuration } from "@/data/projectsData";
+import { supabase } from "@/integrations/supabase/client";
 import { ProjectCardNew } from "./ProjectCardNew";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -35,7 +35,6 @@ import {
   ChevronDown,
   ChevronRight,
   Upload,
-  ArrowRightLeft,
   Plus,
   Target,
   Timer,
@@ -56,6 +55,16 @@ export const ManagerDashboard = () => {
   const [expandedProjects, setExpandedProjects] = useState<Set<string>>(new Set());
   const [csvDialogOpen, setCsvDialogOpen] = useState(false);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
+
+  // Fetch profiles for owner filter (filtered by selected team)
+  const [allProfiles, setAllProfiles] = useState<{ id: string; name: string; team: string }[]>([]);
+  useEffect(() => {
+    const fetchProfiles = async () => {
+      const { data } = await supabase.from("profiles").select("id, name, team");
+      setAllProfiles(data || []);
+    };
+    fetchProfiles();
+  }, []);
 
   // Calculate project time stats helper
   const calculateProjectStats = (project: Project) => {
@@ -232,6 +241,12 @@ export const ManagerDashboard = () => {
     });
   };
 
+  // Filter owners by selected team (must be before early returns)
+  const filteredOwners = useMemo(() => {
+    if (teamFilter === "all") return allProfiles.filter(p => p.team !== "manager");
+    return allProfiles.filter(p => p.team === teamFilter);
+  }, [allProfiles, teamFilter]);
+
   if (!currentUser) return null;
 
   if (isLoading) {
@@ -251,11 +266,9 @@ export const ManagerDashboard = () => {
       p.merchantName.toLowerCase().includes(searchQuery.toLowerCase()) ||
       p.mid.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesTeam = teamFilter === "all" || p.currentOwnerTeam === teamFilter;
-    const matchesOwner = ownerFilter === "all" || p.salesSpoc === ownerFilter;
+    const matchesOwner = ownerFilter === "all" || p.assignedOwner === ownerFilter;
     return matchesSearch && matchesTeam && matchesOwner;
   });
-
-  const uniqueOwners = Array.from(new Set(projects.map((p) => p.salesSpoc).filter(Boolean)));
 
   // Stats
   const totalProjects = projects.length;
@@ -350,10 +363,6 @@ export const ManagerDashboard = () => {
             <TabsTrigger value="reports" className="gap-2 px-6 h-10 data-[state=active]:bg-primary data-[state=active]:text-white">
               <TrendingUp className="h-4 w-4" />
               Reports
-            </TabsTrigger>
-            <TabsTrigger value="assign" className="gap-2 px-6 h-10 data-[state=active]:bg-primary data-[state=active]:text-white">
-              <ArrowRightLeft className="h-4 w-4" />
-              Assign
             </TabsTrigger>
             <TabsTrigger value="checklist" className="gap-2 px-6 h-10 data-[state=active]:bg-primary data-[state=active]:text-white">
               <ListChecks className="h-4 w-4" />
@@ -529,7 +538,7 @@ export const ManagerDashboard = () => {
                     All Projects
                   </CardTitle>
                   <div className="flex gap-3">
-                    <Select value={teamFilter} onValueChange={setTeamFilter}>
+                    <Select value={teamFilter} onValueChange={(v) => { setTeamFilter(v); setOwnerFilter("all"); }}>
                       <SelectTrigger className="w-[150px]">
                         <SelectValue placeholder="Filter by team" />
                       </SelectTrigger>
@@ -546,8 +555,8 @@ export const ManagerDashboard = () => {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="all">All Owners</SelectItem>
-                        {uniqueOwners.map((owner) => (
-                          <SelectItem key={owner} value={owner}>{owner}</SelectItem>
+                        {filteredOwners.map((owner) => (
+                          <SelectItem key={owner.id} value={owner.id}>{owner.name}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -778,11 +787,6 @@ export const ManagerDashboard = () => {
                 </ScrollArea>
               </CardContent>
             </Card>
-          </TabsContent>
-
-          {/* Assign Tab */}
-          <TabsContent value="assign" className="mt-0">
-            <ProjectAssignment />
           </TabsContent>
 
           {/* Checklist Tab */}
