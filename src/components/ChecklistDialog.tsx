@@ -163,6 +163,12 @@ export const ChecklistDialog = ({
           <span>Tasks must be completed in order. Complete previous tasks to unlock the next one.</span>
         </div>
 
+        {/* Transfer Unlock Note */}
+        <div className="flex items-center gap-2 text-sm text-muted-foreground bg-indigo-500/10 rounded-lg p-3 border border-indigo-200 dark:border-indigo-800">
+          <Lock className="h-4 w-4 text-indigo-500 shrink-0" />
+          <span>All checklist items for your team must be completed to unlock the <strong>Transfer</strong> button.</span>
+        </div>
+
         <ScrollArea className="max-h-[50vh] pr-4">
           <div className="space-y-8">
             {orderedTeams.map((team) => {
