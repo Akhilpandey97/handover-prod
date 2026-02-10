@@ -67,6 +67,7 @@ const transformDbChecklistItem = (row: any): ProjectChecklist => ({
 export const useProjectsQuery = () => {
   return useQuery({
     queryKey: ["projects"],
+    staleTime: 30_000, // 30s — avoid refetching on every re-mount
     queryFn: async () => {
       const PAGE_SIZE = 1000;
 
@@ -131,17 +132,24 @@ export const useProjectsQuery = () => {
       const logsByChecklist = new Map<string, any[]>();
       const transfersByProject = new Map<string, any[]>();
 
+      // Pre-group checklist logs by checklist_item_id for O(1) lookup
+      const checklistLogsByItem = new Map<string, any[]>();
+      checklistLogs?.forEach((log) => {
+        const logs = checklistLogsByItem.get(log.checklist_item_id) || [];
+        logs.push({
+          id: log.id,
+          party: log.party,
+          startedAt: log.started_at,
+          endedAt: log.ended_at || undefined,
+        });
+        checklistLogsByItem.set(log.checklist_item_id, logs);
+      });
+
       checklistItems?.forEach((item) => {
         const projectChecklists = checklistByProject.get(item.project_id) || [];
-        const itemLogs = checklistLogs?.filter((log) => log.checklist_item_id === item.id) || [];
         projectChecklists.push({
           ...item,
-          responsibility_logs: itemLogs.map((log) => ({
-            id: log.id,
-            party: log.party,
-            startedAt: log.started_at,
-            endedAt: log.ended_at || undefined,
-          })),
+          responsibility_logs: checklistLogsByItem.get(item.id) || [],
         });
         checklistByProject.set(item.project_id, projectChecklists);
       });
