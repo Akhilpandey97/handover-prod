@@ -2,6 +2,23 @@ import { TeamRole } from "./teams";
 
 export type ProjectPhase = "mint" | "integration" | "ms" | "completed";
 export type ResponsibilityParty = "gokwik" | "merchant" | "neutral";
+export type ProjectState = "not_started" | "on_hold" | "in_progress" | "live" | "blocked";
+
+export const projectStateLabels: Record<ProjectState, string> = {
+  not_started: "Not Started",
+  on_hold: "On-Hold",
+  in_progress: "In Progress",
+  live: "Live",
+  blocked: "Blocked",
+};
+
+export const projectStateColors: Record<ProjectState, string> = {
+  not_started: "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300",
+  on_hold: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400",
+  in_progress: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400",
+  live: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400",
+  blocked: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400",
+};
 
 export interface TransferRecord {
   id: string;
@@ -89,6 +106,8 @@ export interface Project {
   currentResponsibility: ResponsibilityParty;
   responsibilityLog: ResponsibilityLog[];
   assignedOwner?: string; // User ID of the assigned owner
+  projectState: ProjectState;
+  assignedOwnerName?: string; // Display name of the assigned owner
 }
 
 // Helper to calculate time spent by each party (neutral time is not counted)
@@ -239,6 +258,7 @@ export const createDefaultProject = (overrides?: Partial<Project>): Project => (
   integrationType: "Standard",
   pgOnboarding: "",
   currentResponsibility: "gokwik",
+  projectState: "not_started",
   responsibilityLog: [
     {
       id: `r-${Date.now()}`,
@@ -327,6 +347,7 @@ export const initialProjects: Project[] = [
       { title: "Feasibility Analysis", phase: "mint" },
     ]),
     currentResponsibility: "merchant",
+    projectState: "in_progress",
     responsibilityLog: [
       { id: "r1", party: "gokwik", startedAt: "2025-01-13T09:00:00Z", endedAt: "2025-01-15T14:00:00Z", phase: "mint" },
       { id: "r2", party: "merchant", startedAt: "2025-01-15T14:00:00Z", phase: "mint" },
@@ -388,6 +409,7 @@ export const initialProjects: Project[] = [
       { title: "Transfer to Integration", phase: "mint" },
     ]),
     currentResponsibility: "gokwik",
+    projectState: "in_progress",
     responsibilityLog: [
       { id: "r1", party: "gokwik", startedAt: "2025-01-14T09:00:00Z", endedAt: "2025-01-15T16:00:00Z", phase: "mint" },
       { id: "r2", party: "merchant", startedAt: "2025-01-15T16:00:00Z", endedAt: "2025-01-16T10:30:00Z", phase: "mint" },
@@ -466,6 +488,7 @@ export const initialProjects: Project[] = [
       { title: "Go-Live", phase: "integration" },
     ]),
     currentResponsibility: "gokwik",
+    projectState: "live",
     responsibilityLog: [
       { id: "r1", party: "gokwik", startedAt: "2024-12-01T09:00:00Z", endedAt: "2024-12-05T17:00:00Z", phase: "mint" },
       { id: "r2", party: "merchant", startedAt: "2024-12-05T17:00:00Z", endedAt: "2024-12-10T09:00:00Z", phase: "mint" },

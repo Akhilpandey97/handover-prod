@@ -253,6 +253,7 @@ export type Database = {
           phase2_comment: string | null
           platform: string | null
           project_notes: string | null
+          project_state: Database["public"]["Enums"]["project_state"] | null
           sales_spoc: string | null
           txns_per_day: number | null
           updated_at: string | null
@@ -289,6 +290,7 @@ export type Database = {
           phase2_comment?: string | null
           platform?: string | null
           project_notes?: string | null
+          project_state?: Database["public"]["Enums"]["project_state"] | null
           sales_spoc?: string | null
           txns_per_day?: number | null
           updated_at?: string | null
@@ -325,6 +327,7 @@ export type Database = {
           phase2_comment?: string | null
           platform?: string | null
           project_notes?: string | null
+          project_state?: Database["public"]["Enums"]["project_state"] | null
           sales_spoc?: string | null
           txns_per_day?: number | null
           updated_at?: string | null
@@ -412,6 +415,12 @@ export type Database = {
     }
     Enums: {
       project_phase: "mint" | "integration" | "ms" | "completed"
+      project_state:
+        | "not_started"
+        | "on_hold"
+        | "in_progress"
+        | "live"
+        | "blocked"
       responsibility_party: "gokwik" | "merchant" | "neutral"
       team_role: "mint" | "integration" | "ms" | "manager"
     }
@@ -542,6 +551,13 @@ export const Constants = {
   public: {
     Enums: {
       project_phase: ["mint", "integration", "ms", "completed"],
+      project_state: [
+        "not_started",
+        "on_hold",
+        "in_progress",
+        "live",
+        "blocked",
+      ],
       responsibility_party: ["gokwik", "merchant", "neutral"],
       team_role: ["mint", "integration", "ms", "manager"],
     },

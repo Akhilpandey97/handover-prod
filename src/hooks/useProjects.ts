@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
-import type { Project, ProjectChecklist, ResponsibilityLog, ChecklistResponsibilityLog, TransferRecord, ResponsibilityParty, ProjectPhase } from "@/data/projectsData";
+import type { Project, ProjectChecklist, ResponsibilityLog, ChecklistResponsibilityLog, TransferRecord, ResponsibilityParty, ProjectPhase, ProjectState } from "@/data/projectsData";
 import type { TeamRole } from "@/data/teams";
 
 // Transform database row to Project type
@@ -45,6 +45,8 @@ const transformDbProject = (row: any): Project => ({
   currentResponsibility: (row.current_responsibility as ResponsibilityParty) || "neutral",
   responsibilityLog: row.responsibility_logs || [],
   assignedOwner: row.assigned_owner || undefined,
+  projectState: (row.project_state as ProjectState) || "not_started",
+  assignedOwnerName: row.assigned_owner_name || undefined,
 });
 
 // Transform checklist item from database
@@ -98,6 +100,11 @@ export const useProjectsQuery = () => {
         .order("created_at", { ascending: false });
 
       if (projectsError) throw projectsError;
+
+      // Fetch profiles for owner name lookup
+      const { data: profiles } = await supabase.from("profiles").select("id, name");
+      const profileMap = new Map<string, string>();
+      profiles?.forEach(p => profileMap.set(p.id, p.name));
 
       // Fetch all checklist items (paginated to avoid 1000-row limit dropping Integration rows)
       const checklistItems = await fetchAllChecklistItems();
@@ -189,6 +196,7 @@ export const useProjectsQuery = () => {
           checklist_items: checklistForProject.map(transformDbChecklistItem),
           responsibility_logs: logsByProject.get(project.id) || [],
           transfer_history: transfersByProject.get(project.id) || [],
+          assigned_owner_name: project.assigned_owner ? profileMap.get(project.assigned_owner) : undefined,
         });
       });
     },
@@ -232,6 +240,7 @@ export const useAddProject = () => {
           integration_type: project.integrationType,
           pg_onboarding: project.pgOnboarding,
           current_responsibility: project.currentResponsibility,
+          project_state: project.projectState,
         })
         .select()
         .single();
@@ -323,6 +332,7 @@ export const useUpdateProject = () => {
           integration_type: project.integrationType,
           pg_onboarding: project.pgOnboarding,
           current_responsibility: project.currentResponsibility,
+          project_state: project.projectState,
         })
         .eq("id", project.id);
 
@@ -335,6 +345,53 @@ export const useUpdateProject = () => {
     onError: (error) => {
       console.error("Error updating project:", error);
       toast.error("Failed to update project");
+    },
+  });
+};
+
+// Delete project mutation
+export const useDeleteProject = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (projectId: string) => {
+      // Delete checklist responsibility logs first
+      const { data: checklistItems } = await supabase
+        .from("checklist_items")
+        .select("id")
+        .eq("project_id", projectId);
+
+      if (checklistItems && checklistItems.length > 0) {
+        const checklistIds = checklistItems.map(c => c.id);
+        await supabase
+          .from("checklist_responsibility_logs")
+          .delete()
+          .in("checklist_item_id", checklistIds);
+
+        await supabase
+          .from("checklist_comments")
+          .delete()
+          .in("checklist_item_id", checklistIds);
+      }
+
+      // Delete related records
+      await supabase.from("checklist_items").delete().eq("project_id", projectId);
+      await supabase.from("project_responsibility_logs").delete().eq("project_id", projectId);
+      await supabase.from("transfer_history").delete().eq("project_id", projectId);
+
+      // Delete project
+      const { error } = await supabase.from("projects").delete().eq("id", projectId);
+      if (error) throw error;
+
+      return projectId;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["projects"] });
+      toast.success("Project deleted successfully");
+    },
+    onError: (error) => {
+      console.error("Error deleting project:", error);
+      toast.error("Failed to delete project");
     },
   });
 };
