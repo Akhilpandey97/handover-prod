@@ -17,6 +17,7 @@ export interface ChecklistComment {
 export const useChecklistComments = (checklistItemId: string | null) => {
   return useQuery({
     queryKey: ["checklist-comments", checklistItemId],
+    staleTime: 60_000, // 1 min — comments don't change often
     queryFn: async () => {
       if (!checklistItemId) return [];
       const { data, error } = await supabase
