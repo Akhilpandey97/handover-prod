@@ -190,70 +190,60 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
     <>
       <Card className={`${phaseStyle.bg} ${phaseStyle.border} border hover:shadow-lg transition-all duration-300 overflow-hidden`}>
         <CardContent className="p-0">
-          {/* AI Action Bar */}
-          <div className="flex items-center gap-2 px-5 pt-3 pb-0">
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-7 text-xs gap-1.5 bg-gradient-to-r from-violet-50 to-indigo-50 hover:from-violet-100 hover:to-indigo-100 dark:from-violet-950/40 dark:to-indigo-950/40 border-violet-200/60 dark:border-violet-800/40 text-violet-700 dark:text-violet-300"
-              onClick={() => handleAiAction("insights")}
-            >
-              <Brain className="h-3 w-3" />
-              AI Project Insights
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-7 text-xs gap-1.5 bg-gradient-to-r from-cyan-50 to-sky-50 hover:from-cyan-100 hover:to-sky-100 dark:from-cyan-950/40 dark:to-sky-950/40 border-cyan-200/60 dark:border-cyan-800/40 text-cyan-700 dark:text-cyan-300"
-              onClick={() => handleAiAction("summary")}
-            >
-              <ListChecks className="h-3 w-3" />
-              AI Task Summary
-            </Button>
-          </div>
-
           <div className="flex items-stretch">
             {/* Left Section - Main Info */}
-            <div className="flex-1 p-5 pt-3">
+            <div className="flex-1 p-5">
               {/* Header Row */}
               <div className="flex items-start justify-between mb-3">
-                <div className="flex items-center gap-3">
-                  <div>
-                    <div className="flex items-center gap-2 mb-1">
-                      <h3 className="font-bold text-lg leading-tight">{project.merchantName}</h3>
-                      {isPending && (
-                        <Badge className="bg-amber-500 text-white animate-pulse px-2 py-0.5 text-xs font-semibold">
-                          <Sparkles className="h-3 w-3 mr-1" />
-                          NEW
-                        </Badge>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <Badge className={`${phaseStyle.badge} text-white text-[10px] px-2 py-0.5`}>
-                        {project.currentPhase.toUpperCase()}
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <h3 className="font-bold text-lg leading-tight">{project.merchantName}</h3>
+                    {isPending && (
+                      <Badge className="bg-amber-500 text-white animate-pulse px-2 py-0.5 text-xs font-semibold">
+                        <Sparkles className="h-3 w-3 mr-1" />
+                        NEW
                       </Badge>
-                      <Badge variant="outline" className="text-[10px] px-2 py-0.5 font-mono bg-muted/50">
-                        {project.mid}
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2 flex-wrap text-xs text-muted-foreground">
+                    <Badge className={`${phaseStyle.badge} text-white text-[10px] px-2 py-0.5`}>
+                      {project.currentPhase.toUpperCase()}
+                    </Badge>
+                    <Badge variant="outline" className="text-[10px] px-2 py-0.5 font-mono bg-muted/50">
+                      {project.mid}
+                    </Badge>
+                    {project.assignedOwnerName && (
+                      <Badge variant="outline" className="text-[10px] px-2 py-0.5 bg-muted/50">
+                        <User className="h-2.5 w-2.5 mr-1" />
+                        {project.assignedOwnerName}
                       </Badge>
-                      {project.assignedOwnerName && (
-                        <Badge variant="outline" className="text-[10px] px-2 py-0.5 bg-muted/50">
-                          <User className="h-2.5 w-2.5 mr-1" />
-                          {project.assignedOwnerName}
+                    )}
+                    {project.links.brandUrl && (
+                      <a href={project.links.brandUrl} target="_blank" rel="noopener noreferrer">
+                        <Badge variant="outline" className="text-[10px] px-2 py-0.5 bg-muted/50 hover:bg-muted cursor-pointer">
+                          <ExternalLink className="h-2.5 w-2.5 mr-1" />
+                          Website
                         </Badge>
-                      )}
-                      {project.links.brandUrl && (
-                        <a 
-                          href={project.links.brandUrl} 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                        >
-                          <Badge variant="outline" className="text-[10px] px-2 py-0.5 bg-muted/50 hover:bg-muted cursor-pointer">
-                            <ExternalLink className="h-2.5 w-2.5 mr-1" />
-                            Website
-                          </Badge>
-                        </a>
-                      )}
-                    </div>
+                      </a>
+                    )}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-5 text-[10px] gap-1 px-2 py-0 bg-gradient-to-r from-violet-50 to-indigo-50 hover:from-violet-100 hover:to-indigo-100 dark:from-violet-950/40 dark:to-indigo-950/40 border-violet-200/60 dark:border-violet-800/40 text-violet-700 dark:text-violet-300 rounded-full"
+                      onClick={() => handleAiAction("insights")}
+                    >
+                      <Brain className="h-2.5 w-2.5" />
+                      AI Insights
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-5 text-[10px] gap-1 px-2 py-0 bg-gradient-to-r from-cyan-50 to-sky-50 hover:from-cyan-100 hover:to-sky-100 dark:from-cyan-950/40 dark:to-sky-950/40 border-cyan-200/60 dark:border-cyan-800/40 text-cyan-700 dark:text-cyan-300 rounded-full"
+                      onClick={() => handleAiAction("summary")}
+                    >
+                      <ListChecks className="h-2.5 w-2.5" />
+                      AI Summary
+                    </Button>
                   </div>
                 </div>
               </div>
@@ -362,13 +352,12 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
             </div>
 
             {/* Right Section - Actions */}
-            <div className="w-48 border-l border-border/50 bg-background/40 p-3 flex flex-col">
-              {/* Action Buttons */}
-              <div className="space-y-1.5 flex-1">
+            <div className="w-44 border-l border-border/50 bg-background/40 p-3 flex flex-col justify-between">
+              <div className="space-y-2">
                 <Button 
                   variant="ghost" 
                   size="sm" 
-                  className="w-full justify-start gap-2 h-8 bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/30 dark:hover:bg-blue-900/40 border border-blue-200/60 dark:border-blue-800/40 text-blue-700 dark:text-blue-300 text-xs"
+                  className="w-full justify-start gap-2 h-9 bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/30 dark:hover:bg-blue-900/40 border border-blue-200/60 dark:border-blue-800/40 text-blue-700 dark:text-blue-300 text-xs"
                   onClick={() => setDetailsOpen(true)}
                 >
                   <FileText className="h-3.5 w-3.5" />
@@ -377,7 +366,7 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
                 <Button 
                   variant="ghost" 
                   size="sm" 
-                  className="w-full justify-start gap-2 h-8 bg-purple-50 hover:bg-purple-100 dark:bg-purple-950/30 dark:hover:bg-purple-900/40 border border-purple-200/60 dark:border-purple-800/40 text-purple-700 dark:text-purple-300 text-xs"
+                  className="w-full justify-start gap-2 h-9 bg-purple-50 hover:bg-purple-100 dark:bg-purple-950/30 dark:hover:bg-purple-900/40 border border-purple-200/60 dark:border-purple-800/40 text-purple-700 dark:text-purple-300 text-xs"
                   onClick={() => setChecklistOpen(true)}
                 >
                   <ClipboardList className="h-3.5 w-3.5" />
@@ -386,7 +375,7 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
                 <Button 
                   variant="ghost" 
                   size="sm" 
-                  className="w-full justify-start gap-2 h-8 bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/30 dark:hover:bg-amber-900/40 border border-amber-200/60 dark:border-amber-800/40 text-amber-700 dark:text-amber-300 text-xs"
+                  className="w-full justify-start gap-2 h-9 bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/30 dark:hover:bg-amber-900/40 border border-amber-200/60 dark:border-amber-800/40 text-amber-700 dark:text-amber-300 text-xs"
                   onClick={() => setEditOpen(true)}
                 >
                   <Pencil className="h-3.5 w-3.5" />
@@ -397,7 +386,7 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
                     <Button 
                       variant="ghost" 
                       size="sm" 
-                      className="w-full justify-start gap-2 h-8 bg-teal-50 hover:bg-teal-100 dark:bg-teal-950/30 dark:hover:bg-teal-900/40 border border-teal-200/60 dark:border-teal-800/40 text-teal-700 dark:text-teal-300 text-xs"
+                      className="w-full justify-start gap-2 h-9 bg-teal-50 hover:bg-teal-100 dark:bg-teal-950/30 dark:hover:bg-teal-900/40 border border-teal-200/60 dark:border-teal-800/40 text-teal-700 dark:text-teal-300 text-xs"
                       onClick={() => setAssignOpen(true)}
                     >
                       <UserPlus className="h-3.5 w-3.5" />
@@ -406,7 +395,7 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
                     <Button 
                       variant="ghost" 
                       size="sm" 
-                      className="w-full justify-start gap-2 h-8 bg-red-50 hover:bg-red-100 dark:bg-red-950/30 dark:hover:bg-red-900/40 border border-red-200/60 dark:border-red-800/40 text-red-700 dark:text-red-300 text-xs"
+                      className="w-full justify-start gap-2 h-9 bg-red-50 hover:bg-red-100 dark:bg-red-950/30 dark:hover:bg-red-900/40 border border-red-200/60 dark:border-red-800/40 text-red-700 dark:text-red-300 text-xs"
                       onClick={() => setDeleteConfirmOpen(true)}
                     >
                       <Trash2 className="h-3.5 w-3.5" />
@@ -416,33 +405,35 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
                 )}
               </div>
 
-              {/* Transfer/Accept - always at bottom */}
-              <div className="pt-2 border-t border-border/50 mt-2">
-                {isPending ? (
-                  <Button 
-                    onClick={handleAccept} 
-                    className="w-full gap-2 h-8 bg-emerald-500 hover:bg-emerald-600 text-white text-xs"
-                  >
-                    <CheckCircle2 className="h-3.5 w-3.5" />
-                    Accept
-                  </Button>
-                ) : canTransfer ? (
-                  <Button 
-                    variant="ghost"
-                    onClick={() => setTransferOpen(true)} 
-                    disabled={!isTransferReady}
-                    className={`w-full gap-2 h-8 border border-border/50 text-xs ${
-                      isTransferReady 
-                        ? "bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/30 dark:hover:bg-indigo-900/40 border-indigo-200/60 dark:border-indigo-800/40 text-indigo-700 dark:text-indigo-300" 
-                        : "bg-muted/30 opacity-50 cursor-not-allowed"
-                    }`}
-                    title={!allCurrentTeamChecklistCompleted ? "Complete all checklist items before transferring" : ""}
-                  >
-                    Transfer
-                    <ArrowRight className="h-3.5 w-3.5" />
-                  </Button>
-                ) : null}
-              </div>
+              {/* Transfer/Accept */}
+              {(isPending || canTransfer) && (
+                <div className="pt-2 border-t border-border/50 mt-2">
+                  {isPending ? (
+                    <Button 
+                      onClick={handleAccept} 
+                      className="w-full gap-2 h-9 bg-emerald-500 hover:bg-emerald-600 text-white text-xs"
+                    >
+                      <CheckCircle2 className="h-3.5 w-3.5" />
+                      Accept
+                    </Button>
+                  ) : (
+                    <Button 
+                      variant="ghost"
+                      onClick={() => setTransferOpen(true)} 
+                      disabled={!isTransferReady}
+                      className={`w-full gap-2 h-9 border border-border/50 text-xs ${
+                        isTransferReady 
+                          ? "bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/30 dark:hover:bg-indigo-900/40 border-indigo-200/60 dark:border-indigo-800/40 text-indigo-700 dark:text-indigo-300" 
+                          : "bg-muted/30 opacity-50 cursor-not-allowed"
+                      }`}
+                      title={!allCurrentTeamChecklistCompleted ? "Complete all checklist items before transferring" : ""}
+                    >
+                      Transfer
+                      <ArrowRight className="h-3.5 w-3.5" />
+                    </Button>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </CardContent>
