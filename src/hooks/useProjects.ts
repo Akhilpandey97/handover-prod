@@ -467,52 +467,29 @@ export const useUpdateChecklist = () => {
 
       if (error) throw error;
 
-      // When completing an item, check if all items in that team section are now done
+      // When completing an item, auto-neutral it and close its open time-tracking logs
       if (completed) {
-        // Get the completed item to find its owner_team
-        const { data: completedItem } = await supabase
-          .from("checklist_items")
-          .select("owner_team")
-          .eq("id", checklistId)
-          .single();
+        // Close open responsibility log for this specific item
+        const { data: openLogs } = await supabase
+          .from("checklist_responsibility_logs")
+          .select("id")
+          .eq("checklist_item_id", checklistId)
+          .is("ended_at", null);
 
-        if (completedItem) {
-          // Check if all items for this team in this project are now completed
-          const { data: teamItems } = await supabase
-            .from("checklist_items")
-            .select("id, completed, current_responsibility")
-            .eq("project_id", projectId)
-            .eq("owner_team", completedItem.owner_team);
-
-          const allCompleted = teamItems?.every(item => item.completed);
-
-          if (allCompleted && teamItems) {
-            // Set all items in this team to neutral and close open responsibility logs
-            for (const item of teamItems) {
-              if (item.current_responsibility !== "neutral") {
-                // Close open responsibility log
-                const { data: openLogs } = await supabase
-                  .from("checklist_responsibility_logs")
-                  .select("id")
-                  .eq("checklist_item_id", item.id)
-                  .is("ended_at", null);
-
-                if (openLogs && openLogs.length > 0) {
-                  await supabase
-                    .from("checklist_responsibility_logs")
-                    .update({ ended_at: new Date().toISOString() })
-                    .eq("id", openLogs[0].id);
-                }
-
-                // Set item to neutral
-                await supabase
-                  .from("checklist_items")
-                  .update({ current_responsibility: "neutral" })
-                  .eq("id", item.id);
-              }
-            }
+        if (openLogs && openLogs.length > 0) {
+          for (const log of openLogs) {
+            await supabase
+              .from("checklist_responsibility_logs")
+              .update({ ended_at: new Date().toISOString() })
+              .eq("id", log.id);
           }
         }
+
+        // Set item to neutral
+        await supabase
+          .from("checklist_items")
+          .update({ current_responsibility: "neutral" })
+          .eq("id", checklistId);
       }
 
       return { projectId, checklistId, completed };
