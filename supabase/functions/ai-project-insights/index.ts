@@ -56,6 +56,24 @@ Transfer History: ${project.transferHistory?.length || 0} transfers
       }),
     });
 
+    if (!response.ok) {
+      if (response.status === 429) {
+        return new Response(JSON.stringify({ error: "Rate limit exceeded. Please try again in a moment." }), {
+          status: 429,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      if (response.status === 402) {
+        return new Response(JSON.stringify({ error: "AI credits exhausted. Please add credits." }), {
+          status: 402,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      const errText = await response.text();
+      console.error("AI gateway error:", response.status, errText);
+      throw new Error(`AI gateway error: ${response.status}`);
+    }
+
     const data = await response.json();
     const content = data.choices?.[0]?.message?.content || "Unable to generate insights.";
 
