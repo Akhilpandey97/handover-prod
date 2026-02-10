@@ -209,7 +209,7 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
               </div>
 
               {/* Stats Row */}
-              <div className="grid grid-cols-4 gap-3 mb-3">
+              <div className="grid grid-cols-4 gap-2 mb-2">
                 {/* ARR */}
                 <div className="bg-background/60 backdrop-blur-sm rounded-xl p-3 border border-border/50">
                   <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
@@ -261,7 +261,7 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
               </div>
 
               {/* New Info Row */}
-              <div className="grid grid-cols-4 gap-3">
+              <div className="grid grid-cols-4 gap-2">
                 {/* Kick Off Date */}
                 <div className="bg-background/60 backdrop-blur-sm rounded-xl p-2.5 border border-border/50">
                   <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-0.5">
@@ -280,11 +280,11 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
                   <p className="text-xs font-semibold">{project.dates.goLiveDate || project.dates.expectedGoLiveDate || "—"}</p>
                 </div>
 
-                {/* Project Phase (next checklist item) */}
+              {/* Project Phase (next checklist item) */}
                 <div className="bg-background/60 backdrop-blur-sm rounded-xl p-2.5 border border-border/50">
                   <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-0.5">
                     <Activity className="h-3 w-3" />
-                    Current Step
+                    Project Phase
                   </div>
                   <p className="text-xs font-semibold truncate" title={projectPhaseDisplay}>{projectPhaseDisplay}</p>
                 </div>
@@ -293,7 +293,7 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
                 <div className="bg-background/60 backdrop-blur-sm rounded-xl p-2.5 border border-border/50">
                   <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-0.5">
                     <Activity className="h-3 w-3" />
-                    State
+                    Project State
                   </div>
                   <Select value={project.projectState} onValueChange={(val) => handleStateChange(val as ProjectState)}>
                     <SelectTrigger className="h-6 text-xs font-semibold border-0 p-0 shadow-none focus:ring-0 bg-transparent">
@@ -312,9 +312,9 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
             </div>
 
             {/* Right Section - Actions */}
-            <div className="w-52 border-l border-border/50 bg-background/40 p-4 flex flex-col justify-between">
+            <div className="w-48 border-l border-border/50 bg-background/40 p-3 flex flex-col justify-between">
               {/* Action Buttons */}
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 <Button 
                   variant="ghost" 
                   size="sm" 
