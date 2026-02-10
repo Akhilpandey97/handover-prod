@@ -6,6 +6,7 @@ import {
   useProjectsQuery,
   useAddProject,
   useUpdateProject,
+  useDeleteProject,
   useAcceptProject,
   useTransferProject,
   useUpdateChecklist,
@@ -19,6 +20,7 @@ interface ProjectContextType {
   isLoading: boolean;
   addProject: (project: Project) => void;
   updateProject: (project: Project) => void;
+  deleteProject: (projectId: string) => void;
   acceptProject: (projectId: string) => void;
   transferProject: (projectId: string, notes?: string, assigneeId?: string) => void;
   updateChecklist: (projectId: string, checklistId: string, completed: boolean) => void;
@@ -40,6 +42,7 @@ export const ProjectProvider = ({ children }: { children: ReactNode }) => {
   
   const addProjectMutation = useAddProject();
   const updateProjectMutation = useUpdateProject();
+  const deleteProjectMutation = useDeleteProject();
   const acceptProjectMutation = useAcceptProject();
   const transferProjectMutation = useTransferProject();
   const updateChecklistMutation = useUpdateChecklist();
@@ -53,6 +56,10 @@ export const ProjectProvider = ({ children }: { children: ReactNode }) => {
 
   const updateProject = (updatedProject: Project) => {
     updateProjectMutation.mutate(updatedProject);
+  };
+
+  const deleteProject = (projectId: string) => {
+    deleteProjectMutation.mutate(projectId);
   };
 
   const acceptProject = (projectId: string) => {
@@ -120,6 +127,7 @@ export const ProjectProvider = ({ children }: { children: ReactNode }) => {
         isLoading,
         addProject,
         updateProject,
+        deleteProject,
         acceptProject,
         transferProject,
         updateChecklist,
