@@ -115,7 +115,7 @@ export const ChecklistDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[90vh]">
+      <DialogContent className="max-w-2xl max-h-[80vh] flex flex-col overflow-hidden">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-3">
             <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-lg">
@@ -169,7 +169,7 @@ export const ChecklistDialog = ({
           <span>All checklist items for your team must be completed to unlock the <strong>Transfer</strong> button.</span>
         </div>
 
-        <ScrollArea className="max-h-[50vh] pr-4">
+        <ScrollArea className="flex-1 min-h-0 pr-4">
           <div className="space-y-8">
             {orderedTeams.map((team) => {
               const items = groupedByTeam[team];

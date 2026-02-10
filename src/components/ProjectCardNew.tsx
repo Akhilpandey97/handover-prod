@@ -166,13 +166,26 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
     setAiLoading(true);
     setAiResult("");
     try {
-      const { data, error } = await supabase.functions.invoke("ai-project-insights", {
-        body: { project, type },
-      });
-      if (error) throw error;
-      setAiResult(data.result);
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-project-insights`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          },
+          body: JSON.stringify({ project, type }),
+        }
+      );
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData.error || `Request failed with status ${response.status}`);
+      }
+      const data = await response.json();
+      setAiResult(data.result || "No insights generated.");
     } catch (err: any) {
-      setAiResult("Failed to generate AI insights. Please try again.");
+      console.error("AI action error:", err);
+      setAiResult(`Failed to generate AI ${type === "insights" ? "insights" : "task summary"}. ${err.message || "Please try again."}`);
     } finally {
       setAiLoading(false);
     }
