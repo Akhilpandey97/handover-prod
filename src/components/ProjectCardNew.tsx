@@ -22,6 +22,12 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -29,6 +35,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 import {
   ArrowRight,
   CheckCircle2,
@@ -46,6 +53,9 @@ import {
   Activity,
   User,
   Trash2,
+  Brain,
+  ListChecks,
+  Loader2,
 } from "lucide-react";
 
 interface ProjectCardNewProps {
@@ -88,6 +98,10 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
   const [transferOpen, setTransferOpen] = useState(false);
   const [assignOpen, setAssignOpen] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [aiDialogOpen, setAiDialogOpen] = useState(false);
+  const [aiDialogType, setAiDialogType] = useState<"insights" | "summary">("insights");
+  const [aiResult, setAiResult] = useState("");
+  const [aiLoading, setAiLoading] = useState(false);
 
   // Calculate checklist per team
   const mintChecklist = project.checklist.filter(c => c.ownerTeam === "mint");
@@ -146,6 +160,24 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
     updateProject({ ...project, projectState: newState });
   };
 
+  const handleAiAction = async (type: "insights" | "summary") => {
+    setAiDialogType(type);
+    setAiDialogOpen(true);
+    setAiLoading(true);
+    setAiResult("");
+    try {
+      const { data, error } = await supabase.functions.invoke("ai-project-insights", {
+        body: { project, type },
+      });
+      if (error) throw error;
+      setAiResult(data.result);
+    } catch (err: any) {
+      setAiResult("Failed to generate AI insights. Please try again.");
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
   const getResponsibilityDisplay = () => {
     if (computedResponsibility === "gokwik") return { label: "GoKwik", icon: Building2, color: "text-primary bg-primary/10" };
     if (computedResponsibility === "merchant") return { label: "Merchant", icon: Users, color: "text-amber-600 bg-amber-500/10" };
@@ -158,15 +190,37 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
     <>
       <Card className={`${phaseStyle.bg} ${phaseStyle.border} border hover:shadow-lg transition-all duration-300 overflow-hidden`}>
         <CardContent className="p-0">
+          {/* AI Action Bar */}
+          <div className="flex items-center gap-2 px-5 pt-3 pb-0">
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-7 text-xs gap-1.5 bg-gradient-to-r from-violet-50 to-indigo-50 hover:from-violet-100 hover:to-indigo-100 dark:from-violet-950/40 dark:to-indigo-950/40 border-violet-200/60 dark:border-violet-800/40 text-violet-700 dark:text-violet-300"
+              onClick={() => handleAiAction("insights")}
+            >
+              <Brain className="h-3 w-3" />
+              AI Project Insights
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-7 text-xs gap-1.5 bg-gradient-to-r from-cyan-50 to-sky-50 hover:from-cyan-100 hover:to-sky-100 dark:from-cyan-950/40 dark:to-sky-950/40 border-cyan-200/60 dark:border-cyan-800/40 text-cyan-700 dark:text-cyan-300"
+              onClick={() => handleAiAction("summary")}
+            >
+              <ListChecks className="h-3 w-3" />
+              AI Task Summary
+            </Button>
+          </div>
+
           <div className="flex items-stretch">
             {/* Left Section - Main Info */}
-            <div className="flex-1 p-5">
+            <div className="flex-1 p-5 pt-3">
               {/* Header Row */}
-              <div className="flex items-start justify-between mb-4">
+              <div className="flex items-start justify-between mb-3">
                 <div className="flex items-center gap-3">
                   <div>
                     <div className="flex items-center gap-2 mb-1">
-                      <h3 className="font-bold text-lg">{project.merchantName}</h3>
+                      <h3 className="font-bold text-lg leading-tight">{project.merchantName}</h3>
                       {isPending && (
                         <Badge className="bg-amber-500 text-white animate-pulse px-2 py-0.5 text-xs font-semibold">
                           <Sparkles className="h-3 w-3 mr-1" />
@@ -174,34 +228,30 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
                         </Badge>
                       )}
                     </div>
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Badge className={`${phaseStyle.badge} text-white text-xs px-2 py-0.5`}>
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <Badge className={`${phaseStyle.badge} text-white text-[10px] px-2 py-0.5`}>
                         {project.currentPhase.toUpperCase()}
                       </Badge>
-                      <span className="text-muted-foreground/50">•</span>
-                      <span className="text-xs text-muted-foreground/70">{project.mid}</span>
+                      <Badge variant="outline" className="text-[10px] px-2 py-0.5 font-mono bg-muted/50">
+                        {project.mid}
+                      </Badge>
                       {project.assignedOwnerName && (
-                        <>
-                          <span className="text-muted-foreground/50">•</span>
-                          <span className="flex items-center gap-1 text-xs font-medium text-muted-foreground">
-                            <User className="h-3 w-3" />
-                            {project.assignedOwnerName}
-                          </span>
-                        </>
+                        <Badge variant="outline" className="text-[10px] px-2 py-0.5 bg-muted/50">
+                          <User className="h-2.5 w-2.5 mr-1" />
+                          {project.assignedOwnerName}
+                        </Badge>
                       )}
                       {project.links.brandUrl && (
-                        <>
-                          <span className="text-muted-foreground/50">•</span>
-                          <a 
-                            href={project.links.brandUrl} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className="flex items-center gap-1 hover:text-primary transition-colors text-xs text-muted-foreground/70 hover:text-muted-foreground"
-                          >
-                            <ExternalLink className="h-3 w-3" />
+                        <a 
+                          href={project.links.brandUrl} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                        >
+                          <Badge variant="outline" className="text-[10px] px-2 py-0.5 bg-muted/50 hover:bg-muted cursor-pointer">
+                            <ExternalLink className="h-2.5 w-2.5 mr-1" />
                             Website
-                          </a>
-                        </>
+                          </Badge>
+                        </a>
                       )}
                     </div>
                   </div>
@@ -211,30 +261,30 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
               {/* Stats Row */}
               <div className="grid grid-cols-4 gap-2 mb-2">
                 {/* ARR */}
-                <div className="bg-background/60 backdrop-blur-sm rounded-xl p-3 border border-border/50">
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
-                    <TrendingUp className="h-3.5 w-3.5" />
+                <div className="bg-background/60 backdrop-blur-sm rounded-lg p-2.5 border border-border/50">
+                  <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground mb-0.5">
+                    <TrendingUp className="h-3 w-3" />
                     ARR
                   </div>
-                  <p className="text-lg font-bold">{project.arr} Cr</p>
+                  <p className="text-sm font-bold">{project.arr} Cr</p>
                 </div>
 
                 {/* Pending With */}
-                <div className="bg-background/60 backdrop-blur-sm rounded-xl p-3 border border-border/50">
-                  <div className="text-xs text-muted-foreground mb-1">Pending With</div>
-                  <div className={`flex items-center gap-1.5 font-semibold ${responsibility.color} px-2 py-0.5 rounded-md w-fit`}>
-                    <responsibility.icon className="h-4 w-4" />
+                <div className="bg-background/60 backdrop-blur-sm rounded-lg p-2.5 border border-border/50">
+                  <div className="text-[10px] text-muted-foreground mb-0.5">Pending With</div>
+                  <div className={`flex items-center gap-1 font-semibold ${responsibility.color} px-1.5 py-0.5 rounded-md w-fit`}>
+                    <responsibility.icon className="h-3.5 w-3.5" />
                     <span className="text-sm">{responsibility.label}</span>
                   </div>
                 </div>
 
                 {/* Time Tracked */}
-                <div className="bg-background/60 backdrop-blur-sm rounded-xl p-3 border border-border/50">
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
-                    <Clock className="h-3.5 w-3.5" />
+                <div className="bg-background/60 backdrop-blur-sm rounded-lg p-2.5 border border-border/50">
+                  <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground mb-0.5">
+                    <Clock className="h-3 w-3" />
                     Time
                   </div>
-                  <div className="flex items-center gap-1.5 text-sm font-semibold">
+                  <div className="flex items-center gap-1 text-sm font-semibold">
                     <span className="text-primary">{formatDuration(timeByParty.gokwik)}</span>
                     <span className="text-muted-foreground">/</span>
                     <span className="text-amber-500">{formatDuration(timeByParty.merchant)}</span>
@@ -242,12 +292,12 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
                 </div>
 
                 {/* Checklist Team-wise */}
-                <div className="bg-background/60 backdrop-blur-sm rounded-xl p-3 border border-border/50">
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
-                    <ClipboardList className="h-3.5 w-3.5" />
+                <div className="bg-background/60 backdrop-blur-sm rounded-lg p-2.5 border border-border/50">
+                  <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground mb-0.5">
+                    <ClipboardList className="h-3 w-3" />
                     Checklist
                   </div>
-                  <div className="flex flex-col gap-0.5 text-xs font-semibold">
+                  <div className="flex flex-col gap-0 text-xs font-semibold">
                     <div className="flex items-center gap-1">
                       <span className="text-blue-600 dark:text-blue-400">{mintCompleted}/{mintChecklist.length}</span>
                       <span className="text-muted-foreground/60 text-[10px]">MINT</span>
@@ -260,43 +310,43 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
                 </div>
               </div>
 
-              {/* New Info Row */}
+              {/* Info Row */}
               <div className="grid grid-cols-4 gap-2">
                 {/* Kick Off Date */}
-                <div className="bg-background/60 backdrop-blur-sm rounded-xl p-2.5 border border-border/50">
-                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-0.5">
+                <div className="bg-background/60 backdrop-blur-sm rounded-lg p-2.5 border border-border/50">
+                  <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground mb-0.5">
                     <Calendar className="h-3 w-3" />
                     Kick Off
                   </div>
-                  <p className="text-xs font-semibold">{project.dates.kickOffDate || "—"}</p>
+                  <p className="text-sm font-semibold">{project.dates.kickOffDate || "—"}</p>
                 </div>
 
                 {/* Go Live Date */}
-                <div className="bg-background/60 backdrop-blur-sm rounded-xl p-2.5 border border-border/50">
-                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-0.5">
+                <div className="bg-background/60 backdrop-blur-sm rounded-lg p-2.5 border border-border/50">
+                  <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground mb-0.5">
                     <Calendar className="h-3 w-3" />
                     Go Live
                   </div>
-                  <p className="text-xs font-semibold">{project.dates.goLiveDate || project.dates.expectedGoLiveDate || "—"}</p>
+                  <p className="text-sm font-semibold">{project.dates.goLiveDate || project.dates.expectedGoLiveDate || "—"}</p>
                 </div>
 
-              {/* Project Phase (next checklist item) */}
-                <div className="bg-background/60 backdrop-blur-sm rounded-xl p-2.5 border border-border/50">
-                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-0.5">
+                {/* Project Phase */}
+                <div className="bg-background/60 backdrop-blur-sm rounded-lg p-2.5 border border-border/50">
+                  <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground mb-0.5">
                     <Activity className="h-3 w-3" />
                     Project Phase
                   </div>
-                  <p className="text-xs font-semibold truncate" title={projectPhaseDisplay}>{projectPhaseDisplay}</p>
+                  <p className="text-sm font-semibold truncate" title={projectPhaseDisplay}>{projectPhaseDisplay}</p>
                 </div>
 
                 {/* Project State */}
-                <div className="bg-background/60 backdrop-blur-sm rounded-xl p-2.5 border border-border/50">
-                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-0.5">
+                <div className="bg-background/60 backdrop-blur-sm rounded-lg p-2.5 border border-border/50">
+                  <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground mb-0.5">
                     <Activity className="h-3 w-3" />
                     Project State
                   </div>
                   <Select value={project.projectState} onValueChange={(val) => handleStateChange(val as ProjectState)}>
-                    <SelectTrigger className="h-6 text-xs font-semibold border-0 p-0 shadow-none focus:ring-0 bg-transparent">
+                    <SelectTrigger className="h-6 text-sm font-semibold border-0 p-0 shadow-none focus:ring-0 bg-transparent">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -312,34 +362,34 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
             </div>
 
             {/* Right Section - Actions */}
-            <div className="w-48 border-l border-border/50 bg-background/40 p-3 flex flex-col justify-between">
+            <div className="w-48 border-l border-border/50 bg-background/40 p-3 flex flex-col">
               {/* Action Buttons */}
-              <div className="space-y-1.5">
+              <div className="space-y-1.5 flex-1">
                 <Button 
                   variant="ghost" 
                   size="sm" 
-                  className="w-full justify-start gap-2 h-9 bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/30 dark:hover:bg-blue-900/40 border border-blue-200/60 dark:border-blue-800/40 text-blue-700 dark:text-blue-300"
+                  className="w-full justify-start gap-2 h-8 bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/30 dark:hover:bg-blue-900/40 border border-blue-200/60 dark:border-blue-800/40 text-blue-700 dark:text-blue-300 text-xs"
                   onClick={() => setDetailsOpen(true)}
                 >
-                  <FileText className="h-4 w-4" />
+                  <FileText className="h-3.5 w-3.5" />
                   View Details
                 </Button>
                 <Button 
                   variant="ghost" 
                   size="sm" 
-                  className="w-full justify-start gap-2 h-9 bg-purple-50 hover:bg-purple-100 dark:bg-purple-950/30 dark:hover:bg-purple-900/40 border border-purple-200/60 dark:border-purple-800/40 text-purple-700 dark:text-purple-300"
+                  className="w-full justify-start gap-2 h-8 bg-purple-50 hover:bg-purple-100 dark:bg-purple-950/30 dark:hover:bg-purple-900/40 border border-purple-200/60 dark:border-purple-800/40 text-purple-700 dark:text-purple-300 text-xs"
                   onClick={() => setChecklistOpen(true)}
                 >
-                  <ClipboardList className="h-4 w-4" />
+                  <ClipboardList className="h-3.5 w-3.5" />
                   Open Checklist
                 </Button>
                 <Button 
                   variant="ghost" 
                   size="sm" 
-                  className="w-full justify-start gap-2 h-9 bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/30 dark:hover:bg-amber-900/40 border border-amber-200/60 dark:border-amber-800/40 text-amber-700 dark:text-amber-300"
+                  className="w-full justify-start gap-2 h-8 bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/30 dark:hover:bg-amber-900/40 border border-amber-200/60 dark:border-amber-800/40 text-amber-700 dark:text-amber-300 text-xs"
                   onClick={() => setEditOpen(true)}
                 >
-                  <Pencil className="h-4 w-4" />
+                  <Pencil className="h-3.5 w-3.5" />
                   Edit Project
                 </Button>
                 {currentUser?.team === "manager" && (
@@ -347,33 +397,33 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
                     <Button 
                       variant="ghost" 
                       size="sm" 
-                      className="w-full justify-start gap-2 h-9 bg-teal-50 hover:bg-teal-100 dark:bg-teal-950/30 dark:hover:bg-teal-900/40 border border-teal-200/60 dark:border-teal-800/40 text-teal-700 dark:text-teal-300"
+                      className="w-full justify-start gap-2 h-8 bg-teal-50 hover:bg-teal-100 dark:bg-teal-950/30 dark:hover:bg-teal-900/40 border border-teal-200/60 dark:border-teal-800/40 text-teal-700 dark:text-teal-300 text-xs"
                       onClick={() => setAssignOpen(true)}
                     >
-                      <UserPlus className="h-4 w-4" />
+                      <UserPlus className="h-3.5 w-3.5" />
                       Assign Owner
                     </Button>
                     <Button 
                       variant="ghost" 
                       size="sm" 
-                      className="w-full justify-start gap-2 h-9 bg-red-50 hover:bg-red-100 dark:bg-red-950/30 dark:hover:bg-red-900/40 border border-red-200/60 dark:border-red-800/40 text-red-700 dark:text-red-300"
+                      className="w-full justify-start gap-2 h-8 bg-red-50 hover:bg-red-100 dark:bg-red-950/30 dark:hover:bg-red-900/40 border border-red-200/60 dark:border-red-800/40 text-red-700 dark:text-red-300 text-xs"
                       onClick={() => setDeleteConfirmOpen(true)}
                     >
-                      <Trash2 className="h-4 w-4" />
+                      <Trash2 className="h-3.5 w-3.5" />
                       Delete
                     </Button>
                   </>
                 )}
               </div>
 
-              {/* Transfer/Accept */}
-              <div className="pt-3 border-t border-border/50">
+              {/* Transfer/Accept - always at bottom */}
+              <div className="pt-2 border-t border-border/50 mt-2">
                 {isPending ? (
                   <Button 
                     onClick={handleAccept} 
-                    className="w-full gap-2 bg-emerald-500 hover:bg-emerald-600 text-white"
+                    className="w-full gap-2 h-8 bg-emerald-500 hover:bg-emerald-600 text-white text-xs"
                   >
-                    <CheckCircle2 className="h-4 w-4" />
+                    <CheckCircle2 className="h-3.5 w-3.5" />
                     Accept
                   </Button>
                 ) : canTransfer ? (
@@ -381,7 +431,7 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
                     variant="ghost"
                     onClick={() => setTransferOpen(true)} 
                     disabled={!isTransferReady}
-                    className={`w-full gap-2 h-9 border border-border/50 ${
+                    className={`w-full gap-2 h-8 border border-border/50 text-xs ${
                       isTransferReady 
                         ? "bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/30 dark:hover:bg-indigo-900/40 border-indigo-200/60 dark:border-indigo-800/40 text-indigo-700 dark:text-indigo-300" 
                         : "bg-muted/30 opacity-50 cursor-not-allowed"
@@ -389,7 +439,7 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
                     title={!allCurrentTeamChecklistCompleted ? "Complete all checklist items before transferring" : ""}
                   >
                     Transfer
-                    <ArrowRight className="h-4 w-4" />
+                    <ArrowRight className="h-3.5 w-3.5" />
                   </Button>
                 ) : null}
               </div>
@@ -397,6 +447,34 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
           </div>
         </CardContent>
       </Card>
+
+      {/* AI Dialog */}
+      <Dialog open={aiDialogOpen} onOpenChange={setAiDialogOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              {aiDialogType === "insights" ? (
+                <><Brain className="h-5 w-5 text-violet-600" /> AI Project Insights</>
+              ) : (
+                <><ListChecks className="h-5 w-5 text-cyan-600" /> AI Task Summary</>
+              )}
+              <span className="text-sm font-normal text-muted-foreground">— {project.merchantName}</span>
+            </DialogTitle>
+          </DialogHeader>
+          <div className="mt-2">
+            {aiLoading ? (
+              <div className="flex items-center justify-center py-8 gap-2 text-muted-foreground">
+                <Loader2 className="h-5 w-5 animate-spin" />
+                Generating...
+              </div>
+            ) : (
+              <div className="prose prose-sm dark:prose-invert max-w-none whitespace-pre-wrap text-sm leading-relaxed">
+                {aiResult}
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <ProjectDetailsDialog
         project={project}

@@ -1,0 +1,71 @@
+import "https://deno.land/x/xhr@0.1.0/mod.ts";
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+};
+
+serve(async (req) => {
+  if (req.method === "OPTIONS") {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    const { project, type } = await req.json();
+
+    const apiKey = Deno.env.get("LOVABLE_API_KEY");
+    if (!apiKey) throw new Error("LOVABLE_API_KEY not set");
+
+    let systemPrompt: string;
+    if (type === "insights") {
+      systemPrompt = `You are a project management AI analyst. Given a project's data, provide 3-4 concise, actionable insights about the project's health, risks, and recommendations. Be specific and data-driven. Keep each insight to 1-2 sentences. Format as bullet points.`;
+    } else {
+      systemPrompt = `You are a project management AI summarizer. Given a project's checklist and status data, provide a brief task summary: what's done, what's pending, blockers, and next priority action. Keep it concise (4-5 bullet points max).`;
+    }
+
+    const projectSummary = `
+Project: ${project.merchantName} (MID: ${project.mid})
+Phase: ${project.currentPhase}
+State: ${project.projectState || "not_started"}
+ARR: ${project.arr} Cr
+Platform: ${project.platform}
+Kick Off: ${project.dates?.kickOffDate || "N/A"}
+Go Live: ${project.dates?.goLiveDate || project.dates?.expectedGoLiveDate || "Not set"}
+Owner Team: ${project.currentOwnerTeam}
+Pending With: ${project.currentResponsibility}
+Assigned Owner: ${project.assignedOwnerName || "Unassigned"}
+Checklist: ${project.checklist?.filter((c: any) => c.completed).length}/${project.checklist?.length || 0} completed
+Pending Items: ${project.checklist?.filter((c: any) => !c.completed).map((c: any) => c.title).join(", ") || "None"}
+Transfer History: ${project.transferHistory?.length || 0} transfers
+`;
+
+    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "google/gemini-3-flash-preview",
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: projectSummary },
+        ],
+        max_tokens: 500,
+      }),
+    });
+
+    const data = await response.json();
+    const content = data.choices?.[0]?.message?.content || "Unable to generate insights.";
+
+    return new Response(JSON.stringify({ result: content }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  } catch (error) {
+    return new Response(JSON.stringify({ error: error.message }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+});
