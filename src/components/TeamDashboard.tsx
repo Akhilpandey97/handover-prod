@@ -171,23 +171,6 @@ export const TeamDashboard = () => {
 
         </nav>
 
-        {/* User Info */}
-        <div className="p-4 border-t">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className={`h-10 w-10 rounded-full ${teamColors[currentUser.team]} flex items-center justify-center text-white font-bold shadow`}>
-                {currentUser.name.charAt(0)}
-              </div>
-              <div>
-                <p className="font-medium text-sm">{currentUser.name}</p>
-                <p className="text-xs text-muted-foreground capitalize">{currentUser.team}</p>
-              </div>
-            </div>
-            <Button variant="ghost" size="icon" onClick={logout} className="hover:bg-destructive/10 hover:text-destructive">
-              <LogOut className="h-5 w-5" />
-            </Button>
-          </div>
-        </div>
       </aside>
 
       {/* Main Content */}
@@ -205,16 +188,32 @@ export const TeamDashboard = () => {
             </p>
           </div>
           
-          {/* Search */}
-          <div className="w-80">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search by name or MID..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 h-10 bg-muted/50 border-0 focus:ring-2 focus:ring-primary/20"
-              />
+          <div className="flex items-center gap-4">
+            {/* Search */}
+            <div className="w-80">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search by name or MID..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10 h-10 bg-muted/50 border-0 focus:ring-2 focus:ring-primary/20"
+                />
+              </div>
+            </div>
+
+            {/* User Info */}
+            <div className="flex items-center gap-3 pl-4 border-l">
+              <div className="text-right">
+                <p className="font-medium text-sm">{currentUser.name}</p>
+                <p className="text-xs text-muted-foreground capitalize">{currentUser.team}</p>
+              </div>
+              <div className={`h-9 w-9 rounded-full ${teamColors[currentUser.team]} flex items-center justify-center text-white font-bold text-sm shadow`}>
+                {currentUser.name.charAt(0)}
+              </div>
+              <Button variant="ghost" size="icon" onClick={logout} className="hover:bg-destructive/10 hover:text-destructive">
+                <LogOut className="h-4 w-4" />
+              </Button>
             </div>
           </div>
         </header>

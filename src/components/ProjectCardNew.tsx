@@ -11,6 +11,7 @@ import { ChecklistDialog } from "./ChecklistDialog";
 import { EditProjectDialog } from "./EditProjectDialog";
 import { TransferDialog } from "./TransferDialog";
 import { AssignOwnerDialog } from "./AssignOwnerDialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -458,18 +459,34 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
               <span className="text-sm font-normal text-muted-foreground">— {project.merchantName}</span>
             </DialogTitle>
           </DialogHeader>
-          <div className="mt-2">
-            {aiLoading ? (
-              <div className="flex items-center justify-center py-8 gap-2 text-muted-foreground">
-                <Loader2 className="h-5 w-5 animate-spin" />
-                Generating...
-              </div>
-            ) : (
-              <div className="prose prose-sm dark:prose-invert max-w-none whitespace-pre-wrap text-sm leading-relaxed">
-                {aiResult}
-              </div>
-            )}
-          </div>
+          <ScrollArea className="max-h-[60vh]">
+            <div className="mt-2 pr-4">
+              {aiLoading ? (
+                <div className="flex items-center justify-center py-8 gap-2 text-muted-foreground">
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                  Generating...
+                </div>
+              ) : (
+                <div className="prose prose-sm dark:prose-invert max-w-none text-sm leading-relaxed">
+                  {aiResult.split('\n').filter(line => line.trim()).map((line, i) => {
+                    const cleaned = line.replace(/^\s*\*\s*/, '').replace(/^\s*-\s*/, '').trim();
+                    if (!cleaned) return null;
+                    // Check if line starts with bullet marker or bold marker
+                    const isBullet = /^\s*[\*\-]/.test(line) || /^\*\*/.test(cleaned);
+                    if (isBullet) {
+                      return (
+                        <div key={i} className="flex items-start gap-2 mb-3">
+                          <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-primary shrink-0" />
+                          <span dangerouslySetInnerHTML={{ __html: cleaned.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') }} />
+                        </div>
+                      );
+                    }
+                    return <p key={i} className="mb-3" dangerouslySetInnerHTML={{ __html: cleaned.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') }} />;
+                  })}
+                </div>
+              )}
+            </div>
+          </ScrollArea>
         </DialogContent>
       </Dialog>
 

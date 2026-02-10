@@ -130,43 +130,41 @@ export const ChecklistDialog = ({
           </DialogTitle>
         </DialogHeader>
 
-        {/* Progress Section */}
-        <div className="bg-muted/30 rounded-xl p-4 space-y-3">
+        {/* Compact Progress Section */}
+        <div className="bg-muted/30 rounded-lg p-3 space-y-2">
           <div className="flex items-center justify-between">
-            <span className="text-sm font-medium text-muted-foreground">Overall Progress</span>
-            <span className="font-bold text-lg">{completedCount}/{totalCount} completed</span>
+            <div className="flex items-center gap-3">
+              <span className="text-sm font-medium text-muted-foreground">Progress</span>
+              <span className="font-bold text-sm">{completedCount}/{totalCount}</span>
+            </div>
+            <div className="flex gap-1.5 flex-wrap">
+              {orderedTeams.map((team) => {
+                const count = teamCounts[team];
+                const isComplete = count?.completed === count?.total;
+                return (
+                  <Badge 
+                    key={team}
+                    variant={team === userTeam ? "default" : "outline"}
+                    className={`px-2 py-0.5 text-xs ${team === userTeam ? "" : "opacity-70"} ${isComplete ? "bg-emerald-500 text-white border-emerald-500" : ""}`}
+                  >
+                    {ownerTeamLabels[team as keyof typeof ownerTeamLabels]}: {count?.completed || 0}/{count?.total || 0}
+                    {isComplete && <CheckCircle2 className="h-3 w-3 ml-1" />}
+                  </Badge>
+                );
+              })}
+            </div>
           </div>
-          <Progress value={progress} className="h-3" />
-          
-          {/* Team Progress Badges */}
-          <div className="flex gap-2 flex-wrap pt-2">
-            {orderedTeams.map((team) => {
-              const count = teamCounts[team];
-              const isComplete = count?.completed === count?.total;
-              return (
-                <Badge 
-                  key={team}
-                  variant={team === userTeam ? "default" : "outline"}
-                  className={`px-3 py-1 ${team === userTeam ? "" : "opacity-70"} ${isComplete ? "bg-emerald-500 text-white border-emerald-500" : ""}`}
-                >
-                  {ownerTeamLabels[team as keyof typeof ownerTeamLabels]}: {count?.completed || 0}/{count?.total || 0}
-                  {isComplete && <CheckCircle2 className="h-3 w-3 ml-1" />}
-                </Badge>
-              );
-            })}
+          <Progress value={progress} className="h-2" />
+          <div className="flex items-center gap-4 text-xs text-muted-foreground">
+            <div className="flex items-center gap-1.5 bg-amber-500/10 rounded px-2 py-1">
+              <AlertCircle className="h-3 w-3 text-amber-500" />
+              <span>Tasks must be completed in order</span>
+            </div>
+            <div className="flex items-center gap-1.5 bg-indigo-500/10 rounded px-2 py-1">
+              <Lock className="h-3 w-3 text-indigo-500" />
+              <span>Complete all team items to unlock <strong>Transfer</strong></span>
+            </div>
           </div>
-        </div>
-
-        {/* Sequential Note */}
-        <div className="flex items-center gap-2 text-sm text-muted-foreground bg-amber-500/10 rounded-lg p-3 border border-amber-200 dark:border-amber-800">
-          <AlertCircle className="h-4 w-4 text-amber-500 shrink-0" />
-          <span>Tasks must be completed in order. Complete previous tasks to unlock the next one.</span>
-        </div>
-
-        {/* Transfer Unlock Note */}
-        <div className="flex items-center gap-2 text-sm text-muted-foreground bg-indigo-500/10 rounded-lg p-3 border border-indigo-200 dark:border-indigo-800">
-          <Lock className="h-4 w-4 text-indigo-500 shrink-0" />
-          <span>All checklist items for your team must be completed to unlock the <strong>Transfer</strong> button.</span>
         </div>
 
         <ScrollArea className="flex-1 min-h-0 pr-4">
