@@ -11,6 +11,7 @@ import { ChecklistDialog } from "./ChecklistDialog";
 import { EditProjectDialog } from "./EditProjectDialog";
 import { TransferDialog } from "./TransferDialog";
 import { AssignOwnerDialog } from "./AssignOwnerDialog";
+import { RejectTransferDialog } from "./RejectTransferDialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   AlertDialog,
@@ -57,6 +58,7 @@ import {
   Brain,
   ListChecks,
   Loader2,
+  XCircle,
 } from "lucide-react";
 
 interface ProjectCardNewProps {
@@ -92,12 +94,13 @@ const phaseConfig = {
 
 export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
   const { currentUser } = useAuth();
-  const { acceptProject, transferProject, updateProject, deleteProject } = useProjects();
+  const { acceptProject, transferProject, updateProject, deleteProject, rejectProject } = useProjects();
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [checklistOpen, setChecklistOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [transferOpen, setTransferOpen] = useState(false);
   const [assignOpen, setAssignOpen] = useState(false);
+  const [rejectOpen, setRejectOpen] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [aiDialogOpen, setAiDialogOpen] = useState(false);
   const [aiDialogType, setAiDialogType] = useState<"insights" | "summary">("insights");
@@ -135,9 +138,16 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
 
   const isPending = project.pendingAcceptance && currentUser?.team === project.currentOwnerTeam;
 
+  // Can reject if pending and team is integration or ms (not mint, since mint is the first team)
+  const canReject = isPending && (currentUser?.team === "integration" || currentUser?.team === "ms");
   const handleAccept = () => {
     acceptProject(project.id);
     toast.success(`Accepted ${project.merchantName}`);
+  };
+
+  const handleReject = (reason: string) => {
+    rejectProject(project.id, reason);
+    toast.success(`Rejected ${project.merchantName} — sent back for corrections`);
   };
 
   const handleTransfer = (assigneeId: string, assigneeName: string, notes: string) => {
@@ -258,13 +268,24 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
                     </Badge>
                     {(isPending || canTransfer) && (
                       isPending ? (
-                        <Badge
-                          className="bg-emerald-500 hover:bg-emerald-600 text-white text-xs px-2.5 py-0.5 cursor-pointer"
-                          onClick={handleAccept}
-                        >
-                          <CheckCircle2 className="h-3 w-3 mr-1" />
-                          Accept
-                        </Badge>
+                        <>
+                          <Badge
+                            className="bg-emerald-500 hover:bg-emerald-600 text-white text-xs px-2.5 py-0.5 cursor-pointer"
+                            onClick={handleAccept}
+                          >
+                            <CheckCircle2 className="h-3 w-3 mr-1" />
+                            Accept
+                          </Badge>
+                          {canReject && (
+                            <Badge
+                              className="bg-destructive hover:bg-destructive/90 text-destructive-foreground text-xs px-2.5 py-0.5 cursor-pointer"
+                              onClick={() => setRejectOpen(true)}
+                            >
+                              <XCircle className="h-3 w-3 mr-1" />
+                              Reject
+                            </Badge>
+                          )}
+                        </>
                       ) : (
                         <Badge
                           variant="outline"
@@ -516,6 +537,12 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
         project={project}
         open={assignOpen}
         onOpenChange={setAssignOpen}
+      />
+      <RejectTransferDialog
+        project={project}
+        open={rejectOpen}
+        onOpenChange={setRejectOpen}
+        onReject={handleReject}
       />
       <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
         <AlertDialogContent>
