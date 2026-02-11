@@ -506,6 +506,65 @@ export const useTransferProject = () => {
   });
 };
 
+// Reject project transfer — sends project back to previous team
+export const useRejectProject = () => {
+  const queryClient = useQueryClient();
+  const { currentUser } = useAuth();
+
+  return useMutation({
+    mutationFn: async ({ projectId, reason }: { projectId: string; reason: string }) => {
+      if (!currentUser) throw new Error("Not authenticated");
+
+      const getPreviousTeam = (current: TeamRole): TeamRole | null => {
+        if (current === "integration") return "mint";
+        if (current === "ms") return "integration";
+        return null;
+      };
+
+      const previousTeam = getPreviousTeam(currentUser.team);
+      if (!previousTeam) throw new Error("Cannot reject from this team");
+
+      const previousPhase = previousTeam as "mint" | "integration" | "ms";
+
+      // Update project back to previous team
+      const { error: projectError } = await supabase
+        .from("projects")
+        .update({
+          current_owner_team: previousTeam,
+          current_phase: previousPhase,
+          pending_acceptance: true,
+          assigned_owner: null, // clear owner, previous team manager will re-assign
+        })
+        .eq("id", projectId);
+
+      if (projectError) throw projectError;
+
+      // Create transfer record for the rejection
+      const { error: transferError } = await supabase
+        .from("transfer_history")
+        .insert({
+          project_id: projectId,
+          from_team: currentUser.team,
+          to_team: previousTeam,
+          transferred_by: currentUser.name,
+          notes: `REJECTED: ${reason}`,
+        });
+
+      if (transferError) throw transferError;
+
+      return projectId;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["projects"] });
+      toast.success("Project rejected and sent back");
+    },
+    onError: (error) => {
+      console.error("Error rejecting project:", error);
+      toast.error("Failed to reject project");
+    },
+  });
+};
+
 // Update checklist item mutation
 export const useUpdateChecklist = () => {
   const queryClient = useQueryClient();

@@ -96,10 +96,8 @@ export const AssignOwnerDialog = ({ project, open, onOpenChange }: AssignOwnerDi
       } else {
         updateData.assigned_owner = null;
       }
-      // If team changed, set pending
-      if (targetTeam !== project.currentOwnerTeam) {
-        updateData.pending_acceptance = true;
-      }
+      // Always set pending so the assigned user must accept
+      updateData.pending_acceptance = true;
 
       const { error } = await supabase
         .from("projects")

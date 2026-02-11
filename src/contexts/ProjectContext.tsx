@@ -9,6 +9,7 @@ import {
   useDeleteProject,
   useAcceptProject,
   useTransferProject,
+  useRejectProject,
   useUpdateChecklist,
   useUpdateChecklistComment,
   useToggleResponsibility,
@@ -23,6 +24,7 @@ interface ProjectContextType {
   deleteProject: (projectId: string) => void;
   acceptProject: (projectId: string) => void;
   transferProject: (projectId: string, notes?: string, assigneeId?: string) => void;
+  rejectProject: (projectId: string, reason: string) => void;
   updateChecklist: (projectId: string, checklistId: string, completed: boolean) => void;
   updateChecklistComment: (projectId: string, checklistId: string, comment: string) => void;
   toggleResponsibility: (projectId: string, party: ResponsibilityParty) => void;
@@ -45,6 +47,7 @@ export const ProjectProvider = ({ children }: { children: ReactNode }) => {
   const deleteProjectMutation = useDeleteProject();
   const acceptProjectMutation = useAcceptProject();
   const transferProjectMutation = useTransferProject();
+  const rejectProjectMutation = useRejectProject();
   const updateChecklistMutation = useUpdateChecklist();
   const updateChecklistCommentMutation = useUpdateChecklistComment();
   const toggleResponsibilityMutation = useToggleResponsibility();
@@ -70,6 +73,11 @@ export const ProjectProvider = ({ children }: { children: ReactNode }) => {
   const transferProject = (projectId: string, notes?: string, assigneeId?: string) => {
     if (!currentUser) return;
     transferProjectMutation.mutate({ projectId, notes, assigneeId });
+  };
+
+  const rejectProject = (projectId: string, reason: string) => {
+    if (!currentUser) return;
+    rejectProjectMutation.mutate({ projectId, reason });
   };
 
   const updateChecklist = (projectId: string, checklistId: string, completed: boolean) => {
@@ -130,6 +138,7 @@ export const ProjectProvider = ({ children }: { children: ReactNode }) => {
         deleteProject,
         acceptProject,
         transferProject,
+        rejectProject,
         updateChecklist,
         updateChecklistComment,
         toggleResponsibility,
