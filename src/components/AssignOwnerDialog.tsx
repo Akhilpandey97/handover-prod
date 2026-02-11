@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Project } from "@/data/projectsData";
 import { TeamRole, teamLabels } from "@/data/teams";
 import { supabase } from "@/integrations/supabase/client";
+import { sendNotification } from "@/utils/sendNotification";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
@@ -107,10 +108,22 @@ export const AssignOwnerDialog = ({ project, open, onOpenChange }: AssignOwnerDi
       if (error) throw error;
 
       await queryClient.invalidateQueries({ queryKey: ["projects"] });
-      const ownerName = teamMembers.find(m => m.id === targetOwner)?.name;
+      const owner = teamMembers.find(m => m.id === targetOwner);
+      
+      // Send email notification to assigned owner
+      if (owner) {
+        sendNotification({
+          type: "project_assignment",
+          recipientEmail: owner.email,
+          recipientName: owner.name,
+          projectName: project.merchantName,
+          assignedBy: "Manager",
+        });
+      }
+
       toast.success(
-        ownerName
-          ? `Assigned ${project.merchantName} to ${ownerName} (${teamLabels[targetTeam]})`
+        owner
+          ? `Assigned ${project.merchantName} to ${owner.name} (${teamLabels[targetTeam]})`
           : `Assigned ${project.merchantName} to ${teamLabels[targetTeam]}`
       );
       onOpenChange(false);

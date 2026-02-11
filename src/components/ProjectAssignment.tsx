@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { sendNotification } from "@/utils/sendNotification";
 import { useQueryClient } from "@tanstack/react-query";
 import { ArrowRight, CheckCircle2, FolderKanban, User } from "lucide-react";
 import { teamLabels, TeamRole } from "@/data/teams";
@@ -144,6 +145,26 @@ export const ProjectAssignment = () => {
       await queryClient.invalidateQueries({ queryKey: ["projects"] });
       
       const ownerName = teamMembers.find(m => m.id === targetOwner)?.name;
+
+      // Send email notifications to assigned owner
+      if (targetOwner) {
+        const owner = teamMembers.find(m => m.id === targetOwner);
+        if (owner) {
+          const selectedProjectNames = assignableProjects
+            .filter(p => selectedProjects.has(p.id))
+            .map(p => p.merchantName);
+          for (const name of selectedProjectNames) {
+            sendNotification({
+              type: "project_assignment",
+              recipientEmail: owner.email,
+              recipientName: owner.name,
+              projectName: name,
+              assignedBy: "Manager",
+            });
+          }
+        }
+      }
+
       const assignmentMsg = targetOwner 
         ? `Assigned ${selectedProjects.size} projects to ${ownerName} (${teamLabels[targetTeam]})`
         : `Assigned ${selectedProjects.size} projects to ${teamLabels[targetTeam]}`;
