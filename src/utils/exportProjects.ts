@@ -1,4 +1,4 @@
-import { Project } from "@/data/projectsData";
+import { Project, calculateTimeByParty, formatDuration } from "@/data/projectsData";
 import { teamLabels } from "@/data/teams";
 import { projectStateLabels } from "@/data/projectsData";
 
@@ -11,6 +11,19 @@ const escapeCSV = (value: string | number | undefined | null): string => {
 };
 
 export const exportProjectsToCSV = (projects: Project[]) => {
+  // Collect all unique checklist titles across projects (for column headers)
+  const allChecklistTitles: string[] = [];
+  const titleSet = new Set<string>();
+  projects.forEach((p) => {
+    p.checklist.forEach((item) => {
+      const key = `${item.phase}|${item.title}`;
+      if (!titleSet.has(key)) {
+        titleSet.add(key);
+        allChecklistTitles.push(key);
+      }
+    });
+  });
+
   const headers = [
     "Merchant Name",
     "MID",
@@ -41,10 +54,73 @@ export const exportProjectsToCSV = (projects: Project[]) => {
     "Checklist Total",
     "Checklist Completed",
     "Transfer Count",
+    // Project-level time tracking
+    "Project GoKwik Time",
+    "Project Merchant Time",
+    // Team-wise checklist progress
+    "MINT Tasks Completed",
+    "MINT Tasks Total",
+    "MINT GoKwik Time",
+    "MINT Merchant Time",
+    "Integration Tasks Completed",
+    "Integration Tasks Total",
+    "Integration GoKwik Time",
+    "Integration Merchant Time",
+    // Per-checklist item columns
+    ...allChecklistTitles.flatMap((key) => {
+      const [, title] = key.split("|");
+      return [
+        `${title} - Status`,
+        `${title} - Responsibility`,
+        `${title} - GoKwik Time`,
+        `${title} - Merchant Time`,
+      ];
+    }),
   ];
 
   const rows = projects.map((p) => {
     const completedChecklist = p.checklist.filter((c) => c.completed).length;
+    const projectTime = calculateTimeByParty(p.responsibilityLog);
+
+    // Team-wise stats
+    const mintItems = p.checklist.filter((c) => c.ownerTeam === "mint");
+    const intItems = p.checklist.filter((c) => c.ownerTeam === "integration");
+
+    const mintCompleted = mintItems.filter((c) => c.completed).length;
+    const intCompleted = intItems.filter((c) => c.completed).length;
+
+    let mintGokwik = 0, mintMerchant = 0;
+    mintItems.forEach((item) => {
+      const t = calculateTimeByParty(item.responsibilityLog);
+      mintGokwik += t.gokwik;
+      mintMerchant += t.merchant;
+    });
+
+    let intGokwik = 0, intMerchant = 0;
+    intItems.forEach((item) => {
+      const t = calculateTimeByParty(item.responsibilityLog);
+      intGokwik += t.gokwik;
+      intMerchant += t.merchant;
+    });
+
+    // Per-checklist item data
+    const checklistMap = new Map<string, typeof p.checklist[0]>();
+    p.checklist.forEach((item) => {
+      checklistMap.set(`${item.phase}|${item.title}`, item);
+    });
+
+    const checklistColumns = allChecklistTitles.flatMap((key) => {
+      const item = checklistMap.get(key);
+      if (!item) return ["", "", "", ""];
+      const time = calculateTimeByParty(item.responsibilityLog);
+      return [
+        item.completed ? "Done" : "Pending",
+        item.currentResponsibility,
+        formatDuration(time.gokwik),
+        formatDuration(time.merchant),
+      ];
+    });
+
     return [
       p.merchantName,
       p.mid,
@@ -75,6 +151,17 @@ export const exportProjectsToCSV = (projects: Project[]) => {
       p.checklist.length,
       completedChecklist,
       p.transferHistory.length,
+      formatDuration(projectTime.gokwik),
+      formatDuration(projectTime.merchant),
+      mintCompleted,
+      mintItems.length,
+      formatDuration(mintGokwik),
+      formatDuration(mintMerchant),
+      intCompleted,
+      intItems.length,
+      formatDuration(intGokwik),
+      formatDuration(intMerchant),
+      ...checklistColumns,
     ].map(escapeCSV);
   });
 

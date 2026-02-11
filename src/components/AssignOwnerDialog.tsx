@@ -25,24 +25,34 @@ interface TeamMember {
   team: DbTeamRole;
 }
 
-interface AssignOwnerDialogProps {
-  project: Project;
+export interface AssignOwnerDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  // Single project mode
+  project?: Project;
+  // Bulk mode
+  projectIds?: string[];
+  onAssigned?: () => void;
 }
 
-export const AssignOwnerDialog = ({ project, open, onOpenChange }: AssignOwnerDialogProps) => {
+export const AssignOwnerDialog = ({ project, open, onOpenChange, projectIds, onAssigned }: AssignOwnerDialogProps) => {
   const queryClient = useQueryClient();
-  const [targetTeam, setTargetTeam] = useState<TeamRole>(project.currentOwnerTeam);
-  const [targetOwner, setTargetOwner] = useState<string>(project.assignedOwner || "");
+  const isBulk = !!projectIds && projectIds.length > 0;
+  const [targetTeam, setTargetTeam] = useState<TeamRole>(project?.currentOwnerTeam || "mint");
+  const [targetOwner, setTargetOwner] = useState<string>(project?.assignedOwner || "");
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isAssigning, setIsAssigning] = useState(false);
 
   useEffect(() => {
     if (!open) return;
-    setTargetTeam(project.currentOwnerTeam);
-    setTargetOwner(project.assignedOwner || "");
+    if (project) {
+      setTargetTeam(project.currentOwnerTeam);
+      setTargetOwner(project.assignedOwner || "");
+    } else {
+      setTargetTeam("mint");
+      setTargetOwner("");
+    }
   }, [open, project]);
 
   useEffect(() => {
@@ -91,41 +101,63 @@ export const AssignOwnerDialog = ({ project, open, onOpenChange }: AssignOwnerDi
       const updateData: Record<string, any> = {
         current_owner_team: targetTeam,
         updated_at: new Date().toISOString(),
+        assigned_owner: targetOwner || null,
+        pending_acceptance: true,
       };
-      if (targetOwner) {
-        updateData.assigned_owner = targetOwner;
-      } else {
-        updateData.assigned_owner = null;
+
+      if (isBulk) {
+        // Bulk assign
+        const { error } = await supabase
+          .from("projects")
+          .update(updateData)
+          .in("id", projectIds!);
+
+        if (error) throw error;
+
+        const owner = teamMembers.find(m => m.id === targetOwner);
+        if (owner) {
+          // Send notification for bulk
+          sendNotification({
+            type: "project_assignment",
+            recipientEmail: owner.email,
+            recipientName: owner.name,
+            projectName: `${projectIds!.length} projects`,
+            assignedBy: "Manager",
+          });
+        }
+
+        await queryClient.invalidateQueries({ queryKey: ["projects"] });
+        toast.success(`Assigned ${projectIds!.length} project(s) to ${owner?.name || teamLabels[targetTeam]}`);
+        onAssigned?.();
+      } else if (project) {
+        // Single assign
+        const { error } = await supabase
+          .from("projects")
+          .update(updateData)
+          .eq("id", project.id);
+
+        if (error) throw error;
+
+        await queryClient.invalidateQueries({ queryKey: ["projects"] });
+        const owner = teamMembers.find(m => m.id === targetOwner);
+
+        if (owner) {
+          sendNotification({
+            type: "project_assignment",
+            recipientEmail: owner.email,
+            recipientName: owner.name,
+            projectName: project.merchantName,
+            assignedBy: "Manager",
+          });
+        }
+
+        toast.success(
+          owner
+            ? `Assigned ${project.merchantName} to ${owner.name} (${teamLabels[targetTeam]})`
+            : `Assigned ${project.merchantName} to ${teamLabels[targetTeam]}`
+        );
       }
-      // Always set pending so the assigned user must accept
-      updateData.pending_acceptance = true;
 
-      const { error } = await supabase
-        .from("projects")
-        .update(updateData)
-        .eq("id", project.id);
-
-      if (error) throw error;
-
-      await queryClient.invalidateQueries({ queryKey: ["projects"] });
-      const owner = teamMembers.find(m => m.id === targetOwner);
-      
-      // Send email notification to assigned owner
-      if (owner) {
-        sendNotification({
-          type: "project_assignment",
-          recipientEmail: owner.email,
-          recipientName: owner.name,
-          projectName: project.merchantName,
-          assignedBy: "Manager",
-        });
-      }
-
-      toast.success(
-        owner
-          ? `Assigned ${project.merchantName} to ${owner.name} (${teamLabels[targetTeam]})`
-          : `Assigned ${project.merchantName} to ${teamLabels[targetTeam]}`
-      );
       onOpenChange(false);
     } catch (error: any) {
       toast.error("Failed to assign: " + error.message);
@@ -134,20 +166,25 @@ export const AssignOwnerDialog = ({ project, open, onOpenChange }: AssignOwnerDi
     }
   };
 
+  const title = isBulk ? `Bulk Assign ${projectIds!.length} Project(s)` : "Assign Project";
+  const description = isBulk
+    ? `Assign ${projectIds!.length} selected project(s) to a team and owner.`
+    : project
+    ? <>Assign <span className="font-semibold text-foreground">{project.merchantName}</span> to a team and owner.</>
+    : "";
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <User className="h-5 w-5" />
-            Assign Project
+            {title}
           </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4 pt-2">
-          <div className="text-sm text-muted-foreground">
-            Assign <span className="font-semibold text-foreground">{project.merchantName}</span> to a team and owner.
-          </div>
+          <div className="text-sm text-muted-foreground">{description}</div>
 
           <div className="space-y-2">
             <label className="text-sm font-medium">Team</label>

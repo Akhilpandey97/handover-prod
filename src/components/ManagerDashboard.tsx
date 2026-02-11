@@ -6,6 +6,7 @@ import { UserManagement } from "./UserManagement";
 import { ChecklistManagement } from "./ChecklistManagement";
 import { CSVUploadDialog } from "./CSVUploadDialog";
 import { AddProjectDialog } from "./AddProjectDialog";
+import { AssignOwnerDialog } from "./AssignOwnerDialog";
 import { Project, calculateTimeByParty, formatDuration } from "@/data/projectsData";
 import { supabase } from "@/integrations/supabase/client";
 import { ProjectCardNew } from "./ProjectCardNew";
@@ -19,6 +20,17 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Progress } from "@/components/ui/progress";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
   BarChart3,
   Clock,
@@ -42,13 +54,15 @@ import {
   Settings,
   PieChart,
   Rocket,
+  Trash2,
+  UserPlus,
 } from "lucide-react";
 import { exportProjectsToCSV } from "@/utils/exportProjects";
 import { toast } from "sonner";
 
 export const ManagerDashboard = () => {
   const { currentUser, logout } = useAuth();
-  const { projects, isLoading, addProject } = useProjects();
+  const { projects, isLoading, addProject, deleteProject } = useProjects();
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("overview");
   const [teamFilter, setTeamFilter] = useState<string>("all");
@@ -57,6 +71,11 @@ export const ManagerDashboard = () => {
   const [expandedProjects, setExpandedProjects] = useState<Set<string>>(new Set());
   const [csvDialogOpen, setCsvDialogOpen] = useState(false);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
+
+  // Bulk selection state
+  const [selectedProjects, setSelectedProjects] = useState<Set<string>>(new Set());
+  const [bulkAssignDialogOpen, setBulkAssignDialogOpen] = useState(false);
+  const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState(false);
 
   // Fetch profiles for owner filter (filtered by selected team)
   const [allProfiles, setAllProfiles] = useState<{ id: string; name: string; team: string }[]>([]);
@@ -91,132 +110,28 @@ export const ManagerDashboard = () => {
     };
   };
 
-  // Checklist Time Report - grouped by project
-  const checklistByProjectReport = useMemo(() => {
+  // Merged Project + Checklist Report
+  const projectChecklistReport = useMemo(() => {
     return projects.map((project) => {
+      const stats = calculateProjectStats(project);
+      const mintTasks = project.checklist.filter(c => c.ownerTeam === "mint");
+      const integrationTasks = project.checklist.filter(c => c.ownerTeam === "integration");
+      
       const checklistItems = project.checklist.map((item) => {
         const time = calculateTimeByParty(item.responsibilityLog);
         return {
           id: item.id,
           checklistTitle: item.title,
           team: item.ownerTeam,
+          phase: item.phase,
           gokwikTime: time.gokwik,
           merchantTime: time.merchant,
           totalTime: time.gokwik + time.merchant,
           completed: item.completed,
+          responsibility: item.currentResponsibility,
         };
       });
 
-      const totalGokwik = checklistItems.reduce((sum, i) => sum + i.gokwikTime, 0);
-      const totalMerchant = checklistItems.reduce((sum, i) => sum + i.merchantTime, 0);
-      const completedCount = checklistItems.filter(i => i.completed).length;
-
-      return {
-        projectId: project.id,
-        projectName: project.merchantName,
-        owner: project.salesSpoc,
-        team: project.currentOwnerTeam,
-        checklistItems,
-        totalGokwik,
-        totalMerchant,
-        totalTime: totalGokwik + totalMerchant,
-        completedCount,
-        totalCount: checklistItems.length,
-      };
-    }).sort((a, b) => b.totalTime - a.totalTime);
-  }, [projects]);
-
-  // Owner-wise Report
-  const ownerWiseReport = useMemo(() => {
-    const ownerMap = new Map<string, {
-      owner: string;
-      totalProjects: number;
-      completedTasks: number;
-      totalTasks: number;
-      gokwikTime: number;
-      merchantTime: number;
-      projects: string[];
-    }>();
-
-    projects.forEach((project) => {
-      const owner = project.salesSpoc || "Unassigned";
-      const existing = ownerMap.get(owner) || {
-        owner,
-        totalProjects: 0,
-        completedTasks: 0,
-        totalTasks: 0,
-        gokwikTime: 0,
-        merchantTime: 0,
-        projects: [],
-      };
-
-      existing.totalProjects++;
-      existing.projects.push(project.merchantName);
-      existing.totalTasks += project.checklist.length;
-      existing.completedTasks += project.checklist.filter(c => c.completed).length;
-
-      const projectTime = calculateTimeByParty(project.responsibilityLog);
-      existing.gokwikTime += projectTime.gokwik;
-      existing.merchantTime += projectTime.merchant;
-
-      project.checklist.forEach((item) => {
-        const time = calculateTimeByParty(item.responsibilityLog);
-        existing.gokwikTime += time.gokwik;
-        existing.merchantTime += time.merchant;
-      });
-
-      ownerMap.set(owner, existing);
-    });
-
-    return Array.from(ownerMap.values()).sort((a, b) => b.totalProjects - a.totalProjects);
-  }, [projects]);
-
-  // Team-wise Report
-  const teamWiseReport = useMemo(() => {
-    const teams: TeamRole[] = ["mint", "integration", "ms"];
-    return teams.map((team) => {
-      const teamProjects = projects.filter(p => p.currentOwnerTeam === team);
-      let gokwikTime = 0;
-      let merchantTime = 0;
-      let completedTasks = 0;
-      let totalTasks = 0;
-
-      teamProjects.forEach((project) => {
-        const projectTime = calculateTimeByParty(project.responsibilityLog);
-        gokwikTime += projectTime.gokwik;
-        merchantTime += projectTime.merchant;
-
-        project.checklist.forEach((item) => {
-          if (item.ownerTeam === team) {
-            totalTasks++;
-            if (item.completed) completedTasks++;
-            const time = calculateTimeByParty(item.responsibilityLog);
-            gokwikTime += time.gokwik;
-            merchantTime += time.merchant;
-          }
-        });
-      });
-
-      return {
-        team,
-        teamLabel: teamLabels[team],
-        projectCount: teamProjects.length,
-        pendingCount: teamProjects.filter(p => p.pendingAcceptance).length,
-        completedTasks,
-        totalTasks,
-        gokwikTime,
-        merchantTime,
-      };
-    });
-  }, [projects]);
-
-  // Project-wise detailed report
-  const projectWiseReport = useMemo(() => {
-    return projects.map((project) => {
-      const stats = calculateProjectStats(project);
-      const mintTasks = project.checklist.filter(c => c.ownerTeam === "mint");
-      const integrationTasks = project.checklist.filter(c => c.ownerTeam === "integration");
-      
       return {
         ...project,
         stats,
@@ -224,11 +139,98 @@ export const ManagerDashboard = () => {
         mintTotal: mintTasks.length,
         integrationCompleted: integrationTasks.filter(c => c.completed).length,
         integrationTotal: integrationTasks.length,
+        checklistItems,
       };
     }).sort((a, b) => 
       (b.stats.projectTime.gokwik + b.stats.projectTime.merchant) - 
       (a.stats.projectTime.gokwik + a.stats.projectTime.merchant)
     );
+  }, [projects]);
+
+  // Merged Team + Owner Report - grouped by team, then owners within each team
+  const teamOwnerReport = useMemo(() => {
+    const teams: TeamRole[] = ["mint", "integration", "ms"];
+    return teams.map((team) => {
+      const teamProjects = projects.filter(p => p.currentOwnerTeam === team);
+      let teamGokwikTime = 0;
+      let teamMerchantTime = 0;
+      let teamCompletedTasks = 0;
+      let teamTotalTasks = 0;
+
+      teamProjects.forEach((project) => {
+        const projectTime = calculateTimeByParty(project.responsibilityLog);
+        teamGokwikTime += projectTime.gokwik;
+        teamMerchantTime += projectTime.merchant;
+
+        project.checklist.forEach((item) => {
+          if (item.ownerTeam === team) {
+            teamTotalTasks++;
+            if (item.completed) teamCompletedTasks++;
+            const time = calculateTimeByParty(item.responsibilityLog);
+            teamGokwikTime += time.gokwik;
+            teamMerchantTime += time.merchant;
+          }
+        });
+      });
+
+      // Group by owner within this team
+      const ownerMap = new Map<string, {
+        ownerId: string;
+        ownerName: string;
+        totalProjects: number;
+        completedTasks: number;
+        totalTasks: number;
+        gokwikTime: number;
+        merchantTime: number;
+        projectNames: string[];
+      }>();
+
+      teamProjects.forEach((project) => {
+        const ownerId = project.assignedOwner || "unassigned";
+        const ownerName = project.assignedOwnerName || "Unassigned";
+        const existing = ownerMap.get(ownerId) || {
+          ownerId,
+          ownerName,
+          totalProjects: 0,
+          completedTasks: 0,
+          totalTasks: 0,
+          gokwikTime: 0,
+          merchantTime: 0,
+          projectNames: [],
+        };
+
+        existing.totalProjects++;
+        existing.projectNames.push(project.merchantName);
+        existing.totalTasks += project.checklist.filter(c => c.ownerTeam === team).length;
+        existing.completedTasks += project.checklist.filter(c => c.ownerTeam === team && c.completed).length;
+
+        const projectTime = calculateTimeByParty(project.responsibilityLog);
+        existing.gokwikTime += projectTime.gokwik;
+        existing.merchantTime += projectTime.merchant;
+
+        project.checklist.forEach((item) => {
+          if (item.ownerTeam === team) {
+            const time = calculateTimeByParty(item.responsibilityLog);
+            existing.gokwikTime += time.gokwik;
+            existing.merchantTime += time.merchant;
+          }
+        });
+
+        ownerMap.set(ownerId, existing);
+      });
+
+      return {
+        team,
+        teamLabel: teamLabels[team],
+        projectCount: teamProjects.length,
+        pendingCount: teamProjects.filter(p => p.pendingAcceptance).length,
+        completedTasks: teamCompletedTasks,
+        totalTasks: teamTotalTasks,
+        gokwikTime: teamGokwikTime,
+        merchantTime: teamMerchantTime,
+        owners: Array.from(ownerMap.values()).sort((a, b) => b.totalProjects - a.totalProjects),
+      };
+    });
   }, [projects]);
 
   const toggleProjectExpand = (projectId: string) => {
@@ -248,6 +250,40 @@ export const ManagerDashboard = () => {
     if (teamFilter === "all") return allProfiles.filter(p => p.team !== "manager");
     return allProfiles.filter(p => p.team === teamFilter);
   }, [allProfiles, teamFilter]);
+
+  // Bulk selection helpers
+  const toggleProjectSelection = (projectId: string) => {
+    setSelectedProjects(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(projectId)) {
+        newSet.delete(projectId);
+      } else {
+        newSet.add(projectId);
+      }
+      return newSet;
+    });
+  };
+
+  const toggleSelectAll = (projectIds: string[]) => {
+    setSelectedProjects(prev => {
+      const allSelected = projectIds.every(id => prev.has(id));
+      if (allSelected) {
+        return new Set();
+      } else {
+        return new Set(projectIds);
+      }
+    });
+  };
+
+  const handleBulkDelete = async () => {
+    const ids = Array.from(selectedProjects);
+    for (const id of ids) {
+      deleteProject(id);
+    }
+    setSelectedProjects(new Set());
+    setBulkDeleteDialogOpen(false);
+    toast.success(`Deleted ${ids.length} project(s)`);
+  };
 
   if (!currentUser) return null;
 
@@ -290,6 +326,9 @@ export const ManagerDashboard = () => {
     addProject(project);
     toast.success(`Added ${project.merchantName}`);
   };
+
+  const filteredProjectIds = filteredProjects.map(p => p.id);
+  const allFilteredSelected = filteredProjectIds.length > 0 && filteredProjectIds.every(id => selectedProjects.has(id));
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
@@ -456,7 +495,7 @@ export const ManagerDashboard = () => {
                 </CardHeader>
                 <CardContent className="p-6">
                   <div className="space-y-6">
-                    {teamWiseReport.map((team) => {
+                    {teamOwnerReport.map((team) => {
                       const progress = team.totalTasks > 0 ? Math.round((team.completedTasks / team.totalTasks) * 100) : 0;
                       return (
                         <div key={team.team} className="space-y-3">
@@ -539,11 +578,38 @@ export const ManagerDashboard = () => {
             <Card className="shadow-xl border-border/50">
               <CardHeader className="border-b bg-muted/30">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-lg flex items-center gap-2">
-                    <Target className="h-5 w-5 text-primary" />
-                    All Projects
-                  </CardTitle>
+                  <div className="flex items-center gap-4">
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <Target className="h-5 w-5 text-primary" />
+                      All Projects
+                    </CardTitle>
+                    {selectedProjects.size > 0 && (
+                      <Badge variant="secondary" className="text-sm">
+                        {selectedProjects.size} selected
+                      </Badge>
+                    )}
+                  </div>
                   <div className="flex gap-3">
+                    {selectedProjects.size > 0 && (
+                      <>
+                        <Button
+                          variant="outline"
+                          className="gap-2"
+                          onClick={() => setBulkAssignDialogOpen(true)}
+                        >
+                          <UserPlus className="h-4 w-4" />
+                          Bulk Assign ({selectedProjects.size})
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          className="gap-2"
+                          onClick={() => setBulkDeleteDialogOpen(true)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                          Delete ({selectedProjects.size})
+                        </Button>
+                      </>
+                    )}
                     <Select value={teamFilter} onValueChange={(v) => { setTeamFilter(v); setOwnerFilter("all"); }}>
                       <SelectTrigger className="w-[150px]">
                         <SelectValue placeholder="Filter by team" />
@@ -572,6 +638,15 @@ export const ManagerDashboard = () => {
               <CardContent className="p-0">
                 <ScrollArea className="h-[calc(100vh-320px)] min-h-[500px]">
                   <div className="p-6 space-y-4">
+                    {filteredProjects.length > 0 && (
+                      <div className="flex items-center gap-3 pb-2 border-b">
+                        <Checkbox
+                          checked={allFilteredSelected}
+                          onCheckedChange={() => toggleSelectAll(filteredProjectIds)}
+                        />
+                        <span className="text-sm text-muted-foreground">Select all ({filteredProjects.length})</span>
+                      </div>
+                    )}
                     {filteredProjects.length === 0 ? (
                       <div className="text-center py-20">
                         <FolderKanban className="h-16 w-16 mx-auto text-muted-foreground/30 mb-4" />
@@ -580,7 +655,17 @@ export const ManagerDashboard = () => {
                       </div>
                     ) : (
                       filteredProjects.map((project) => (
-                        <ProjectCardNew key={project.id} project={project} />
+                        <div key={project.id} className="flex items-start gap-3">
+                          <div className="pt-4">
+                            <Checkbox
+                              checked={selectedProjects.has(project.id)}
+                              onCheckedChange={() => toggleProjectSelection(project.id)}
+                            />
+                          </div>
+                          <div className="flex-1">
+                            <ProjectCardNew project={project} />
+                          </div>
+                        </div>
                       ))
                     )}
                   </div>
@@ -589,7 +674,7 @@ export const ManagerDashboard = () => {
             </Card>
           </TabsContent>
 
-          {/* Reports Tab */}
+          {/* Reports Tab - Merged */}
           <TabsContent value="reports" className="space-y-6 mt-0">
             <Card className="shadow-xl border-border/50">
               <CardHeader className="border-b bg-muted/30">
@@ -600,10 +685,8 @@ export const ManagerDashboard = () => {
                   </CardTitle>
                   <div className="flex gap-2">
                     {[
-                      { key: "project", icon: FolderKanban, label: "Project" },
-                      { key: "checklist", icon: ListChecks, label: "Checklist" },
-                      { key: "owner", icon: User, label: "Owner" },
-                      { key: "team", icon: Building2, label: "Team" },
+                      { key: "project", icon: FolderKanban, label: "Project & Checklist" },
+                      { key: "team", icon: Building2, label: "Team & Owner" },
                     ].map(({ key, icon: Icon, label }) => (
                       <Button
                         key={key}
@@ -621,98 +704,95 @@ export const ManagerDashboard = () => {
               <CardContent className="p-0">
                 <ScrollArea className="h-[calc(100vh-320px)] min-h-[500px]">
                   <div className="p-6">
-                    {/* Project Report */}
+                    {/* Merged Project + Checklist Report */}
                     {reportType === "project" && (
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>Project</TableHead>
-                            <TableHead>Team</TableHead>
-                            <TableHead>Tasks</TableHead>
-                            <TableHead>GoKwik Time</TableHead>
-                            <TableHead>Merchant Time</TableHead>
-                            <TableHead>Progress</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {projectWiseReport.slice(0, 20).map((project) => (
-                            <TableRow key={project.id}>
-                              <TableCell className="font-medium">{project.merchantName}</TableCell>
-                              <TableCell>
-                                <Badge variant="outline" className="capitalize">
-                                  {project.currentOwnerTeam}
-                                </Badge>
-                              </TableCell>
-                              <TableCell>
-                                {project.stats.completedChecklist}/{project.stats.totalChecklist}
-                              </TableCell>
-                              <TableCell>{formatDuration(project.stats.projectTime.gokwik)}</TableCell>
-                              <TableCell>{formatDuration(project.stats.projectTime.merchant)}</TableCell>
-                              <TableCell className="min-w-[120px]">
-                                <div className="flex items-center gap-2">
-                                  <Progress value={project.stats.checklistProgress} className="h-2" />
-                                  <span className="text-xs text-muted-foreground">{project.stats.checklistProgress}%</span>
-                                </div>
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    )}
-
-                    {/* Checklist Report */}
-                    {reportType === "checklist" && (
                       <div className="space-y-3">
-                        {checklistByProjectReport.slice(0, 15).map((project) => (
+                        {projectChecklistReport.map((project) => (
                           <Collapsible
-                            key={project.projectId}
-                            open={expandedProjects.has(project.projectId)}
-                            onOpenChange={() => toggleProjectExpand(project.projectId)}
+                            key={project.id}
+                            open={expandedProjects.has(project.id)}
+                            onOpenChange={() => toggleProjectExpand(project.id)}
                           >
                             <CollapsibleTrigger asChild>
                               <div className="flex items-center justify-between p-4 border rounded-lg cursor-pointer hover:bg-muted/30 transition-colors">
                                 <div className="flex items-center gap-3">
-                                  {expandedProjects.has(project.projectId) ? (
+                                  {expandedProjects.has(project.id) ? (
                                     <ChevronDown className="h-5 w-5 text-muted-foreground" />
                                   ) : (
                                     <ChevronRight className="h-5 w-5 text-muted-foreground" />
                                   )}
-                                  <span className="font-semibold">{project.projectName}</span>
+                                  <div>
+                                    <span className="font-semibold">{project.merchantName}</span>
+                                    <span className="text-xs text-muted-foreground ml-2">({project.mid})</span>
+                                  </div>
+                                  <Badge variant="outline" className="capitalize">{project.currentOwnerTeam}</Badge>
                                   <Badge variant="secondary">
-                                    {project.completedCount}/{project.totalCount}
+                                    {project.stats.completedChecklist}/{project.stats.totalChecklist} tasks
                                   </Badge>
                                 </div>
-                                <span className="font-medium">{formatDuration(project.totalTime)}</span>
+                                <div className="flex items-center gap-4">
+                                  <div className="text-right text-sm">
+                                    <span className="text-primary font-medium">{formatDuration(project.stats.projectTime.gokwik)}</span>
+                                    <span className="text-muted-foreground mx-1">/</span>
+                                    <span className="text-amber-500 font-medium">{formatDuration(project.stats.projectTime.merchant)}</span>
+                                  </div>
+                                  <div className="w-24">
+                                    <Progress value={project.stats.checklistProgress} className="h-2" />
+                                  </div>
+                                  <span className="text-xs text-muted-foreground w-10 text-right">{project.stats.checklistProgress}%</span>
+                                </div>
                               </div>
                             </CollapsibleTrigger>
                             <CollapsibleContent>
-                              <div className="mt-2 ml-8 border rounded-lg overflow-hidden">
-                                <Table>
-                                  <TableHeader>
-                                    <TableRow>
-                                      <TableHead>Item</TableHead>
-                                      <TableHead>GoKwik</TableHead>
-                                      <TableHead>Merchant</TableHead>
-                                      <TableHead>Status</TableHead>
-                                    </TableRow>
-                                  </TableHeader>
-                                  <TableBody>
-                                    {project.checklistItems.map((item) => (
-                                      <TableRow key={item.id}>
-                                        <TableCell>{item.checklistTitle}</TableCell>
-                                        <TableCell>{formatDuration(item.gokwikTime)}</TableCell>
-                                        <TableCell>{formatDuration(item.merchantTime)}</TableCell>
-                                        <TableCell>
-                                          {item.completed ? (
-                                            <Badge className="bg-emerald-500/10 text-emerald-600">Done</Badge>
-                                          ) : (
-                                            <Badge variant="secondary">Pending</Badge>
-                                          )}
-                                        </TableCell>
+                              <div className="mt-2 ml-8 space-y-3">
+                                {/* Summary row */}
+                                <div className="grid grid-cols-2 gap-3">
+                                  <div className="bg-muted/30 rounded-lg p-3">
+                                    <p className="text-xs text-muted-foreground mb-1">MINT Tasks</p>
+                                    <p className="font-semibold">{project.mintCompleted}/{project.mintTotal}</p>
+                                  </div>
+                                  <div className="bg-muted/30 rounded-lg p-3">
+                                    <p className="text-xs text-muted-foreground mb-1">Integration Tasks</p>
+                                    <p className="font-semibold">{project.integrationCompleted}/{project.integrationTotal}</p>
+                                  </div>
+                                </div>
+                                {/* Checklist table */}
+                                <div className="border rounded-lg overflow-hidden">
+                                  <Table>
+                                    <TableHeader>
+                                      <TableRow>
+                                        <TableHead>Checklist Item</TableHead>
+                                        <TableHead>Phase</TableHead>
+                                        <TableHead>Team</TableHead>
+                                        <TableHead>Responsibility</TableHead>
+                                        <TableHead>GoKwik Time</TableHead>
+                                        <TableHead>Merchant Time</TableHead>
+                                        <TableHead>Status</TableHead>
                                       </TableRow>
-                                    ))}
-                                  </TableBody>
-                                </Table>
+                                    </TableHeader>
+                                    <TableBody>
+                                      {project.checklistItems.map((item) => (
+                                        <TableRow key={item.id}>
+                                          <TableCell className="font-medium">{item.checklistTitle}</TableCell>
+                                          <TableCell className="capitalize">{item.phase}</TableCell>
+                                          <TableCell>
+                                            <Badge variant="outline" className="capitalize">{item.team}</Badge>
+                                          </TableCell>
+                                          <TableCell className="capitalize">{item.responsibility}</TableCell>
+                                          <TableCell>{formatDuration(item.gokwikTime)}</TableCell>
+                                          <TableCell>{formatDuration(item.merchantTime)}</TableCell>
+                                          <TableCell>
+                                            {item.completed ? (
+                                              <Badge className="bg-emerald-500/10 text-emerald-600">Done</Badge>
+                                            ) : (
+                                              <Badge variant="secondary">Pending</Badge>
+                                            )}
+                                          </TableCell>
+                                        </TableRow>
+                                      ))}
+                                    </TableBody>
+                                  </Table>
+                                </div>
                               </div>
                             </CollapsibleContent>
                           </Collapsible>
@@ -720,36 +800,10 @@ export const ManagerDashboard = () => {
                       </div>
                     )}
 
-                    {/* Owner Report */}
-                    {reportType === "owner" && (
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>Owner</TableHead>
-                            <TableHead>Projects</TableHead>
-                            <TableHead>Tasks</TableHead>
-                            <TableHead>GoKwik Time</TableHead>
-                            <TableHead>Merchant Time</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {ownerWiseReport.map((owner) => (
-                            <TableRow key={owner.owner}>
-                              <TableCell className="font-medium">{owner.owner}</TableCell>
-                              <TableCell>{owner.totalProjects}</TableCell>
-                              <TableCell>{owner.completedTasks}/{owner.totalTasks}</TableCell>
-                              <TableCell>{formatDuration(owner.gokwikTime)}</TableCell>
-                              <TableCell>{formatDuration(owner.merchantTime)}</TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    )}
-
-                    {/* Team Report */}
+                    {/* Merged Team + Owner Report */}
                     {reportType === "team" && (
-                      <div className="grid gap-4">
-                        {teamWiseReport.map((team) => (
+                      <div className="space-y-6">
+                        {teamOwnerReport.map((team) => (
                           <Card key={team.team} className="bg-muted/30">
                             <CardContent className="p-6">
                               <div className="flex items-center justify-between mb-4">
@@ -766,7 +820,8 @@ export const ManagerDashboard = () => {
                                   <Badge className="bg-amber-500 text-white">{team.pendingCount} Pending</Badge>
                                 )}
                               </div>
-                              <div className="grid grid-cols-4 gap-4">
+                              {/* Team summary stats */}
+                              <div className="grid grid-cols-4 gap-4 mb-6">
                                 <div className="bg-background rounded-lg p-4 text-center">
                                   <p className="text-2xl font-bold">{team.projectCount}</p>
                                   <p className="text-xs text-muted-foreground">Projects</p>
@@ -784,6 +839,43 @@ export const ManagerDashboard = () => {
                                   <p className="text-xs text-muted-foreground">Merchant</p>
                                 </div>
                               </div>
+                              {/* Owners within this team */}
+                              {team.owners.length > 0 && (
+                                <div>
+                                  <p className="text-sm font-semibold text-muted-foreground mb-3 flex items-center gap-2">
+                                    <User className="h-4 w-4" />
+                                    Owners in {team.teamLabel}
+                                  </p>
+                                  <Table>
+                                    <TableHeader>
+                                      <TableRow>
+                                        <TableHead>Owner</TableHead>
+                                        <TableHead>Projects</TableHead>
+                                        <TableHead>Tasks</TableHead>
+                                        <TableHead>GoKwik Time</TableHead>
+                                        <TableHead>Merchant Time</TableHead>
+                                        <TableHead>Project Names</TableHead>
+                                      </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                      {team.owners.map((owner) => (
+                                        <TableRow key={owner.ownerId}>
+                                          <TableCell className="font-medium">{owner.ownerName}</TableCell>
+                                          <TableCell>{owner.totalProjects}</TableCell>
+                                          <TableCell>{owner.completedTasks}/{owner.totalTasks}</TableCell>
+                                          <TableCell>{formatDuration(owner.gokwikTime)}</TableCell>
+                                          <TableCell>{formatDuration(owner.merchantTime)}</TableCell>
+                                          <TableCell className="max-w-[200px]">
+                                            <span className="text-xs text-muted-foreground truncate block">
+                                              {owner.projectNames.join(", ")}
+                                            </span>
+                                          </TableCell>
+                                        </TableRow>
+                                      ))}
+                                    </TableBody>
+                                  </Table>
+                                </div>
+                              )}
                             </CardContent>
                           </Card>
                         ))}
@@ -809,6 +901,34 @@ export const ManagerDashboard = () => {
 
       <CSVUploadDialog open={csvDialogOpen} onOpenChange={setCsvDialogOpen} />
       <AddProjectDialog open={addDialogOpen} onOpenChange={setAddDialogOpen} onSave={handleAddProject} />
+
+      {/* Bulk Assign Dialog */}
+      {bulkAssignDialogOpen && (
+        <AssignOwnerDialog
+          open={bulkAssignDialogOpen}
+          onOpenChange={setBulkAssignDialogOpen}
+          projectIds={Array.from(selectedProjects)}
+          onAssigned={() => setSelectedProjects(new Set())}
+        />
+      )}
+
+      {/* Bulk Delete Confirmation */}
+      <AlertDialog open={bulkDeleteDialogOpen} onOpenChange={setBulkDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete {selectedProjects.size} project(s)?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently remove the selected projects and all associated data (checklist items, logs, transfer history). This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleBulkDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete All
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
