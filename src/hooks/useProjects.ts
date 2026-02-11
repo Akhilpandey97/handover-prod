@@ -526,14 +526,37 @@ export const useRejectProject = () => {
 
       const previousPhase = previousTeam as "mint" | "integration" | "ms";
 
-      // Update project back to previous team
+      // Find the last transfer record to get the previous owner
+      const { data: lastTransfer } = await supabase
+        .from("transfer_history")
+        .select("transferred_by, from_team")
+        .eq("project_id", projectId)
+        .eq("to_team", currentUser.team)
+        .order("transferred_at", { ascending: false })
+        .limit(1)
+        .single();
+
+      // Look up the previous assigned_owner from the project's history
+      // We need to find who owned it before — check the transferred_by user's profile
+      let previousOwnerId: string | null = null;
+      if (lastTransfer?.transferred_by) {
+        const { data: prevOwnerProfile } = await supabase
+          .from("profiles")
+          .select("id")
+          .eq("name", lastTransfer.transferred_by)
+          .limit(1)
+          .single();
+        previousOwnerId = prevOwnerProfile?.id || null;
+      }
+
+      // Update project back to previous team, active (not pending), with previous owner
       const { error: projectError } = await supabase
         .from("projects")
         .update({
           current_owner_team: previousTeam,
           current_phase: previousPhase,
-          pending_acceptance: true,
-          assigned_owner: null, // clear owner, previous team manager will re-assign
+          pending_acceptance: false,
+          assigned_owner: previousOwnerId,
         })
         .eq("id", projectId);
 
