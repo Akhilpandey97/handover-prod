@@ -1,7 +1,8 @@
-import { useMemo } from "react";
+import { useMemo, useEffect, useRef } from "react";
 import { Project, calculateTimeByParty, formatDuration, ResponsibilityParty } from "@/data/projectsData";
 import { useProjects } from "@/contexts/ProjectContext";
 import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "sonner";
 import {
   Dialog,
   DialogContent,
@@ -46,11 +47,27 @@ export const ChecklistDialog = ({
   const { updateChecklist, toggleChecklistResponsibility } = useProjects();
   const { currentUser } = useAuth();
 
-  if (!project || !currentUser) return null;
-
-  const completedCount = project.checklist.filter((c) => c.completed).length;
-  const totalCount = project.checklist.length;
+  const checklist = project?.checklist || [];
+  const completedCount = checklist.filter((c) => c.completed).length;
+  const totalCount = checklist.length;
   const progress = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
+
+  // Check if all current team's checklist items are completed for transfer unlock notification
+  const currentTeamChecklist = project ? checklist.filter(c => c.ownerTeam === project.currentOwnerTeam) : [];
+  const allCurrentTeamDone = currentTeamChecklist.length > 0 && currentTeamChecklist.every(c => c.completed);
+  const prevAllDoneRef = useRef(allCurrentTeamDone);
+
+  useEffect(() => {
+    if (allCurrentTeamDone && !prevAllDoneRef.current && open) {
+      toast.success("🎉 All tasks complete! Transfer is now unlocked.", {
+        duration: 5000,
+        description: "You can now transfer this project to the next team.",
+      });
+    }
+    prevAllDoneRef.current = allCurrentTeamDone;
+  }, [allCurrentTeamDone, open]);
+
+  if (!project || !currentUser) return null;
 
   // Group checklist by owner team
   const groupedByTeam = project.checklist.reduce((acc, item) => {
