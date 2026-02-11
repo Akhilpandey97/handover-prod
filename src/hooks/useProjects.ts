@@ -69,7 +69,8 @@ const transformDbChecklistItem = (row: any): ProjectChecklist => ({
 export const useProjectsQuery = () => {
   return useQuery({
     queryKey: ["projects"],
-    staleTime: 30_000, // 30s — avoid refetching on every re-mount
+    staleTime: 60_000, // 60s — avoid refetching on every re-mount
+    gcTime: 5 * 60_000, // 5 min garbage collection
     queryFn: async () => {
       const PAGE_SIZE = 1000;
 
@@ -641,12 +642,32 @@ export const useUpdateChecklist = () => {
 
       return { projectId, checklistId, completed };
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["projects"] });
+    onMutate: async ({ projectId, checklistId, completed }) => {
+      await queryClient.cancelQueries({ queryKey: ["projects"] });
+      const previous = queryClient.getQueryData<Project[]>(["projects"]);
+      queryClient.setQueryData<Project[]>(["projects"], (old) =>
+        old?.map((p) =>
+          p.id === projectId
+            ? {
+                ...p,
+                checklist: p.checklist.map((c) =>
+                  c.id === checklistId
+                    ? { ...c, completed, completedBy: completed ? currentUser?.name : undefined, completedAt: completed ? new Date().toISOString() : undefined }
+                    : c
+                ),
+              }
+            : p
+        )
+      );
+      return { previous };
     },
-    onError: (error) => {
+    onError: (error, _vars, context) => {
+      if (context?.previous) queryClient.setQueryData(["projects"], context.previous);
       console.error("Error updating checklist:", error);
       toast.error("Failed to update checklist");
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["projects"] });
     },
   });
 };

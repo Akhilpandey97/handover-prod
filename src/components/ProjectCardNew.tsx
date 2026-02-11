@@ -302,19 +302,20 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
                           )}
                         </>
                       ) : (
-                        <Badge
-                          variant="outline"
-                          className={`text-xs px-2.5 py-0.5 ${
+                        <Button
+                          size="sm"
+                          className={`text-sm px-4 py-2 h-9 font-semibold rounded-lg transition-all duration-300 ${
                             isTransferReady 
-                              ? "bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/30 border-indigo-200/60 dark:border-indigo-800/40 text-indigo-700 dark:text-indigo-300 cursor-pointer" 
-                              : "bg-muted/30 opacity-50 cursor-not-allowed"
+                              ? "bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white shadow-lg shadow-indigo-500/30 hover:shadow-xl hover:shadow-indigo-500/40 hover:scale-105 animate-fade-in" 
+                              : "bg-muted text-muted-foreground opacity-50 cursor-not-allowed"
                           }`}
                           onClick={() => isTransferReady && setTransferOpen(true)}
-                          title={!allCurrentTeamChecklistCompleted ? "Complete all checklist items before transferring" : ""}
+                          disabled={!isTransferReady}
+                          title={!allCurrentTeamChecklistCompleted ? "Complete all checklist items before transferring" : "Transfer to next team"}
                         >
+                          <ArrowRight className={`h-4 w-4 mr-1.5 ${isTransferReady ? "animate-[slide-in-right_0.5s_ease-out]" : ""}`} />
                           Transfer
-                          <ArrowRight className="h-3 w-3 ml-1" />
-                        </Badge>
+                        </Button>
                       )
                     )}
                   </div>
