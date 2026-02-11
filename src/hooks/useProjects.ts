@@ -4,6 +4,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import type { Project, ProjectChecklist, ResponsibilityLog, ChecklistResponsibilityLog, TransferRecord, ResponsibilityParty, ProjectPhase, ProjectState } from "@/data/projectsData";
 import type { TeamRole } from "@/data/teams";
+import { teamLabels } from "@/data/teams";
+import { sendNotification } from "@/utils/sendNotification";
 
 // Transform database row to Project type
 const transformDbProject = (row: any): Project => ({
@@ -493,6 +495,34 @@ export const useTransferProject = () => {
         });
 
       if (transferError) throw transferError;
+
+      // Send email notification to assigned owner (if any)
+      if (assigneeId) {
+        const { data: recipientProfile } = await supabase
+          .from("profiles")
+          .select("name, email")
+          .eq("id", assigneeId)
+          .single();
+
+        if (recipientProfile) {
+          // Fetch project name
+          const { data: proj } = await supabase
+            .from("projects")
+            .select("merchant_name")
+            .eq("id", projectId)
+            .single();
+
+          sendNotification({
+            type: "project_transfer",
+            recipientEmail: recipientProfile.email,
+            recipientName: recipientProfile.name,
+            projectName: proj?.merchant_name || "Unknown",
+            fromTeam: teamLabels[currentUser.team] || currentUser.team,
+            toTeam: teamLabels[nextTeam] || nextTeam,
+            notes: notes || undefined,
+          });
+        }
+      }
 
       return projectId;
     },

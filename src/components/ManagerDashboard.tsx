@@ -22,6 +22,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   BarChart3,
   Clock,
+  Download,
   FolderKanban,
   LogOut,
   Search,
@@ -42,6 +43,7 @@ import {
   PieChart,
   Rocket,
 } from "lucide-react";
+import { exportProjectsToCSV } from "@/utils/exportProjects";
 import { toast } from "sonner";
 
 export const ManagerDashboard = () => {
@@ -321,6 +323,10 @@ export const ManagerDashboard = () => {
 
             {/* Actions */}
             <div className="flex items-center gap-3">
+              <Button onClick={() => exportProjectsToCSV(projects)} variant="outline" className="gap-2">
+                <Download className="h-4 w-4" />
+                Export All
+              </Button>
               <Button onClick={() => setCsvDialogOpen(true)} variant="outline" className="gap-2">
                 <Upload className="h-4 w-4" />
                 Import CSV
