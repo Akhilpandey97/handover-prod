@@ -57,6 +57,25 @@ serve(async (req) => {
           </div>
         </div>
       `;
+    } else if (type === "project_rejection") {
+      subject = `🔴 Project Rejected: ${projectName}`;
+      htmlContent = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <div style="background: linear-gradient(135deg, #ef4444, #dc2626); padding: 20px; border-radius: 12px 12px 0 0; color: white;">
+            <h1 style="margin: 0; font-size: 20px;">🔴 Project Rejected — Action Needed</h1>
+          </div>
+          <div style="background: #f8fafc; padding: 24px; border: 1px solid #e2e8f0; border-top: none; border-radius: 0 0 12px 12px;">
+            <p style="margin: 0 0 16px;">Hi <strong>${recipientName}</strong>,</p>
+            <p style="margin: 0 0 16px;">A project has been <strong style="color:#ef4444;">rejected</strong> and returned to you for corrections:</p>
+            <div style="background: white; border: 1px solid #fca5a5; border-radius: 8px; padding: 16px; margin-bottom: 16px;">
+              <h2 style="margin: 0 0 8px; color: #1e293b; font-size: 18px;">${projectName}</h2>
+              <p style="margin: 0 0 4px; color: #64748b; font-size: 14px;">From: <strong>${fromTeam}</strong> → Back to: <strong>${toTeam}</strong></p>
+              ${notes ? `<p style="margin: 8px 0 0; color: #dc2626; font-size: 14px; font-weight: 600;">Reason: ${notes}</p>` : ''}
+            </div>
+            <p style="margin: 0; color: #64748b; font-size: 14px;">Please address the issues and re-transfer the project.</p>
+          </div>
+        </div>
+      `;
     } else {
       throw new Error(`Unknown notification type: ${type}`);
     }
