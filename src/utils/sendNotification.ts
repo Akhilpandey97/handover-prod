@@ -1,7 +1,8 @@
-import { supabase } from "@/integrations/supabase/client";
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
 interface NotificationPayload {
-  type: "project_assignment" | "project_transfer";
+  type: "project_assignment" | "project_transfer" | "project_rejection";
   recipientEmail: string;
   recipientName: string;
   projectName: string;
@@ -9,17 +10,23 @@ interface NotificationPayload {
   toTeam?: string;
   notes?: string;
   assignedBy?: string;
+  reason?: string;
 }
 
 export const sendNotification = async (payload: NotificationPayload) => {
   try {
-    const { data, error } = await supabase.functions.invoke("send-notification", {
-      body: payload,
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/send-notification`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${SUPABASE_KEY}`,
+        apikey: SUPABASE_KEY,
+      },
+      body: JSON.stringify(payload),
     });
-    if (error) {
-      console.error("Notification error:", error);
+    if (!res.ok) {
+      console.error("Notification error:", await res.text());
     }
-    return data;
   } catch (err) {
     // Non-blocking — don't break the flow if email fails
     console.error("Failed to send notification:", err);

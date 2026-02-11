@@ -606,6 +606,33 @@ export const useRejectProject = () => {
 
       if (transferError) throw transferError;
 
+      // Send rejection email to previous owner
+      if (previousOwnerId) {
+        const { data: recipientProfile } = await supabase
+          .from("profiles")
+          .select("name, email")
+          .eq("id", previousOwnerId)
+          .single();
+
+        const { data: proj } = await supabase
+          .from("projects")
+          .select("merchant_name")
+          .eq("id", projectId)
+          .single();
+
+        if (recipientProfile) {
+          sendNotification({
+            type: "project_rejection",
+            recipientEmail: recipientProfile.email,
+            recipientName: recipientProfile.name,
+            projectName: proj?.merchant_name || "Unknown",
+            fromTeam: teamLabels[currentUser.team] || currentUser.team,
+            toTeam: teamLabels[previousTeam] || previousTeam,
+            notes: reason,
+          });
+        }
+      }
+
       return projectId;
     },
     onSuccess: () => {
