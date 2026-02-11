@@ -1,4 +1,4 @@
-import "https://deno.land/x/xhr@0.1.0/mod.ts";
+// AI Project Insights Edge Function
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
@@ -61,9 +61,9 @@ serve(async (req) => {
 
     let systemPrompt: string;
     if (type === "insights") {
-      systemPrompt = `You are a project management AI analyst. Given a project's data, provide 3-4 concise, actionable insights about the project's health, risks, and recommendations. Be specific and data-driven. Keep each insight to 1-2 sentences. Format as bullet points.`;
+      systemPrompt = `You are a project management AI analyst. Given a project's data, provide 3-4 concise, actionable insights about the project's health, risks, and recommendations. Be specific and data-driven. Keep each insight to 1-2 sentences. Format as bullet points. Note: "Kick Off Date" means the project start date.`;
     } else {
-      systemPrompt = `You are a project management AI summarizer. Given a project's checklist and status data, provide a brief task summary: what's done, what's pending, blockers, and next priority action. Keep it concise (4-5 bullet points max).`;
+      systemPrompt = `You are a project management AI summarizer. Given a project's checklist and status data, provide a brief task summary: what's done, what's pending, blockers, and next priority action. Keep it concise (4-5 bullet points max). Note: "Kick Off Date" means the project start date.`;
     }
 
     const projectSummary = `
@@ -72,7 +72,7 @@ Phase: ${project.currentPhase}
 State: ${project.projectState || "not_started"}
 ARR: ${project.arr} Cr
 Platform: ${project.platform}
-Kick Off: ${project.dates?.kickOffDate || "N/A"}
+Start Date (Kick Off): ${project.dates?.kickOffDate || "N/A"}
 Go Live: ${project.dates?.goLiveDate || project.dates?.expectedGoLiveDate || "Not set"}
 Owner Team: ${project.currentOwnerTeam}
 Pending With: ${project.currentResponsibility}

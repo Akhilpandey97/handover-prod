@@ -128,6 +128,15 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
   const allCurrentTeamChecklistCompleted = currentTeamChecklist.length > 0 && 
     currentTeamChecklist.every(c => c.completed);
 
+  // Check if this project was rejected back to the current owner
+  const lastTransfer = project.transferHistory.length > 0 
+    ? project.transferHistory[project.transferHistory.length - 1] 
+    : null;
+  const isRejected = lastTransfer?.notes?.startsWith("REJECTED:") && 
+    !project.pendingAcceptance && 
+    currentUser?.team === project.currentOwnerTeam &&
+    currentUser?.id === project.assignedOwner;
+
   const canTransfer = currentUser?.team === project.currentOwnerTeam && 
     !project.pendingAcceptance && 
     project.currentPhase !== "completed" &&
@@ -226,6 +235,12 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
                       <Badge className="bg-amber-500 text-white animate-pulse px-2 py-0.5 text-xs font-semibold">
                         <Sparkles className="h-3 w-3 mr-1" />
                         NEW
+                      </Badge>
+                    )}
+                    {isRejected && (
+                      <Badge className="bg-red-500 text-white px-2 py-0.5 text-xs font-semibold border border-red-600 animate-pulse">
+                        <XCircle className="h-3 w-3 mr-1" />
+                        REJECTED — Action Needed
                       </Badge>
                     )}
                   </div>
