@@ -7,7 +7,7 @@ import { ChecklistManagement } from "./ChecklistManagement";
 import { CSVUploadDialog } from "./CSVUploadDialog";
 import { AddProjectDialog } from "./AddProjectDialog";
 import { AssignOwnerDialog } from "./AssignOwnerDialog";
-import { Project, calculateTimeByParty, formatDuration } from "@/data/projectsData";
+import { Project, calculateTimeByParty, calculateTimeFromChecklist, formatDuration, projectStateLabels, ProjectState, ProjectPhase } from "@/data/projectsData";
 import { supabase } from "@/integrations/supabase/client";
 import { ProjectCardNew } from "./ProjectCardNew";
 import { Input } from "@/components/ui/input";
@@ -56,18 +56,31 @@ import {
   Rocket,
   Trash2,
   UserPlus,
+  RefreshCw,
 } from "lucide-react";
 import { exportProjectsToCSV } from "@/utils/exportProjects";
 import { toast } from "sonner";
 
+// Report components
+import { ExecutiveDashboard } from "./reports/ExecutiveDashboard";
+import { OperationalReports } from "./reports/OperationalReports";
+import { MerchantResponsibility } from "./reports/MerchantResponsibility";
+import { TacticalLists } from "./reports/TacticalLists";
+
 export const ManagerDashboard = () => {
   const { currentUser, logout } = useAuth();
-  const { projects, isLoading, addProject, deleteProject } = useProjects();
+  const { projects, isLoading, addProject, deleteProject, updateProject } = useProjects();
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("overview");
   const [teamFilter, setTeamFilter] = useState<string>("all");
   const [ownerFilter, setOwnerFilter] = useState<string>("all");
-  const [reportType, setReportType] = useState<string>("project");
+  const [phaseFilter, setPhaseFilter] = useState<string>("all");
+  const [stateFilter, setStateFilter] = useState<string>("all");
+  const [kickOffFrom, setKickOffFrom] = useState<string>("");
+  const [kickOffTo, setKickOffTo] = useState<string>("");
+  const [goLiveFrom, setGoLiveFrom] = useState<string>("");
+  const [goLiveTo, setGoLiveTo] = useState<string>("");
+  const [reportType, setReportType] = useState<string>("executive");
   const [expandedProjects, setExpandedProjects] = useState<Set<string>>(new Set());
   const [csvDialogOpen, setCsvDialogOpen] = useState(false);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
@@ -76,8 +89,10 @@ export const ManagerDashboard = () => {
   const [selectedProjects, setSelectedProjects] = useState<Set<string>>(new Set());
   const [bulkAssignDialogOpen, setBulkAssignDialogOpen] = useState(false);
   const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState(false);
+  const [bulkStateDialogOpen, setBulkStateDialogOpen] = useState(false);
+  const [bulkStateValue, setBulkStateValue] = useState<ProjectState>("in_progress");
 
-  // Fetch profiles for owner filter (filtered by selected team)
+  // Fetch profiles for owner filter
   const [allProfiles, setAllProfiles] = useState<{ id: string; name: string; team: string }[]>([]);
   useEffect(() => {
     const fetchProfiles = async () => {
@@ -87,22 +102,15 @@ export const ManagerDashboard = () => {
     fetchProfiles();
   }, []);
 
-  // Calculate project time stats helper
+  // Calculate project time stats helper - FIXED: uses checklist-level time
   const calculateProjectStats = (project: Project) => {
-    const projectTime = calculateTimeByParty(project.responsibilityLog);
-    const checklistTime = { gokwik: 0, merchant: 0 };
-    
-    project.checklist.forEach((item) => {
-      const time = calculateTimeByParty(item.responsibilityLog);
-      checklistTime.gokwik += time.gokwik;
-      checklistTime.merchant += time.merchant;
-    });
+    const checklistTime = calculateTimeFromChecklist(project.checklist);
 
     const completedChecklist = project.checklist.filter((c) => c.completed).length;
     const totalChecklist = project.checklist.length;
 
     return {
-      projectTime,
+      projectTime: checklistTime, // Use checklist-aggregated time as the source of truth
       checklistTime,
       completedChecklist,
       totalChecklist,
@@ -116,7 +124,7 @@ export const ManagerDashboard = () => {
       const stats = calculateProjectStats(project);
       const mintTasks = project.checklist.filter(c => c.ownerTeam === "mint");
       const integrationTasks = project.checklist.filter(c => c.ownerTeam === "integration");
-      
+
       const checklistItems = project.checklist.map((item) => {
         const time = calculateTimeByParty(item.responsibilityLog);
         return {
@@ -141,13 +149,13 @@ export const ManagerDashboard = () => {
         integrationTotal: integrationTasks.length,
         checklistItems,
       };
-    }).sort((a, b) => 
-      (b.stats.projectTime.gokwik + b.stats.projectTime.merchant) - 
+    }).sort((a, b) =>
+      (b.stats.projectTime.gokwik + b.stats.projectTime.merchant) -
       (a.stats.projectTime.gokwik + a.stats.projectTime.merchant)
     );
   }, [projects]);
 
-  // Merged Team + Owner Report - grouped by team, then owners within each team
+  // Merged Team + Owner Report
   const teamOwnerReport = useMemo(() => {
     const teams: TeamRole[] = ["mint", "integration", "ms"];
     return teams.map((team) => {
@@ -158,10 +166,6 @@ export const ManagerDashboard = () => {
       let teamTotalTasks = 0;
 
       teamProjects.forEach((project) => {
-        const projectTime = calculateTimeByParty(project.responsibilityLog);
-        teamGokwikTime += projectTime.gokwik;
-        teamMerchantTime += projectTime.merchant;
-
         project.checklist.forEach((item) => {
           if (item.ownerTeam === team) {
             teamTotalTasks++;
@@ -173,40 +177,24 @@ export const ManagerDashboard = () => {
         });
       });
 
-      // Group by owner within this team
       const ownerMap = new Map<string, {
-        ownerId: string;
-        ownerName: string;
-        totalProjects: number;
-        completedTasks: number;
-        totalTasks: number;
-        gokwikTime: number;
-        merchantTime: number;
-        projectNames: string[];
+        ownerId: string; ownerName: string; totalProjects: number;
+        completedTasks: number; totalTasks: number; gokwikTime: number;
+        merchantTime: number; projectNames: string[];
       }>();
 
       teamProjects.forEach((project) => {
         const ownerId = project.assignedOwner || "unassigned";
         const ownerName = project.assignedOwnerName || "Unassigned";
         const existing = ownerMap.get(ownerId) || {
-          ownerId,
-          ownerName,
-          totalProjects: 0,
-          completedTasks: 0,
-          totalTasks: 0,
-          gokwikTime: 0,
-          merchantTime: 0,
-          projectNames: [],
+          ownerId, ownerName, totalProjects: 0, completedTasks: 0,
+          totalTasks: 0, gokwikTime: 0, merchantTime: 0, projectNames: [],
         };
 
         existing.totalProjects++;
         existing.projectNames.push(project.merchantName);
         existing.totalTasks += project.checklist.filter(c => c.ownerTeam === team).length;
         existing.completedTasks += project.checklist.filter(c => c.ownerTeam === team && c.completed).length;
-
-        const projectTime = calculateTimeByParty(project.responsibilityLog);
-        existing.gokwikTime += projectTime.gokwik;
-        existing.merchantTime += projectTime.merchant;
 
         project.checklist.forEach((item) => {
           if (item.ownerTeam === team) {
@@ -236,16 +224,12 @@ export const ManagerDashboard = () => {
   const toggleProjectExpand = (projectId: string) => {
     setExpandedProjects(prev => {
       const newSet = new Set(prev);
-      if (newSet.has(projectId)) {
-        newSet.delete(projectId);
-      } else {
-        newSet.add(projectId);
-      }
+      if (newSet.has(projectId)) newSet.delete(projectId);
+      else newSet.add(projectId);
       return newSet;
     });
   };
 
-  // Filter owners by selected team (must be before early returns)
   const filteredOwners = useMemo(() => {
     if (teamFilter === "all") return allProfiles.filter(p => p.team !== "manager");
     return allProfiles.filter(p => p.team === teamFilter);
@@ -255,11 +239,8 @@ export const ManagerDashboard = () => {
   const toggleProjectSelection = (projectId: string) => {
     setSelectedProjects(prev => {
       const newSet = new Set(prev);
-      if (newSet.has(projectId)) {
-        newSet.delete(projectId);
-      } else {
-        newSet.add(projectId);
-      }
+      if (newSet.has(projectId)) newSet.delete(projectId);
+      else newSet.add(projectId);
       return newSet;
     });
   };
@@ -267,11 +248,7 @@ export const ManagerDashboard = () => {
   const toggleSelectAll = (projectIds: string[]) => {
     setSelectedProjects(prev => {
       const allSelected = projectIds.every(id => prev.has(id));
-      if (allSelected) {
-        return new Set();
-      } else {
-        return new Set(projectIds);
-      }
+      return allSelected ? new Set() : new Set(projectIds);
     });
   };
 
@@ -283,6 +260,19 @@ export const ManagerDashboard = () => {
     setSelectedProjects(new Set());
     setBulkDeleteDialogOpen(false);
     toast.success(`Deleted ${ids.length} project(s)`);
+  };
+
+  const handleBulkStateUpdate = async () => {
+    const ids = Array.from(selectedProjects);
+    for (const id of ids) {
+      const project = projects.find(p => p.id === id);
+      if (project) {
+        updateProject({ ...project, projectState: bulkStateValue });
+      }
+    }
+    setSelectedProjects(new Set());
+    setBulkStateDialogOpen(false);
+    toast.success(`Updated ${ids.length} project(s) to ${projectStateLabels[bulkStateValue]}`);
   };
 
   if (!currentUser) return null;
@@ -298,29 +288,44 @@ export const ManagerDashboard = () => {
     );
   }
 
-  // Filter projects
+  // Filter projects with new filters
   const filteredProjects = projects.filter((p) => {
     const matchesSearch =
       p.merchantName.toLowerCase().includes(searchQuery.toLowerCase()) ||
       p.mid.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesTeam = teamFilter === "all" || p.currentOwnerTeam === teamFilter;
     const matchesOwner = ownerFilter === "all" || p.assignedOwner === ownerFilter;
-    return matchesSearch && matchesTeam && matchesOwner;
+    const matchesPhase = phaseFilter === "all" || p.currentPhase === phaseFilter;
+    const matchesState = stateFilter === "all" || p.projectState === stateFilter;
+    const matchesKickOffFrom = !kickOffFrom || p.dates.kickOffDate >= kickOffFrom;
+    const matchesKickOffTo = !kickOffTo || p.dates.kickOffDate <= kickOffTo;
+    const matchesGoLiveFrom = !goLiveFrom || (p.dates.goLiveDate && p.dates.goLiveDate >= goLiveFrom) || (p.dates.expectedGoLiveDate && p.dates.expectedGoLiveDate >= goLiveFrom);
+    const matchesGoLiveTo = !goLiveTo || (p.dates.goLiveDate && p.dates.goLiveDate <= goLiveTo) || (p.dates.expectedGoLiveDate && p.dates.expectedGoLiveDate <= goLiveTo);
+    return matchesSearch && matchesTeam && matchesOwner && matchesPhase && matchesState && matchesKickOffFrom && matchesKickOffTo && matchesGoLiveFrom && matchesGoLiveTo;
   });
 
-  // Stats
+  // Stats - "completed" = live + MS accepted (phase completed or state live with no pending)
   const totalProjects = projects.length;
   const pendingProjects = projects.filter((p) => p.pendingAcceptance).length;
-  const activeProjects = projects.filter((p) => !p.pendingAcceptance && p.currentPhase !== "completed").length;
-  const completedProjects = projects.filter((p) => p.currentPhase === "completed").length;
+  const completedProjects = projects.filter((p) =>
+    p.projectState === "live" && !p.pendingAcceptance && p.currentOwnerTeam === "ms"
+  ).length;
+  const activeProjects = totalProjects - pendingProjects - completedProjects;
 
+  // Time distribution - use checklist-level aggregation
   let totalGokwikTime = 0;
   let totalMerchantTime = 0;
   projects.forEach((p) => {
-    const time = calculateTimeByParty(p.responsibilityLog);
+    const time = calculateTimeFromChecklist(p.checklist);
     totalGokwikTime += time.gokwik;
     totalMerchantTime += time.merchant;
   });
+
+  // Pipeline stats for overview
+  const totalArr = projects.reduce((s, p) => s + p.arr, 0);
+  const liveArr = projects.filter(p => p.projectState === "live").reduce((s, p) => s + p.arr, 0);
+  const blockedProjects = projects.filter(p => p.projectState === "blocked").length;
+  const onHoldProjects = projects.filter(p => p.projectState === "on_hold").length;
 
   const handleAddProject = (project: Project) => {
     addProject(project);
@@ -330,13 +335,25 @@ export const ManagerDashboard = () => {
   const filteredProjectIds = filteredProjects.map(p => p.id);
   const allFilteredSelected = filteredProjectIds.length > 0 && filteredProjectIds.every(id => selectedProjects.has(id));
 
+  const clearFilters = () => {
+    setTeamFilter("all");
+    setOwnerFilter("all");
+    setPhaseFilter("all");
+    setStateFilter("all");
+    setKickOffFrom("");
+    setKickOffTo("");
+    setGoLiveFrom("");
+    setGoLiveTo("");
+  };
+
+  const hasActiveFilters = teamFilter !== "all" || ownerFilter !== "all" || phaseFilter !== "all" || stateFilter !== "all" || kickOffFrom || kickOffTo || goLiveFrom || goLiveTo;
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
       {/* Header */}
       <header className="sticky top-0 z-40 border-b bg-background/80 backdrop-blur-xl">
         <div className="container mx-auto px-6">
           <div className="h-16 flex items-center justify-between gap-6">
-            {/* Logo */}
             <div className="flex items-center gap-4">
               <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-lg">
                 <BarChart3 className="h-5 w-5 text-white" />
@@ -347,7 +364,6 @@ export const ManagerDashboard = () => {
               </div>
             </div>
 
-            {/* Search */}
             <div className="flex-1 max-w-md">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -360,7 +376,6 @@ export const ManagerDashboard = () => {
               </div>
             </div>
 
-            {/* Actions */}
             <div className="flex items-center gap-3">
               <Button onClick={() => exportProjectsToCSV(projects)} variant="outline" className="gap-2">
                 <Download className="h-4 w-4" />
@@ -376,7 +391,6 @@ export const ManagerDashboard = () => {
               </Button>
             </div>
 
-            {/* User */}
             <div className="flex items-center gap-4 pl-4 border-l">
               <div className="text-right hidden md:block">
                 <p className="font-medium text-sm">{currentUser.name}</p>
@@ -419,67 +433,84 @@ export const ManagerDashboard = () => {
             </TabsTrigger>
           </TabsList>
 
-          {/* Overview Tab */}
+          {/* ========= OVERVIEW TAB ========= */}
           <TabsContent value="overview" className="space-y-6 mt-0">
-            {/* Stats Cards */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* KPI Cards */}
+            <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
               <Card className="bg-gradient-to-br from-primary/10 to-blue-500/5 border-primary/20 hover:shadow-lg transition-shadow">
-                <CardContent className="p-6">
+                <CardContent className="p-5">
                   <div className="flex items-start justify-between">
                     <div>
-                      <p className="text-sm font-medium text-muted-foreground mb-1">Total Projects</p>
-                      <p className="text-4xl font-bold">{totalProjects}</p>
+                      <p className="text-sm font-medium text-muted-foreground mb-1">Total</p>
+                      <p className="text-3xl font-bold">{totalProjects}</p>
                     </div>
-                    <div className="h-14 w-14 rounded-2xl bg-primary/20 flex items-center justify-center">
-                      <FolderKanban className="h-7 w-7 text-primary" />
+                    <div className="h-12 w-12 rounded-2xl bg-primary/20 flex items-center justify-center">
+                      <FolderKanban className="h-6 w-6 text-primary" />
                     </div>
                   </div>
-                  <p className="text-xs text-muted-foreground mt-4">Across all teams</p>
+                  <p className="text-xs text-muted-foreground mt-2">Pipeline ARR: {totalArr.toFixed(2)} Cr</p>
                 </CardContent>
               </Card>
 
-              <Card className="bg-gradient-to-br from-amber-500/10 to-orange-500/5 border-amber-200/50 dark:border-amber-800/50 hover:shadow-lg transition-shadow">
-                <CardContent className="p-6">
+              <Card className="bg-gradient-to-br from-amber-500/10 to-orange-500/5 border-amber-200/50 dark:border-amber-800/50">
+                <CardContent className="p-5">
                   <div className="flex items-start justify-between">
                     <div>
                       <p className="text-sm font-medium text-muted-foreground mb-1">Pending</p>
-                      <p className="text-4xl font-bold text-amber-600">{pendingProjects}</p>
+                      <p className="text-3xl font-bold text-amber-600">{pendingProjects}</p>
                     </div>
-                    <div className="h-14 w-14 rounded-2xl bg-amber-500/20 flex items-center justify-center">
-                      <AlertCircle className="h-7 w-7 text-amber-600" />
+                    <div className="h-12 w-12 rounded-2xl bg-amber-500/20 flex items-center justify-center">
+                      <AlertCircle className="h-6 w-6 text-amber-600" />
                     </div>
                   </div>
-                  <p className="text-xs text-muted-foreground mt-4">Awaiting acceptance</p>
+                  <p className="text-xs text-muted-foreground mt-2">Awaiting acceptance</p>
                 </CardContent>
               </Card>
 
-              <Card className="bg-gradient-to-br from-blue-500/10 to-cyan-500/5 border-blue-200/50 dark:border-blue-800/50 hover:shadow-lg transition-shadow">
-                <CardContent className="p-6">
+              <Card className="bg-gradient-to-br from-blue-500/10 to-cyan-500/5 border-blue-200/50 dark:border-blue-800/50">
+                <CardContent className="p-5">
                   <div className="flex items-start justify-between">
                     <div>
                       <p className="text-sm font-medium text-muted-foreground mb-1">Active</p>
-                      <p className="text-4xl font-bold text-blue-600">{activeProjects}</p>
+                      <p className="text-3xl font-bold text-blue-600">{activeProjects}</p>
                     </div>
-                    <div className="h-14 w-14 rounded-2xl bg-blue-500/20 flex items-center justify-center">
-                      <Rocket className="h-7 w-7 text-blue-600" />
+                    <div className="h-12 w-12 rounded-2xl bg-blue-500/20 flex items-center justify-center">
+                      <Rocket className="h-6 w-6 text-blue-600" />
                     </div>
                   </div>
-                  <p className="text-xs text-muted-foreground mt-4">In progress</p>
+                  <p className="text-xs text-muted-foreground mt-2">{blockedProjects} blocked, {onHoldProjects} on hold</p>
                 </CardContent>
               </Card>
 
-              <Card className="bg-gradient-to-br from-emerald-500/10 to-green-500/5 border-emerald-200/50 dark:border-emerald-800/50 hover:shadow-lg transition-shadow">
-                <CardContent className="p-6">
+              <Card className="bg-gradient-to-br from-emerald-500/10 to-green-500/5 border-emerald-200/50 dark:border-emerald-800/50">
+                <CardContent className="p-5">
                   <div className="flex items-start justify-between">
                     <div>
                       <p className="text-sm font-medium text-muted-foreground mb-1">Completed</p>
-                      <p className="text-4xl font-bold text-emerald-600">{completedProjects}</p>
+                      <p className="text-3xl font-bold text-emerald-600">{completedProjects}</p>
                     </div>
-                    <div className="h-14 w-14 rounded-2xl bg-emerald-500/20 flex items-center justify-center">
-                      <CheckCircle2 className="h-7 w-7 text-emerald-600" />
+                    <div className="h-12 w-12 rounded-2xl bg-emerald-500/20 flex items-center justify-center">
+                      <CheckCircle2 className="h-6 w-6 text-emerald-600" />
                     </div>
                   </div>
-                  <p className="text-xs text-muted-foreground mt-4">Successfully delivered</p>
+                  <p className="text-xs text-muted-foreground mt-2">Live ARR: {liveArr.toFixed(2)} Cr</p>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-gradient-to-br from-purple-500/10 to-pink-500/5 border-purple-200/50 dark:border-purple-800/50">
+                <CardContent className="p-5">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground mb-1">Avg Go-Live</p>
+                      <p className="text-3xl font-bold text-purple-600">
+                        {projects.length > 0 ? Math.round(projects.reduce((s, p) => s + p.goLivePercent, 0) / projects.length) : 0}%
+                      </p>
+                    </div>
+                    <div className="h-12 w-12 rounded-2xl bg-purple-500/20 flex items-center justify-center">
+                      <Target className="h-6 w-6 text-purple-600" />
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-2">Across all projects</p>
                 </CardContent>
               </Card>
             </div>
@@ -533,7 +564,7 @@ export const ManagerDashboard = () => {
                     <Timer className="h-5 w-5 text-primary" />
                     Time Distribution
                   </CardTitle>
-                  <CardDescription>Total time tracked across all projects</CardDescription>
+                  <CardDescription>Total time tracked across all projects (from checklist items)</CardDescription>
                 </CardHeader>
                 <CardContent className="p-6">
                   <div className="space-y-6">
@@ -557,93 +588,166 @@ export const ManagerDashboard = () => {
                         </span>
                       </div>
                       <div className="flex h-3 rounded-full overflow-hidden">
-                        <div 
-                          className="bg-primary transition-all" 
-                          style={{ width: `${(totalGokwikTime / (totalGokwikTime + totalMerchantTime || 1)) * 100}%` }} 
-                        />
-                        <div 
-                          className="bg-amber-500 transition-all" 
-                          style={{ width: `${(totalMerchantTime / (totalGokwikTime + totalMerchantTime || 1)) * 100}%` }} 
-                        />
+                        <div className="bg-primary transition-all" style={{ width: `${(totalGokwikTime / (totalGokwikTime + totalMerchantTime || 1)) * 100}%` }} />
+                        <div className="bg-amber-500 transition-all" style={{ width: `${(totalMerchantTime / (totalGokwikTime + totalMerchantTime || 1)) * 100}%` }} />
                       </div>
                     </div>
                   </div>
                 </CardContent>
               </Card>
             </div>
+
+            {/* Phase Distribution & State Distribution */}
+            <div className="grid lg:grid-cols-2 gap-6">
+              <Card className="shadow-xl border-border/50">
+                <CardHeader className="border-b bg-muted/30">
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <BarChart3 className="h-5 w-5 text-primary" />
+                    Phase Distribution
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-6">
+                  <div className="space-y-4">
+                    {(["mint", "integration", "ms", "completed"] as ProjectPhase[]).map(phase => {
+                      const count = projects.filter(p => p.currentPhase === phase).length;
+                      const pct = totalProjects > 0 ? Math.round((count / totalProjects) * 100) : 0;
+                      return (
+                        <div key={phase} className="space-y-1">
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="font-medium capitalize">{phase === "mint" ? "MINT (Presales)" : phase === "ms" ? "Merchant Success" : phase}</span>
+                            <span className="font-bold">{count} ({pct}%)</span>
+                          </div>
+                          <Progress value={pct} className="h-2" />
+                        </div>
+                      );
+                    })}
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="shadow-xl border-border/50">
+                <CardHeader className="border-b bg-muted/30">
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <Settings className="h-5 w-5 text-primary" />
+                    State Distribution
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-6">
+                  <div className="space-y-4">
+                    {(Object.keys(projectStateLabels) as ProjectState[]).map(state => {
+                      const count = projects.filter(p => p.projectState === state).length;
+                      const pct = totalProjects > 0 ? Math.round((count / totalProjects) * 100) : 0;
+                      return (
+                        <div key={state} className="space-y-1">
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="font-medium">{projectStateLabels[state]}</span>
+                            <span className="font-bold">{count} ({pct}%)</span>
+                          </div>
+                          <Progress value={pct} className="h-2" />
+                        </div>
+                      );
+                    })}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
 
-          {/* Projects Tab */}
+          {/* ========= PROJECTS TAB ========= */}
           <TabsContent value="projects" className="space-y-6 mt-0">
             <Card className="shadow-xl border-border/50">
               <CardHeader className="border-b bg-muted/30">
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between flex-wrap gap-3">
                   <div className="flex items-center gap-4">
                     <CardTitle className="text-lg flex items-center gap-2">
                       <Target className="h-5 w-5 text-primary" />
                       All Projects
                     </CardTitle>
                     {selectedProjects.size > 0 && (
-                      <Badge variant="secondary" className="text-sm">
-                        {selectedProjects.size} selected
-                      </Badge>
+                      <Badge variant="secondary" className="text-sm">{selectedProjects.size} selected</Badge>
                     )}
                   </div>
-                  <div className="flex gap-3">
+                  <div className="flex gap-2 flex-wrap">
                     {selectedProjects.size > 0 && (
                       <>
-                        <Button
-                          variant="outline"
-                          className="gap-2"
-                          onClick={() => setBulkAssignDialogOpen(true)}
-                        >
+                        <Button variant="outline" className="gap-2" onClick={() => setBulkAssignDialogOpen(true)}>
                           <UserPlus className="h-4 w-4" />
-                          Bulk Assign ({selectedProjects.size})
+                          Assign ({selectedProjects.size})
                         </Button>
-                        <Button
-                          variant="destructive"
-                          className="gap-2"
-                          onClick={() => setBulkDeleteDialogOpen(true)}
-                        >
+                        <Button variant="outline" className="gap-2" onClick={() => setBulkStateDialogOpen(true)}>
+                          <RefreshCw className="h-4 w-4" />
+                          Update State ({selectedProjects.size})
+                        </Button>
+                        <Button variant="destructive" className="gap-2" onClick={() => setBulkDeleteDialogOpen(true)}>
                           <Trash2 className="h-4 w-4" />
                           Delete ({selectedProjects.size})
                         </Button>
                       </>
                     )}
-                    <Select value={teamFilter} onValueChange={(v) => { setTeamFilter(v); setOwnerFilter("all"); }}>
-                      <SelectTrigger className="w-[150px]">
-                        <SelectValue placeholder="Filter by team" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Teams</SelectItem>
-                        <SelectItem value="mint">MINT</SelectItem>
-                        <SelectItem value="integration">Integration</SelectItem>
-                        <SelectItem value="ms">MS</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <Select value={ownerFilter} onValueChange={setOwnerFilter}>
-                      <SelectTrigger className="w-[150px]">
-                        <SelectValue placeholder="Filter by owner" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Owners</SelectItem>
-                        {filteredOwners.map((owner) => (
-                          <SelectItem key={owner.id} value={owner.id}>{owner.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
                   </div>
+                </div>
+                {/* Filters */}
+                <div className="flex gap-2 flex-wrap mt-3">
+                  <Select value={teamFilter} onValueChange={(v) => { setTeamFilter(v); setOwnerFilter("all"); }}>
+                    <SelectTrigger className="w-[140px]"><SelectValue placeholder="Team" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Teams</SelectItem>
+                      <SelectItem value="mint">MINT</SelectItem>
+                      <SelectItem value="integration">Integration</SelectItem>
+                      <SelectItem value="ms">MS</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Select value={ownerFilter} onValueChange={setOwnerFilter}>
+                    <SelectTrigger className="w-[140px]"><SelectValue placeholder="Owner" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Owners</SelectItem>
+                      {filteredOwners.map((owner) => (
+                        <SelectItem key={owner.id} value={owner.id}>{owner.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Select value={phaseFilter} onValueChange={setPhaseFilter}>
+                    <SelectTrigger className="w-[140px]"><SelectValue placeholder="Phase" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Phases</SelectItem>
+                      <SelectItem value="mint">MINT</SelectItem>
+                      <SelectItem value="integration">Integration</SelectItem>
+                      <SelectItem value="ms">MS</SelectItem>
+                      <SelectItem value="completed">Completed</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Select value={stateFilter} onValueChange={setStateFilter}>
+                    <SelectTrigger className="w-[140px]"><SelectValue placeholder="State" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All States</SelectItem>
+                      {(Object.keys(projectStateLabels) as ProjectState[]).map(s => (
+                        <SelectItem key={s} value={s}>{projectStateLabels[s]}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <div className="flex items-center gap-1">
+                    <span className="text-xs text-muted-foreground whitespace-nowrap">Start:</span>
+                    <Input type="date" value={kickOffFrom} onChange={e => setKickOffFrom(e.target.value)} className="w-[130px] h-9 text-xs" />
+                    <span className="text-xs text-muted-foreground">to</span>
+                    <Input type="date" value={kickOffTo} onChange={e => setKickOffTo(e.target.value)} className="w-[130px] h-9 text-xs" />
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <span className="text-xs text-muted-foreground whitespace-nowrap">Go-Live:</span>
+                    <Input type="date" value={goLiveFrom} onChange={e => setGoLiveFrom(e.target.value)} className="w-[130px] h-9 text-xs" />
+                    <span className="text-xs text-muted-foreground">to</span>
+                    <Input type="date" value={goLiveTo} onChange={e => setGoLiveTo(e.target.value)} className="w-[130px] h-9 text-xs" />
+                  </div>
+                  {hasActiveFilters && (
+                    <Button variant="ghost" size="sm" onClick={clearFilters} className="text-xs">Clear</Button>
+                  )}
                 </div>
               </CardHeader>
               <CardContent className="p-0">
-                <ScrollArea className="h-[calc(100vh-320px)] min-h-[500px]">
+                <ScrollArea className="h-[calc(100vh-400px)] min-h-[400px]">
                   <div className="p-6 space-y-4">
                     {filteredProjects.length > 0 && (
                       <div className="flex items-center gap-3 pb-2 border-b">
-                        <Checkbox
-                          checked={allFilteredSelected}
-                          onCheckedChange={() => toggleSelectAll(filteredProjectIds)}
-                        />
+                        <Checkbox checked={allFilteredSelected} onCheckedChange={() => toggleSelectAll(filteredProjectIds)} />
                         <span className="text-sm text-muted-foreground">Select all ({filteredProjects.length})</span>
                       </div>
                     )}
@@ -657,10 +761,7 @@ export const ManagerDashboard = () => {
                       filteredProjects.map((project) => (
                         <div key={project.id} className="flex items-start gap-3">
                           <div className="pt-4">
-                            <Checkbox
-                              checked={selectedProjects.has(project.id)}
-                              onCheckedChange={() => toggleProjectSelection(project.id)}
-                            />
+                            <Checkbox checked={selectedProjects.has(project.id)} onCheckedChange={() => toggleProjectSelection(project.id)} />
                           </div>
                           <div className="flex-1">
                             <ProjectCardNew project={project} />
@@ -674,27 +775,25 @@ export const ManagerDashboard = () => {
             </Card>
           </TabsContent>
 
-          {/* Reports Tab - Merged */}
+          {/* ========= REPORTS TAB ========= */}
           <TabsContent value="reports" className="space-y-6 mt-0">
             <Card className="shadow-xl border-border/50">
               <CardHeader className="border-b bg-muted/30">
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between flex-wrap gap-2">
                   <CardTitle className="text-lg flex items-center gap-2">
                     <BarChart3 className="h-5 w-5 text-primary" />
                     Reports
                   </CardTitle>
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 flex-wrap">
                     {[
-                      { key: "project", icon: FolderKanban, label: "Project & Checklist" },
-                      { key: "team", icon: Building2, label: "Team & Owner" },
-                    ].map(({ key, icon: Icon, label }) => (
-                      <Button
-                        key={key}
-                        variant={reportType === key ? "default" : "outline"}
-                        onClick={() => setReportType(key)}
-                        className="gap-2"
-                      >
-                        <Icon className="h-4 w-4" />
+                      { key: "executive", label: "Executive" },
+                      { key: "operational", label: "Operational" },
+                      { key: "merchant", label: "Merchant" },
+                      { key: "tactical", label: "Tactical" },
+                      { key: "project", label: "Project & Checklist" },
+                      { key: "team", label: "Team & Owner" },
+                    ].map(({ key, label }) => (
+                      <Button key={key} variant={reportType === key ? "default" : "outline"} size="sm" onClick={() => setReportType(key)}>
                         {label}
                       </Button>
                     ))}
@@ -704,31 +803,27 @@ export const ManagerDashboard = () => {
               <CardContent className="p-0">
                 <ScrollArea className="h-[calc(100vh-320px)] min-h-[500px]">
                   <div className="p-6">
+                    {reportType === "executive" && <ExecutiveDashboard projects={projects} />}
+                    {reportType === "operational" && <OperationalReports projects={projects} />}
+                    {reportType === "merchant" && <MerchantResponsibility projects={projects} />}
+                    {reportType === "tactical" && <TacticalLists projects={projects} />}
+
                     {/* Merged Project + Checklist Report */}
                     {reportType === "project" && (
                       <div className="space-y-3">
                         {projectChecklistReport.map((project) => (
-                          <Collapsible
-                            key={project.id}
-                            open={expandedProjects.has(project.id)}
-                            onOpenChange={() => toggleProjectExpand(project.id)}
-                          >
+                          <Collapsible key={project.id} open={expandedProjects.has(project.id)} onOpenChange={() => toggleProjectExpand(project.id)}>
                             <CollapsibleTrigger asChild>
                               <div className="flex items-center justify-between p-4 border rounded-lg cursor-pointer hover:bg-muted/30 transition-colors">
                                 <div className="flex items-center gap-3">
-                                  {expandedProjects.has(project.id) ? (
-                                    <ChevronDown className="h-5 w-5 text-muted-foreground" />
-                                  ) : (
-                                    <ChevronRight className="h-5 w-5 text-muted-foreground" />
-                                  )}
+                                  {expandedProjects.has(project.id) ? <ChevronDown className="h-5 w-5 text-muted-foreground" /> : <ChevronRight className="h-5 w-5 text-muted-foreground" />}
                                   <div>
                                     <span className="font-semibold">{project.merchantName}</span>
                                     <span className="text-xs text-muted-foreground ml-2">({project.mid})</span>
+                                    <span className="text-xs text-muted-foreground ml-2">Start: {project.dates.kickOffDate}</span>
                                   </div>
                                   <Badge variant="outline" className="capitalize">{project.currentOwnerTeam}</Badge>
-                                  <Badge variant="secondary">
-                                    {project.stats.completedChecklist}/{project.stats.totalChecklist} tasks
-                                  </Badge>
+                                  <Badge variant="secondary">{project.stats.completedChecklist}/{project.stats.totalChecklist} tasks</Badge>
                                 </div>
                                 <div className="flex items-center gap-4">
                                   <div className="text-right text-sm">
@@ -745,7 +840,6 @@ export const ManagerDashboard = () => {
                             </CollapsibleTrigger>
                             <CollapsibleContent>
                               <div className="mt-2 ml-8 space-y-3">
-                                {/* Summary row */}
                                 <div className="grid grid-cols-2 gap-3">
                                   <div className="bg-muted/30 rounded-lg p-3">
                                     <p className="text-xs text-muted-foreground mb-1">MINT Tasks</p>
@@ -756,7 +850,6 @@ export const ManagerDashboard = () => {
                                     <p className="font-semibold">{project.integrationCompleted}/{project.integrationTotal}</p>
                                   </div>
                                 </div>
-                                {/* Checklist table */}
                                 <div className="border rounded-lg overflow-hidden">
                                   <Table>
                                     <TableHeader>
@@ -775,9 +868,7 @@ export const ManagerDashboard = () => {
                                         <TableRow key={item.id}>
                                           <TableCell className="font-medium">{item.checklistTitle}</TableCell>
                                           <TableCell className="capitalize">{item.phase}</TableCell>
-                                          <TableCell>
-                                            <Badge variant="outline" className="capitalize">{item.team}</Badge>
-                                          </TableCell>
+                                          <TableCell><Badge variant="outline" className="capitalize">{item.team}</Badge></TableCell>
                                           <TableCell className="capitalize">{item.responsibility}</TableCell>
                                           <TableCell>{formatDuration(item.gokwikTime)}</TableCell>
                                           <TableCell>{formatDuration(item.merchantTime)}</TableCell>
@@ -820,7 +911,6 @@ export const ManagerDashboard = () => {
                                   <Badge className="bg-amber-500 text-white">{team.pendingCount} Pending</Badge>
                                 )}
                               </div>
-                              {/* Team summary stats */}
                               <div className="grid grid-cols-4 gap-4 mb-6">
                                 <div className="bg-background rounded-lg p-4 text-center">
                                   <p className="text-2xl font-bold">{team.projectCount}</p>
@@ -839,7 +929,6 @@ export const ManagerDashboard = () => {
                                   <p className="text-xs text-muted-foreground">Merchant</p>
                                 </div>
                               </div>
-                              {/* Owners within this team */}
                               {team.owners.length > 0 && (
                                 <div>
                                   <p className="text-sm font-semibold text-muted-foreground mb-3 flex items-center gap-2">
@@ -918,7 +1007,7 @@ export const ManagerDashboard = () => {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete {selectedProjects.size} project(s)?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently remove the selected projects and all associated data (checklist items, logs, transfer history). This action cannot be undone.
+              This will permanently remove the selected projects and all associated data. This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -926,6 +1015,32 @@ export const ManagerDashboard = () => {
             <AlertDialogAction onClick={handleBulkDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
               Delete All
             </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Bulk State Update */}
+      <AlertDialog open={bulkStateDialogOpen} onOpenChange={setBulkStateDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Update state for {selectedProjects.size} project(s)</AlertDialogTitle>
+            <AlertDialogDescription>
+              Select the new project state to apply to all selected projects.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="py-4">
+            <Select value={bulkStateValue} onValueChange={(v) => setBulkStateValue(v as ProjectState)}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {(Object.keys(projectStateLabels) as ProjectState[]).map(s => (
+                  <SelectItem key={s} value={s}>{projectStateLabels[s]}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleBulkStateUpdate}>Update All</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
