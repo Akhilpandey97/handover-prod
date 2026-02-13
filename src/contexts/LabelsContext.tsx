@@ -122,6 +122,7 @@ export const LabelsProvider = ({ children }: { children: ReactNode }) => {
     integration: labels.team_integration,
     ms: labels.team_ms,
     manager: labels.team_manager,
+    super_admin: "Super Admin",
   };
 
   const responsibilityLabels: Record<string, string> = {

@@ -29,6 +29,7 @@ const defaultTeamLabels: Record<TeamRole, string> = {
   integration: "Integration Team",
   ms: "MS (Merchant Success)",
   manager: "Manager",
+  super_admin: "Super Admin",
 };
 
 const teamColors: Record<TeamRole, string> = {
@@ -36,6 +37,7 @@ const teamColors: Record<TeamRole, string> = {
   integration: "bg-purple-500",
   ms: "bg-green-500",
   manager: "bg-orange-500",
+  super_admin: "bg-red-500",
 };
 
 export const UserManagement = () => {

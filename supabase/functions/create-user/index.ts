@@ -12,7 +12,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { email, password, name, team } = await req.json();
+    const { email, password, name, team, tenant_id } = await req.json();
 
     // Validate required fields
     if (!email || !password || !name || !team) {
@@ -60,7 +60,7 @@ Deno.serve(async (req) => {
       .eq('user_id', requester.id)
       .single();
 
-    if (roleError || roleData?.role !== 'manager') {
+    if (roleError || (roleData?.role !== 'manager' && roleData?.role !== 'super_admin')) {
       return new Response(
         JSON.stringify({ error: 'Only managers can create users' }),
         { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -75,6 +75,7 @@ Deno.serve(async (req) => {
       user_metadata: {
         name,
         team,
+        tenant_id: tenant_id || null,
       },
     });
 
@@ -87,6 +88,17 @@ Deno.serve(async (req) => {
     }
 
     // Manually insert into profiles table (in case trigger doesn't fire)
+    // Determine tenant_id: use provided tenant_id, or fall back to requester's tenant
+    let resolvedTenantId = tenant_id;
+    if (!resolvedTenantId) {
+      const { data: requesterProfile } = await supabaseAdmin
+        .from('profiles')
+        .select('tenant_id')
+        .eq('id', requester.id)
+        .single();
+      resolvedTenantId = requesterProfile?.tenant_id;
+    }
+
     const { error: profileError } = await supabaseAdmin
       .from('profiles')
       .upsert({
@@ -94,6 +106,7 @@ Deno.serve(async (req) => {
         email: email,
         name: name,
         team: team,
+        tenant_id: resolvedTenantId,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       }, { onConflict: 'id' });
@@ -114,7 +127,7 @@ Deno.serve(async (req) => {
       // Update existing role
       const { error: updateRoleError } = await supabaseAdmin
         .from('user_roles')
-        .update({ role: team })
+        .update({ role: team, tenant_id: resolvedTenantId })
         .eq('user_id', newUser.user.id);
 
       if (updateRoleError) {
@@ -127,6 +140,7 @@ Deno.serve(async (req) => {
         .insert({
           user_id: newUser.user.id,
           role: team,
+          tenant_id: resolvedTenantId,
           created_at: new Date().toISOString(),
         });
 

@@ -16,6 +16,7 @@ const teamLabels: Record<TeamRole, string> = {
   integration: "Integration Team",
   ms: "MS (Merchant Success)",
   manager: "Manager",
+  super_admin: "Super Admin",
 };
 
 export const LoginScreen = () => {
@@ -135,7 +136,7 @@ export const LoginScreen = () => {
                       <SelectValue placeholder="Select your team" />
                     </SelectTrigger>
                     <SelectContent>
-                      {(Object.keys(teamLabels) as TeamRole[]).map((role) => (
+                      {(Object.keys(teamLabels) as TeamRole[]).filter(r => r !== "super_admin").map((role) => (
                         <SelectItem key={role} value={role}>
                           {teamLabels[role]}
                         </SelectItem>

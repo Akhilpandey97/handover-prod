@@ -4,6 +4,7 @@ import { useProjects } from "@/contexts/ProjectContext";
 import { useLabels } from "@/contexts/LabelsContext";
 import { teamLabels as defaultTeamLabels, teamColors, TeamRole } from "@/data/teams";
 import { UserManagement } from "./UserManagement";
+import { TenantManagement } from "./TenantManagement";
 import { SettingsPanel } from "./SettingsPanel";
 import { ChecklistManagement } from "./ChecklistManagement";
 import { CSVUploadDialog } from "./CSVUploadDialog";
@@ -438,6 +439,12 @@ export const ManagerDashboard = () => {
               <Settings className="h-4 w-4" />
               Settings
             </TabsTrigger>
+            {currentUser?.team === "super_admin" && (
+              <TabsTrigger value="tenants" className="gap-2 px-6 h-10 data-[state=active]:bg-primary data-[state=active]:text-white">
+                <Building2 className="h-4 w-4" />
+                Tenants
+              </TabsTrigger>
+            )}
           </TabsList>
 
           {/* ========= OVERVIEW TAB ========= */}
@@ -997,6 +1004,13 @@ export const ManagerDashboard = () => {
           <TabsContent value="settings" className="mt-0">
             <SettingsPanel />
           </TabsContent>
+
+          {/* Tenants Tab (Super Admin only) */}
+          {currentUser?.team === "super_admin" && (
+            <TabsContent value="tenants" className="mt-0">
+              <TenantManagement />
+            </TabsContent>
+          )}
         </Tabs>
       </main>
 
