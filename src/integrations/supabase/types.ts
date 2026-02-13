@@ -20,6 +20,7 @@ export type Database = {
           created_at: string
           id: string
           key: string
+          tenant_id: string | null
           updated_at: string
           value: string
         }
@@ -28,6 +29,7 @@ export type Database = {
           created_at?: string
           id?: string
           key: string
+          tenant_id?: string | null
           updated_at?: string
           value: string
         }
@@ -36,10 +38,19 @@ export type Database = {
           created_at?: string
           id?: string
           key?: string
+          tenant_id?: string | null
           updated_at?: string
           value?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "app_settings_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       checklist_comments: {
         Row: {
@@ -49,6 +60,7 @@ export type Database = {
           comment: string
           created_at: string
           id: string
+          tenant_id: string | null
           user_id: string | null
           user_name: string
         }
@@ -59,6 +71,7 @@ export type Database = {
           comment: string
           created_at?: string
           id?: string
+          tenant_id?: string | null
           user_id?: string | null
           user_name: string
         }
@@ -69,6 +82,7 @@ export type Database = {
           comment?: string
           created_at?: string
           id?: string
+          tenant_id?: string | null
           user_id?: string | null
           user_name?: string
         }
@@ -78,6 +92,13 @@ export type Database = {
             columns: ["checklist_item_id"]
             isOneToOne: false
             referencedRelation: "checklist_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "checklist_comments_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
             referencedColumns: ["id"]
           },
         ]
@@ -99,6 +120,7 @@ export type Database = {
           phase: Database["public"]["Enums"]["project_phase"]
           project_id: string
           sort_order: number | null
+          tenant_id: string | null
           title: string
         }
         Insert: {
@@ -117,6 +139,7 @@ export type Database = {
           phase: Database["public"]["Enums"]["project_phase"]
           project_id: string
           sort_order?: number | null
+          tenant_id?: string | null
           title: string
         }
         Update: {
@@ -135,6 +158,7 @@ export type Database = {
           phase?: Database["public"]["Enums"]["project_phase"]
           project_id?: string
           sort_order?: number | null
+          tenant_id?: string | null
           title?: string
         }
         Relationships: [
@@ -143,6 +167,13 @@ export type Database = {
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "checklist_items_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
             referencedColumns: ["id"]
           },
         ]
@@ -155,6 +186,7 @@ export type Database = {
           id: string
           party: Database["public"]["Enums"]["responsibility_party"]
           started_at: string
+          tenant_id: string | null
         }
         Insert: {
           checklist_item_id: string
@@ -163,6 +195,7 @@ export type Database = {
           id?: string
           party: Database["public"]["Enums"]["responsibility_party"]
           started_at?: string
+          tenant_id?: string | null
         }
         Update: {
           checklist_item_id?: string
@@ -171,6 +204,7 @@ export type Database = {
           id?: string
           party?: Database["public"]["Enums"]["responsibility_party"]
           started_at?: string
+          tenant_id?: string | null
         }
         Relationships: [
           {
@@ -178,6 +212,13 @@ export type Database = {
             columns: ["checklist_item_id"]
             isOneToOne: false
             referencedRelation: "checklist_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "checklist_responsibility_logs_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
             referencedColumns: ["id"]
           },
         ]
@@ -189,6 +230,7 @@ export type Database = {
           id: string
           name: string
           team: Database["public"]["Enums"]["team_role"]
+          tenant_id: string | null
           updated_at: string | null
         }
         Insert: {
@@ -197,6 +239,7 @@ export type Database = {
           id: string
           name: string
           team: Database["public"]["Enums"]["team_role"]
+          tenant_id?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -205,9 +248,18 @@ export type Database = {
           id?: string
           name?: string
           team?: Database["public"]["Enums"]["team_role"]
+          tenant_id?: string | null
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       project_responsibility_logs: {
         Row: {
@@ -218,6 +270,7 @@ export type Database = {
           phase: Database["public"]["Enums"]["project_phase"]
           project_id: string
           started_at: string
+          tenant_id: string | null
         }
         Insert: {
           created_at?: string | null
@@ -227,6 +280,7 @@ export type Database = {
           phase: Database["public"]["Enums"]["project_phase"]
           project_id: string
           started_at?: string
+          tenant_id?: string | null
         }
         Update: {
           created_at?: string | null
@@ -236,6 +290,7 @@ export type Database = {
           phase?: Database["public"]["Enums"]["project_phase"]
           project_id?: string
           started_at?: string
+          tenant_id?: string | null
         }
         Relationships: [
           {
@@ -243,6 +298,13 @@ export type Database = {
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_responsibility_logs_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
             referencedColumns: ["id"]
           },
         ]
@@ -282,6 +344,7 @@ export type Database = {
           project_notes: string | null
           project_state: Database["public"]["Enums"]["project_state"] | null
           sales_spoc: string | null
+          tenant_id: string | null
           txns_per_day: number | null
           updated_at: string | null
         }
@@ -319,6 +382,7 @@ export type Database = {
           project_notes?: string | null
           project_state?: Database["public"]["Enums"]["project_state"] | null
           sales_spoc?: string | null
+          tenant_id?: string | null
           txns_per_day?: number | null
           updated_at?: string | null
         }
@@ -356,8 +420,47 @@ export type Database = {
           project_notes?: string | null
           project_state?: Database["public"]["Enums"]["project_state"] | null
           sales_spoc?: string | null
+          tenant_id?: string | null
           txns_per_day?: number | null
           updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "projects_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tenants: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          logo_url: string | null
+          name: string
+          slug: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          logo_url?: string | null
+          name: string
+          slug: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          logo_url?: string | null
+          name?: string
+          slug?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -370,6 +473,7 @@ export type Database = {
           id: string
           notes: string | null
           project_id: string
+          tenant_id: string | null
           to_team: Database["public"]["Enums"]["team_role"]
           transferred_at: string
           transferred_by: string
@@ -382,6 +486,7 @@ export type Database = {
           id?: string
           notes?: string | null
           project_id: string
+          tenant_id?: string | null
           to_team: Database["public"]["Enums"]["team_role"]
           transferred_at?: string
           transferred_by: string
@@ -394,6 +499,7 @@ export type Database = {
           id?: string
           notes?: string | null
           project_id?: string
+          tenant_id?: string | null
           to_team?: Database["public"]["Enums"]["team_role"]
           transferred_at?: string
           transferred_by?: string
@@ -406,6 +512,13 @@ export type Database = {
             referencedRelation: "projects"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "transfer_history_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
         ]
       }
       user_roles: {
@@ -413,21 +526,32 @@ export type Database = {
           created_at: string | null
           id: string
           role: Database["public"]["Enums"]["team_role"]
+          tenant_id: string | null
           user_id: string
         }
         Insert: {
           created_at?: string | null
           id?: string
           role: Database["public"]["Enums"]["team_role"]
+          tenant_id?: string | null
           user_id: string
         }
         Update: {
           created_at?: string | null
           id?: string
           role?: Database["public"]["Enums"]["team_role"]
+          tenant_id?: string | null
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "user_roles_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
@@ -438,7 +562,9 @@ export type Database = {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["team_role"]
       }
+      get_user_tenant_id: { Args: { _user_id: string }; Returns: string }
       is_manager: { Args: { _user_id: string }; Returns: boolean }
+      is_super_admin: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
       project_phase: "mint" | "integration" | "ms" | "completed"
@@ -449,7 +575,7 @@ export type Database = {
         | "live"
         | "blocked"
       responsibility_party: "gokwik" | "merchant" | "neutral"
-      team_role: "mint" | "integration" | "ms" | "manager"
+      team_role: "mint" | "integration" | "ms" | "manager" | "super_admin"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -586,7 +712,7 @@ export const Constants = {
         "blocked",
       ],
       responsibility_party: ["gokwik", "merchant", "neutral"],
-      team_role: ["mint", "integration", "ms", "manager"],
+      team_role: ["mint", "integration", "ms", "manager", "super_admin"],
     },
   },
 } as const

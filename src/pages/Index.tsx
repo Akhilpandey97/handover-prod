@@ -21,8 +21,8 @@ const Index = () => {
     return <LoginScreen />;
   }
 
-  // Show manager dashboard for manager role
-  if (currentUser?.team === "manager") {
+  // Show manager dashboard for manager or super_admin role
+  if (currentUser?.team === "manager" || currentUser?.team === "super_admin") {
     return <ManagerDashboard />;
   }
 

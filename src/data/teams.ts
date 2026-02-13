@@ -1,4 +1,4 @@
-export type TeamRole = "mint" | "integration" | "ms" | "manager";
+export type TeamRole = "mint" | "integration" | "ms" | "manager" | "super_admin";
 
 export interface TeamUser {
   id: string;
@@ -40,6 +40,7 @@ export const teamLabels: Record<TeamRole, string> = {
   integration: "Integration Team",
   ms: "MS (Merchant Success)",
   manager: "Manager",
+  super_admin: "Super Admin",
 };
 
 export const teamColors: Record<TeamRole, string> = {
@@ -47,4 +48,5 @@ export const teamColors: Record<TeamRole, string> = {
   integration: "bg-purple-500",
   ms: "bg-green-500",
   manager: "bg-orange-500",
+  super_admin: "bg-red-500",
 };

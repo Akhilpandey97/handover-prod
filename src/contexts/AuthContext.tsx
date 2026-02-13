@@ -10,6 +10,7 @@ export interface AuthUser {
   name: string;
   email: string;
   team: TeamRole;
+  tenantId: string | null;
 }
 
 interface AuthContextType {
@@ -58,6 +59,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         name: profile.name,
         email: profile.email,
         team: team,
+        tenantId: profile.tenant_id,
       };
     } catch (error) {
       console.error("Error in fetchUserProfile:", error);
