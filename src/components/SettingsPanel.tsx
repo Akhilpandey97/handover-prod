@@ -1,0 +1,175 @@
+import { useState } from "react";
+import { useLabels } from "@/contexts/LabelsContext";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
+import { toast } from "sonner";
+import { Save, RotateCcw, Settings } from "lucide-react";
+
+interface LabelGroup {
+  title: string;
+  description: string;
+  keys: { key: string; label: string }[];
+}
+
+const LABEL_GROUPS: LabelGroup[] = [
+  {
+    title: "General",
+    description: "Application name and branding",
+    keys: [
+      { key: "app_title", label: "Dashboard Title" },
+      { key: "app_subtitle", label: "Dashboard Subtitle" },
+      { key: "org_name", label: "Organisation Name" },
+    ],
+  },
+  {
+    title: "Team Names",
+    description: "Labels for each team/department",
+    keys: [
+      { key: "team_mint", label: "Team 1 (Presales)" },
+      { key: "team_integration", label: "Team 2 (Integration)" },
+      { key: "team_ms", label: "Team 3 (Post-Sales)" },
+      { key: "team_manager", label: "Manager Role" },
+    ],
+  },
+  {
+    title: "Responsibility Parties",
+    description: "Labels for internal vs external ownership",
+    keys: [
+      { key: "responsibility_internal", label: "Internal Party" },
+      { key: "responsibility_external", label: "External Party" },
+      { key: "responsibility_neutral", label: "Neutral State" },
+    ],
+  },
+  {
+    title: "Project Phases",
+    description: "Names for each workflow phase",
+    keys: [
+      { key: "phase_mint", label: "Phase 1" },
+      { key: "phase_integration", label: "Phase 2" },
+      { key: "phase_ms", label: "Phase 3" },
+      { key: "phase_completed", label: "Phase 4 (Final)" },
+    ],
+  },
+  {
+    title: "Project States",
+    description: "Status labels for projects",
+    keys: [
+      { key: "state_not_started", label: "State: Not Started" },
+      { key: "state_on_hold", label: "State: On Hold" },
+      { key: "state_in_progress", label: "State: Active" },
+      { key: "state_live", label: "State: Live/Complete" },
+      { key: "state_blocked", label: "State: Blocked" },
+    ],
+  },
+  {
+    title: "Field Labels",
+    description: "Labels for project data fields shown across the app",
+    keys: [
+      { key: "field_merchant_name", label: "Client/Merchant Name" },
+      { key: "field_mid", label: "Client ID Field" },
+      { key: "field_kick_off_date", label: "Start Date Label" },
+      { key: "field_go_live_date", label: "Go-Live Date Label" },
+      { key: "field_arr", label: "Revenue Metric" },
+      { key: "field_platform", label: "Platform Label" },
+      { key: "field_integration_type", label: "Integration Type Label" },
+      { key: "field_sales_spoc", label: "Sales Contact Label" },
+      { key: "field_assigned_owner", label: "Owner Label" },
+      { key: "field_project_notes", label: "Notes Label" },
+    ],
+  },
+];
+
+export const SettingsPanel = () => {
+  const { labels, updateLabels } = useLabels();
+  const [draft, setDraft] = useState<Record<string, string>>({});
+  const [isSaving, setIsSaving] = useState(false);
+
+  const getValue = (key: string) => draft[key] ?? labels[key] ?? "";
+
+  const handleChange = (key: string, value: string) => {
+    setDraft((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const handleSave = async () => {
+    if (Object.keys(draft).length === 0) {
+      toast.info("No changes to save");
+      return;
+    }
+    setIsSaving(true);
+    try {
+      await updateLabels(draft);
+      setDraft({});
+      toast.success("Labels updated! Changes apply globally across the app.");
+    } catch {
+      toast.error("Failed to save labels");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleReset = () => {
+    setDraft({});
+    toast.info("Reverted unsaved changes");
+  };
+
+  const hasChanges = Object.keys(draft).length > 0;
+
+  return (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <Settings className="h-5 w-5" />
+                Global Labels & Customisation
+              </CardTitle>
+              <CardDescription>
+                Edit labels below to white-label the app for your organisation and industry. Changes apply everywhere instantly.
+              </CardDescription>
+            </div>
+            <div className="flex gap-2">
+              {hasChanges && (
+                <Button variant="outline" size="sm" onClick={handleReset}>
+                  <RotateCcw className="h-4 w-4 mr-2" />
+                  Revert
+                </Button>
+              )}
+              <Button size="sm" onClick={handleSave} disabled={!hasChanges || isSaving}>
+                <Save className="h-4 w-4 mr-2" />
+                {isSaving ? "Saving..." : "Save All Changes"}
+              </Button>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-8">
+          {LABEL_GROUPS.map((group, gi) => (
+            <div key={gi}>
+              {gi > 0 && <Separator className="mb-6" />}
+              <h3 className="text-base font-semibold mb-1">{group.title}</h3>
+              <p className="text-sm text-muted-foreground mb-4">{group.description}</p>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {group.keys.map(({ key, label }) => (
+                  <div key={key} className="space-y-1.5">
+                    <Label htmlFor={key} className="text-xs text-muted-foreground">
+                      {label}
+                    </Label>
+                    <Input
+                      id={key}
+                      value={getValue(key)}
+                      onChange={(e) => handleChange(key, e.target.value)}
+                      className={draft[key] !== undefined ? "border-primary ring-1 ring-primary/20" : ""}
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
