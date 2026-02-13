@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useLabels } from "@/contexts/LabelsContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -22,7 +23,8 @@ interface UserWithRole {
   created_at: string | null;
 }
 
-const teamLabels: Record<TeamRole, string> = {
+// These will be overridden by context in the component
+const defaultTeamLabels: Record<TeamRole, string> = {
   mint: "MINT (Presales)",
   integration: "Integration Team",
   ms: "MS (Merchant Success)",
@@ -37,6 +39,7 @@ const teamColors: Record<TeamRole, string> = {
 };
 
 export const UserManagement = () => {
+  const { teamLabels } = useLabels();
   const [users, setUsers] = useState<UserWithRole[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isOpen, setIsOpen] = useState(false);

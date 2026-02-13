@@ -1,8 +1,10 @@
 import { useState, useEffect, useMemo } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useProjects } from "@/contexts/ProjectContext";
-import { teamLabels, teamColors, TeamRole } from "@/data/teams";
+import { useLabels } from "@/contexts/LabelsContext";
+import { teamLabels as defaultTeamLabels, teamColors, TeamRole } from "@/data/teams";
 import { UserManagement } from "./UserManagement";
+import { SettingsPanel } from "./SettingsPanel";
 import { ChecklistManagement } from "./ChecklistManagement";
 import { CSVUploadDialog } from "./CSVUploadDialog";
 import { AddProjectDialog } from "./AddProjectDialog";
@@ -69,6 +71,7 @@ import { TacticalLists } from "./reports/TacticalLists";
 
 export const ManagerDashboard = () => {
   const { currentUser, logout } = useAuth();
+  const { labels: appLabels, teamLabels, responsibilityLabels, phaseLabels, stateLabels: stateLabelsFromCtx } = useLabels();
   const { projects, isLoading, addProject, deleteProject, updateProject } = useProjects();
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("overview");
@@ -359,8 +362,8 @@ export const ManagerDashboard = () => {
                 <BarChart3 className="h-5 w-5 text-white" />
               </div>
               <div>
-                <h1 className="font-bold text-lg">Manager Dashboard</h1>
-                <p className="text-xs text-muted-foreground">Project Management Hub</p>
+                <h1 className="font-bold text-lg">{appLabels.app_title}</h1>
+                <p className="text-xs text-muted-foreground">{appLabels.app_subtitle}</p>
               </div>
             </div>
 
@@ -430,6 +433,10 @@ export const ManagerDashboard = () => {
             <TabsTrigger value="users" className="gap-2 px-6 h-10 data-[state=active]:bg-primary data-[state=active]:text-white">
               <Users className="h-4 w-4" />
               Users
+            </TabsTrigger>
+            <TabsTrigger value="settings" className="gap-2 px-6 h-10 data-[state=active]:bg-primary data-[state=active]:text-white">
+              <Settings className="h-4 w-4" />
+              Settings
             </TabsTrigger>
           </TabsList>
 
@@ -984,6 +991,11 @@ export const ManagerDashboard = () => {
           {/* Users Tab */}
           <TabsContent value="users" className="mt-0">
             <UserManagement />
+          </TabsContent>
+
+          {/* Settings Tab */}
+          <TabsContent value="settings" className="mt-0">
+            <SettingsPanel />
           </TabsContent>
         </Tabs>
       </main>
