@@ -581,7 +581,7 @@ export const ManagerDashboard = () => {
                 <CardContent className="p-5">
                   <div className="flex items-start justify-between">
                     <div>
-                      <p className="text-sm font-medium text-muted-foreground mb-1">Completed</p>
+                      <p className="text-sm font-medium text-muted-foreground mb-1">Live</p>
                       <p className="text-3xl font-bold text-emerald-600">{completedProjects}</p>
                     </div>
                     <div className="h-12 w-12 rounded-2xl bg-emerald-500/20 flex items-center justify-center">
