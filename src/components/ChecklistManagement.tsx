@@ -96,7 +96,7 @@ export const ChecklistManagement = () => {
       // Get all projects
       const { data: projects, error: projectsError } = await supabase
         .from("projects")
-        .select("id");
+        .select("id, tenant_id");
 
       if (projectsError) throw projectsError;
 
@@ -114,6 +114,7 @@ export const ChecklistManagement = () => {
         sort_order: maxOrder,
         completed: false,
         current_responsibility: "neutral" as const,
+        tenant_id: p.tenant_id,
       }));
 
       if (itemsToInsert.length > 0) {

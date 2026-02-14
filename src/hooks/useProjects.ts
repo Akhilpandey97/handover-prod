@@ -209,10 +209,11 @@ export const useProjectsQuery = () => {
 // Add project mutation
 export const useAddProject = () => {
   const queryClient = useQueryClient();
+  const { currentUser } = useAuth();
 
   return useMutation({
     mutationFn: async (project: Project) => {
-      // Insert project
+      // Insert project with tenant_id from current user
       const { data: newProject, error: projectError } = await supabase
         .from("projects")
         .insert({
@@ -244,6 +245,7 @@ export const useAddProject = () => {
           pg_onboarding: project.pgOnboarding,
           current_responsibility: project.currentResponsibility,
           project_state: project.projectState,
+          tenant_id: currentUser?.tenantId || null,
         })
         .select()
         .single();
@@ -260,6 +262,7 @@ export const useAddProject = () => {
           owner_team: item.ownerTeam,
           current_responsibility: item.currentResponsibility,
           sort_order: index,
+          tenant_id: currentUser?.tenantId || null,
         }));
 
         const { error: checklistError } = await supabase
@@ -277,6 +280,7 @@ export const useAddProject = () => {
           phase: log.phase,
           started_at: log.startedAt,
           ended_at: log.endedAt || null,
+          tenant_id: currentUser?.tenantId || null,
         }));
 
         const { error: logError } = await supabase
@@ -492,6 +496,7 @@ export const useTransferProject = () => {
           to_team: nextTeam,
           transferred_by: currentUser.name,
           notes,
+          tenant_id: currentUser.tenantId || null,
         });
 
       if (transferError) throw transferError;
@@ -602,6 +607,7 @@ export const useRejectProject = () => {
           to_team: previousTeam,
           transferred_by: currentUser.name,
           notes: `REJECTED: ${reason}`,
+          tenant_id: currentUser.tenantId || null,
         });
 
       if (transferError) throw transferError;
@@ -767,6 +773,7 @@ export const useUpdateChecklistComment = () => {
 // Toggle project responsibility mutation
 export const useToggleResponsibility = () => {
   const queryClient = useQueryClient();
+  const { currentUser } = useAuth();
 
   return useMutation({
     mutationFn: async ({
@@ -806,6 +813,7 @@ export const useToggleResponsibility = () => {
           party,
           phase: currentPhase,
           started_at: new Date().toISOString(),
+          tenant_id: currentUser?.tenantId || null,
         });
 
       if (insertError) throw insertError;
@@ -833,6 +841,7 @@ export const useToggleResponsibility = () => {
 // Toggle checklist responsibility mutation
 export const useToggleChecklistResponsibility = () => {
   const queryClient = useQueryClient();
+  const { currentUser } = useAuth();
 
   return useMutation({
     mutationFn: async ({
@@ -869,6 +878,7 @@ export const useToggleChecklistResponsibility = () => {
           checklist_item_id: checklistId,
           party,
           started_at: new Date().toISOString(),
+          tenant_id: currentUser?.tenantId || null,
         });
 
       if (insertError) throw insertError;
