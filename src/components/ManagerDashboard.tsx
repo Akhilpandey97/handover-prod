@@ -1001,8 +1001,9 @@ export const ManagerDashboard = () => {
           </TabsContent>
 
           {/* Settings Tab */}
-          <TabsContent value="settings" className="mt-0">
+          <TabsContent value="settings" className="mt-0 space-y-6">
             <SettingsPanel />
+            {currentUser?.team === "super_admin" && <TenantManagement />}
           </TabsContent>
 
           {/* Tenants Tab (Super Admin only) */}
