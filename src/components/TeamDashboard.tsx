@@ -27,6 +27,7 @@ import {
   AlertTriangle,
   Zap,
 } from "lucide-react";
+import { ThemeToggle } from "./ThemeToggle";
 
 type TabType = "pending" | "active" | "all";
 
@@ -315,14 +316,15 @@ export const TeamDashboard = () => {
 
             {/* User Info */}
             <div className="flex items-center gap-3 pl-4 border-l">
+              <ThemeToggle />
               <div className="text-right">
                 <p className="font-medium text-sm">{currentUser.name}</p>
                 <p className="text-xs text-muted-foreground capitalize">{currentUser.team}</p>
               </div>
-              <div className={`h-9 w-9 rounded-full ${teamColors[currentUser.team]} flex items-center justify-center text-white font-bold text-sm shadow`}>
+              <div className={`h-9 w-9 rounded-lg ${teamColors[currentUser.team]} flex items-center justify-center text-white font-semibold text-sm`}>
                 {currentUser.name.charAt(0)}
               </div>
-              <Button variant="ghost" size="icon" onClick={logout} className="hover:bg-destructive/10 hover:text-destructive">
+              <Button variant="ghost" size="icon" onClick={logout} className="h-9 w-9 hover:bg-destructive/10 hover:text-destructive">
                 <LogOut className="h-4 w-4" />
               </Button>
             </div>

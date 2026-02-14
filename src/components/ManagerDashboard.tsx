@@ -62,6 +62,7 @@ import {
   RefreshCw,
 } from "lucide-react";
 import { exportProjectsToCSV } from "@/utils/exportProjects";
+import { ThemeToggle } from "./ThemeToggle";
 import { toast } from "sonner";
 
 // Report components
@@ -353,18 +354,18 @@ export const ManagerDashboard = () => {
   const hasActiveFilters = teamFilter !== "all" || ownerFilter !== "all" || phaseFilter !== "all" || stateFilter !== "all" || kickOffFrom || kickOffTo || goLiveFrom || goLiveTo;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
+    <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="sticky top-0 z-40 border-b bg-background/80 backdrop-blur-xl">
+      <header className="sticky top-0 z-40 border-b bg-card/95 backdrop-blur-sm">
         <div className="container mx-auto px-6">
-          <div className="h-16 flex items-center justify-between gap-6">
-            <div className="flex items-center gap-4">
-              <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-lg">
-                <BarChart3 className="h-5 w-5 text-white" />
+          <div className="h-14 flex items-center justify-between gap-6">
+            <div className="flex items-center gap-3">
+              <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
+                <BarChart3 className="h-4 w-4 text-primary-foreground" />
               </div>
               <div>
-                <h1 className="font-bold text-lg">{appLabels.app_title}</h1>
-                <p className="text-xs text-muted-foreground">{appLabels.app_subtitle}</p>
+                <h1 className="font-semibold text-sm">{appLabels.app_title}</h1>
+                <p className="text-[11px] text-muted-foreground leading-none">{appLabels.app_subtitle}</p>
               </div>
             </div>
 
@@ -380,31 +381,32 @@ export const ManagerDashboard = () => {
               </div>
             </div>
 
-            <div className="flex items-center gap-3">
-              <Button onClick={() => exportProjectsToCSV(projects)} variant="outline" className="gap-2">
-                <Download className="h-4 w-4" />
-                Export All
+            <div className="flex items-center gap-2">
+              <Button onClick={() => exportProjectsToCSV(projects)} variant="outline" size="sm" className="gap-1.5 h-8 text-xs">
+                <Download className="h-3.5 w-3.5" />
+                Export
               </Button>
-              <Button onClick={() => setCsvDialogOpen(true)} variant="outline" className="gap-2">
-                <Upload className="h-4 w-4" />
-                Import CSV
+              <Button onClick={() => setCsvDialogOpen(true)} variant="outline" size="sm" className="gap-1.5 h-8 text-xs">
+                <Upload className="h-3.5 w-3.5" />
+                Import
               </Button>
-              <Button onClick={() => setAddDialogOpen(true)} className="gap-2 shadow-lg">
-                <Plus className="h-4 w-4" />
+              <Button onClick={() => setAddDialogOpen(true)} size="sm" className="gap-1.5 h-8 text-xs">
+                <Plus className="h-3.5 w-3.5" />
                 Add Project
               </Button>
             </div>
 
-            <div className="flex items-center gap-4 pl-4 border-l">
+            <div className="flex items-center gap-3 pl-4 border-l">
+              <ThemeToggle />
               <div className="text-right hidden md:block">
                 <p className="font-medium text-sm">{currentUser.name}</p>
                 <p className="text-xs text-muted-foreground">Manager</p>
               </div>
-              <div className="h-10 w-10 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-white font-bold shadow-lg">
+              <div className="h-9 w-9 rounded-lg bg-primary flex items-center justify-center text-primary-foreground font-semibold text-sm">
                 {currentUser.name.charAt(0)}
               </div>
-              <Button variant="ghost" size="icon" onClick={logout} className="hover:bg-destructive/10 hover:text-destructive">
-                <LogOut className="h-5 w-5" />
+              <Button variant="ghost" size="icon" onClick={logout} className="h-9 w-9 hover:bg-destructive/10 hover:text-destructive">
+                <LogOut className="h-4 w-4" />
               </Button>
             </div>
           </div>
@@ -412,36 +414,36 @@ export const ManagerDashboard = () => {
       </header>
 
       {/* Main Content */}
-      <main className="container mx-auto px-6 py-8">
+      <main className="container mx-auto px-6 py-6">
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="h-12 bg-muted/50 p-1 mb-6">
-            <TabsTrigger value="overview" className="gap-2 px-6 h-10 data-[state=active]:bg-primary data-[state=active]:text-white">
-              <PieChart className="h-4 w-4" />
+          <TabsList className="h-10 bg-muted/50 p-1 mb-6 rounded-lg">
+            <TabsTrigger value="overview" className="gap-1.5 px-4 h-8 text-xs font-medium rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm">
+              <PieChart className="h-3.5 w-3.5" />
               Overview
             </TabsTrigger>
-            <TabsTrigger value="projects" className="gap-2 px-6 h-10 data-[state=active]:bg-primary data-[state=active]:text-white">
-              <FolderKanban className="h-4 w-4" />
+            <TabsTrigger value="projects" className="gap-1.5 px-4 h-8 text-xs font-medium rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm">
+              <FolderKanban className="h-3.5 w-3.5" />
               Projects
             </TabsTrigger>
-            <TabsTrigger value="reports" className="gap-2 px-6 h-10 data-[state=active]:bg-primary data-[state=active]:text-white">
-              <TrendingUp className="h-4 w-4" />
+            <TabsTrigger value="reports" className="gap-1.5 px-4 h-8 text-xs font-medium rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm">
+              <TrendingUp className="h-3.5 w-3.5" />
               Reports
             </TabsTrigger>
-            <TabsTrigger value="checklist" className="gap-2 px-6 h-10 data-[state=active]:bg-primary data-[state=active]:text-white">
-              <ListChecks className="h-4 w-4" />
+            <TabsTrigger value="checklist" className="gap-1.5 px-4 h-8 text-xs font-medium rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm">
+              <ListChecks className="h-3.5 w-3.5" />
               Checklist
             </TabsTrigger>
-            <TabsTrigger value="users" className="gap-2 px-6 h-10 data-[state=active]:bg-primary data-[state=active]:text-white">
-              <Users className="h-4 w-4" />
+            <TabsTrigger value="users" className="gap-1.5 px-4 h-8 text-xs font-medium rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm">
+              <Users className="h-3.5 w-3.5" />
               Users
             </TabsTrigger>
-            <TabsTrigger value="settings" className="gap-2 px-6 h-10 data-[state=active]:bg-primary data-[state=active]:text-white">
-              <Settings className="h-4 w-4" />
+            <TabsTrigger value="settings" className="gap-1.5 px-4 h-8 text-xs font-medium rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm">
+              <Settings className="h-3.5 w-3.5" />
               Settings
             </TabsTrigger>
             {currentUser?.team === "super_admin" && (
-              <TabsTrigger value="tenants" className="gap-2 px-6 h-10 data-[state=active]:bg-primary data-[state=active]:text-white">
-                <Building2 className="h-4 w-4" />
+              <TabsTrigger value="tenants" className="gap-1.5 px-4 h-8 text-xs font-medium rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm">
+                <Building2 className="h-3.5 w-3.5" />
                 Tenants
               </TabsTrigger>
             )}
