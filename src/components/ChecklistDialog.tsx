@@ -47,7 +47,7 @@ export const ChecklistDialog = ({
 }: ChecklistDialogProps) => {
   const { updateChecklist, toggleChecklistResponsibility } = useProjects();
   const { currentUser } = useAuth();
-  const { teamLabels } = useLabels();
+  const { teamLabels, responsibilityLabels } = useLabels();
 
   // Dynamic team labels for checklist sections
   const ownerTeamLabelsFromCtx: Record<string, string> = {
@@ -311,14 +311,14 @@ export const ChecklistDialog = ({
                               )}
                               
                               {/* Time Stats */}
-                              <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                                <div className="flex items-center gap-4 text-xs text-muted-foreground">
                                 <div className="flex items-center gap-1">
                                   <Building2 className="h-3 w-3 text-primary" />
-                                  <span>GK: {formatDuration(timeStats.gokwik)}</span>
+                                  <span>{responsibilityLabels.gokwik}: {formatDuration(timeStats.gokwik)}</span>
                                 </div>
                                 <div className="flex items-center gap-1">
                                   <Users className="h-3 w-3 text-amber-500" />
-                                  <span>M: {formatDuration(timeStats.merchant)}</span>
+                                  <span>{responsibilityLabels.merchant}: {formatDuration(timeStats.merchant)}</span>
                                 </div>
                               </div>
 
@@ -338,26 +338,26 @@ export const ChecklistDialog = ({
                               >
                                 <ToggleGroupItem 
                                   value="gokwik" 
-                                  aria-label="GoKwik"
+                                  aria-label={responsibilityLabels.gokwik}
                                   className="text-xs px-3 py-1.5 h-8 rounded-none data-[state=on]:bg-primary data-[state=on]:text-white"
                                 >
                                   <Building2 className="h-3 w-3 mr-1" />
-                                  GK
+                                  {responsibilityLabels.gokwik}
                                 </ToggleGroupItem>
                                 <ToggleGroupItem 
                                   value="neutral" 
-                                  aria-label="Neutral"
+                                  aria-label={responsibilityLabels.neutral}
                                   className="text-xs px-3 py-1.5 h-8 rounded-none border-x data-[state=on]:bg-muted"
                                 >
                                   <Minus className="h-3 w-3" />
                                 </ToggleGroupItem>
                                 <ToggleGroupItem 
                                   value="merchant" 
-                                  aria-label="Merchant"
+                                  aria-label={responsibilityLabels.merchant}
                                   className="text-xs px-3 py-1.5 h-8 rounded-none data-[state=on]:bg-amber-500 data-[state=on]:text-white"
                                 >
                                   <Users className="h-3 w-3 mr-1" />
-                                  M
+                                  {responsibilityLabels.merchant}
                                 </ToggleGroupItem>
                               </ToggleGroup>
                             </div>

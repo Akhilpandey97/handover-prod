@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { TeamRole, teamLabels } from "@/data/teams";
+import { TeamRole } from "@/data/teams";
+import { useLabels } from "@/contexts/LabelsContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -81,6 +82,7 @@ const useChecklistTemplates = () => {
 export const ChecklistManagement = () => {
   const queryClient = useQueryClient();
   const { data: templates = [], isLoading } = useChecklistTemplates();
+  const { teamLabels } = useLabels();
   const [activeTeam, setActiveTeam] = useState<TeamRole>("mint");
   const [editingItem, setEditingItem] = useState<ChecklistTemplate | null>(null);
   const [newItemTitle, setNewItemTitle] = useState("");
