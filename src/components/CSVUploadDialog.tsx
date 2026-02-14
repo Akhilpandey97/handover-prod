@@ -1,5 +1,6 @@
 import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   Dialog,
   DialogContent,
@@ -204,6 +205,7 @@ const integrationChecklistItems = [
 ];
 
 export const CSVUploadDialog = ({ open, onOpenChange }: CSVUploadDialogProps) => {
+  const { currentUser } = useAuth();
   const [file, setFile] = useState<File | null>(null);
   const [importing, setImporting] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -288,6 +290,7 @@ export const CSVUploadDialog = ({ open, onOpenChange }: CSVUploadDialogProps) =>
               current_owner_team: project.current_owner_team as any,
               current_responsibility: "neutral",
               pending_acceptance: false,
+              tenant_id: currentUser?.tenantId || null,
             })
             .select()
             .single();
@@ -304,6 +307,7 @@ export const CSVUploadDialog = ({ open, onOpenChange }: CSVUploadDialogProps) =>
               current_responsibility: "neutral" as const,
               sort_order: idx,
               completed: false,
+              tenant_id: currentUser?.tenantId || null,
             })),
             ...integrationChecklistItems.map((title, idx) => ({
               project_id: newProject.id,
@@ -313,6 +317,7 @@ export const CSVUploadDialog = ({ open, onOpenChange }: CSVUploadDialogProps) =>
               current_responsibility: "neutral" as const,
               sort_order: mintChecklistItems.length + idx,
               completed: false,
+              tenant_id: currentUser?.tenantId || null,
             })),
           ];
 
@@ -330,6 +335,7 @@ export const CSVUploadDialog = ({ open, onOpenChange }: CSVUploadDialogProps) =>
             party: "neutral",
             phase: project.current_phase as any,
             started_at: new Date().toISOString(),
+            tenant_id: currentUser?.tenantId || null,
           });
 
           importResults.push({

@@ -80,6 +80,7 @@ export const useAddChecklistComment = () => {
           comment,
           attachment_url: attachmentUrl,
           attachment_name: attachmentName,
+          tenant_id: currentUser.tenantId || null,
         })
         .select()
         .single();
