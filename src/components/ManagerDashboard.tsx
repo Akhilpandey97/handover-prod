@@ -313,7 +313,7 @@ export const ManagerDashboard = () => {
   const totalProjects = projects.length;
   const pendingProjects = projects.filter((p) => p.pendingAcceptance).length;
   const completedProjects = projects.filter((p) =>
-    p.projectState === "live" && !p.pendingAcceptance && p.currentOwnerTeam === "ms"
+    p.currentPhase === "completed" || (p.currentOwnerTeam === "ms" && !p.pendingAcceptance && p.projectState === "live")
   ).length;
   const activeProjects = totalProjects - pendingProjects - completedProjects;
 
@@ -452,7 +452,7 @@ export const ManagerDashboard = () => {
           {/* ========= OVERVIEW TAB ========= */}
           <TabsContent value="overview" className="space-y-6 mt-0">
             {/* KPI Cards */}
-            <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
               <Card className="bg-gradient-to-br from-primary/10 to-blue-500/5 border-primary/20 hover:shadow-lg transition-shadow">
                 <CardContent className="p-5">
                   <div className="flex items-start justify-between">
@@ -512,23 +512,6 @@ export const ManagerDashboard = () => {
                   <p className="text-xs text-muted-foreground mt-2">Live ARR: {liveArr.toFixed(2)} Cr</p>
                 </CardContent>
               </Card>
-
-              <Card className="bg-gradient-to-br from-purple-500/10 to-pink-500/5 border-purple-200/50 dark:border-purple-800/50">
-                <CardContent className="p-5">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-muted-foreground mb-1">Avg Go-Live</p>
-                      <p className="text-3xl font-bold text-purple-600">
-                        {projects.length > 0 ? Math.round(projects.reduce((s, p) => s + p.goLivePercent, 0) / projects.length) : 0}%
-                      </p>
-                    </div>
-                    <div className="h-12 w-12 rounded-2xl bg-purple-500/20 flex items-center justify-center">
-                      <Target className="h-6 w-6 text-purple-600" />
-                    </div>
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-2">Across all projects</p>
-                </CardContent>
-              </Card>
             </div>
 
             {/* Team Performance & Time Distribution */}
@@ -541,9 +524,13 @@ export const ManagerDashboard = () => {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="p-6">
-                  <div className="space-y-6">
+                   <div className="space-y-6">
                     {teamOwnerReport.map((team) => {
-                      const progress = team.totalTasks > 0 ? Math.round((team.completedTasks / team.totalTasks) * 100) : 0;
+                      const teamProjects = projects.filter(p => p.currentOwnerTeam === team.team);
+                      const totalCount = teamProjects.length;
+                      const pendingCount = teamProjects.filter(p => p.pendingAcceptance).length;
+                      const completedCount = teamProjects.filter(p => p.currentPhase === "completed" || (p.projectState === "live" && p.currentOwnerTeam === "ms")).length;
+                      const activeCount = totalCount - pendingCount - completedCount;
                       return (
                         <div key={team.team} className="space-y-3">
                           <div className="flex items-center justify-between">
@@ -553,15 +540,28 @@ export const ManagerDashboard = () => {
                               </div>
                               <div>
                                 <p className="font-semibold">{team.teamLabel}</p>
-                                <p className="text-xs text-muted-foreground">{team.projectCount} projects</p>
+                                <p className="text-xs text-muted-foreground">{totalCount} projects</p>
                               </div>
                             </div>
-                            <div className="text-right">
-                              <p className="font-semibold">{team.completedTasks}/{team.totalTasks}</p>
-                              <p className="text-xs text-muted-foreground">Tasks done</p>
+                          </div>
+                          <div className="grid grid-cols-4 gap-2 text-center">
+                            <div className="bg-muted/50 rounded-lg p-2">
+                              <p className="text-lg font-bold">{totalCount}</p>
+                              <p className="text-[10px] text-muted-foreground">Total</p>
+                            </div>
+                            <div className="bg-amber-500/10 rounded-lg p-2">
+                              <p className="text-lg font-bold text-amber-600">{pendingCount}</p>
+                              <p className="text-[10px] text-muted-foreground">Pending</p>
+                            </div>
+                            <div className="bg-blue-500/10 rounded-lg p-2">
+                              <p className="text-lg font-bold text-blue-600">{activeCount}</p>
+                              <p className="text-[10px] text-muted-foreground">Active</p>
+                            </div>
+                            <div className="bg-emerald-500/10 rounded-lg p-2">
+                              <p className="text-lg font-bold text-emerald-600">{completedCount}</p>
+                              <p className="text-[10px] text-muted-foreground">Completed</p>
                             </div>
                           </div>
-                          <Progress value={progress} className="h-2" />
                           {team.pendingCount > 0 && (
                             <Badge variant="outline" className="text-amber-600 border-amber-200">
                               {team.pendingCount} pending acceptance
@@ -588,12 +588,12 @@ export const ManagerDashboard = () => {
                       <div className="bg-gradient-to-br from-primary/10 to-blue-500/5 rounded-xl p-6 text-center">
                         <Building2 className="h-8 w-8 mx-auto text-primary mb-3" />
                         <p className="text-3xl font-bold text-primary">{formatDuration(totalGokwikTime)}</p>
-                        <p className="text-sm text-muted-foreground mt-1">GoKwik Time</p>
+                        <p className="text-sm text-muted-foreground mt-1">{responsibilityLabels.gokwik} Time</p>
                       </div>
                       <div className="bg-gradient-to-br from-amber-500/10 to-orange-500/5 rounded-xl p-6 text-center">
                         <Users className="h-8 w-8 mx-auto text-amber-500 mb-3" />
                         <p className="text-3xl font-bold text-amber-500">{formatDuration(totalMerchantTime)}</p>
-                        <p className="text-sm text-muted-foreground mt-1">Merchant Time</p>
+                        <p className="text-sm text-muted-foreground mt-1">{responsibilityLabels.merchant} Time</p>
                       </div>
                     </div>
                     <div className="space-y-2">
@@ -617,9 +617,9 @@ export const ManagerDashboard = () => {
             <div className="grid lg:grid-cols-2 gap-6">
               <Card className="shadow-xl border-border/50">
                 <CardHeader className="border-b bg-muted/30">
-                  <CardTitle className="text-lg flex items-center gap-2">
+                   <CardTitle className="text-lg flex items-center gap-2">
                     <BarChart3 className="h-5 w-5 text-primary" />
-                    Phase Distribution
+                    Project Phase Distribution
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="p-6">
@@ -630,7 +630,7 @@ export const ManagerDashboard = () => {
                       return (
                         <div key={phase} className="space-y-1">
                           <div className="flex items-center justify-between text-sm">
-                            <span className="font-medium capitalize">{phase === "mint" ? "MINT (Presales)" : phase === "ms" ? "Merchant Success" : phase}</span>
+                            <span className="font-medium">{phaseLabels[phase] || (phase === "mint" ? "MINT (Presales)" : phase === "ms" ? "Merchant Success" : phase)}</span>
                             <span className="font-bold">{count} ({pct}%)</span>
                           </div>
                           <Progress value={pct} className="h-2" />
@@ -708,9 +708,9 @@ export const ManagerDashboard = () => {
                     <SelectTrigger className="w-[140px]"><SelectValue placeholder="Team" /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">All Teams</SelectItem>
-                      <SelectItem value="mint">MINT</SelectItem>
-                      <SelectItem value="integration">Integration</SelectItem>
-                      <SelectItem value="ms">MS</SelectItem>
+                      <SelectItem value="mint">{teamLabels.mint}</SelectItem>
+                      <SelectItem value="integration">{teamLabels.integration}</SelectItem>
+                      <SelectItem value="ms">{teamLabels.ms}</SelectItem>
                     </SelectContent>
                   </Select>
                   <Select value={ownerFilter} onValueChange={setOwnerFilter}>
@@ -726,10 +726,10 @@ export const ManagerDashboard = () => {
                     <SelectTrigger className="w-[140px]"><SelectValue placeholder="Phase" /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">All Phases</SelectItem>
-                      <SelectItem value="mint">MINT</SelectItem>
-                      <SelectItem value="integration">Integration</SelectItem>
-                      <SelectItem value="ms">MS</SelectItem>
-                      <SelectItem value="completed">Completed</SelectItem>
+                      <SelectItem value="mint">{phaseLabels.mint}</SelectItem>
+                      <SelectItem value="integration">{phaseLabels.integration}</SelectItem>
+                      <SelectItem value="ms">{phaseLabels.ms}</SelectItem>
+                      <SelectItem value="completed">{phaseLabels.completed}</SelectItem>
                     </SelectContent>
                   </Select>
                   <Select value={stateFilter} onValueChange={setStateFilter}>
