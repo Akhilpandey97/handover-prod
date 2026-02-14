@@ -7,7 +7,7 @@ import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ChevronDown, ChevronRight, AlertCircle, Trophy, Sparkles, Loader2 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { fetchAiInsights } from "@/utils/aiInsights";
 
 interface Props {
   projects: Project[];
@@ -61,25 +61,23 @@ export const TacticalLists = ({ projects }: Props) => {
   const fetchAiInsight = async () => {
     setAiLoading(true);
     try {
-      const { data } = await supabase.functions.invoke("ai-project-insights", {
-        body: {
-          type: "insights",
-          project: {
-            merchantName: "Tactical Summary",
-            mid: "TAC",
-            currentPhase: "overview",
-            projectState: `${atRiskProjects.length} at-risk, ${leaderboard.length} active`,
-            arr: 0,
-            platform: "All",
-            dates: { kickOffDate: "N/A" },
-            currentOwnerTeam: "All",
-            currentResponsibility: "N/A",
-            checklist: [],
-            transferHistory: [],
-          },
+      const result = await fetchAiInsights({
+        type: "insights",
+        project: {
+          merchantName: `Tactical Summary: ${atRiskProjects.length} at-risk projects, ${leaderboard.length} active`,
+          mid: "TAC",
+          currentPhase: "overview",
+          projectState: `${atRiskProjects.length} at-risk, ${leaderboard.length} active`,
+          arr: 0,
+          platform: "All",
+          dates: { kickOffDate: "N/A" },
+          currentOwnerTeam: "All",
+          currentResponsibility: "N/A",
+          checklist: [],
+          transferHistory: [],
         },
       });
-      setAiInsight(data?.result || "Unable to generate insights.");
+      setAiInsight(result);
     } catch {
       setAiInsight("Failed to generate AI insights.");
     } finally {
