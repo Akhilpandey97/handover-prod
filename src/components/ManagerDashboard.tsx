@@ -372,9 +372,7 @@ export const ManagerDashboard = () => {
   // Stats - "completed" = live + MS accepted (phase completed or state live with no pending)
   const totalProjects = projects.length;
   const pendingProjects = projects.filter((p) => p.pendingAcceptance).length;
-  const completedProjects = projects.filter((p) =>
-    p.currentPhase === "completed" || (p.currentOwnerTeam === "ms" && !p.pendingAcceptance && p.projectState === "live")
-  ).length;
+  const completedProjects = projects.filter((p) => p.projectState === "live").length;
   const activeProjects = totalProjects - pendingProjects - completedProjects;
 
   // Time distribution - use checklist-level aggregation
