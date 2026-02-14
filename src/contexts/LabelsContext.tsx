@@ -44,6 +44,21 @@ const DEFAULT_LABELS: Record<string, string> = {
   field_sales_spoc: "Sales SPOC",
   field_assigned_owner: "Assigned Owner",
   field_project_notes: "Project Notes",
+  field_category: "Category",
+  field_brand_url: "Brand URL",
+  field_jira_link: "JIRA Link",
+  field_brd_link: "BRD Link",
+  field_mint_checklist_link: "MINT Checklist Link",
+  field_integration_checklist_link: "Integration Checklist Link",
+  field_txns_per_day: "Txns/Day",
+  field_aov: "AOV",
+  field_pg_onboarding: "PG Onboarding",
+  field_go_live_percent: "Go Live %",
+  field_expected_go_live_date: "Expected Go Live Date",
+  field_actual_go_live_date: "Actual Go Live Date",
+  field_mint_notes: "MINT Notes",
+  field_current_phase_comment: "Current Phase Comment",
+  field_phase2_comment: "Phase 2 Comment",
 };
 
 interface LabelsContextType {
