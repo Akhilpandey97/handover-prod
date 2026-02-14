@@ -529,7 +529,11 @@ export const ManagerDashboard = () => {
                       const teamProjects = projects.filter(p => p.currentOwnerTeam === team.team);
                       const totalCount = teamProjects.length;
                       const pendingCount = teamProjects.filter(p => p.pendingAcceptance).length;
-                      const completedCount = teamProjects.filter(p => p.currentPhase === "completed" || (p.projectState === "live" && p.currentOwnerTeam === "ms")).length;
+                      // A project is "completed" for a team if ALL that team's checklist items are done
+                      const completedCount = teamProjects.filter(p => {
+                        const teamItems = p.checklist.filter(c => c.ownerTeam === team.team);
+                        return teamItems.length > 0 && teamItems.every(c => c.completed);
+                      }).length;
                       const activeCount = totalCount - pendingCount - completedCount;
                       return (
                         <div key={team.team} className="space-y-3">
@@ -625,10 +629,11 @@ export const ManagerDashboard = () => {
                 <CardContent className="p-6">
                   <div className="space-y-4">
                     {(() => {
-                      // Group projects by next incomplete checklist item title
+                      // Group projects by next incomplete checklist item title (from current owner team first)
                       const phaseGroups: Record<string, number> = {};
                       projects.forEach(p => {
-                        const nextItem = p.checklist.find(c => !c.completed);
+                        const teamItems = p.checklist.filter(c => c.ownerTeam === p.currentOwnerTeam);
+                        const nextItem = teamItems.find(c => !c.completed) || p.checklist.find(c => !c.completed);
                         const label = nextItem ? nextItem.title : "All Complete";
                         phaseGroups[label] = (phaseGroups[label] || 0) + 1;
                       });
