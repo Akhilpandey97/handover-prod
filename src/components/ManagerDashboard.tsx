@@ -624,19 +624,29 @@ export const ManagerDashboard = () => {
                 </CardHeader>
                 <CardContent className="p-6">
                   <div className="space-y-4">
-                    {(["mint", "integration", "ms", "completed"] as ProjectPhase[]).map(phase => {
-                      const count = projects.filter(p => p.currentPhase === phase).length;
-                      const pct = totalProjects > 0 ? Math.round((count / totalProjects) * 100) : 0;
-                      return (
-                        <div key={phase} className="space-y-1">
-                          <div className="flex items-center justify-between text-sm">
-                            <span className="font-medium">{phaseLabels[phase] || (phase === "mint" ? "MINT (Presales)" : phase === "ms" ? "Merchant Success" : phase)}</span>
-                            <span className="font-bold">{count} ({pct}%)</span>
+                    {(() => {
+                      // Group projects by next incomplete checklist item title
+                      const phaseGroups: Record<string, number> = {};
+                      projects.forEach(p => {
+                        const nextItem = p.checklist.find(c => !c.completed);
+                        const label = nextItem ? nextItem.title : "All Complete";
+                        phaseGroups[label] = (phaseGroups[label] || 0) + 1;
+                      });
+                      // Sort by count descending
+                      const sorted = Object.entries(phaseGroups).sort((a, b) => b[1] - a[1]);
+                      return sorted.map(([label, count]) => {
+                        const pct = totalProjects > 0 ? Math.round((count / totalProjects) * 100) : 0;
+                        return (
+                          <div key={label} className="space-y-1">
+                            <div className="flex items-center justify-between text-sm">
+                              <span className="font-medium truncate max-w-[70%]" title={label}>{label}</span>
+                              <span className="font-bold whitespace-nowrap">{count} ({pct}%)</span>
+                            </div>
+                            <Progress value={pct} className="h-2" />
                           </div>
-                          <Progress value={pct} className="h-2" />
-                        </div>
-                      );
-                    })}
+                        );
+                      });
+                    })()}
                   </div>
                 </CardContent>
               </Card>
