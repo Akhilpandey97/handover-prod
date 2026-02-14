@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
 // Default labels - used as fallback when DB has no overrides
 const DEFAULT_LABELS: Record<string, string> = {
@@ -67,15 +68,18 @@ export const useLabels = () => {
 };
 
 export const LabelsProvider = ({ children }: { children: ReactNode }) => {
+  const { currentUser } = useAuth();
   const [labels, setLabels] = useState<Record<string, string>>(DEFAULT_LABELS);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const fetchLabels = async () => {
       try {
-        const { data, error } = await supabase
-          .from("app_settings")
-          .select("key, value");
+        let query = supabase.from("app_settings").select("key, value");
+        if (currentUser?.tenantId) {
+          query = query.eq("tenant_id", currentUser.tenantId);
+        }
+        const { data, error } = await query;
         if (!error && data) {
           const merged = { ...DEFAULT_LABELS };
           data.forEach((row: { key: string; value: string }) => {
@@ -90,32 +94,33 @@ export const LabelsProvider = ({ children }: { children: ReactNode }) => {
       }
     };
     fetchLabels();
-  }, []);
+  }, [currentUser?.tenantId]);
 
   const getLabel = useCallback((key: string) => labels[key] || DEFAULT_LABELS[key] || key, [labels]);
 
   const updateLabel = useCallback(async (key: string, value: string) => {
     const { error } = await supabase
       .from("app_settings")
-      .upsert({ key, value, category: key.split("_")[0] }, { onConflict: "key" });
+      .upsert({ key, value, category: key.split("_")[0], tenant_id: currentUser?.tenantId || null }, { onConflict: "key,tenant_id" });
     if (!error) {
       setLabels((prev) => ({ ...prev, [key]: value }));
     }
-  }, []);
+  }, [currentUser?.tenantId]);
 
   const updateLabels = useCallback(async (updates: Record<string, string>) => {
     const rows = Object.entries(updates).map(([key, value]) => ({
       key,
       value,
       category: key.includes("_") ? key.substring(0, key.indexOf("_")) : "general",
+      tenant_id: currentUser?.tenantId || null,
     }));
     const { error } = await supabase
       .from("app_settings")
-      .upsert(rows, { onConflict: "key" });
+      .upsert(rows, { onConflict: "key,tenant_id" });
     if (!error) {
       setLabels((prev) => ({ ...prev, ...updates }));
     }
-  }, []);
+  }, [currentUser?.tenantId]);
 
   const teamLabels: Record<string, string> = {
     mint: labels.team_mint,
