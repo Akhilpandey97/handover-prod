@@ -7,6 +7,7 @@ import { UserManagement } from "./UserManagement";
 import { TenantManagement } from "./TenantManagement";
 import { SettingsPanel } from "./SettingsPanel";
 import { ChecklistManagement } from "./ChecklistManagement";
+import { BulkEditDialog, BulkFieldUpdates } from "./BulkEditDialog";
 import { CSVUploadDialog } from "./CSVUploadDialog";
 import { AddProjectDialog } from "./AddProjectDialog";
 import { AssignOwnerDialog } from "./AssignOwnerDialog";
@@ -62,6 +63,7 @@ import {
   RefreshCw,
   Sparkles,
   Loader2,
+  Pencil,
 } from "lucide-react";
 import { exportProjectsToCSV } from "@/utils/exportProjects";
 import { ThemeToggle } from "./ThemeToggle";
@@ -104,6 +106,7 @@ export const ManagerDashboard = () => {
   const [bulkAssignDialogOpen, setBulkAssignDialogOpen] = useState(false);
   const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState(false);
   const [bulkStateDialogOpen, setBulkStateDialogOpen] = useState(false);
+  const [bulkEditDialogOpen, setBulkEditDialogOpen] = useState(false);
   const [bulkStateValue, setBulkStateValue] = useState<ProjectState>("in_progress");
 
   // Fetch profiles for owner filter
@@ -287,6 +290,40 @@ export const ManagerDashboard = () => {
     setSelectedProjects(new Set());
     setBulkStateDialogOpen(false);
     toast.success(`Updated ${ids.length} project(s) to ${projectStateLabels[bulkStateValue]}`);
+  };
+
+  const handleBulkEdit = (updates: Partial<BulkFieldUpdates>) => {
+    const ids = Array.from(selectedProjects);
+    for (const id of ids) {
+      const project = projects.find(p => p.id === id);
+      if (!project) continue;
+      const patched = { ...project };
+      if (updates.projectState !== undefined) patched.projectState = updates.projectState;
+      if (updates.platform !== undefined) patched.platform = updates.platform;
+      if (updates.category !== undefined) patched.category = updates.category;
+      if (updates.arr !== undefined) patched.arr = updates.arr;
+      if (updates.txnsPerDay !== undefined) patched.txnsPerDay = updates.txnsPerDay;
+      if (updates.aov !== undefined) patched.aov = updates.aov;
+      if (updates.salesSpoc !== undefined) patched.salesSpoc = updates.salesSpoc;
+      if (updates.integrationType !== undefined) patched.integrationType = updates.integrationType;
+      if (updates.pgOnboarding !== undefined) patched.pgOnboarding = updates.pgOnboarding;
+      if (updates.goLivePercent !== undefined) patched.goLivePercent = updates.goLivePercent;
+      if (updates.brandUrl !== undefined) patched.links = { ...patched.links, brandUrl: updates.brandUrl };
+      if (updates.jiraLink !== undefined) patched.links = { ...patched.links, jiraLink: updates.jiraLink };
+      if (updates.brdLink !== undefined) patched.links = { ...patched.links, brdLink: updates.brdLink };
+      if (updates.mintChecklistLink !== undefined) patched.links = { ...patched.links, mintChecklistLink: updates.mintChecklistLink };
+      if (updates.integrationChecklistLink !== undefined) patched.links = { ...patched.links, integrationChecklistLink: updates.integrationChecklistLink };
+      if (updates.kickOffDate !== undefined) patched.dates = { ...patched.dates, kickOffDate: updates.kickOffDate };
+      if (updates.expectedGoLiveDate !== undefined) patched.dates = { ...patched.dates, expectedGoLiveDate: updates.expectedGoLiveDate };
+      if (updates.goLiveDate !== undefined) patched.dates = { ...patched.dates, goLiveDate: updates.goLiveDate };
+      if (updates.mintNotes !== undefined) patched.notes = { ...patched.notes, mintNotes: updates.mintNotes };
+      if (updates.projectNotes !== undefined) patched.notes = { ...patched.notes, projectNotes: updates.projectNotes };
+      if (updates.currentPhaseComment !== undefined) patched.notes = { ...patched.notes, currentPhaseComment: updates.currentPhaseComment };
+      if (updates.phase2Comment !== undefined) patched.notes = { ...patched.notes, phase2Comment: updates.phase2Comment };
+      updateProject(patched);
+    }
+    setSelectedProjects(new Set());
+    toast.success(`Updated ${ids.length} project(s) — ${Object.keys(updates).length} field(s)`);
   };
 
   // Helper to get project phase label (next incomplete checklist item from current owner team)
@@ -784,6 +821,10 @@ export const ManagerDashboard = () => {
                           <UserPlus className="h-4 w-4" />
                           Assign ({selectedProjects.size})
                         </Button>
+                        <Button variant="outline" className="gap-2" onClick={() => setBulkEditDialogOpen(true)}>
+                          <Pencil className="h-4 w-4" />
+                          Bulk Edit ({selectedProjects.size})
+                        </Button>
                         <Button variant="outline" className="gap-2" onClick={() => setBulkStateDialogOpen(true)}>
                           <RefreshCw className="h-4 w-4" />
                           Update State ({selectedProjects.size})
@@ -1148,6 +1189,14 @@ export const ManagerDashboard = () => {
 
       <CSVUploadDialog open={csvDialogOpen} onOpenChange={setCsvDialogOpen} />
       <AddProjectDialog open={addDialogOpen} onOpenChange={setAddDialogOpen} onSave={handleAddProject} />
+
+      {/* Bulk Edit Dialog */}
+      <BulkEditDialog
+        open={bulkEditDialogOpen}
+        onOpenChange={setBulkEditDialogOpen}
+        selectedCount={selectedProjects.size}
+        onSave={handleBulkEdit}
+      />
 
       {/* Bulk Assign Dialog */}
       {bulkAssignDialogOpen && (
