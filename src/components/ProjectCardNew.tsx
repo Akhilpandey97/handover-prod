@@ -120,7 +120,9 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
   const phaseStyle = phaseConfig[project.currentPhase];
 
   // Find next incomplete checklist item title (Project Phase display)
-  const nextIncompleteItem = project.checklist.find(c => !c.completed);
+  // First try to find next incomplete item from the current owner team, then fallback to any team
+  const currentTeamItems = project.checklist.filter(c => c.ownerTeam === project.currentOwnerTeam);
+  const nextIncompleteItem = currentTeamItems.find(c => !c.completed) || project.checklist.find(c => !c.completed);
   const projectPhaseDisplay = nextIncompleteItem ? nextIncompleteItem.title : "All Complete";
 
   // Check if all current team's checklist items are completed
