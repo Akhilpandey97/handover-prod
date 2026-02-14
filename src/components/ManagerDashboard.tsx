@@ -852,7 +852,6 @@ export const ManagerDashboard = () => {
                 </div>
               </CardHeader>
               <CardContent className="p-0">
-                <ScrollArea className="h-[calc(100vh-400px)] min-h-[400px]">
                   <div className="p-6 space-y-4">
                     {filteredProjects.length > 0 && (
                       <div className="flex items-center gap-3 pb-2 border-b">
@@ -879,7 +878,6 @@ export const ManagerDashboard = () => {
                       ))
                     )}
                   </div>
-                </ScrollArea>
               </CardContent>
             </Card>
           </TabsContent>
@@ -910,7 +908,6 @@ export const ManagerDashboard = () => {
                 </div>
               </CardHeader>
               <CardContent className="p-0">
-                <ScrollArea className="h-[calc(100vh-320px)] min-h-[500px]">
                   <div className="p-6">
                     {reportType === "executive" && <ExecutiveDashboard projects={projects} />}
                     {reportType === "operational" && <OperationalReports projects={projects} />}
@@ -1120,7 +1117,6 @@ export const ManagerDashboard = () => {
                       </div>
                     )}
                   </div>
-                </ScrollArea>
               </CardContent>
             </Card>
           </TabsContent>

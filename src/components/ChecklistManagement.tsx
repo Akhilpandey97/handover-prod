@@ -298,7 +298,7 @@ export const ChecklistManagement = () => {
 
           {teams.map((team) => (
             <TabsContent key={team} value={team} className="mt-0">
-              <ScrollArea className="h-[400px]">
+              <div>
                 <div className="p-6 space-y-2">
                   {templates
                     .filter((t) => t.ownerTeam === team)
@@ -401,7 +401,7 @@ export const ChecklistManagement = () => {
                     </div>
                   )}
                 </div>
-              </ScrollArea>
+              </div>
             </TabsContent>
           ))}
         </Tabs>
