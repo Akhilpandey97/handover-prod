@@ -7,7 +7,7 @@ import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ChevronDown, ChevronRight, TrendingUp, BarChart3, Rocket, DollarSign, Sparkles, Loader2 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { fetchAiInsights } from "@/utils/aiInsights";
 
 interface Props {
   projects: Project[];
@@ -100,25 +100,23 @@ export const ExecutiveDashboard = ({ projects }: Props) => {
         ),
       };
 
-      const { data } = await supabase.functions.invoke("ai-project-insights", {
-        body: {
-          type: "insights",
-          project: {
-            merchantName: "Executive Summary",
-            mid: "ALL",
-            currentPhase: "overview",
-            projectState: "overview",
-            arr: totalPipelineArr,
-            platform: "All",
-            dates: { kickOffDate: "N/A" },
-            currentOwnerTeam: "All",
-            currentResponsibility: "N/A",
-            checklist: [],
-            transferHistory: [],
-          },
+      const result = await fetchAiInsights({
+        type: "insights",
+        project: {
+          merchantName: `Executive Summary: ${projects.length} projects, ${totalPipelineArr.toFixed(2)} Cr pipeline ARR, Funnel: ${pipelineFunnel.map(f => `${f.label}: ${f.count}`).join(", ")}`,
+          mid: "ALL",
+          currentPhase: "overview",
+          projectState: "overview",
+          arr: totalPipelineArr,
+          platform: "All",
+          dates: { kickOffDate: "N/A" },
+          currentOwnerTeam: "All",
+          currentResponsibility: "N/A",
+          checklist: [],
+          transferHistory: [],
         },
       });
-      setAiInsight(data?.result || "Unable to generate insights.");
+      setAiInsight(result);
     } catch {
       setAiInsight("Failed to generate AI insights.");
     } finally {

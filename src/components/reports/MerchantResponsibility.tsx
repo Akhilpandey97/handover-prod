@@ -7,7 +7,7 @@ import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ChevronDown, ChevronRight, Building2, Users, Sparkles, Loader2, Layers } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { fetchAiInsights } from "@/utils/aiInsights";
 
 interface Props {
   projects: Project[];
@@ -63,25 +63,23 @@ export const MerchantResponsibility = ({ projects }: Props) => {
   const fetchAiInsight = async () => {
     setAiLoading(true);
     try {
-      const { data } = await supabase.functions.invoke("ai-project-insights", {
-        body: {
-          type: "insights",
-          project: {
-            merchantName: "Merchant Responsibility Summary",
-            mid: "MR",
-            currentPhase: "overview",
-            projectState: "overview",
-            arr: 0,
-            platform: "All",
-            dates: { kickOffDate: "N/A" },
-            currentOwnerTeam: "All",
-            currentResponsibility: `GoKwik ${formatDuration(totalGokwik)} vs Merchant ${formatDuration(totalMerchant)}`,
-            checklist: [],
-            transferHistory: [],
-          },
+      const result = await fetchAiInsights({
+        type: "insights",
+        project: {
+          merchantName: `Merchant Responsibility Summary: GoKwik ${formatDuration(totalGokwik)} vs Merchant ${formatDuration(totalMerchant)}, ${blockerAnalysis.length} projects with time data`,
+          mid: "MR",
+          currentPhase: "overview",
+          projectState: "overview",
+          arr: 0,
+          platform: "All",
+          dates: { kickOffDate: "N/A" },
+          currentOwnerTeam: "All",
+          currentResponsibility: `GoKwik ${formatDuration(totalGokwik)} vs Merchant ${formatDuration(totalMerchant)}`,
+          checklist: [],
+          transferHistory: [],
         },
       });
-      setAiInsight(data?.result || "Unable to generate insights.");
+      setAiInsight(result);
     } catch {
       setAiInsight("Failed to generate AI insights.");
     } finally {

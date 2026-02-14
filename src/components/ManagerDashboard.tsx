@@ -60,10 +60,13 @@ import {
   Trash2,
   UserPlus,
   RefreshCw,
+  Sparkles,
+  Loader2,
 } from "lucide-react";
 import { exportProjectsToCSV } from "@/utils/exportProjects";
 import { ThemeToggle } from "./ThemeToggle";
 import { toast } from "sonner";
+import { fetchAiInsights } from "@/utils/aiInsights";
 
 // Report components
 import { ExecutiveDashboard } from "./reports/ExecutiveDashboard";
@@ -89,6 +92,12 @@ export const ManagerDashboard = () => {
   const [expandedProjects, setExpandedProjects] = useState<Set<string>>(new Set());
   const [csvDialogOpen, setCsvDialogOpen] = useState(false);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
+
+  // AI insights state for inline reports
+  const [projectAiInsight, setProjectAiInsight] = useState<string | null>(null);
+  const [projectAiLoading, setProjectAiLoading] = useState(false);
+  const [teamAiInsight, setTeamAiInsight] = useState<string | null>(null);
+  const [teamAiLoading, setTeamAiLoading] = useState(false);
 
   // Bulk selection state
   const [selectedProjects, setSelectedProjects] = useState<Set<string>>(new Set());
@@ -366,6 +375,62 @@ export const ManagerDashboard = () => {
   };
 
   const hasActiveFilters = teamFilter !== "all" || ownerFilter !== "all" || phaseFilter !== "all" || stateFilter !== "all" || kickOffFrom || kickOffTo || goLiveFrom || goLiveTo;
+
+  const fetchProjectAiInsight = async () => {
+    setProjectAiLoading(true);
+    try {
+      const topProjects = projectChecklistReport.slice(0, 10).map(p => `${p.merchantName}: ${p.stats.completedChecklist}/${p.stats.totalChecklist} tasks, ${formatDuration(p.stats.projectTime.gokwik + p.stats.projectTime.merchant)} total`).join("; ");
+      const result = await fetchAiInsights({
+        type: "insights",
+        project: {
+          merchantName: `Project & Checklist Summary: ${projects.length} total projects. Top by time: ${topProjects}`,
+          mid: "PCR",
+          currentPhase: "overview",
+          projectState: "overview",
+          arr: 0,
+          platform: "All",
+          dates: { kickOffDate: "N/A" },
+          currentOwnerTeam: "All",
+          currentResponsibility: "N/A",
+          checklist: [],
+          transferHistory: [],
+        },
+      });
+      setProjectAiInsight(result);
+    } catch {
+      setProjectAiInsight("Failed to generate AI insights.");
+    } finally {
+      setProjectAiLoading(false);
+    }
+  };
+
+  const fetchTeamAiInsight = async () => {
+    setTeamAiLoading(true);
+    try {
+      const teamSummary = teamOwnerReport.map(t => `${t.teamLabel}: ${t.projectCount} projects, ${t.completedTasks}/${t.totalTasks} tasks, ${t.owners.length} owners`).join("; ");
+      const result = await fetchAiInsights({
+        type: "insights",
+        project: {
+          merchantName: `Team & Owner Summary: ${teamSummary}`,
+          mid: "TOR",
+          currentPhase: "overview",
+          projectState: "overview",
+          arr: 0,
+          platform: "All",
+          dates: { kickOffDate: "N/A" },
+          currentOwnerTeam: "All",
+          currentResponsibility: "N/A",
+          checklist: [],
+          transferHistory: [],
+        },
+      });
+      setTeamAiInsight(result);
+    } catch {
+      setTeamAiInsight("Failed to generate AI insights.");
+    } finally {
+      setTeamAiLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -855,6 +920,26 @@ export const ManagerDashboard = () => {
                     {/* Merged Project + Checklist Report */}
                     {reportType === "project" && (
                       <div className="space-y-3">
+                        {/* AI Insights */}
+                        <Card className="border-primary/20 bg-gradient-to-r from-primary/5 to-accent/5">
+                          <CardHeader className="pb-3">
+                            <div className="flex items-center justify-between">
+                              <CardTitle className="text-base flex items-center gap-2">
+                                <Sparkles className="h-4 w-4 text-primary" />
+                                AI Project & Checklist Insights
+                              </CardTitle>
+                              <Button size="sm" variant="outline" onClick={fetchProjectAiInsight} disabled={projectAiLoading} className="gap-2">
+                                {projectAiLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
+                                {projectAiInsight ? "Refresh" : "Generate"}
+                              </Button>
+                            </div>
+                          </CardHeader>
+                          {projectAiInsight && (
+                            <CardContent className="pt-0">
+                              <div className="text-sm space-y-1 whitespace-pre-line">{projectAiInsight}</div>
+                            </CardContent>
+                          )}
+                        </Card>
                         {projectChecklistReport.map((project) => (
                           <Collapsible key={project.id} open={expandedProjects.has(project.id)} onOpenChange={() => toggleProjectExpand(project.id)}>
                             <CollapsibleTrigger asChild>
@@ -938,6 +1023,26 @@ export const ManagerDashboard = () => {
                     {/* Merged Team + Owner Report */}
                     {reportType === "team" && (
                       <div className="space-y-6">
+                        {/* AI Insights */}
+                        <Card className="border-primary/20 bg-gradient-to-r from-primary/5 to-accent/5">
+                          <CardHeader className="pb-3">
+                            <div className="flex items-center justify-between">
+                              <CardTitle className="text-base flex items-center gap-2">
+                                <Sparkles className="h-4 w-4 text-primary" />
+                                AI Team & Owner Insights
+                              </CardTitle>
+                              <Button size="sm" variant="outline" onClick={fetchTeamAiInsight} disabled={teamAiLoading} className="gap-2">
+                                {teamAiLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
+                                {teamAiInsight ? "Refresh" : "Generate"}
+                              </Button>
+                            </div>
+                          </CardHeader>
+                          {teamAiInsight && (
+                            <CardContent className="pt-0">
+                              <div className="text-sm space-y-1 whitespace-pre-line">{teamAiInsight}</div>
+                            </CardContent>
+                          )}
+                        </Card>
                         {teamOwnerReport.map((team) => (
                           <Card key={team.team} className="bg-muted/30">
                             <CardContent className="p-6">

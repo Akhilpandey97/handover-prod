@@ -8,7 +8,7 @@ import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ChevronDown, ChevronRight, Clock, AlertTriangle, Users, Sparkles, Loader2 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { fetchAiInsights } from "@/utils/aiInsights";
 
 interface Props {
   projects: Project[];
@@ -82,25 +82,25 @@ export const OperationalReports = ({ projects }: Props) => {
       const zombieCount = agingReport.filter(p => p.daysSinceStart > 60).length;
       const overloadedOwners = resourceLoad.filter(r => r.activeCount > 5).map(r => r.name).join(", ");
 
-      const { data } = await supabase.functions.invoke("ai-project-insights", {
-        body: {
-          type: "insights",
-          project: {
-            merchantName: "Operational Summary",
-            mid: "OPS",
-            currentPhase: "overview",
-            projectState: "overview",
-            arr: 0,
-            platform: "All",
-            dates: { kickOffDate: "N/A" },
-            currentOwnerTeam: "All",
-            currentResponsibility: "N/A",
-            checklist: [],
-            transferHistory: [],
-          },
+
+
+      const result = await fetchAiInsights({
+        type: "insights",
+        project: {
+          merchantName: `Operational Summary: Top bottlenecks: ${topBottlenecks}. ${zombieCount} zombie projects (>60d). Overloaded owners: ${overloadedOwners || "None"}`,
+          mid: "OPS",
+          currentPhase: "overview",
+          projectState: "overview",
+          arr: 0,
+          platform: "All",
+          dates: { kickOffDate: "N/A" },
+          currentOwnerTeam: "All",
+          currentResponsibility: "N/A",
+          checklist: [],
+          transferHistory: [],
         },
       });
-      setAiInsight(data?.result || "Unable to generate insights.");
+      setAiInsight(result);
     } catch {
       setAiInsight("Failed to generate AI insights.");
     } finally {
