@@ -35,6 +35,7 @@ export const LoginScreen = () => {
     const result = await login(email, password);
     if (result.success) {
       toast.success("Login successful!");
+      window.location.reload();
     } else {
       toast.error(result.error || "Invalid credentials");
     }
