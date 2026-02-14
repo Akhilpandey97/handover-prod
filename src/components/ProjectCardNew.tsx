@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { Project, calculateTimeFromChecklist, calculateProjectResponsibilityFromChecklist, formatDuration, projectStateLabels, projectStateColors, ProjectState } from "@/data/projectsData";
-import { teamLabels } from "@/data/teams";
 import { useAuth } from "@/contexts/AuthContext";
 import { useProjects } from "@/contexts/ProjectContext";
+import { useLabels } from "@/contexts/LabelsContext";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -95,6 +95,7 @@ const phaseConfig = {
 export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
   const { currentUser } = useAuth();
   const { acceptProject, transferProject, updateProject, deleteProject, rejectProject } = useProjects();
+  const { teamLabels } = useLabels();
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [checklistOpen, setChecklistOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
@@ -162,7 +163,8 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
   };
 
   const handleTransfer = (assigneeId: string, assigneeName: string, notes: string) => {
-    const nextTeam = project.currentOwnerTeam === "mint" ? "Integration" : "MS";
+    const nextTeamKey = project.currentOwnerTeam === "mint" ? "integration" : "ms";
+    const nextTeam = teamLabels[nextTeamKey] || nextTeamKey;
     const transferNote = notes || `Transferred to ${nextTeam} team`;
     transferProject(project.id, `${transferNote} (Assigned to: ${assigneeName})`, assigneeId);
     toast.success(`Transferred ${project.merchantName} to ${assigneeName} (${nextTeam} team)`);
@@ -248,7 +250,7 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
                   </div>
                   <div className="flex items-center gap-2 flex-wrap text-xs text-muted-foreground">
                     <Badge className={`${phaseStyle.badge} text-white text-xs px-2.5 py-0.5`}>
-                      {project.currentPhase.toUpperCase()}
+                      {(teamLabels[project.currentOwnerTeam] || project.currentPhase).toUpperCase()}
                     </Badge>
                     <Badge variant="outline" className="text-xs px-2.5 py-0.5 font-mono bg-muted/50">
                       {project.mid}
@@ -366,11 +368,11 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
                   <div className="flex flex-col gap-0 text-xs font-semibold">
                     <div className="flex items-center gap-1">
                       <span className="text-blue-600 dark:text-blue-400">{mintCompleted}/{mintChecklist.length}</span>
-                      <span className="text-muted-foreground/60 text-[10px]">MINT</span>
+                      <span className="text-muted-foreground/60 text-[10px]">{teamLabels.mint || "MINT"}</span>
                     </div>
                     <div className="flex items-center gap-1">
                       <span className="text-purple-600 dark:text-purple-400">{integrationCompleted}/{integrationChecklist.length}</span>
-                      <span className="text-muted-foreground/60 text-[10px]">Integration</span>
+                      <span className="text-muted-foreground/60 text-[10px]">{teamLabels.integration || "Integration"}</span>
                     </div>
                   </div>
                 </div>

@@ -2,6 +2,7 @@ import { useMemo, useEffect, useRef } from "react";
 import { Project, calculateTimeByParty, formatDuration, ResponsibilityParty } from "@/data/projectsData";
 import { useProjects } from "@/contexts/ProjectContext";
 import { useAuth } from "@/contexts/AuthContext";
+import { useLabels } from "@/contexts/LabelsContext";
 import { toast } from "sonner";
 import {
   Dialog,
@@ -46,6 +47,15 @@ export const ChecklistDialog = ({
 }: ChecklistDialogProps) => {
   const { updateChecklist, toggleChecklistResponsibility } = useProjects();
   const { currentUser } = useAuth();
+  const { teamLabels } = useLabels();
+
+  // Dynamic team labels for checklist sections
+  const ownerTeamLabelsFromCtx: Record<string, string> = {
+    mint: teamLabels.mint || "MINT Team",
+    integration: teamLabels.integration || "Integration Team",
+    ms: teamLabels.ms || "MS Team",
+    manager: teamLabels.manager || "Manager",
+  };
 
   const checklist = project?.checklist || [];
   const completedCount = checklist.filter((c) => c.completed).length;
@@ -164,7 +174,7 @@ export const ChecklistDialog = ({
                     variant={team === userTeam ? "default" : "outline"}
                     className={`px-2 py-0.5 text-xs ${team === userTeam ? "" : "opacity-70"} ${isComplete ? "bg-emerald-500 text-white border-emerald-500" : ""}`}
                   >
-                    {ownerTeamLabels[team as keyof typeof ownerTeamLabels]}: {count?.completed || 0}/{count?.total || 0}
+                    {ownerTeamLabelsFromCtx[team] || team}: {count?.completed || 0}/{count?.total || 0}
                     {isComplete && <CheckCircle2 className="h-3 w-3 ml-1" />}
                   </Badge>
                 );
@@ -198,10 +208,10 @@ export const ChecklistDialog = ({
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-3">
                       <div className={`h-8 w-8 rounded-lg ${teamColors[team as keyof typeof teamColors]} flex items-center justify-center text-white font-bold text-sm`}>
-                        {(ownerTeamLabels[team as keyof typeof ownerTeamLabels] || team).charAt(0)}
+                        {(ownerTeamLabelsFromCtx[team] || team).charAt(0)}
                       </div>
                       <div>
-                        <h3 className="font-semibold">{ownerTeamLabels[team as keyof typeof ownerTeamLabels]}</h3>
+                        <h3 className="font-semibold">{ownerTeamLabelsFromCtx[team] || team}</h3>
                         <p className="text-xs text-muted-foreground">{teamCount?.completed}/{teamCount?.total} tasks</p>
                       </div>
                     </div>

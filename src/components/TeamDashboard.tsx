@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useProjects } from "@/contexts/ProjectContext";
-import { teamLabels, teamColors } from "@/data/teams";
+import { teamColors } from "@/data/teams";
+import { useLabels } from "@/contexts/LabelsContext";
 import { Project, calculateTimeFromChecklist, formatDuration } from "@/data/projectsData";
 import { ProjectCardNew } from "./ProjectCardNew";
 import { Input } from "@/components/ui/input";
@@ -41,6 +42,7 @@ interface AiAlert {
 export const TeamDashboard = () => {
   const { currentUser, logout } = useAuth();
   const { getPendingProjects, getActiveProjects, projects, isLoading } = useProjects();
+  const { teamLabels } = useLabels();
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState<TabType>("active");
   const [aiAlerts, setAiAlerts] = useState<AiAlert[]>([]);
@@ -319,7 +321,7 @@ export const TeamDashboard = () => {
               <ThemeToggle />
               <div className="text-right">
                 <p className="font-medium text-sm">{currentUser.name}</p>
-                <p className="text-xs text-muted-foreground capitalize">{currentUser.team}</p>
+                <p className="text-xs text-muted-foreground">{teamLabels[currentUser.team] || currentUser.team}</p>
               </div>
               <div className={`h-9 w-9 rounded-lg ${teamColors[currentUser.team]} flex items-center justify-center text-white font-semibold text-sm`}>
                 {currentUser.name.charAt(0)}
