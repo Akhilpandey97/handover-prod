@@ -280,6 +280,20 @@ export const ManagerDashboard = () => {
     toast.success(`Updated ${ids.length} project(s) to ${projectStateLabels[bulkStateValue]}`);
   };
 
+  // Helper to get project phase label (next incomplete checklist item from current owner team)
+  const getProjectPhaseLabel = (p: Project) => {
+    const teamItems = p.checklist.filter(c => c.ownerTeam === p.currentOwnerTeam);
+    const nextItem = teamItems.find(c => !c.completed) || p.checklist.find(c => !c.completed);
+    return nextItem ? nextItem.title : "All Complete";
+  };
+
+  // Collect unique phase labels for filter dropdown
+  const uniquePhaseLabels = useMemo(() => {
+    const labels = new Set<string>();
+    projects.forEach(p => labels.add(getProjectPhaseLabel(p)));
+    return Array.from(labels).sort();
+  }, [projects]);
+
   if (!currentUser) return null;
 
   if (isLoading) {
@@ -300,7 +314,7 @@ export const ManagerDashboard = () => {
       p.mid.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesTeam = teamFilter === "all" || p.currentOwnerTeam === teamFilter;
     const matchesOwner = ownerFilter === "all" || p.assignedOwner === ownerFilter;
-    const matchesPhase = phaseFilter === "all" || p.currentPhase === phaseFilter;
+    const matchesPhase = phaseFilter === "all" || getProjectPhaseLabel(p) === phaseFilter;
     const matchesState = stateFilter === "all" || p.projectState === stateFilter;
     const matchesKickOffFrom = !kickOffFrom || p.dates.kickOffDate >= kickOffFrom;
     const matchesKickOffTo = !kickOffTo || p.dates.kickOffDate <= kickOffTo;
@@ -738,13 +752,12 @@ export const ManagerDashboard = () => {
                     </SelectContent>
                   </Select>
                   <Select value={phaseFilter} onValueChange={setPhaseFilter}>
-                    <SelectTrigger className="w-[140px]"><SelectValue placeholder="Phase" /></SelectTrigger>
+                    <SelectTrigger className="w-[180px]"><SelectValue placeholder="Phase" /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">All Phases</SelectItem>
-                      <SelectItem value="mint">{phaseLabels.mint}</SelectItem>
-                      <SelectItem value="integration">{phaseLabels.integration}</SelectItem>
-                      <SelectItem value="ms">{phaseLabels.ms}</SelectItem>
-                      <SelectItem value="completed">{phaseLabels.completed}</SelectItem>
+                      {uniquePhaseLabels.map(label => (
+                        <SelectItem key={label} value={label}>{label}</SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                   <Select value={stateFilter} onValueChange={setStateFilter}>
