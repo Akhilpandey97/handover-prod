@@ -1,5 +1,5 @@
 import { Project, calculateTimeFromChecklist, calculateProjectResponsibilityFromChecklist, formatDuration } from "@/data/projectsData";
-import { teamLabels } from "@/data/teams";
+import { useLabels } from "@/contexts/LabelsContext";
 import {
   Dialog,
   DialogContent,
@@ -36,9 +36,10 @@ export const ProjectDetailsDialog = ({
   open,
   onOpenChange,
 }: ProjectDetailsDialogProps) => {
+  const { getLabel, teamLabels, responsibilityLabels } = useLabels();
+
   if (!project) return null;
 
-  // Calculate from checklist items
   const computedResponsibility = calculateProjectResponsibilityFromChecklist(project.checklist);
   const timeByParty = calculateTimeFromChecklist(project.checklist);
 
@@ -48,12 +49,7 @@ export const ProjectDetailsDialog = ({
       <div className="flex-1 min-w-0">
         <p className="text-xs text-muted-foreground">{label}</p>
         {isLink && value ? (
-          <a
-            href={value}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-sm text-primary hover:underline flex items-center gap-1"
-          >
+          <a href={value} target="_blank" rel="noopener noreferrer" className="text-sm text-primary hover:underline flex items-center gap-1">
             Open Link <ExternalLink className="h-3 w-3" />
           </a>
         ) : (
@@ -74,7 +70,7 @@ export const ProjectDetailsDialog = ({
             <div>
               <span>{project.merchantName}</span>
               <p className="text-sm font-normal text-muted-foreground mt-0.5">
-                MID: {project.mid}
+                {getLabel("field_mid")}: {project.mid}
               </p>
             </div>
           </DialogTitle>
@@ -89,11 +85,11 @@ export const ProjectDetailsDialog = ({
                   <Clock className="h-4 w-4" />
                   Action Pending On
                 </h4>
-                <Badge 
+                <Badge
                   variant="secondary"
                   className={
-                    computedResponsibility === "gokwik" 
-                      ? "bg-primary/10 text-primary" 
+                    computedResponsibility === "gokwik"
+                      ? "bg-primary/10 text-primary"
                       : computedResponsibility === "merchant"
                       ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
                       : "bg-muted text-muted-foreground"
@@ -102,7 +98,7 @@ export const ProjectDetailsDialog = ({
                   {computedResponsibility === "gokwik" && <Building2 className="h-3 w-3 mr-1" />}
                   {computedResponsibility === "merchant" && <Users className="h-3 w-3 mr-1" />}
                   {computedResponsibility === "neutral" && <Minus className="h-3 w-3 mr-1" />}
-                  {computedResponsibility === "gokwik" ? "GoKwik" : computedResponsibility === "merchant" ? "Merchant" : "Neutral"}
+                  {responsibilityLabels[computedResponsibility] || computedResponsibility}
                 </Badge>
               </div>
               <p className="text-xs text-muted-foreground">
@@ -113,14 +109,14 @@ export const ProjectDetailsDialog = ({
               <div className="p-3 rounded-lg bg-primary/5 border border-primary/20">
                 <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
                   <Clock className="h-3 w-3" />
-                  GoKwik Time
+                  {responsibilityLabels.gokwik} Time
                 </div>
                 <p className="text-lg font-bold text-primary">{formatDuration(timeByParty.gokwik)}</p>
               </div>
               <div className="p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
                 <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
                   <Clock className="h-3 w-3" />
-                  Merchant Time
+                  {responsibilityLabels.merchant} Time
                 </div>
                 <p className="text-lg font-bold text-amber-600 dark:text-amber-400">{formatDuration(timeByParty.merchant)}</p>
               </div>
@@ -136,19 +132,19 @@ export const ProjectDetailsDialog = ({
               </h4>
               <div className="grid grid-cols-2 gap-4">
                 <div className="p-3 rounded-lg bg-muted/50">
-                  <p className="text-xs text-muted-foreground">ARR</p>
+                  <p className="text-xs text-muted-foreground">{getLabel("field_arr")}</p>
                   <p className="text-lg font-bold">{project.arr} cr</p>
                 </div>
                 <div className="p-3 rounded-lg bg-muted/50">
-                  <p className="text-xs text-muted-foreground">Txns/Day</p>
+                  <p className="text-xs text-muted-foreground">{getLabel("field_txns_per_day")}</p>
                   <p className="text-lg font-bold">{project.txnsPerDay}</p>
                 </div>
                 <div className="p-3 rounded-lg bg-muted/50">
-                  <p className="text-xs text-muted-foreground">AOV</p>
+                  <p className="text-xs text-muted-foreground">{getLabel("field_aov")}</p>
                   <p className="text-lg font-bold">₹{project.aov.toLocaleString()}</p>
                 </div>
                 <div className="p-3 rounded-lg bg-muted/50">
-                  <p className="text-xs text-muted-foreground">Go Live %</p>
+                  <p className="text-xs text-muted-foreground">{getLabel("field_go_live_percent")}</p>
                   <p className="text-lg font-bold">{project.goLivePercent}%</p>
                 </div>
               </div>
@@ -163,11 +159,11 @@ export const ProjectDetailsDialog = ({
                 Project Information
               </h4>
               <div className="grid grid-cols-2 gap-x-4">
-                <DetailRow icon={Globe} label="Platform" value={project.platform} />
-                <DetailRow icon={Building2} label="Category" value={project.category} />
-                <DetailRow icon={User} label="Sales SPOC" value={project.salesSpoc} />
-                <DetailRow icon={TrendingUp} label="Integration Type" value={project.integrationType} />
-                <DetailRow icon={Building2} label="PG Onboarding" value={project.pgOnboarding} />
+                <DetailRow icon={Globe} label={getLabel("field_platform")} value={project.platform} />
+                <DetailRow icon={Building2} label={getLabel("field_category")} value={project.category} />
+                <DetailRow icon={User} label={getLabel("field_sales_spoc")} value={project.salesSpoc} />
+                <DetailRow icon={TrendingUp} label={getLabel("field_integration_type")} value={project.integrationType} />
+                <DetailRow icon={Building2} label={getLabel("field_pg_onboarding")} value={project.pgOnboarding} />
                 <DetailRow icon={User} label="Current Owner" value={teamLabels[project.currentOwnerTeam]} />
               </div>
             </div>
@@ -183,17 +179,17 @@ export const ProjectDetailsDialog = ({
               <div className="grid grid-cols-2 gap-x-4">
                 <DetailRow
                   icon={Calendar}
-                  label="Kick Off Date"
+                  label={getLabel("field_kick_off_date")}
                   value={format(new Date(project.dates.kickOffDate), "dd MMM yyyy")}
                 />
                 <DetailRow
                   icon={Calendar}
-                  label="Expected Go Live"
+                  label={getLabel("field_expected_go_live_date")}
                   value={project.dates.expectedGoLiveDate ? format(new Date(project.dates.expectedGoLiveDate), "dd MMM yyyy") : "TBD"}
                 />
                 <DetailRow
                   icon={Calendar}
-                  label="Actual Go Live"
+                  label={getLabel("field_actual_go_live_date")}
                   value={project.dates.goLiveDate ? format(new Date(project.dates.goLiveDate), "dd MMM yyyy") : "TBD"}
                 />
               </div>
@@ -208,11 +204,11 @@ export const ProjectDetailsDialog = ({
                 Links
               </h4>
               <div className="grid grid-cols-2 gap-x-4">
-                <DetailRow icon={Globe} label="Brand URL" value={project.links.brandUrl} isLink />
-                <DetailRow icon={Link2} label="JIRA Link" value={project.links.jiraLink} isLink />
-                <DetailRow icon={Link2} label="BRD Link" value={project.links.brdLink} isLink />
-                <DetailRow icon={Link2} label="MINT Checklist" value={project.links.mintChecklistLink} isLink />
-                <DetailRow icon={Link2} label="Integration Checklist" value={project.links.integrationChecklistLink} isLink />
+                <DetailRow icon={Globe} label={getLabel("field_brand_url")} value={project.links.brandUrl} isLink />
+                <DetailRow icon={Link2} label={getLabel("field_jira_link")} value={project.links.jiraLink} isLink />
+                <DetailRow icon={Link2} label={getLabel("field_brd_link")} value={project.links.brdLink} isLink />
+                <DetailRow icon={Link2} label={getLabel("field_mint_checklist_link")} value={project.links.mintChecklistLink} isLink />
+                <DetailRow icon={Link2} label={getLabel("field_integration_checklist_link")} value={project.links.integrationChecklistLink} isLink />
               </div>
             </div>
 
@@ -224,25 +220,25 @@ export const ProjectDetailsDialog = ({
               <div className="space-y-3">
                 {project.notes.mintNotes && (
                   <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900">
-                    <p className="text-xs font-medium text-blue-700 dark:text-blue-400 mb-1">MINT Notes</p>
+                    <p className="text-xs font-medium text-blue-700 dark:text-blue-400 mb-1">{getLabel("field_mint_notes")}</p>
                     <p className="text-sm">{project.notes.mintNotes}</p>
                   </div>
                 )}
                 {project.notes.projectNotes && (
                   <div className="p-3 rounded-lg bg-muted/50 border">
-                    <p className="text-xs font-medium text-muted-foreground mb-1">Project Notes</p>
+                    <p className="text-xs font-medium text-muted-foreground mb-1">{getLabel("field_project_notes")}</p>
                     <p className="text-sm">{project.notes.projectNotes}</p>
                   </div>
                 )}
                 {project.notes.currentPhaseComment && (
                   <div className="p-3 rounded-lg bg-muted/50 border">
-                    <p className="text-xs font-medium text-muted-foreground mb-1">Current Phase Comment</p>
+                    <p className="text-xs font-medium text-muted-foreground mb-1">{getLabel("field_current_phase_comment")}</p>
                     <p className="text-sm whitespace-pre-wrap">{project.notes.currentPhaseComment}</p>
                   </div>
                 )}
                 {project.notes.phase2Comment && (
                   <div className="p-3 rounded-lg bg-purple-50 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-900">
-                    <p className="text-xs font-medium text-purple-700 dark:text-purple-400 mb-1">Phase 2 Comment</p>
+                    <p className="text-xs font-medium text-purple-700 dark:text-purple-400 mb-1">{getLabel("field_phase2_comment")}</p>
                     <p className="text-sm whitespace-pre-wrap">{project.notes.phase2Comment}</p>
                   </div>
                 )}

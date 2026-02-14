@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Project, ProjectLinks, ProjectDates, ProjectNotes } from "@/data/projectsData";
+import { useLabels } from "@/contexts/LabelsContext";
 import {
   Dialog,
   DialogContent,
@@ -35,6 +36,7 @@ export const EditProjectDialog = ({
   onOpenChange,
   onSave,
 }: EditProjectDialogProps) => {
+  const { getLabel } = useLabels();
   const [editedProject, setEditedProject] = useState<Project | null>(null);
 
   useEffect(() => {
@@ -115,7 +117,7 @@ export const EditProjectDialog = ({
             <TabsContent value="info" className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="edit-merchantName">Merchant Name</Label>
+                  <Label htmlFor="edit-merchantName">{getLabel("field_merchant_name")}</Label>
                   <Input
                     id="edit-merchantName"
                     value={editedProject.merchantName}
@@ -123,7 +125,7 @@ export const EditProjectDialog = ({
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="edit-mid">MID</Label>
+                  <Label htmlFor="edit-mid">{getLabel("field_mid")}</Label>
                   <Input
                     id="edit-mid"
                     value={editedProject.mid}
@@ -134,7 +136,7 @@ export const EditProjectDialog = ({
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="edit-platform">Platform</Label>
+                  <Label htmlFor="edit-platform">{getLabel("field_platform")}</Label>
                   <Select
                     value={editedProject.platform}
                     onValueChange={(v) => updateField("platform", v)}
@@ -151,7 +153,7 @@ export const EditProjectDialog = ({
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="edit-category">Category</Label>
+                  <Label htmlFor="edit-category">{getLabel("field_category")}</Label>
                   <Input
                     id="edit-category"
                     value={editedProject.category}
@@ -162,7 +164,7 @@ export const EditProjectDialog = ({
 
               <div className="grid grid-cols-3 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="edit-arr">ARR (cr)</Label>
+                  <Label htmlFor="edit-arr">{getLabel("field_arr")}</Label>
                   <Input
                     id="edit-arr"
                     type="number"
@@ -172,7 +174,7 @@ export const EditProjectDialog = ({
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="edit-txnsPerDay">Txns/Day</Label>
+                  <Label htmlFor="edit-txnsPerDay">{getLabel("field_txns_per_day")}</Label>
                   <Input
                     id="edit-txnsPerDay"
                     type="number"
@@ -181,7 +183,7 @@ export const EditProjectDialog = ({
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="edit-aov">AOV (₹)</Label>
+                  <Label htmlFor="edit-aov">{getLabel("field_aov")}</Label>
                   <Input
                     id="edit-aov"
                     type="number"
@@ -193,7 +195,7 @@ export const EditProjectDialog = ({
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="edit-salesSpoc">Sales SPOC</Label>
+                  <Label htmlFor="edit-salesSpoc">{getLabel("field_sales_spoc")}</Label>
                   <Input
                     id="edit-salesSpoc"
                     value={editedProject.salesSpoc}
@@ -201,7 +203,7 @@ export const EditProjectDialog = ({
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="edit-integrationType">Integration Type</Label>
+                  <Label htmlFor="edit-integrationType">{getLabel("field_integration_type")}</Label>
                   <Select
                     value={editedProject.integrationType}
                     onValueChange={(v) => updateField("integrationType", v)}
@@ -220,7 +222,7 @@ export const EditProjectDialog = ({
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="edit-pgOnboarding">PG Onboarding</Label>
+                  <Label htmlFor="edit-pgOnboarding">{getLabel("field_pg_onboarding")}</Label>
                   <Input
                     id="edit-pgOnboarding"
                     value={editedProject.pgOnboarding}
@@ -228,7 +230,7 @@ export const EditProjectDialog = ({
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="edit-goLivePercent">Go Live %</Label>
+                  <Label htmlFor="edit-goLivePercent">{getLabel("field_go_live_percent")}</Label>
                   <Input
                     id="edit-goLivePercent"
                     type="number"
@@ -243,7 +245,7 @@ export const EditProjectDialog = ({
 
             <TabsContent value="links" className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="edit-brandUrl">Brand URL</Label>
+                <Label htmlFor="edit-brandUrl">{getLabel("field_brand_url")}</Label>
                 <Input
                   id="edit-brandUrl"
                   type="url"
@@ -252,7 +254,7 @@ export const EditProjectDialog = ({
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="edit-jiraLink">JIRA Link</Label>
+                <Label htmlFor="edit-jiraLink">{getLabel("field_jira_link")}</Label>
                 <Input
                   id="edit-jiraLink"
                   type="url"
@@ -261,7 +263,7 @@ export const EditProjectDialog = ({
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="edit-brdLink">BRD Link</Label>
+                <Label htmlFor="edit-brdLink">{getLabel("field_brd_link")}</Label>
                 <Input
                   id="edit-brdLink"
                   type="url"
@@ -270,7 +272,7 @@ export const EditProjectDialog = ({
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="edit-mintChecklistLink">MINT Checklist Link</Label>
+                <Label htmlFor="edit-mintChecklistLink">{getLabel("field_mint_checklist_link")}</Label>
                 <Input
                   id="edit-mintChecklistLink"
                   type="url"
@@ -279,7 +281,7 @@ export const EditProjectDialog = ({
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="edit-integrationChecklistLink">Integration Checklist Link</Label>
+                <Label htmlFor="edit-integrationChecklistLink">{getLabel("field_integration_checklist_link")}</Label>
                 <Input
                   id="edit-integrationChecklistLink"
                   type="url"
@@ -291,7 +293,7 @@ export const EditProjectDialog = ({
 
             <TabsContent value="dates" className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="edit-kickOffDate">Kick Off Date</Label>
+                <Label htmlFor="edit-kickOffDate">{getLabel("field_kick_off_date")}</Label>
                 <Input
                   id="edit-kickOffDate"
                   type="date"
@@ -300,7 +302,7 @@ export const EditProjectDialog = ({
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="edit-expectedGoLiveDate">Expected Go Live Date</Label>
+                <Label htmlFor="edit-expectedGoLiveDate">{getLabel("field_expected_go_live_date")}</Label>
                 <Input
                   id="edit-expectedGoLiveDate"
                   type="date"
@@ -309,7 +311,7 @@ export const EditProjectDialog = ({
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="edit-goLiveDate">Actual Go Live Date</Label>
+                <Label htmlFor="edit-goLiveDate">{getLabel("field_actual_go_live_date")}</Label>
                 <Input
                   id="edit-goLiveDate"
                   type="date"
@@ -321,7 +323,7 @@ export const EditProjectDialog = ({
 
             <TabsContent value="notes" className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="edit-mintNotes">MINT Notes</Label>
+                <Label htmlFor="edit-mintNotes">{getLabel("field_mint_notes")}</Label>
                 <Textarea
                   id="edit-mintNotes"
                   value={editedProject.notes.mintNotes || ""}
@@ -330,7 +332,7 @@ export const EditProjectDialog = ({
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="edit-projectNotes">Project Notes</Label>
+                <Label htmlFor="edit-projectNotes">{getLabel("field_project_notes")}</Label>
                 <Textarea
                   id="edit-projectNotes"
                   value={editedProject.notes.projectNotes || ""}
@@ -339,7 +341,7 @@ export const EditProjectDialog = ({
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="edit-currentPhaseComment">Current Phase Comment</Label>
+                <Label htmlFor="edit-currentPhaseComment">{getLabel("field_current_phase_comment")}</Label>
                 <Textarea
                   id="edit-currentPhaseComment"
                   value={editedProject.notes.currentPhaseComment || ""}
@@ -348,7 +350,7 @@ export const EditProjectDialog = ({
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="edit-phase2Comment">Phase 2 Comment</Label>
+                <Label htmlFor="edit-phase2Comment">{getLabel("field_phase2_comment")}</Label>
                 <Textarea
                   id="edit-phase2Comment"
                   value={editedProject.notes.phase2Comment || ""}

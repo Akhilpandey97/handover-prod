@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { Project, calculateTimeFromChecklist, formatDuration, projectStateLabels } from "@/data/projectsData";
+import { useLabels } from "@/contexts/LabelsContext";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -14,6 +15,7 @@ interface Props {
 }
 
 export const TacticalLists = ({ projects }: Props) => {
+  const { teamLabels, getLabel, phaseLabels } = useLabels();
   const [aiInsight, setAiInsight] = useState<string | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
   const [expandedSection, setExpandedSection] = useState<string | null>("atrisk");
@@ -123,7 +125,7 @@ export const TacticalLists = ({ projects }: Props) => {
                 </CardTitle>
                 {expandedSection === "atrisk" ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
               </div>
-              <CardDescription>Projects where Expected Go-Live has passed but are not yet Live — immediate escalation list</CardDescription>
+              <CardDescription>Projects where {getLabel("field_expected_go_live_date")} has passed but are not yet Live — immediate escalation list</CardDescription>
             </CardHeader>
           </CollapsibleTrigger>
           <CollapsibleContent>
@@ -138,13 +140,13 @@ export const TacticalLists = ({ projects }: Props) => {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Merchant</TableHead>
-                      <TableHead>Expected Go-Live</TableHead>
+                      <TableHead>{getLabel("field_merchant_name")}</TableHead>
+                      <TableHead>{getLabel("field_expected_go_live_date")}</TableHead>
                       <TableHead>Days Overdue</TableHead>
                       <TableHead>Phase</TableHead>
                       <TableHead>State</TableHead>
-                      <TableHead>Owner</TableHead>
-                      <TableHead>ARR (Cr)</TableHead>
+                      <TableHead>{getLabel("field_assigned_owner")}</TableHead>
+                      <TableHead>{getLabel("field_arr")} (Cr)</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -155,7 +157,7 @@ export const TacticalLists = ({ projects }: Props) => {
                         <TableCell>
                           <Badge variant="destructive">{p.daysOverdue}d overdue</Badge>
                         </TableCell>
-                        <TableCell className="capitalize">{p.currentPhase}</TableCell>
+                        <TableCell>{phaseLabels[p.currentPhase] || p.currentPhase}</TableCell>
                         <TableCell>{projectStateLabels[p.projectState]}</TableCell>
                         <TableCell>{p.assignedOwnerName || "Unassigned"}</TableCell>
                         <TableCell>{p.arr}</TableCell>
@@ -181,7 +183,7 @@ export const TacticalLists = ({ projects }: Props) => {
                 </CardTitle>
                 {expandedSection === "leaderboard" ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
               </div>
-              <CardDescription>MINT & Integration task completion — how close each project is to the next phase</CardDescription>
+              <CardDescription>{teamLabels.mint} & {teamLabels.integration} task completion — how close each project is to the next phase</CardDescription>
             </CardHeader>
           </CollapsibleTrigger>
           <CollapsibleContent>
@@ -189,11 +191,11 @@ export const TacticalLists = ({ projects }: Props) => {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Merchant</TableHead>
-                    <TableHead>Owner</TableHead>
+                    <TableHead>{getLabel("field_merchant_name")}</TableHead>
+                    <TableHead>{getLabel("field_assigned_owner")}</TableHead>
                     <TableHead>Phase</TableHead>
-                    <TableHead>MINT Tasks</TableHead>
-                    <TableHead>Integration Tasks</TableHead>
+                    <TableHead>{teamLabels.mint} Tasks</TableHead>
+                    <TableHead>{teamLabels.integration} Tasks</TableHead>
                     <TableHead>Overall</TableHead>
                     <TableHead>Progress</TableHead>
                   </TableRow>
@@ -203,7 +205,7 @@ export const TacticalLists = ({ projects }: Props) => {
                     <TableRow key={p.id}>
                       <TableCell className="font-medium">{p.name}</TableCell>
                       <TableCell>{p.owner}</TableCell>
-                      <TableCell className="capitalize">{p.phase}</TableCell>
+                      <TableCell>{phaseLabels[p.phase] || p.phase}</TableCell>
                       <TableCell>{p.mintProgress}</TableCell>
                       <TableCell>{p.intProgress}</TableCell>
                       <TableCell>{p.overallProgress}</TableCell>

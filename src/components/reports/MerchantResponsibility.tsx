@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { Project, calculateTimeByParty, calculateTimeFromChecklist, formatDuration } from "@/data/projectsData";
+import { useLabels } from "@/contexts/LabelsContext";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -14,11 +15,11 @@ interface Props {
 }
 
 export const MerchantResponsibility = ({ projects }: Props) => {
+  const { responsibilityLabels, getLabel } = useLabels();
   const [aiInsight, setAiInsight] = useState<string | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
   const [expandedSection, setExpandedSection] = useState<string | null>("blocker");
 
-  // Blocker Analysis - Internal vs External time
   const blockerAnalysis = useMemo(() => {
     return projects.map(p => {
       const time = calculateTimeFromChecklist(p.checklist);
@@ -40,7 +41,6 @@ export const MerchantResponsibility = ({ projects }: Props) => {
   const totalMerchant = blockerAnalysis.reduce((s, p) => s + p.merchantTime, 0);
   const totalAll = totalGokwik + totalMerchant;
 
-  // Integration Complexity Matrix
   const complexityMatrix = useMemo(() => {
     const matrix = new Map<string, { platform: string; intType: string; count: number; totalTime: number; avgGoLivePercent: number }>();
 
@@ -66,7 +66,7 @@ export const MerchantResponsibility = ({ projects }: Props) => {
       const result = await fetchAiInsights({
         type: "insights",
         project: {
-          merchantName: `Merchant Responsibility Summary: GoKwik ${formatDuration(totalGokwik)} vs Merchant ${formatDuration(totalMerchant)}, ${blockerAnalysis.length} projects with time data`,
+          merchantName: `${responsibilityLabels.merchant} Responsibility Summary: ${responsibilityLabels.gokwik} ${formatDuration(totalGokwik)} vs ${responsibilityLabels.merchant} ${formatDuration(totalMerchant)}, ${blockerAnalysis.length} projects with time data`,
           mid: "MR",
           currentPhase: "overview",
           projectState: "overview",
@@ -74,7 +74,7 @@ export const MerchantResponsibility = ({ projects }: Props) => {
           platform: "All",
           dates: { kickOffDate: "N/A" },
           currentOwnerTeam: "All",
-          currentResponsibility: `GoKwik ${formatDuration(totalGokwik)} vs Merchant ${formatDuration(totalMerchant)}`,
+          currentResponsibility: `${responsibilityLabels.gokwik} ${formatDuration(totalGokwik)} vs ${responsibilityLabels.merchant} ${formatDuration(totalMerchant)}`,
           checklist: [],
           transferHistory: [],
         },
@@ -95,7 +95,7 @@ export const MerchantResponsibility = ({ projects }: Props) => {
           <div className="flex items-center justify-between">
             <CardTitle className="text-base flex items-center gap-2">
               <Sparkles className="h-4 w-4 text-primary" />
-              AI Merchant Accountability Insights
+              AI {responsibilityLabels.merchant} Accountability Insights
             </CardTitle>
             <Button size="sm" variant="outline" onClick={fetchAiInsight} disabled={aiLoading} className="gap-2">
               {aiLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
@@ -118,12 +118,12 @@ export const MerchantResponsibility = ({ projects }: Props) => {
               <div className="bg-gradient-to-br from-primary/10 to-blue-500/5 rounded-xl p-4 text-center">
                 <Building2 className="h-6 w-6 mx-auto text-primary mb-2" />
                 <p className="text-2xl font-bold text-primary">{formatDuration(totalGokwik)}</p>
-                <p className="text-xs text-muted-foreground">GoKwik (Internal) — {Math.round((totalGokwik / totalAll) * 100)}%</p>
+                <p className="text-xs text-muted-foreground">{responsibilityLabels.gokwik} (Internal) — {Math.round((totalGokwik / totalAll) * 100)}%</p>
               </div>
               <div className="bg-gradient-to-br from-amber-500/10 to-orange-500/5 rounded-xl p-4 text-center">
                 <Users className="h-6 w-6 mx-auto text-amber-500 mb-2" />
                 <p className="text-2xl font-bold text-amber-500">{formatDuration(totalMerchant)}</p>
-                <p className="text-xs text-muted-foreground">Merchant (External) — {Math.round((totalMerchant / totalAll) * 100)}%</p>
+                <p className="text-xs text-muted-foreground">{responsibilityLabels.merchant} (External) — {Math.round((totalMerchant / totalAll) * 100)}%</p>
               </div>
             </div>
             <div className="flex h-4 rounded-full overflow-hidden">
@@ -146,7 +146,7 @@ export const MerchantResponsibility = ({ projects }: Props) => {
                 </CardTitle>
                 {expandedSection === "blocker" ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
               </div>
-              <CardDescription>Per-project comparison of GoKwik vs Merchant time (from checklist items)</CardDescription>
+              <CardDescription>Per-project comparison of {responsibilityLabels.gokwik} vs {responsibilityLabels.merchant} time (from checklist items)</CardDescription>
             </CardHeader>
           </CollapsibleTrigger>
           <CollapsibleContent>
@@ -154,9 +154,9 @@ export const MerchantResponsibility = ({ projects }: Props) => {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Merchant</TableHead>
-                    <TableHead>GoKwik Time</TableHead>
-                    <TableHead>Merchant Time</TableHead>
+                    <TableHead>{getLabel("field_merchant_name")}</TableHead>
+                    <TableHead>{responsibilityLabels.gokwik} Time</TableHead>
+                    <TableHead>{responsibilityLabels.merchant} Time</TableHead>
                     <TableHead>Distribution</TableHead>
                     <TableHead>Primary Blocker</TableHead>
                   </TableRow>
@@ -175,7 +175,7 @@ export const MerchantResponsibility = ({ projects }: Props) => {
                       </TableCell>
                       <TableCell>
                         <Badge variant={p.merchantPct > 60 ? "destructive" : p.gokwikPct > 60 ? "secondary" : "outline"}>
-                          {p.merchantPct > 60 ? "Merchant" : p.gokwikPct > 60 ? "Internal" : "Balanced"}
+                          {p.merchantPct > 60 ? responsibilityLabels.merchant : p.gokwikPct > 60 ? "Internal" : "Balanced"}
                         </Badge>
                       </TableCell>
                     </TableRow>
@@ -195,11 +195,11 @@ export const MerchantResponsibility = ({ projects }: Props) => {
               <div className="flex items-center justify-between">
                 <CardTitle className="text-base flex items-center gap-2">
                   <Layers className="h-4 w-4 text-purple-500" />
-                  Integration Complexity Matrix
+                  {getLabel("field_integration_type")} Complexity Matrix
                 </CardTitle>
                 {expandedSection === "complexity" ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
               </div>
-              <CardDescription>Average completion time by Platform × Integration Type — set realistic expectations</CardDescription>
+              <CardDescription>Average completion time by {getLabel("field_platform")} × {getLabel("field_integration_type")} — set realistic expectations</CardDescription>
             </CardHeader>
           </CollapsibleTrigger>
           <CollapsibleContent>
@@ -207,11 +207,11 @@ export const MerchantResponsibility = ({ projects }: Props) => {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Platform</TableHead>
-                    <TableHead>Integration Type</TableHead>
+                    <TableHead>{getLabel("field_platform")}</TableHead>
+                    <TableHead>{getLabel("field_integration_type")}</TableHead>
                     <TableHead>Projects</TableHead>
                     <TableHead>Avg Time</TableHead>
-                    <TableHead>Avg Go-Live %</TableHead>
+                    <TableHead>Avg {getLabel("field_go_live_percent")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>

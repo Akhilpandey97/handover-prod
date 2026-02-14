@@ -95,7 +95,7 @@ const phaseConfig = {
 export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
   const { currentUser } = useAuth();
   const { acceptProject, transferProject, updateProject, deleteProject, rejectProject } = useProjects();
-  const { teamLabels } = useLabels();
+  const { teamLabels, responsibilityLabels, getLabel } = useLabels();
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [checklistOpen, setChecklistOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
@@ -216,9 +216,9 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
   };
 
   const getResponsibilityDisplay = () => {
-    if (computedResponsibility === "gokwik") return { label: "GoKwik", icon: Building2, color: "text-primary bg-primary/10" };
-    if (computedResponsibility === "merchant") return { label: "Merchant", icon: Users, color: "text-amber-600 bg-amber-500/10" };
-    return { label: "Neutral", icon: Clock, color: "text-muted-foreground bg-muted" };
+    if (computedResponsibility === "gokwik") return { label: responsibilityLabels.gokwik, icon: Building2, color: "text-primary bg-primary/10" };
+    if (computedResponsibility === "merchant") return { label: responsibilityLabels.merchant, icon: Users, color: "text-amber-600 bg-amber-500/10" };
+    return { label: responsibilityLabels.neutral, icon: Clock, color: "text-muted-foreground bg-muted" };
   };
 
   const responsibility = getResponsibilityDisplay();
@@ -332,7 +332,7 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
                 <div className="bg-background/60 backdrop-blur-sm rounded-lg p-2.5 border border-border/50">
                   <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground mb-0.5">
                     <TrendingUp className="h-3 w-3" />
-                    ARR
+                    {getLabel("field_arr")}
                   </div>
                   <p className="text-sm font-bold">{project.arr} Cr</p>
                 </div>
@@ -384,7 +384,7 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
                 <div className="bg-background/60 backdrop-blur-sm rounded-lg p-2.5 border border-border/50">
                   <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground mb-0.5">
                     <Calendar className="h-3 w-3" />
-                    Kick Off
+                    {getLabel("field_kick_off_date")}
                   </div>
                   <p className="text-sm font-semibold">{project.dates.kickOffDate || "—"}</p>
                 </div>
@@ -393,7 +393,7 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
                 <div className="bg-background/60 backdrop-blur-sm rounded-lg p-2.5 border border-border/50">
                   <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground mb-0.5">
                     <Calendar className="h-3 w-3" />
-                    Go Live
+                    {getLabel("field_go_live_date")}
                   </div>
                   <p className="text-sm font-semibold">{project.dates.goLiveDate || project.dates.expectedGoLiveDate || "—"}</p>
                 </div>

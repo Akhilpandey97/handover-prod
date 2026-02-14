@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { createDefaultProject, Project, ProjectLinks, ProjectDates, ProjectNotes } from "@/data/projectsData";
+import { useLabels } from "@/contexts/LabelsContext";
 import {
   Dialog,
   DialogContent,
@@ -20,7 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Building2, Calendar, DollarSign, Link2, FileText } from "lucide-react";
+import { Building2, Calendar, Link2, FileText } from "lucide-react";
 
 interface AddProjectDialogProps {
   open: boolean;
@@ -33,6 +34,7 @@ export const AddProjectDialog = ({
   onOpenChange,
   onSave,
 }: AddProjectDialogProps) => {
+  const { getLabel } = useLabels();
   const [project, setProject] = useState<Project>(createDefaultProject());
 
   const updateField = <K extends keyof Project>(field: K, value: Project[K]) => {
@@ -110,28 +112,28 @@ export const AddProjectDialog = ({
             <TabsContent value="info" className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="merchantName">Merchant Name *</Label>
+                  <Label htmlFor="merchantName">{getLabel("field_merchant_name")} *</Label>
                   <Input
                     id="merchantName"
                     value={project.merchantName}
                     onChange={(e) => updateField("merchantName", e.target.value)}
-                    placeholder="Enter merchant name"
+                    placeholder={`Enter ${getLabel("field_merchant_name").toLowerCase()}`}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="mid">MID *</Label>
+                  <Label htmlFor="mid">{getLabel("field_mid")} *</Label>
                   <Input
                     id="mid"
                     value={project.mid}
                     onChange={(e) => updateField("mid", e.target.value)}
-                    placeholder="Enter MID"
+                    placeholder={`Enter ${getLabel("field_mid")}`}
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="platform">Platform</Label>
+                  <Label htmlFor="platform">{getLabel("field_platform")}</Label>
                   <Select
                     value={project.platform}
                     onValueChange={(v) => updateField("platform", v)}
@@ -148,19 +150,19 @@ export const AddProjectDialog = ({
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="category">Category</Label>
+                  <Label htmlFor="category">{getLabel("field_category")}</Label>
                   <Input
                     id="category"
                     value={project.category}
                     onChange={(e) => updateField("category", e.target.value)}
-                    placeholder="Enter category"
+                    placeholder={`Enter ${getLabel("field_category").toLowerCase()}`}
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-3 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="arr">ARR (cr)</Label>
+                  <Label htmlFor="arr">{getLabel("field_arr")}</Label>
                   <Input
                     id="arr"
                     type="number"
@@ -170,7 +172,7 @@ export const AddProjectDialog = ({
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="txnsPerDay">Txns/Day</Label>
+                  <Label htmlFor="txnsPerDay">{getLabel("field_txns_per_day")}</Label>
                   <Input
                     id="txnsPerDay"
                     type="number"
@@ -179,7 +181,7 @@ export const AddProjectDialog = ({
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="aov">AOV (₹)</Label>
+                  <Label htmlFor="aov">{getLabel("field_aov")}</Label>
                   <Input
                     id="aov"
                     type="number"
@@ -191,16 +193,16 @@ export const AddProjectDialog = ({
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="salesSpoc">Sales SPOC</Label>
+                  <Label htmlFor="salesSpoc">{getLabel("field_sales_spoc")}</Label>
                   <Input
                     id="salesSpoc"
                     value={project.salesSpoc}
                     onChange={(e) => updateField("salesSpoc", e.target.value)}
-                    placeholder="Enter sales SPOC"
+                    placeholder={`Enter ${getLabel("field_sales_spoc").toLowerCase()}`}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="integrationType">Integration Type</Label>
+                  <Label htmlFor="integrationType">{getLabel("field_integration_type")}</Label>
                   <Select
                     value={project.integrationType}
                     onValueChange={(v) => updateField("integrationType", v)}
@@ -218,19 +220,19 @@ export const AddProjectDialog = ({
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="pgOnboarding">PG Onboarding</Label>
+                <Label htmlFor="pgOnboarding">{getLabel("field_pg_onboarding")}</Label>
                 <Input
                   id="pgOnboarding"
                   value={project.pgOnboarding}
                   onChange={(e) => updateField("pgOnboarding", e.target.value)}
-                  placeholder="Enter PG name"
+                  placeholder={`Enter ${getLabel("field_pg_onboarding").toLowerCase()}`}
                 />
               </div>
             </TabsContent>
 
             <TabsContent value="links" className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="brandUrl">Brand URL</Label>
+                <Label htmlFor="brandUrl">{getLabel("field_brand_url")}</Label>
                 <Input
                   id="brandUrl"
                   type="url"
@@ -240,7 +242,7 @@ export const AddProjectDialog = ({
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="jiraLink">JIRA Link</Label>
+                <Label htmlFor="jiraLink">{getLabel("field_jira_link")}</Label>
                 <Input
                   id="jiraLink"
                   type="url"
@@ -250,7 +252,7 @@ export const AddProjectDialog = ({
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="brdLink">BRD Link</Label>
+                <Label htmlFor="brdLink">{getLabel("field_brd_link")}</Label>
                 <Input
                   id="brdLink"
                   type="url"
@@ -260,7 +262,7 @@ export const AddProjectDialog = ({
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="mintChecklistLink">MINT Checklist Link</Label>
+                <Label htmlFor="mintChecklistLink">{getLabel("field_mint_checklist_link")}</Label>
                 <Input
                   id="mintChecklistLink"
                   type="url"
@@ -270,7 +272,7 @@ export const AddProjectDialog = ({
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="integrationChecklistLink">Integration Checklist Link</Label>
+                <Label htmlFor="integrationChecklistLink">{getLabel("field_integration_checklist_link")}</Label>
                 <Input
                   id="integrationChecklistLink"
                   type="url"
@@ -283,7 +285,7 @@ export const AddProjectDialog = ({
 
             <TabsContent value="dates" className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="kickOffDate">Kick Off Date</Label>
+                <Label htmlFor="kickOffDate">{getLabel("field_kick_off_date")}</Label>
                 <Input
                   id="kickOffDate"
                   type="date"
@@ -292,7 +294,7 @@ export const AddProjectDialog = ({
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="expectedGoLiveDate">Expected Go Live Date</Label>
+                <Label htmlFor="expectedGoLiveDate">{getLabel("field_expected_go_live_date")}</Label>
                 <Input
                   id="expectedGoLiveDate"
                   type="date"
@@ -301,7 +303,7 @@ export const AddProjectDialog = ({
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="goLiveDate">Actual Go Live Date</Label>
+                <Label htmlFor="goLiveDate">{getLabel("field_actual_go_live_date")}</Label>
                 <Input
                   id="goLiveDate"
                   type="date"
@@ -313,42 +315,42 @@ export const AddProjectDialog = ({
 
             <TabsContent value="notes" className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="mintNotes">MINT Notes</Label>
+                <Label htmlFor="mintNotes">{getLabel("field_mint_notes")}</Label>
                 <Textarea
                   id="mintNotes"
                   value={project.notes.mintNotes || ""}
                   onChange={(e) => updateNotes("mintNotes", e.target.value)}
-                  placeholder="Add MINT team notes..."
+                  placeholder={`Add ${getLabel("field_mint_notes").toLowerCase()}...`}
                   rows={2}
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="projectNotes">Project Notes</Label>
+                <Label htmlFor="projectNotes">{getLabel("field_project_notes")}</Label>
                 <Textarea
                   id="projectNotes"
                   value={project.notes.projectNotes || ""}
                   onChange={(e) => updateNotes("projectNotes", e.target.value)}
-                  placeholder="Add general project notes..."
+                  placeholder={`Add ${getLabel("field_project_notes").toLowerCase()}...`}
                   rows={2}
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="currentPhaseComment">Current Phase Comment</Label>
+                <Label htmlFor="currentPhaseComment">{getLabel("field_current_phase_comment")}</Label>
                 <Textarea
                   id="currentPhaseComment"
                   value={project.notes.currentPhaseComment || ""}
                   onChange={(e) => updateNotes("currentPhaseComment", e.target.value)}
-                  placeholder="Add comments for current phase..."
+                  placeholder={`Add ${getLabel("field_current_phase_comment").toLowerCase()}...`}
                   rows={2}
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="phase2Comment">Phase 2 Comment</Label>
+                <Label htmlFor="phase2Comment">{getLabel("field_phase2_comment")}</Label>
                 <Textarea
                   id="phase2Comment"
                   value={project.notes.phase2Comment || ""}
                   onChange={(e) => updateNotes("phase2Comment", e.target.value)}
-                  placeholder="Add comments for phase 2..."
+                  placeholder={`Add ${getLabel("field_phase2_comment").toLowerCase()}...`}
                   rows={2}
                 />
               </div>

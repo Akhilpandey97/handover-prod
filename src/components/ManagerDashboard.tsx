@@ -971,11 +971,11 @@ export const ManagerDashboard = () => {
                               <div className="mt-2 ml-8 space-y-3">
                                 <div className="grid grid-cols-2 gap-3">
                                   <div className="bg-muted/30 rounded-lg p-3">
-                                    <p className="text-xs text-muted-foreground mb-1">MINT Tasks</p>
+                                    <p className="text-xs text-muted-foreground mb-1">{teamLabels.mint} Tasks</p>
                                     <p className="font-semibold">{project.mintCompleted}/{project.mintTotal}</p>
                                   </div>
                                   <div className="bg-muted/30 rounded-lg p-3">
-                                    <p className="text-xs text-muted-foreground mb-1">Integration Tasks</p>
+                                    <p className="text-xs text-muted-foreground mb-1">{teamLabels.integration} Tasks</p>
                                     <p className="font-semibold">{project.integrationCompleted}/{project.integrationTotal}</p>
                                   </div>
                                 </div>
@@ -987,8 +987,8 @@ export const ManagerDashboard = () => {
                                         <TableHead>Phase</TableHead>
                                         <TableHead>Team</TableHead>
                                         <TableHead>Responsibility</TableHead>
-                                        <TableHead>GoKwik Time</TableHead>
-                                        <TableHead>Merchant Time</TableHead>
+                                        <TableHead>{responsibilityLabels.gokwik} Time</TableHead>
+                                        <TableHead>{responsibilityLabels.merchant} Time</TableHead>
                                         <TableHead>Status</TableHead>
                                       </TableRow>
                                     </TableHeader>
@@ -1071,11 +1071,11 @@ export const ManagerDashboard = () => {
                                 </div>
                                 <div className="bg-background rounded-lg p-4 text-center">
                                   <p className="text-2xl font-bold text-primary">{formatDuration(team.gokwikTime)}</p>
-                                  <p className="text-xs text-muted-foreground">GoKwik</p>
+                                  <p className="text-xs text-muted-foreground">{responsibilityLabels.gokwik}</p>
                                 </div>
                                 <div className="bg-background rounded-lg p-4 text-center">
                                   <p className="text-2xl font-bold text-amber-500">{formatDuration(team.merchantTime)}</p>
-                                  <p className="text-xs text-muted-foreground">Merchant</p>
+                                  <p className="text-xs text-muted-foreground">{responsibilityLabels.merchant}</p>
                                 </div>
                               </div>
                               {team.owners.length > 0 && (
@@ -1090,8 +1090,8 @@ export const ManagerDashboard = () => {
                                         <TableHead>Owner</TableHead>
                                         <TableHead>Projects</TableHead>
                                         <TableHead>Tasks</TableHead>
-                                        <TableHead>GoKwik Time</TableHead>
-                                        <TableHead>Merchant Time</TableHead>
+                                        <TableHead>{responsibilityLabels.gokwik} Time</TableHead>
+                                        <TableHead>{responsibilityLabels.merchant} Time</TableHead>
                                         <TableHead>Project Names</TableHead>
                                       </TableRow>
                                     </TableHeader>

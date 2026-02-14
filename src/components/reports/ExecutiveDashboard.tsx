@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { Project, calculateTimeByParty, formatDuration, projectStateLabels, ProjectState } from "@/data/projectsData";
+import { useLabels } from "@/contexts/LabelsContext";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -14,19 +15,14 @@ interface Props {
 }
 
 const phaseOrder = ["mint", "integration", "ms", "completed"];
-const phaseLabels: Record<string, string> = {
-  mint: "MINT (Presales)",
-  integration: "Integration",
-  ms: "Merchant Success",
-  completed: "Completed / Live",
-};
 
 export const ExecutiveDashboard = ({ projects }: Props) => {
+  const { phaseLabels, getLabel } = useLabels();
   const [aiInsight, setAiInsight] = useState<string | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
   const [expandedSection, setExpandedSection] = useState<string | null>("revenue");
 
-  // Revenue Realization Forecast - grouped by expected go-live month
+  // Revenue Realization Forecast
   const revenueForecast = useMemo(() => {
     const nonLive = projects.filter(p => p.projectState !== "live" && p.dates.expectedGoLiveDate);
     const byMonth = new Map<string, { month: string; totalArr: number; count: number; projects: { name: string; arr: number; state: ProjectState; expectedDate: string }[] }>();
@@ -51,18 +47,17 @@ export const ExecutiveDashboard = ({ projects }: Props) => {
   const pipelineFunnel = useMemo(() => {
     return phaseOrder.map(phase => {
       const count = projects.filter(p => p.currentPhase === phase).length;
-      return { phase, label: phaseLabels[phase], count };
+      return { phase, label: phaseLabels[phase] || phase, count };
     });
-  }, [projects]);
+  }, [projects, phaseLabels]);
 
   const maxFunnelCount = Math.max(...pipelineFunnel.map(f => f.count), 1);
 
-  // Go-Live Velocity - by month
+  // Go-Live Velocity
   const goLiveVelocity = useMemo(() => {
     const months = new Map<string, { month: string; goLive: number; kickOffs: number }>();
 
     projects.forEach(p => {
-      // Kick offs - use kickOffDate as start date
       const koDate = new Date(p.dates.kickOffDate);
       const koKey = `${koDate.getFullYear()}-${String(koDate.getMonth() + 1).padStart(2, "0")}`;
       const koLabel = koDate.toLocaleDateString("en-US", { month: "short", year: "numeric" });
@@ -70,7 +65,6 @@ export const ExecutiveDashboard = ({ projects }: Props) => {
       koEntry.kickOffs++;
       months.set(koKey, koEntry);
 
-      // Go lives
       if (p.dates.goLiveDate) {
         const glDate = new Date(p.dates.goLiveDate);
         const glKey = `${glDate.getFullYear()}-${String(glDate.getMonth() + 1).padStart(2, "0")}`;
@@ -90,20 +84,10 @@ export const ExecutiveDashboard = ({ projects }: Props) => {
   const fetchAiInsight = async () => {
     setAiLoading(true);
     try {
-      const summary = {
-        totalProjects: projects.length,
-        pipelineArr: totalPipelineArr,
-        funnel: pipelineFunnel,
-        velocity: goLiveVelocity,
-        stateDistribution: Object.entries(
-          projects.reduce((acc, p) => { acc[p.projectState] = (acc[p.projectState] || 0) + 1; return acc; }, {} as Record<string, number>)
-        ),
-      };
-
       const result = await fetchAiInsights({
         type: "insights",
         project: {
-          merchantName: `Executive Summary: ${projects.length} projects, ${totalPipelineArr.toFixed(2)} Cr pipeline ARR, Funnel: ${pipelineFunnel.map(f => `${f.label}: ${f.count}`).join(", ")}`,
+          merchantName: `Executive Summary: ${projects.length} projects, ${totalPipelineArr.toFixed(2)} Cr pipeline ${getLabel("field_arr")}, Funnel: ${pipelineFunnel.map(f => `${f.label}: ${f.count}`).join(", ")}`,
           mid: "ALL",
           currentPhase: "overview",
           projectState: "overview",
@@ -160,7 +144,7 @@ export const ExecutiveDashboard = ({ projects }: Props) => {
                 </CardTitle>
                 {expandedSection === "revenue" ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
               </div>
-              <CardDescription>Potential ARR sorted by Expected Go-Live Date (Kick Off = Start Date)</CardDescription>
+              <CardDescription>Potential {getLabel("field_arr")} sorted by {getLabel("field_expected_go_live_date")} ({getLabel("field_kick_off_date")} = Start Date)</CardDescription>
             </CardHeader>
           </CollapsibleTrigger>
           <CollapsibleContent>
@@ -173,7 +157,7 @@ export const ExecutiveDashboard = ({ projects }: Props) => {
                     <TableRow>
                       <TableHead>Month</TableHead>
                       <TableHead>Projects</TableHead>
-                      <TableHead>Pipeline ARR (Cr)</TableHead>
+                      <TableHead>Pipeline {getLabel("field_arr")} (Cr)</TableHead>
                       <TableHead>Details</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -220,7 +204,7 @@ export const ExecutiveDashboard = ({ projects }: Props) => {
           <CollapsibleContent>
             <CardContent>
               <div className="space-y-4">
-                {pipelineFunnel.map((stage, i) => (
+                {pipelineFunnel.map((stage) => (
                   <div key={stage.phase} className="space-y-1">
                     <div className="flex items-center justify-between text-sm">
                       <span className="font-medium">{stage.label}</span>
@@ -254,7 +238,7 @@ export const ExecutiveDashboard = ({ projects }: Props) => {
                 </CardTitle>
                 {expandedSection === "velocity" ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
               </div>
-              <CardDescription>Projects going Live per month vs. new Kick-offs (Start Date)</CardDescription>
+              <CardDescription>Projects going Live per month vs. new {getLabel("field_kick_off_date")}s</CardDescription>
             </CardHeader>
           </CollapsibleTrigger>
           <CollapsibleContent>
@@ -266,7 +250,7 @@ export const ExecutiveDashboard = ({ projects }: Props) => {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Month</TableHead>
-                      <TableHead>New Kick-offs (Start)</TableHead>
+                      <TableHead>New {getLabel("field_kick_off_date")}s</TableHead>
                       <TableHead>Go-Live</TableHead>
                       <TableHead>Net</TableHead>
                     </TableRow>

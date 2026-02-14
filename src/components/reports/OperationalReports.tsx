@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { Project, calculateTimeByParty, formatDuration, projectStateLabels } from "@/data/projectsData";
-import { teamLabels, TeamRole } from "@/data/teams";
+import { useLabels } from "@/contexts/LabelsContext";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -15,11 +15,12 @@ interface Props {
 }
 
 export const OperationalReports = ({ projects }: Props) => {
+  const { teamLabels, getLabel } = useLabels();
   const [aiInsight, setAiInsight] = useState<string | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
   const [expandedSection, setExpandedSection] = useState<string | null>("stage");
 
-  // Stage Duration Analysis - average time per checklist step
+  // Stage Duration Analysis
   const stageDuration = useMemo(() => {
     const stageMap = new Map<string, { title: string; phase: string; totalTime: number; count: number }>();
 
@@ -42,7 +43,7 @@ export const OperationalReports = ({ projects }: Props) => {
       .sort((a, b) => b.avgTime - a.avgTime);
   }, [projects]);
 
-  // Aging Report - stalled projects
+  // Aging Report
   const agingReport = useMemo(() => {
     const now = Date.now();
     return projects
@@ -81,8 +82,6 @@ export const OperationalReports = ({ projects }: Props) => {
       const topBottlenecks = stageDuration.slice(0, 5).map(s => `${s.title}: avg ${formatDuration(s.avgTime)}`).join(", ");
       const zombieCount = agingReport.filter(p => p.daysSinceStart > 60).length;
       const overloadedOwners = resourceLoad.filter(r => r.activeCount > 5).map(r => r.name).join(", ");
-
-
 
       const result = await fetchAiInsights({
         type: "insights",
@@ -192,7 +191,7 @@ export const OperationalReports = ({ projects }: Props) => {
                 </CardTitle>
                 {expandedSection === "aging" ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
               </div>
-              <CardDescription>Projects sorted by days since Start Date (Kick Off) — highlights zombie projects</CardDescription>
+              <CardDescription>Projects sorted by days since {getLabel("field_kick_off_date")} — highlights zombie projects</CardDescription>
             </CardHeader>
           </CollapsibleTrigger>
           <CollapsibleContent>
@@ -203,13 +202,13 @@ export const OperationalReports = ({ projects }: Props) => {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Merchant</TableHead>
-                      <TableHead>Start Date</TableHead>
+                      <TableHead>{getLabel("field_merchant_name")}</TableHead>
+                      <TableHead>{getLabel("field_kick_off_date")}</TableHead>
                       <TableHead>Days Since Start</TableHead>
                       <TableHead>Current Team</TableHead>
                       <TableHead>State</TableHead>
-                      <TableHead>Owner</TableHead>
-                      <TableHead>ARR (Cr)</TableHead>
+                      <TableHead>{getLabel("field_assigned_owner")}</TableHead>
+                      <TableHead>{getLabel("field_arr")} (Cr)</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -222,7 +221,7 @@ export const OperationalReports = ({ projects }: Props) => {
                             {p.daysSinceStart}d
                           </Badge>
                         </TableCell>
-                        <TableCell><Badge variant="outline" className="capitalize">{p.currentOwnerTeam}</Badge></TableCell>
+                        <TableCell><Badge variant="outline">{teamLabels[p.currentOwnerTeam] || p.currentOwnerTeam}</Badge></TableCell>
                         <TableCell className="capitalize">{projectStateLabels[p.projectState]}</TableCell>
                         <TableCell>{p.assignedOwnerName || "Unassigned"}</TableCell>
                         <TableCell>{p.arr}</TableCell>
@@ -256,10 +255,10 @@ export const OperationalReports = ({ projects }: Props) => {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Owner</TableHead>
+                    <TableHead>{getLabel("field_assigned_owner")}</TableHead>
                     <TableHead>Team</TableHead>
                     <TableHead>Active Projects</TableHead>
-                    <TableHead>Total ARR (Cr)</TableHead>
+                    <TableHead>Total {getLabel("field_arr")} (Cr)</TableHead>
                     <TableHead>Projects</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -267,7 +266,7 @@ export const OperationalReports = ({ projects }: Props) => {
                   {resourceLoad.map((r, i) => (
                     <TableRow key={i} className={r.activeCount > 5 ? "bg-amber-50 dark:bg-amber-950/20" : ""}>
                       <TableCell className="font-medium">{r.name}</TableCell>
-                      <TableCell><Badge variant="outline" className="capitalize">{teamLabels[r.team as TeamRole] || r.team}</Badge></TableCell>
+                      <TableCell><Badge variant="outline">{teamLabels[r.team] || r.team}</Badge></TableCell>
                       <TableCell>
                         <Badge variant={r.activeCount > 5 ? "destructive" : "secondary"}>{r.activeCount}</Badge>
                       </TableCell>
