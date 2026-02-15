@@ -247,7 +247,7 @@ export const TeamDashboard = () => {
             )}
 
             {!aiAlertsLoading && aiAlerts.length > 0 && (
-              <ScrollArea className="max-h-[300px]">
+              <ScrollArea className="h-[260px]">
                 <div className="space-y-2 px-2">
                   {aiAlerts.map((alert, i) => (
                     <div
