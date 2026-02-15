@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Project } from "@/data/projectsData";
-import { TeamRole, teamLabels } from "@/data/teams";
+import { TeamRole } from "@/data/teams";
+import { useLabels } from "@/contexts/LabelsContext";
 import { supabase } from "@/integrations/supabase/client";
 import { sendNotification } from "@/utils/sendNotification";
 import { useQueryClient } from "@tanstack/react-query";
@@ -37,6 +38,7 @@ export interface AssignOwnerDialogProps {
 
 export const AssignOwnerDialog = ({ project, open, onOpenChange, projectIds, onAssigned }: AssignOwnerDialogProps) => {
   const queryClient = useQueryClient();
+  const { teamLabels } = useLabels();
   const isBulk = !!projectIds && projectIds.length > 0;
   const [targetTeam, setTargetTeam] = useState<TeamRole>(project?.currentOwnerTeam || "mint");
   const [targetOwner, setTargetOwner] = useState<string>(project?.assignedOwner || "");
@@ -193,9 +195,9 @@ export const AssignOwnerDialog = ({ project, open, onOpenChange, projectIds, onA
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="mint">MINT (Presales)</SelectItem>
-                <SelectItem value="integration">Integration Team</SelectItem>
-                <SelectItem value="ms">Merchant Success</SelectItem>
+                <SelectItem value="mint">{teamLabels.mint}</SelectItem>
+                <SelectItem value="integration">{teamLabels.integration}</SelectItem>
+                <SelectItem value="ms">{teamLabels.ms}</SelectItem>
               </SelectContent>
             </Select>
           </div>
