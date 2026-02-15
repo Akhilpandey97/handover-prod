@@ -95,7 +95,7 @@ const phaseConfig = {
 export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
   const { currentUser } = useAuth();
   const { acceptProject, transferProject, updateProject, deleteProject, rejectProject } = useProjects();
-  const { teamLabels, responsibilityLabels, getLabel } = useLabels();
+  const { teamLabels, responsibilityLabels, getLabel, stateLabels } = useLabels();
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [checklistOpen, setChecklistOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
@@ -420,7 +420,7 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
                     <SelectContent>
                       {Object.entries(projectStateLabels).map(([key, label]) => (
                         <SelectItem key={key} value={key} className="text-xs">
-                          <span className={`px-1.5 py-0.5 rounded text-xs font-medium ${projectStateColors[key as ProjectState]}`}>{label}</span>
+                          <span className={`px-1.5 py-0.5 rounded text-xs font-medium ${projectStateColors[key as ProjectState]}`}>{stateLabels[key] || label}</span>
                         </SelectItem>
                       ))}
                     </SelectContent>

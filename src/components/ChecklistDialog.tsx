@@ -26,12 +26,7 @@ interface ChecklistDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
-const ownerTeamLabels = {
-  mint: "MINT Team",
-  integration: "Integration Team",
-  ms: "MS Team",
-  manager: "Manager",
-};
+// Removed hardcoded ownerTeamLabels - now uses dynamic labels from LabelsContext
 
 const teamColors = {
   mint: "bg-blue-500",

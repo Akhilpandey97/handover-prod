@@ -93,7 +93,7 @@ export const BulkEditDialog = ({
   selectedCount,
   onSave,
 }: BulkEditDialogProps) => {
-  const { getLabel } = useLabels();
+  const { getLabel, stateLabels } = useLabels();
   const [enabledFields, setEnabledFields] = useState<Set<FieldKey>>(new Set());
   const [values, setValues] = useState<BulkFieldUpdates>({ ...EMPTY_VALUES });
 
@@ -186,7 +186,7 @@ export const BulkEditDialog = ({
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     {(Object.keys(projectStateLabels) as ProjectState[]).map(s => (
-                      <SelectItem key={s} value={s}>{projectStateLabels[s]}</SelectItem>
+                      <SelectItem key={s} value={s}>{stateLabels[s] || projectStateLabels[s]}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
