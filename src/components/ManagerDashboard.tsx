@@ -183,15 +183,17 @@ export const ManagerDashboard = () => {
       let teamTotalTasks = 0;
 
       teamProjects.forEach((project) => {
+        // Count tasks only for this team's checklist items
         project.checklist.forEach((item) => {
           if (item.ownerTeam === team) {
             teamTotalTasks++;
             if (item.completed) teamCompletedTasks++;
-            const time = calculateTimeByParty(item.responsibilityLog);
-            teamGokwikTime += time.gokwik;
-            teamMerchantTime += time.merchant;
           }
         });
+        // Sum time from ALL checklist items in the project (not just this team's)
+        const projectTime = calculateTimeFromChecklist(project.checklist);
+        teamGokwikTime += projectTime.gokwik;
+        teamMerchantTime += projectTime.merchant;
       });
 
       const ownerMap = new Map<string, {
@@ -213,13 +215,10 @@ export const ManagerDashboard = () => {
         existing.totalTasks += project.checklist.filter(c => c.ownerTeam === team).length;
         existing.completedTasks += project.checklist.filter(c => c.ownerTeam === team && c.completed).length;
 
-        project.checklist.forEach((item) => {
-          if (item.ownerTeam === team) {
-            const time = calculateTimeByParty(item.responsibilityLog);
-            existing.gokwikTime += time.gokwik;
-            existing.merchantTime += time.merchant;
-          }
-        });
+        // Sum time from ALL checklist items (not just this team's)
+        const ownerProjectTime = calculateTimeFromChecklist(project.checklist);
+        existing.gokwikTime += ownerProjectTime.gokwik;
+        existing.merchantTime += ownerProjectTime.merchant;
 
         ownerMap.set(ownerId, existing);
       });
