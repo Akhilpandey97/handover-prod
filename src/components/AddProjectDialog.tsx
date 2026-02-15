@@ -22,6 +22,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Building2, Calendar, Link2, FileText } from "lucide-react";
+import { DatePickerField } from "@/components/ui/date-picker-field";
 
 interface AddProjectDialogProps {
   open: boolean;
@@ -285,30 +286,27 @@ export const AddProjectDialog = ({
 
             <TabsContent value="dates" className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="kickOffDate">{getLabel("field_kick_off_date")}</Label>
-                <Input
-                  id="kickOffDate"
-                  type="date"
+                <Label>{getLabel("field_kick_off_date")}</Label>
+                <DatePickerField
                   value={project.dates.kickOffDate}
-                  onChange={(e) => updateDates("kickOffDate", e.target.value)}
+                  onChange={(v) => updateDates("kickOffDate", v)}
+                  placeholder="Select kick-off date"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="expectedGoLiveDate">{getLabel("field_expected_go_live_date")}</Label>
-                <Input
-                  id="expectedGoLiveDate"
-                  type="date"
+                <Label>{getLabel("field_expected_go_live_date")}</Label>
+                <DatePickerField
                   value={project.dates.expectedGoLiveDate || ""}
-                  onChange={(e) => updateDates("expectedGoLiveDate", e.target.value)}
+                  onChange={(v) => updateDates("expectedGoLiveDate", v)}
+                  placeholder="Select expected go-live date"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="goLiveDate">{getLabel("field_actual_go_live_date")}</Label>
-                <Input
-                  id="goLiveDate"
-                  type="date"
+                <Label>{getLabel("field_actual_go_live_date")}</Label>
+                <DatePickerField
                   value={project.dates.goLiveDate || ""}
-                  onChange={(e) => updateDates("goLiveDate", e.target.value)}
+                  onChange={(v) => updateDates("goLiveDate", v)}
+                  placeholder="Select go-live date"
                 />
               </div>
             </TabsContent>
