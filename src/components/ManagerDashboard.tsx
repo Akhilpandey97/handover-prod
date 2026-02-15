@@ -986,7 +986,7 @@ export const ManagerDashboard = () => {
                                     <span className="text-xs text-muted-foreground ml-2">({project.mid})</span>
                                     <span className="text-xs text-muted-foreground ml-2">Start: {project.dates.kickOffDate}</span>
                                   </div>
-                                  <Badge variant="outline" className="capitalize">{project.currentOwnerTeam}</Badge>
+                                  <Badge variant="outline">{teamLabels[project.currentOwnerTeam] || project.currentOwnerTeam}</Badge>
                                   <Badge variant="secondary">{project.stats.completedChecklist}/{project.stats.totalChecklist} tasks</Badge>
                                 </div>
                                 <div className="flex items-center gap-4">
@@ -1031,9 +1031,9 @@ export const ManagerDashboard = () => {
                                       {project.checklistItems.map((item) => (
                                         <TableRow key={item.id}>
                                           <TableCell className="font-medium">{item.checklistTitle}</TableCell>
-                                          <TableCell className="capitalize">{item.phase}</TableCell>
-                                          <TableCell><Badge variant="outline" className="capitalize">{item.team}</Badge></TableCell>
-                                          <TableCell className="capitalize">{item.responsibility}</TableCell>
+                                          <TableCell>{phaseLabels[item.phase] || item.phase}</TableCell>
+                                          <TableCell><Badge variant="outline">{teamLabels[item.team] || item.team}</Badge></TableCell>
+                                          <TableCell>{responsibilityLabels[item.responsibility] || item.responsibility}</TableCell>
                                           <TableCell>{formatDuration(item.gokwikTime)}</TableCell>
                                           <TableCell>{formatDuration(item.merchantTime)}</TableCell>
                                           <TableCell>
