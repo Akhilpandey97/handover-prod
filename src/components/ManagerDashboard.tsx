@@ -368,26 +368,27 @@ export const ManagerDashboard = () => {
     return matchesSearch && matchesTeam && matchesOwner && matchesPhase && matchesState && matchesKickOffFrom && matchesKickOffTo && matchesGoLiveFrom && matchesGoLiveTo;
   });
 
-  // Stats - "completed" = live + MS accepted (phase completed or state live with no pending)
-  const totalProjects = projects.length;
-  const pendingProjects = projects.filter((p) => p.pendingAcceptance).length;
-  const completedProjects = projects.filter((p) => p.projectState === "live").length;
+  // Stats - use filteredProjects so search applies everywhere
+  const displayProjects = searchQuery ? filteredProjects : projects;
+  const totalProjects = displayProjects.length;
+  const pendingProjects = displayProjects.filter((p) => p.pendingAcceptance).length;
+  const completedProjects = displayProjects.filter((p) => p.projectState === "live").length;
   const activeProjects = totalProjects - pendingProjects - completedProjects;
 
   // Time distribution - use checklist-level aggregation
   let totalGokwikTime = 0;
   let totalMerchantTime = 0;
-  projects.forEach((p) => {
+  displayProjects.forEach((p) => {
     const time = calculateTimeFromChecklist(p.checklist);
     totalGokwikTime += time.gokwik;
     totalMerchantTime += time.merchant;
   });
 
   // Pipeline stats for overview
-  const totalArr = projects.reduce((s, p) => s + p.arr, 0);
-  const liveArr = projects.filter(p => p.projectState === "live").reduce((s, p) => s + p.arr, 0);
-  const blockedProjects = projects.filter(p => p.projectState === "blocked").length;
-  const onHoldProjects = projects.filter(p => p.projectState === "on_hold").length;
+  const totalArr = displayProjects.reduce((s, p) => s + p.arr, 0);
+  const liveArr = displayProjects.filter(p => p.projectState === "live").reduce((s, p) => s + p.arr, 0);
+  const blockedProjects = displayProjects.filter(p => p.projectState === "blocked").length;
+  const onHoldProjects = displayProjects.filter(p => p.projectState === "on_hold").length;
 
   const handleAddProject = (project: Project) => {
     addProject(project);
@@ -639,7 +640,7 @@ export const ManagerDashboard = () => {
                 <CardContent className="p-6">
                    <div className="space-y-6">
                     {teamOwnerReport.map((team) => {
-                      const teamProjects = projects.filter(p => p.currentOwnerTeam === team.team);
+                      const teamProjects = displayProjects.filter(p => p.currentOwnerTeam === team.team);
                       const totalCount = teamProjects.length;
                       const pendingCount = teamProjects.filter(p => p.pendingAcceptance).length;
                       // A project is "completed" for a team if ALL that team's checklist items are done
@@ -744,7 +745,7 @@ export const ManagerDashboard = () => {
                     {(() => {
                       // Group projects by next incomplete checklist item title (from current owner team first)
                       const phaseGroups: Record<string, number> = {};
-                      projects.forEach(p => {
+                      displayProjects.forEach(p => {
                         const teamItems = p.checklist.filter(c => c.ownerTeam === p.currentOwnerTeam);
                         const nextItem = teamItems.find(c => !c.completed) || p.checklist.find(c => !c.completed);
                         const label = nextItem ? nextItem.title : "All Complete";
@@ -779,7 +780,7 @@ export const ManagerDashboard = () => {
                 <CardContent className="p-6">
                   <div className="space-y-4">
                     {(Object.keys(projectStateLabels) as ProjectState[]).map(state => {
-                      const count = projects.filter(p => p.projectState === state).length;
+                      const count = displayProjects.filter(p => p.projectState === state).length;
                       const pct = totalProjects > 0 ? Math.round((count / totalProjects) * 100) : 0;
                       return (
                         <div key={state} className="space-y-1">
@@ -947,10 +948,10 @@ export const ManagerDashboard = () => {
               </CardHeader>
               <CardContent className="p-0">
                   <div className="p-6">
-                    {reportType === "executive" && <ExecutiveDashboard projects={projects} />}
-                    {reportType === "operational" && <OperationalReports projects={projects} />}
-                    {reportType === "merchant" && <MerchantResponsibility projects={projects} />}
-                    {reportType === "tactical" && <TacticalLists projects={projects} />}
+                    {reportType === "executive" && <ExecutiveDashboard projects={displayProjects} />}
+                    {reportType === "operational" && <OperationalReports projects={displayProjects} />}
+                    {reportType === "merchant" && <MerchantResponsibility projects={displayProjects} />}
+                    {reportType === "tactical" && <TacticalLists projects={displayProjects} />}
 
                     {/* Merged Project + Checklist Report */}
                     {reportType === "project" && (
