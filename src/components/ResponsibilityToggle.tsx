@@ -1,4 +1,5 @@
 import { Project, ResponsibilityParty, calculateTimeByParty, formatDuration } from "@/data/projectsData";
+import { useLabels } from "@/contexts/LabelsContext";
 import { Badge } from "@/components/ui/badge";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Clock, Building2, Users, Minus } from "lucide-react";
@@ -14,6 +15,7 @@ export const ResponsibilityToggle = ({
   onToggle,
   compact = false,
 }: ResponsibilityToggleProps) => {
+  const { responsibilityLabels } = useLabels();
   const timeByParty = calculateTimeByParty(project.responsibilityLog);
 
   const handleChange = (value: string) => {
@@ -33,26 +35,26 @@ export const ResponsibilityToggle = ({
         >
           <ToggleGroupItem 
             value="gokwik" 
-            aria-label="GoKwik"
+            aria-label={responsibilityLabels.gokwik}
             className="text-xs px-2 py-0.5 h-6 rounded-none data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
           >
             <Building2 className="h-3 w-3 mr-1" />
-            GK
+            {responsibilityLabels.gokwik?.charAt(0) || "G"}
           </ToggleGroupItem>
           <ToggleGroupItem 
             value="neutral" 
-            aria-label="Neutral"
+            aria-label={responsibilityLabels.neutral}
             className="text-xs px-1.5 py-0.5 h-6 rounded-none border-x data-[state=on]:bg-muted data-[state=on]:text-muted-foreground"
           >
             <Minus className="h-3 w-3" />
           </ToggleGroupItem>
           <ToggleGroupItem 
             value="merchant" 
-            aria-label="Merchant"
+            aria-label={responsibilityLabels.merchant}
             className="text-xs px-2 py-0.5 h-6 rounded-none data-[state=on]:bg-amber-500 data-[state=on]:text-white"
           >
             <Users className="h-3 w-3 mr-1" />
-            M
+            {responsibilityLabels.merchant?.charAt(0) || "M"}
           </ToggleGroupItem>
         </ToggleGroup>
       </div>
@@ -74,27 +76,27 @@ export const ResponsibilityToggle = ({
         >
           <ToggleGroupItem 
             value="gokwik" 
-            aria-label="GoKwik"
+            aria-label={responsibilityLabels.gokwik}
             className="text-xs px-3 py-1 h-8 rounded-none data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
           >
             <Building2 className="h-3 w-3 mr-1" />
-            GoKwik
+            {responsibilityLabels.gokwik}
           </ToggleGroupItem>
           <ToggleGroupItem 
             value="neutral" 
-            aria-label="Neutral"
+            aria-label={responsibilityLabels.neutral}
             className="text-xs px-3 py-1 h-8 rounded-none border-x data-[state=on]:bg-muted data-[state=on]:text-muted-foreground"
           >
             <Minus className="h-3 w-3 mr-1" />
-            Neutral
+            {responsibilityLabels.neutral}
           </ToggleGroupItem>
           <ToggleGroupItem 
             value="merchant" 
-            aria-label="Merchant"
+            aria-label={responsibilityLabels.merchant}
             className="text-xs px-3 py-1 h-8 rounded-none data-[state=on]:bg-amber-500 data-[state=on]:text-white"
           >
             <Users className="h-3 w-3 mr-1" />
-            Merchant
+            {responsibilityLabels.merchant}
           </ToggleGroupItem>
         </ToggleGroup>
       </div>
@@ -109,7 +111,7 @@ export const ResponsibilityToggle = ({
         >
           <div className="flex items-center gap-2 mb-1">
             <Building2 className="h-4 w-4 text-primary" />
-            <span className="text-sm font-medium">GoKwik</span>
+            <span className="text-sm font-medium">{responsibilityLabels.gokwik}</span>
             {project.currentResponsibility === "gokwik" && (
               <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-primary text-primary-foreground">
                 Active
@@ -129,7 +131,7 @@ export const ResponsibilityToggle = ({
         >
           <div className="flex items-center gap-2 mb-1">
             <Users className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-            <span className="text-sm font-medium">Merchant</span>
+            <span className="text-sm font-medium">{responsibilityLabels.merchant}</span>
             {project.currentResponsibility === "merchant" && (
               <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-amber-500 text-white">
                 Active
@@ -146,7 +148,7 @@ export const ResponsibilityToggle = ({
       {project.currentResponsibility === "neutral" && (
         <div className="text-center py-2 text-xs text-muted-foreground bg-muted/30 rounded">
           <Minus className="h-3 w-3 inline mr-1" />
-          Neutral - Time not being tracked
+          {responsibilityLabels.neutral} - Time not being tracked
         </div>
       )}
     </div>

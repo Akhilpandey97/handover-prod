@@ -15,7 +15,7 @@ interface Props {
 }
 
 export const OperationalReports = ({ projects }: Props) => {
-  const { teamLabels, getLabel } = useLabels();
+  const { teamLabels, getLabel, stateLabels } = useLabels();
   const [aiInsight, setAiInsight] = useState<string | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
   const [expandedSection, setExpandedSection] = useState<string | null>("stage");
@@ -222,7 +222,7 @@ export const OperationalReports = ({ projects }: Props) => {
                           </Badge>
                         </TableCell>
                         <TableCell><Badge variant="outline">{teamLabels[p.currentOwnerTeam] || p.currentOwnerTeam}</Badge></TableCell>
-                        <TableCell className="capitalize">{projectStateLabels[p.projectState]}</TableCell>
+                        <TableCell className="capitalize">{stateLabels[p.projectState] || projectStateLabels[p.projectState]}</TableCell>
                         <TableCell>{p.assignedOwnerName || "Unassigned"}</TableCell>
                         <TableCell>{p.arr}</TableCell>
                       </TableRow>

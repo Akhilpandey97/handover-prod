@@ -15,7 +15,7 @@ interface Props {
 }
 
 export const TacticalLists = ({ projects }: Props) => {
-  const { teamLabels, getLabel, phaseLabels } = useLabels();
+  const { teamLabels, getLabel, phaseLabels, stateLabels } = useLabels();
   const [aiInsight, setAiInsight] = useState<string | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
   const [expandedSection, setExpandedSection] = useState<string | null>("atrisk");
@@ -158,7 +158,7 @@ export const TacticalLists = ({ projects }: Props) => {
                           <Badge variant="destructive">{p.daysOverdue}d overdue</Badge>
                         </TableCell>
                         <TableCell>{phaseLabels[p.currentPhase] || p.currentPhase}</TableCell>
-                        <TableCell>{projectStateLabels[p.projectState]}</TableCell>
+                        <TableCell>{stateLabels[p.projectState] || projectStateLabels[p.projectState]}</TableCell>
                         <TableCell>{p.assignedOwnerName || "Unassigned"}</TableCell>
                         <TableCell>{p.arr}</TableCell>
                       </TableRow>

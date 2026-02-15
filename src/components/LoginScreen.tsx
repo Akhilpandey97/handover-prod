@@ -9,16 +9,9 @@ import { useState } from "react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ThemeToggle } from "./ThemeToggle";
 import type { Database } from "@/integrations/supabase/types";
+import { useLabels } from "@/contexts/LabelsContext";
 
 type TeamRole = Database["public"]["Enums"]["team_role"];
-
-const teamLabels: Record<TeamRole, string> = {
-  mint: "MINT (Presales)",
-  integration: "Integration Team",
-  ms: "MS (Merchant Success)",
-  manager: "Manager",
-  super_admin: "Super Admin",
-};
 
 export const LoginScreen = () => {
   const [email, setEmail] = useState("");
@@ -28,6 +21,7 @@ export const LoginScreen = () => {
   const [isSignup, setIsSignup] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const { login, signup } = useAuth();
+  const { teamLabels } = useLabels();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();

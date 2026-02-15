@@ -288,7 +288,7 @@ export const ManagerDashboard = () => {
     }
     setSelectedProjects(new Set());
     setBulkStateDialogOpen(false);
-    toast.success(`Updated ${ids.length} project(s) to ${projectStateLabels[bulkStateValue]}`);
+    toast.success(`Updated ${ids.length} project(s) to ${stateLabelsFromCtx[bulkStateValue] || projectStateLabels[bulkStateValue]}`);
   };
 
   const handleBulkEdit = (updates: Partial<BulkFieldUpdates>) => {
@@ -495,7 +495,7 @@ export const ManagerDashboard = () => {
             </div>
 
             <div className="flex items-center gap-2">
-              <Button onClick={() => exportProjectsToCSV(projects)} variant="outline" size="sm" className="gap-1.5 h-8 text-xs">
+              <Button onClick={() => exportProjectsToCSV(projects, { teamLabels, stateLabels: stateLabelsFromCtx, responsibilityLabels, getLabel: (k: string) => appLabels[k] || k })} variant="outline" size="sm" className="gap-1.5 h-8 text-xs">
                 <Download className="h-3.5 w-3.5" />
                 Export
               </Button>
@@ -784,7 +784,7 @@ export const ManagerDashboard = () => {
                       return (
                         <div key={state} className="space-y-1">
                           <div className="flex items-center justify-between text-sm">
-                            <span className="font-medium">{projectStateLabels[state]}</span>
+                            <span className="font-medium">{stateLabelsFromCtx[state] || projectStateLabels[state]}</span>
                             <span className="font-bold">{count} ({pct}%)</span>
                           </div>
                           <Progress value={pct} className="h-2" />
@@ -868,7 +868,7 @@ export const ManagerDashboard = () => {
                     <SelectContent>
                       <SelectItem value="all">All States</SelectItem>
                       {(Object.keys(projectStateLabels) as ProjectState[]).map(s => (
-                        <SelectItem key={s} value={s}>{projectStateLabels[s]}</SelectItem>
+                        <SelectItem key={s} value={s}>{stateLabelsFromCtx[s] || projectStateLabels[s]}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -933,7 +933,7 @@ export const ManagerDashboard = () => {
                     {[
                       { key: "executive", label: "Executive" },
                       { key: "operational", label: "Operational" },
-                      { key: "merchant", label: "Merchant" },
+                      { key: "merchant", label: responsibilityLabels.merchant },
                       { key: "tactical", label: "Tactical" },
                       { key: "project", label: "Project & Checklist" },
                       { key: "team", label: "Team & Owner" },
@@ -1237,7 +1237,7 @@ export const ManagerDashboard = () => {
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 {(Object.keys(projectStateLabels) as ProjectState[]).map(s => (
-                  <SelectItem key={s} value={s}>{projectStateLabels[s]}</SelectItem>
+                  <SelectItem key={s} value={s}>{stateLabelsFromCtx[s] || projectStateLabels[s]}</SelectItem>
                 ))}
               </SelectContent>
             </Select>

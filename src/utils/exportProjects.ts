@@ -1,6 +1,6 @@
 import { Project, calculateTimeByParty, formatDuration } from "@/data/projectsData";
-import { teamLabels } from "@/data/teams";
-import { projectStateLabels } from "@/data/projectsData";
+import { teamLabels as defaultTeamLabels } from "@/data/teams";
+import { projectStateLabels as defaultStateLabels } from "@/data/projectsData";
 
 const escapeCSV = (value: string | number | undefined | null): string => {
   const str = String(value ?? "");
@@ -10,7 +10,43 @@ const escapeCSV = (value: string | number | undefined | null): string => {
   return str;
 };
 
-export const exportProjectsToCSV = (projects: Project[]) => {
+interface ExportLabels {
+  teamLabels?: Record<string, string>;
+  stateLabels?: Record<string, string>;
+  responsibilityLabels?: Record<string, string>;
+  getLabel?: (key: string) => string;
+}
+
+export const exportProjectsToCSV = (projects: Project[], labels?: ExportLabels) => {
+  const teamLbls = labels?.teamLabels || defaultTeamLabels;
+  const stateLbls = labels?.stateLabels || defaultStateLabels;
+  const respLbls = labels?.responsibilityLabels || { gokwik: "GoKwik", merchant: "Merchant" };
+  const getLabel = labels?.getLabel || ((key: string) => {
+    const defaults: Record<string, string> = {
+      field_merchant_name: "Merchant Name",
+      field_mid: "MID",
+      field_platform: "Platform",
+      field_category: "Category",
+      field_arr: "ARR",
+      field_txns_per_day: "Txns/Day",
+      field_aov: "AOV",
+      field_go_live_percent: "Go Live %",
+      field_kick_off_date: "Start Date (Kick Off)",
+      field_expected_go_live_date: "Expected Go-Live Date",
+      field_actual_go_live_date: "Go-Live Date",
+      field_sales_spoc: "Sales SPOC",
+      field_integration_type: "Integration Type",
+      field_pg_onboarding: "PG Onboarding",
+      field_brand_url: "Brand URL",
+      field_jira_link: "JIRA Link",
+      field_brd_link: "BRD Link",
+      field_mint_notes: "MINT Notes",
+      field_project_notes: "Project Notes",
+      field_current_phase_comment: "Phase Comment",
+    };
+    return defaults[key] || key;
+  });
+
   // Collect all unique checklist titles across projects (for column headers)
   const allChecklistTitles: string[] = [];
   const titleSet = new Set<string>();
@@ -24,56 +60,62 @@ export const exportProjectsToCSV = (projects: Project[]) => {
     });
   });
 
+  // Get team labels for header columns
+  const mintLabel = teamLbls.mint || "MINT";
+  const intLabel = teamLbls.integration || "Integration";
+  const gokwikLabel = respLbls.gokwik || "GoKwik";
+  const merchantLabel = respLbls.merchant || "Merchant";
+
   const headers = [
-    "Merchant Name",
-    "MID",
-    "Platform",
-    "Category",
-    "ARR",
-    "Txns/Day",
-    "AOV",
+    getLabel("field_merchant_name"),
+    getLabel("field_mid"),
+    getLabel("field_platform"),
+    getLabel("field_category"),
+    getLabel("field_arr"),
+    getLabel("field_txns_per_day"),
+    getLabel("field_aov"),
     "Current Phase",
     "Current Team",
     "Assigned Owner",
     "Project State",
     "Pending Acceptance",
-    "Go-Live %",
-    "Start Date (Kick Off)",
-    "Expected Go-Live Date",
-    "Go-Live Date",
-    "Sales SPOC",
-    "Integration Type",
-    "PG Onboarding",
+    getLabel("field_go_live_percent"),
+    getLabel("field_kick_off_date"),
+    getLabel("field_expected_go_live_date"),
+    getLabel("field_actual_go_live_date"),
+    getLabel("field_sales_spoc"),
+    getLabel("field_integration_type"),
+    getLabel("field_pg_onboarding"),
     "Responsibility",
-    "Brand URL",
-    "JIRA Link",
-    "BRD Link",
-    "MINT Notes",
-    "Project Notes",
+    getLabel("field_brand_url"),
+    getLabel("field_jira_link"),
+    getLabel("field_brd_link"),
+    getLabel("field_mint_notes"),
+    getLabel("field_project_notes"),
     "Phase Comment",
     "Checklist Total",
     "Checklist Completed",
     "Transfer Count",
     // Project-level time tracking
-    "Project GoKwik Time",
-    "Project Merchant Time",
+    `Project ${gokwikLabel} Time`,
+    `Project ${merchantLabel} Time`,
     // Team-wise checklist progress
-    "MINT Tasks Completed",
-    "MINT Tasks Total",
-    "MINT GoKwik Time",
-    "MINT Merchant Time",
-    "Integration Tasks Completed",
-    "Integration Tasks Total",
-    "Integration GoKwik Time",
-    "Integration Merchant Time",
+    `${mintLabel} Tasks Completed`,
+    `${mintLabel} Tasks Total`,
+    `${mintLabel} ${gokwikLabel} Time`,
+    `${mintLabel} ${merchantLabel} Time`,
+    `${intLabel} Tasks Completed`,
+    `${intLabel} Tasks Total`,
+    `${intLabel} ${gokwikLabel} Time`,
+    `${intLabel} ${merchantLabel} Time`,
     // Per-checklist item columns
     ...allChecklistTitles.flatMap((key) => {
       const [, title] = key.split("|");
       return [
         `${title} - Status`,
         `${title} - Responsibility`,
-        `${title} - GoKwik Time`,
-        `${title} - Merchant Time`,
+        `${title} - ${gokwikLabel} Time`,
+        `${title} - ${merchantLabel} Time`,
       ];
     }),
   ];
@@ -130,9 +172,9 @@ export const exportProjectsToCSV = (projects: Project[]) => {
       p.txnsPerDay,
       p.aov,
       p.currentPhase,
-      teamLabels[p.currentOwnerTeam] || p.currentOwnerTeam,
+      teamLbls[p.currentOwnerTeam] || p.currentOwnerTeam,
       p.assignedOwnerName || "",
-      projectStateLabels[p.projectState] || p.projectState,
+      stateLbls[p.projectState] || p.projectState,
       p.pendingAcceptance ? "Yes" : "No",
       p.goLivePercent,
       p.dates.kickOffDate,

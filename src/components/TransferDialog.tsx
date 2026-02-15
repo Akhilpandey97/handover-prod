@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Project } from "@/data/projectsData";
-import { teamLabels, teamColors, TeamRole } from "@/data/teams";
+import { teamColors, TeamRole } from "@/data/teams";
+import { useLabels } from "@/contexts/LabelsContext";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Dialog,
@@ -46,6 +47,7 @@ export const TransferDialog = ({
   const [notes, setNotes] = useState("");
   const [teamMembers, setTeamMembers] = useState<ProfileUser[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const { teamLabels } = useLabels();
 
   const nextTeam = getNextTeam(project.currentOwnerTeam as TeamRole);
 
