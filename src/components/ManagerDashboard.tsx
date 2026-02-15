@@ -8,6 +8,7 @@ import { TenantManagement } from "./TenantManagement";
 import { SettingsPanel } from "./SettingsPanel";
 import { ChecklistManagement } from "./ChecklistManagement";
 import { BulkEditDialog, BulkFieldUpdates } from "./BulkEditDialog";
+import { ProjectCalendar } from "./ProjectCalendar";
 import { CSVUploadDialog } from "./CSVUploadDialog";
 import { AddProjectDialog } from "./AddProjectDialog";
 import { AssignOwnerDialog } from "./AssignOwnerDialog";
@@ -64,6 +65,7 @@ import {
   Sparkles,
   Loader2,
   Pencil,
+  CalendarDays,
 } from "lucide-react";
 import { exportProjectsToCSV } from "@/utils/exportProjects";
 import { ThemeToggle } from "./ThemeToggle";
@@ -539,6 +541,10 @@ export const ManagerDashboard = () => {
               <FolderKanban className="h-3.5 w-3.5" />
               Projects
             </TabsTrigger>
+            <TabsTrigger value="calendar" className="gap-1.5 px-4 h-8 text-xs font-medium rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm">
+              <CalendarDays className="h-3.5 w-3.5" />
+              Calendar
+            </TabsTrigger>
             <TabsTrigger value="reports" className="gap-1.5 px-4 h-8 text-xs font-medium rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm">
               <TrendingUp className="h-3.5 w-3.5" />
               Reports
@@ -919,6 +925,11 @@ export const ManagerDashboard = () => {
                   </div>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          {/* ========= CALENDAR TAB ========= */}
+          <TabsContent value="calendar" className="space-y-6 mt-0">
+            <ProjectCalendar />
           </TabsContent>
 
           {/* ========= REPORTS TAB ========= */}
