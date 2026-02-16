@@ -113,6 +113,14 @@ const LABEL_GROUPS: LabelGroup[] = [
       { key: "field_phase2_comment", label: "Phase 2 Comment Label" },
     ],
   },
+  {
+    title: "Email Monitoring",
+    description: "Configure the email address and subject keywords for auto-parsing new brand onboarding emails",
+    keys: [
+      { key: "email_monitor_address", label: "Monitor Email Address" },
+      { key: "email_subject_keywords", label: "Subject Keywords (comma-separated)" },
+    ],
+  },
 ];
 
 export const SettingsPanel = () => {

@@ -9,6 +9,7 @@ import { SettingsPanel } from "./SettingsPanel";
 import { ChecklistManagement } from "./ChecklistManagement";
 import { BulkEditDialog, BulkFieldUpdates } from "./BulkEditDialog";
 import { ProjectCalendar } from "./ProjectCalendar";
+import { ParsedEmailsTab } from "./ParsedEmailsTab";
 import { CSVUploadDialog } from "./CSVUploadDialog";
 import { AddProjectDialog } from "./AddProjectDialog";
 import { AssignOwnerDialog } from "./AssignOwnerDialog";
@@ -66,6 +67,7 @@ import {
   Loader2,
   Pencil,
   CalendarDays,
+  Mail,
 } from "lucide-react";
 import { exportProjectsToCSV } from "@/utils/exportProjects";
 import { ThemeToggle } from "./ThemeToggle";
@@ -557,10 +559,14 @@ export const ManagerDashboard = () => {
               <Users className="h-3.5 w-3.5" />
               Users
             </TabsTrigger>
-            <TabsTrigger value="settings" className="gap-1.5 px-4 h-8 text-xs font-medium rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm">
-              <Settings className="h-3.5 w-3.5" />
-              Settings
-            </TabsTrigger>
+              <TabsTrigger value="settings" className="gap-1.5 px-4 h-8 text-xs font-medium rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm">
+                <Settings className="h-3.5 w-3.5" />
+                Settings
+              </TabsTrigger>
+              <TabsTrigger value="emails" className="gap-1.5 px-4 h-8 text-xs font-medium rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm">
+                <Mail className="h-3.5 w-3.5" />
+                Emails
+              </TabsTrigger>
             {currentUser?.team === "super_admin" && (
               <TabsTrigger value="tenants" className="gap-1.5 px-4 h-8 text-xs font-medium rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm">
                 <Building2 className="h-3.5 w-3.5" />
@@ -1185,6 +1191,11 @@ export const ManagerDashboard = () => {
           <TabsContent value="settings" className="mt-0 space-y-6">
             <SettingsPanel />
             {currentUser?.team === "super_admin" && <TenantManagement />}
+          </TabsContent>
+
+          {/* Emails Tab */}
+          <TabsContent value="emails" className="mt-0 space-y-6">
+            <ParsedEmailsTab />
           </TabsContent>
 
           {/* Tenants Tab (Super Admin only) */}
