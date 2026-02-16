@@ -223,6 +223,99 @@ export type Database = {
           },
         ]
       }
+      parsed_emails: {
+        Row: {
+          aov: number | null
+          arr: number | null
+          brand_name: string | null
+          brand_url: string | null
+          category: string | null
+          city: string | null
+          created_at: string
+          gmail_message_id: string
+          id: string
+          merchant_size: string | null
+          parsed_fields: Json | null
+          platform: string | null
+          project_id: string | null
+          raw_html: string | null
+          received_at: string
+          sales_notes: string | null
+          sender: string
+          status: string
+          sub_platform: string | null
+          subject: string
+          tenant_id: string | null
+          txns_per_day: number | null
+          updated_at: string
+        }
+        Insert: {
+          aov?: number | null
+          arr?: number | null
+          brand_name?: string | null
+          brand_url?: string | null
+          category?: string | null
+          city?: string | null
+          created_at?: string
+          gmail_message_id: string
+          id?: string
+          merchant_size?: string | null
+          parsed_fields?: Json | null
+          platform?: string | null
+          project_id?: string | null
+          raw_html?: string | null
+          received_at: string
+          sales_notes?: string | null
+          sender: string
+          status?: string
+          sub_platform?: string | null
+          subject: string
+          tenant_id?: string | null
+          txns_per_day?: number | null
+          updated_at?: string
+        }
+        Update: {
+          aov?: number | null
+          arr?: number | null
+          brand_name?: string | null
+          brand_url?: string | null
+          category?: string | null
+          city?: string | null
+          created_at?: string
+          gmail_message_id?: string
+          id?: string
+          merchant_size?: string | null
+          parsed_fields?: Json | null
+          platform?: string | null
+          project_id?: string | null
+          raw_html?: string | null
+          received_at?: string
+          sales_notes?: string | null
+          sender?: string
+          status?: string
+          sub_platform?: string | null
+          subject?: string
+          tenant_id?: string | null
+          txns_per_day?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "parsed_emails_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "parsed_emails_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string | null
