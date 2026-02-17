@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { useProjects } from "@/contexts/ProjectContext";
 import { useLabels } from "@/contexts/LabelsContext";
 import { ProjectState, projectStateLabels } from "@/data/projectsData";
-import { ProjectCardNew } from "./ProjectCardNew";
+import { KanbanCard } from "./KanbanCard";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
@@ -32,7 +32,7 @@ export const KanbanBoard = () => {
     <div className="space-y-4">
       <div className="flex gap-4 overflow-x-auto pb-4">
         {columns.map((col) => (
-          <div key={col.key} className="flex-shrink-0 w-80">
+          <div key={col.key} className="flex-shrink-0 w-64">
             <Card className={cn("h-full", col.bg)}>
               <CardHeader className="pb-3 pt-4 px-4">
                 <CardTitle className="flex items-center justify-between text-sm">
@@ -53,7 +53,7 @@ export const KanbanBoard = () => {
                       </p>
                     ) : (
                       col.projects.map((project) => (
-                        <ProjectCardNew key={project.id} project={project} />
+                        <KanbanCard key={project.id} project={project} />
                       ))
                     )}
                   </div>
