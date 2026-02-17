@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import { useState } from "react";
 import { fetchAiInsights } from "@/utils/aiInsights";
 import { toast } from "sonner";
+import { ProjectDetailsDialog } from "./ProjectDetailsDialog";
 
 const phaseLabels: Record<string, string> = {
   mint: "MINT",
@@ -18,6 +19,7 @@ const phaseLabels: Record<string, string> = {
 export const KanbanCard = ({ project }: { project: Project }) => {
   const { stateLabels } = useLabels();
   const [loadingInsights, setLoadingInsights] = useState(false);
+  const [detailsOpen, setDetailsOpen] = useState(false);
 
   const stateLabel =
     stateLabels[project.projectState] ||
@@ -55,32 +57,45 @@ export const KanbanCard = ({ project }: { project: Project }) => {
   };
 
   return (
-    <div className="rounded-md border bg-card p-3 space-y-2 shadow-sm text-xs">
-      <div className="font-semibold text-sm truncate">{project.merchantName}</div>
+    <>
+      <div className="rounded-md border bg-card p-3 space-y-2 shadow-sm text-xs">
+        <button
+          className="font-semibold text-sm truncate text-left w-full hover:text-primary hover:underline cursor-pointer transition-colors"
+          onClick={() => setDetailsOpen(true)}
+        >
+          {project.merchantName}
+        </button>
 
-      <div className="flex items-center gap-1.5 flex-wrap">
-        <Badge className={cn("text-[10px] px-1.5 py-0", projectStateColors[project.projectState])}>
-          {stateLabel}
-        </Badge>
-        <Badge variant="outline" className="text-[10px] px-1.5 py-0">
-          {phaseLabel}
-        </Badge>
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <Badge className={cn("text-[10px] px-1.5 py-0", projectStateColors[project.projectState])}>
+            {stateLabel}
+          </Badge>
+          <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+            {phaseLabel}
+          </Badge>
+        </div>
+
+        <div className="text-muted-foreground">
+          ARR: <span className="font-medium text-foreground">{arrDisplay}</span>
+        </div>
+
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-6 px-2 text-[11px] gap-1 text-primary"
+          onClick={handleInsights}
+          disabled={loadingInsights}
+        >
+          <Sparkles className="h-3 w-3" />
+          {loadingInsights ? "Loading…" : "AI Insights"}
+        </Button>
       </div>
 
-      <div className="text-muted-foreground">
-        ARR: <span className="font-medium text-foreground">{arrDisplay}</span>
-      </div>
-
-      <Button
-        variant="ghost"
-        size="sm"
-        className="h-6 px-2 text-[11px] gap-1 text-primary"
-        onClick={handleInsights}
-        disabled={loadingInsights}
-      >
-        <Sparkles className="h-3 w-3" />
-        {loadingInsights ? "Loading…" : "AI Insights"}
-      </Button>
-    </div>
+      <ProjectDetailsDialog
+        project={project}
+        open={detailsOpen}
+        onOpenChange={setDetailsOpen}
+      />
+    </>
   );
 };
