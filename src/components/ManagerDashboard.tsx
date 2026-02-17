@@ -10,6 +10,7 @@ import { ChecklistManagement } from "./ChecklistManagement";
 import { BulkEditDialog, BulkFieldUpdates } from "./BulkEditDialog";
 import { ProjectCalendar } from "./ProjectCalendar";
 import { ParsedEmailsTab } from "./ParsedEmailsTab";
+import { KanbanBoard } from "./KanbanBoard";
 import { CSVUploadDialog } from "./CSVUploadDialog";
 import { AddProjectDialog } from "./AddProjectDialog";
 import { AssignOwnerDialog } from "./AssignOwnerDialog";
@@ -562,6 +563,10 @@ export const ManagerDashboard = () => {
               <TabsTrigger value="settings" className="gap-1.5 px-4 h-8 text-xs font-medium rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm">
                 <Settings className="h-3.5 w-3.5" />
                 Settings
+              </TabsTrigger>
+              <TabsTrigger value="kanban" className="gap-1.5 px-4 h-8 text-xs font-medium rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm">
+                <FolderKanban className="h-3.5 w-3.5" />
+                Kanban
               </TabsTrigger>
               <TabsTrigger value="emails" className="gap-1.5 px-4 h-8 text-xs font-medium rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm">
                 <Mail className="h-3.5 w-3.5" />
@@ -1191,6 +1196,11 @@ export const ManagerDashboard = () => {
           <TabsContent value="settings" className="mt-0 space-y-6">
             <SettingsPanel />
             {currentUser?.team === "super_admin" && <TenantManagement />}
+          </TabsContent>
+
+          {/* Kanban Tab */}
+          <TabsContent value="kanban" className="mt-0">
+            <KanbanBoard />
           </TabsContent>
 
           {/* Emails Tab */}
