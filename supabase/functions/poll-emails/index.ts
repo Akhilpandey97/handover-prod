@@ -105,14 +105,36 @@ serve(async (req) => {
 
     const accessToken = tokenData.access_token;
 
-    // Step 2: Search for matching emails (last 7 days, from specific sender, matching subject)
-    const query = `from:${monitorEmail} subject:(${subjectKeywords.join(" OR ")}) newer_than:7d`;
-    const searchUrl = `https://gmail.googleapis.com/gmail/v1/users/me/messages?q=${encodeURIComponent(query)}&maxResults=20`;
+    // Debug: check which Gmail account this token belongs to
+    const profileRes = await fetch("https://gmail.googleapis.com/gmail/v1/users/me/profile", {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    const profileData = await profileRes.json();
+    console.log("Gmail profile:", JSON.stringify(profileData));
+
+    // Step 2: Search for matching emails (last 30 days, from specific sender, matching subject)
+    const query = `from:${monitorEmail} subject:(${subjectKeywords.join(" OR ")}) newer_than:30d`;
+    const searchUrl = `https://gmail.googleapis.com/gmail/v1/users/me/messages?q=${encodeURIComponent(query)}&maxResults=50`;
+
+    console.log("Gmail search query:", query);
+    console.log("Gmail search URL:", searchUrl);
 
     const searchRes = await fetch(searchUrl, {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
     const searchData = await searchRes.json();
+    console.log("Gmail search response:", JSON.stringify(searchData).substring(0, 500));
+
+    // Check for API errors (e.g. Gmail API not enabled)
+    if (searchData.error) {
+      const errMsg = searchData.error.message || "Unknown Gmail API error";
+      console.error("Gmail API error:", errMsg);
+      return new Response(
+        JSON.stringify({ error: `Gmail API error: ${errMsg}`, details: searchData.error }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     const messages = searchData.messages || [];
 
     if (messages.length === 0) {
