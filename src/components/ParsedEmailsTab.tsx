@@ -18,6 +18,7 @@ import {
 import { toast } from "sonner";
 import { Mail, RefreshCw, Plus, Eye, CheckCircle2, X, Loader2, Inbox } from "lucide-react";
 import { format } from "date-fns";
+import { EmailToProjectDialog } from "./EmailToProjectDialog";
 
 interface ParsedEmail {
   id: string;
@@ -58,6 +59,7 @@ export const ParsedEmailsTab = () => {
   const [polling, setPolling] = useState(false);
   const [selectedEmail, setSelectedEmail] = useState<ParsedEmail | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
+  const [mappingEmail, setMappingEmail] = useState<ParsedEmail | null>(null);
 
   const fetchEmails = useCallback(async () => {
     setLoading(true);
@@ -105,62 +107,8 @@ export const ParsedEmailsTab = () => {
     }
   };
 
-  const handleCreateProject = async (email: ParsedEmail) => {
-    if (!currentUser) return;
-
-    const newProject: Project = {
-      id: crypto.randomUUID(),
-      merchantName: email.brand_name || "Untitled",
-      mid: `EMAIL-${email.gmail_message_id.substring(0, 8)}`,
-      currentPhase: "mint" as const,
-      currentOwnerTeam: "mint" as const,
-      arr: email.arr || 0,
-      platform: email.platform || "Custom",
-      integrationType: "Standard",
-      salesSpoc: "",
-      currentResponsibility: "neutral" as const,
-      pendingAcceptance: false,
-      projectState: "not_started" as const,
-      category: email.category || "",
-      txnsPerDay: email.txns_per_day || 0,
-      aov: email.aov || 0,
-      pgOnboarding: "",
-      goLivePercent: 0,
-      dates: {
-        kickOffDate: new Date().toISOString().split("T")[0],
-        expectedGoLiveDate: "",
-        goLiveDate: "",
-      },
-      links: {
-        brandUrl: email.brand_url || "",
-        jiraLink: "",
-        brdLink: "",
-        mintChecklistLink: "",
-        integrationChecklistLink: "",
-      },
-      notes: {
-        mintNotes: "",
-        projectNotes: email.sales_notes || "",
-        currentPhaseComment: "",
-        phase2Comment: "",
-      },
-      checklist: [],
-      transferHistory: [],
-      responsibilityLog: [],
-      assignedOwner: undefined,
-      assignedOwnerName: undefined,
-    };
-
-    addProject(newProject);
-
-    // Update email status
-    await supabase
-      .from("parsed_emails")
-      .update({ status: "project_created", project_id: newProject.id })
-      .eq("id", email.id);
-
-    toast.success(`Project created for "${email.brand_name}" — assign an owner from Projects tab`);
-    await fetchEmails();
+  const handleCreateProject = (email: ParsedEmail) => {
+    setMappingEmail(email);
   };
 
   const handleDismiss = async (emailId: string) => {
@@ -401,6 +349,18 @@ export const ParsedEmailsTab = () => {
           )}
         </DialogContent>
       </Dialog>
+      {/* Email to Project Mapping Dialog */}
+      {mappingEmail && (
+        <EmailToProjectDialog
+          email={mappingEmail}
+          open={!!mappingEmail}
+          onOpenChange={(open) => { if (!open) setMappingEmail(null); }}
+          onProjectCreated={() => {
+            setMappingEmail(null);
+            fetchEmails();
+          }}
+        />
+      )}
     </div>
   );
 };

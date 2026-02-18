@@ -247,6 +247,12 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
                         REJECTED — Action Needed
                       </Badge>
                     )}
+                    {!project.assignedOwner && project.notes.currentPhaseComment?.includes("needs manager review") && (
+                      <Badge className="bg-orange-500 text-white px-2 py-0.5 text-xs font-semibold animate-pulse">
+                        <UserPlus className="h-3 w-3 mr-1" />
+                        NEEDS ASSIGNMENT
+                      </Badge>
+                    )}
                   </div>
                   <div className="flex items-center gap-2 flex-wrap text-xs text-muted-foreground">
                     <Badge className={`${phaseStyle.badge} text-white text-xs px-2.5 py-0.5`}>
