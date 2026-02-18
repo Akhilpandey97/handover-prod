@@ -527,6 +527,50 @@ export type Database = {
           },
         ]
       }
+      saved_reports: {
+        Row: {
+          columns: string[]
+          created_at: string
+          created_by: string | null
+          id: string
+          name: string
+          recipients: string[] | null
+          schedule: string | null
+          tenant_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          columns?: string[]
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name: string
+          recipients?: string[] | null
+          schedule?: string | null
+          tenant_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          columns?: string[]
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name?: string
+          recipients?: string[] | null
+          schedule?: string | null
+          tenant_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "saved_reports_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tenants: {
         Row: {
           created_at: string

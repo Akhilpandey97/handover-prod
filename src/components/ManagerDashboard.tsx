@@ -80,6 +80,7 @@ import { ExecutiveDashboard } from "./reports/ExecutiveDashboard";
 import { OperationalReports } from "./reports/OperationalReports";
 import { MerchantResponsibility } from "./reports/MerchantResponsibility";
 import { TacticalLists } from "./reports/TacticalLists";
+import { ReportsBuilder } from "./reports/ReportsBuilder";
 
 export const ManagerDashboard = () => {
   const { currentUser, logout } = useAuth();
@@ -960,6 +961,7 @@ export const ManagerDashboard = () => {
                       { key: "tactical", label: "Tactical" },
                       { key: "project", label: "Project & Checklist" },
                       { key: "team", label: "Team & Owner" },
+                      { key: "builder", label: "Report Builder" },
                     ].map(({ key, label }) => (
                       <Button key={key} variant={reportType === key ? "default" : "outline"} size="sm" onClick={() => setReportType(key)}>
                         {label}
@@ -974,6 +976,7 @@ export const ManagerDashboard = () => {
                     {reportType === "operational" && <OperationalReports projects={displayProjects} />}
                     {reportType === "merchant" && <MerchantResponsibility projects={displayProjects} />}
                     {reportType === "tactical" && <TacticalLists projects={displayProjects} />}
+                    {reportType === "builder" && <ReportsBuilder projects={displayProjects} />}
 
                     {/* Merged Project + Checklist Report */}
                     {reportType === "project" && (
