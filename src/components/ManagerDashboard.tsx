@@ -69,6 +69,7 @@ import {
   Pencil,
   CalendarDays,
   Mail,
+  GripVertical,
 } from "lucide-react";
 import { exportProjectsToCSV } from "@/utils/exportProjects";
 import { ThemeToggle } from "./ThemeToggle";
@@ -100,6 +101,16 @@ export const ManagerDashboard = () => {
   const [expandedProjects, setExpandedProjects] = useState<Set<string>>(new Set());
   const [csvDialogOpen, setCsvDialogOpen] = useState(false);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
+
+  // Draggable tab order
+  const DEFAULT_TAB_ORDER = ["overview", "projects", "calendar", "reports", "checklist", "users", "settings", "kanban", "emails"];
+  const [tabOrder, setTabOrder] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem("manager_tab_order");
+      return saved ? JSON.parse(saved) : DEFAULT_TAB_ORDER;
+    } catch { return DEFAULT_TAB_ORDER; }
+  });
+  const [draggedTab, setDraggedTab] = useState<string | null>(null);
 
   // AI insights state for inline reports
   const [projectAiInsight, setProjectAiInsight] = useState<string | null>(null);
@@ -417,6 +428,39 @@ export const ManagerDashboard = () => {
 
   const hasActiveFilters = teamFilter !== "all" || ownerFilter !== "all" || phaseFilter !== "all" || stateFilter !== "all" || kickOffFrom || kickOffTo || goLiveFrom || goLiveTo;
 
+  // Tab config for draggable tabs
+  const TAB_CONFIG: Record<string, { icon: React.ReactNode; label: string }> = {
+    overview: { icon: <PieChart className="h-3.5 w-3.5" />, label: "Overview" },
+    projects: { icon: <FolderKanban className="h-3.5 w-3.5" />, label: "Projects" },
+    calendar: { icon: <CalendarDays className="h-3.5 w-3.5" />, label: "Calendar" },
+    reports: { icon: <TrendingUp className="h-3.5 w-3.5" />, label: "Reports" },
+    checklist: { icon: <ListChecks className="h-3.5 w-3.5" />, label: "Checklist" },
+    users: { icon: <Users className="h-3.5 w-3.5" />, label: "Users" },
+    settings: { icon: <Settings className="h-3.5 w-3.5" />, label: "Settings" },
+    kanban: { icon: <FolderKanban className="h-3.5 w-3.5" />, label: "Kanban" },
+    emails: { icon: <Mail className="h-3.5 w-3.5" />, label: "Emails" },
+    tenants: { icon: <Building2 className="h-3.5 w-3.5" />, label: "Tenants" },
+  };
+
+  const handleTabDragStart = (tab: string) => setDraggedTab(tab);
+  const handleTabDragOver = (e: React.DragEvent, targetTab: string) => {
+    e.preventDefault();
+    if (!draggedTab || draggedTab === targetTab) return;
+    setTabOrder(prev => {
+      const newOrder = [...prev];
+      const fromIdx = newOrder.indexOf(draggedTab);
+      const toIdx = newOrder.indexOf(targetTab);
+      if (fromIdx === -1 || toIdx === -1) return prev;
+      newOrder.splice(fromIdx, 1);
+      newOrder.splice(toIdx, 0, draggedTab);
+      return newOrder;
+    });
+  };
+  const handleTabDragEnd = () => {
+    setDraggedTab(null);
+    localStorage.setItem("manager_tab_order", JSON.stringify(tabOrder));
+  };
+
   const fetchProjectAiInsight = async () => {
     setProjectAiLoading(true);
     try {
@@ -536,49 +580,25 @@ export const ManagerDashboard = () => {
       {/* Main Content */}
       <main className="container mx-auto px-6 py-6">
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="h-10 bg-muted/50 p-1 mb-6 rounded-lg">
-            <TabsTrigger value="overview" className="gap-1.5 px-4 h-8 text-xs font-medium rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm">
-              <PieChart className="h-3.5 w-3.5" />
-              Overview
-            </TabsTrigger>
-            <TabsTrigger value="projects" className="gap-1.5 px-4 h-8 text-xs font-medium rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm">
-              <FolderKanban className="h-3.5 w-3.5" />
-              Projects
-            </TabsTrigger>
-            <TabsTrigger value="calendar" className="gap-1.5 px-4 h-8 text-xs font-medium rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm">
-              <CalendarDays className="h-3.5 w-3.5" />
-              Calendar
-            </TabsTrigger>
-            <TabsTrigger value="reports" className="gap-1.5 px-4 h-8 text-xs font-medium rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm">
-              <TrendingUp className="h-3.5 w-3.5" />
-              Reports
-            </TabsTrigger>
-            <TabsTrigger value="checklist" className="gap-1.5 px-4 h-8 text-xs font-medium rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm">
-              <ListChecks className="h-3.5 w-3.5" />
-              Checklist
-            </TabsTrigger>
-            <TabsTrigger value="users" className="gap-1.5 px-4 h-8 text-xs font-medium rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm">
-              <Users className="h-3.5 w-3.5" />
-              Users
-            </TabsTrigger>
-              <TabsTrigger value="settings" className="gap-1.5 px-4 h-8 text-xs font-medium rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm">
-                <Settings className="h-3.5 w-3.5" />
-                Settings
+          <TabsList className="h-auto bg-muted/50 p-1 mb-6 rounded-lg flex flex-wrap gap-0">
+            {[...tabOrder, ...(currentUser?.team === "super_admin" && !tabOrder.includes("tenants") ? ["tenants"] : [])]
+              .filter(tab => tab !== "tenants" || currentUser?.team === "super_admin")
+              .filter(tab => TAB_CONFIG[tab])
+              .map(tab => (
+              <TabsTrigger
+                key={tab}
+                value={tab}
+                draggable
+                onDragStart={() => handleTabDragStart(tab)}
+                onDragOver={(e) => handleTabDragOver(e, tab)}
+                onDragEnd={handleTabDragEnd}
+                className={`gap-1.5 px-4 h-8 text-xs font-medium rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm cursor-grab active:cursor-grabbing ${draggedTab === tab ? "opacity-50" : ""}`}
+              >
+                <GripVertical className="h-3 w-3 text-muted-foreground/50" />
+                {TAB_CONFIG[tab].icon}
+                {TAB_CONFIG[tab].label}
               </TabsTrigger>
-              <TabsTrigger value="kanban" className="gap-1.5 px-4 h-8 text-xs font-medium rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm">
-                <FolderKanban className="h-3.5 w-3.5" />
-                Kanban
-              </TabsTrigger>
-              <TabsTrigger value="emails" className="gap-1.5 px-4 h-8 text-xs font-medium rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm">
-                <Mail className="h-3.5 w-3.5" />
-                Emails
-              </TabsTrigger>
-            {currentUser?.team === "super_admin" && (
-              <TabsTrigger value="tenants" className="gap-1.5 px-4 h-8 text-xs font-medium rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm">
-                <Building2 className="h-3.5 w-3.5" />
-                Tenants
-              </TabsTrigger>
-            )}
+            ))}
           </TabsList>
 
           {/* ========= OVERVIEW TAB ========= */}
