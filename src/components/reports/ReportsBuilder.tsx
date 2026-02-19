@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { Project, projectStateLabels, formatDuration, calculateTimeFromChecklist } from "@/data/projectsData";
 import { useLabels } from "@/contexts/LabelsContext";
 import { useAuth } from "@/contexts/AuthContext";
@@ -14,7 +14,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Save, Trash2, Play, Plus, Clock, Calendar, FileText, X, ChevronRight, ChevronDown, Sigma } from "lucide-react";
+import { Save, Trash2, Play, Plus, Clock, Calendar, FileText, X, ChevronRight, ChevronDown, Sigma, GripVertical } from "lucide-react";
 
 // All available columns for report builder
 const AVAILABLE_COLUMNS: { key: string; label: string; group: string }[] = [
@@ -52,6 +52,8 @@ const AVAILABLE_COLUMNS: { key: string; label: string; group: string }[] = [
 
 const GROUPABLE_COLUMNS = ["projectState", "currentPhase", "currentOwnerTeam", "platform", "category", "assignedOwnerName", "currentResponsibility", "integrationType", "pgOnboarding", "salesSpoc"];
 const NUMERIC_COLUMNS = ["arr", "txnsPerDay", "aov", "goLivePercent", "transferCount"];
+
+const DEFAULT_GROUP_ORDER = ["Basic", "Financial", "Status", "Dates", "Details", "Links", "Notes", "Metrics"];
 
 interface SavedReport {
   id: string;
@@ -115,7 +117,7 @@ interface PivotGroup {
   key: string;
   label: string;
   projects: Project[];
-  aggregates: Record<string, { sum: number; avg: number; count: number }>;
+  aggregates: Record<string, { sum: number; avg: number; count: number; min: number; max: number }>;
 }
 
 export const ReportsBuilder = ({ projects }: { projects: Project[] }) => {
@@ -124,7 +126,13 @@ export const ReportsBuilder = ({ projects }: { projects: Project[] }) => {
   const labels = { teamLabels, responsibilityLabels, phaseLabels, stateLabels };
 
   const [selectedColumns, setSelectedColumns] = useState<string[]>(["merchantName", "projectState", "arr", "currentPhase", "goLivePercent"]);
-  const [groupByColumn, setGroupByColumn] = useState<string>("none");
+  // Pivot: row grouping + column grouping (Excel-style)
+  const [pivotRowField, setPivotRowField] = useState<string>("none");
+  const [pivotColField, setPivotColField] = useState<string>("none");
+  const [pivotValueField, setPivotValueField] = useState<string>("arr");
+  const [pivotAggType, setPivotAggType] = useState<string>("sum");
+  const [showPivot, setShowPivot] = useState(false);
+
   const [savedReports, setSavedReports] = useState<SavedReport[]>([]);
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
   const [reportName, setReportName] = useState("");
@@ -133,6 +141,18 @@ export const ReportsBuilder = ({ projects }: { projects: Project[] }) => {
   const [recipients, setRecipients] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
+
+  // Group By for flat table grouping
+  const [groupByColumn, setGroupByColumn] = useState<string>("none");
+
+  // Draggable column groups
+  const [groupOrder, setGroupOrder] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem("report_group_order");
+      return saved ? JSON.parse(saved) : DEFAULT_GROUP_ORDER;
+    } catch { return DEFAULT_GROUP_ORDER; }
+  });
+  const [draggedGroup, setDraggedGroup] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchReports = async () => {
@@ -162,6 +182,27 @@ export const ReportsBuilder = ({ projects }: { projects: Project[] }) => {
     return groups;
   }, []);
 
+  // Draggable group handlers
+  const handleGroupDragStart = (group: string) => setDraggedGroup(group);
+  const handleGroupDragOver = (e: React.DragEvent, targetGroup: string) => {
+    e.preventDefault();
+    if (!draggedGroup || draggedGroup === targetGroup) return;
+    setGroupOrder(prev => {
+      const newOrder = [...prev];
+      const fromIdx = newOrder.indexOf(draggedGroup);
+      const toIdx = newOrder.indexOf(targetGroup);
+      if (fromIdx === -1 || toIdx === -1) return prev;
+      newOrder.splice(fromIdx, 1);
+      newOrder.splice(toIdx, 0, draggedGroup);
+      return newOrder;
+    });
+  };
+  const handleGroupDragEnd = () => {
+    setDraggedGroup(null);
+    localStorage.setItem("report_group_order", JSON.stringify(groupOrder));
+  };
+
+  // Flat table grouping pivot
   const pivotGroups = useMemo<PivotGroup[]>(() => {
     if (groupByColumn === "none") return [];
     const groupMap = new Map<string, Project[]>();
@@ -172,12 +213,14 @@ export const ReportsBuilder = ({ projects }: { projects: Project[] }) => {
       groupMap.set(val, existing);
     });
     return Array.from(groupMap.entries()).map(([key, groupProjects]) => {
-      const aggregates: Record<string, { sum: number; avg: number; count: number }> = {};
+      const aggregates: Record<string, { sum: number; avg: number; count: number; min: number; max: number }> = {};
       NUMERIC_COLUMNS.forEach(col => {
         if (!selectedColumns.includes(col)) return;
         const values = groupProjects.map(p => getNumericValue(p, col));
         const sum = values.reduce((a, b) => a + b, 0);
-        aggregates[col] = { sum, avg: values.length > 0 ? sum / values.length : 0, count: values.length };
+        const min = values.length > 0 ? Math.min(...values) : 0;
+        const max = values.length > 0 ? Math.max(...values) : 0;
+        aggregates[col] = { sum, avg: values.length > 0 ? sum / values.length : 0, count: values.length, min, max };
       });
       return { key, label: key || "—", projects: groupProjects, aggregates };
     });
@@ -189,6 +232,79 @@ export const ReportsBuilder = ({ projects }: { projects: Project[] }) => {
       if (next.has(key)) next.delete(key); else next.add(key);
       return next;
     });
+  };
+
+  // Excel-style pivot table computation
+  const excelPivot = useMemo(() => {
+    if (!showPivot || pivotRowField === "none") return null;
+    
+    // Get unique row values
+    const rowValues = new Set<string>();
+    const colValues = new Set<string>();
+    projects.forEach(p => {
+      rowValues.add(getCellValue(p, pivotRowField, labels));
+      if (pivotColField !== "none") {
+        colValues.add(getCellValue(p, pivotColField, labels));
+      }
+    });
+
+    const sortedRows = Array.from(rowValues).sort();
+    const sortedCols = pivotColField !== "none" ? Array.from(colValues).sort() : ["Total"];
+
+    // Build data grid
+    const grid: Record<string, Record<string, number[]>> = {};
+    sortedRows.forEach(r => {
+      grid[r] = {};
+      sortedCols.forEach(c => { grid[r][c] = []; });
+    });
+
+    projects.forEach(p => {
+      const rowVal = getCellValue(p, pivotRowField, labels);
+      const colVal = pivotColField !== "none" ? getCellValue(p, pivotColField, labels) : "Total";
+      const numVal = getNumericValue(p, pivotValueField);
+      if (grid[rowVal]?.[colVal]) {
+        grid[rowVal][colVal].push(numVal);
+      }
+    });
+
+    const aggregate = (values: number[]): number => {
+      if (values.length === 0) return 0;
+      switch (pivotAggType) {
+        case "sum": return values.reduce((a, b) => a + b, 0);
+        case "avg": return values.reduce((a, b) => a + b, 0) / values.length;
+        case "count": return values.length;
+        case "min": return Math.min(...values);
+        case "max": return Math.max(...values);
+        default: return values.reduce((a, b) => a + b, 0);
+      }
+    };
+
+    // Compute aggregated grid
+    const result: Record<string, Record<string, number>> = {};
+    const colTotals: Record<string, number[]> = {};
+    sortedCols.forEach(c => { colTotals[c] = []; });
+
+    sortedRows.forEach(r => {
+      result[r] = {};
+      sortedCols.forEach(c => {
+        const agg = aggregate(grid[r][c]);
+        result[r][c] = agg;
+        colTotals[c].push(...grid[r][c]);
+      });
+    });
+
+    // Grand totals
+    const grandTotals: Record<string, number> = {};
+    sortedCols.forEach(c => { grandTotals[c] = aggregate(colTotals[c]); });
+
+    return { rows: sortedRows, cols: sortedCols, data: result, grandTotals };
+  }, [showPivot, pivotRowField, pivotColField, pivotValueField, pivotAggType, projects, labels]);
+
+  const formatPivotVal = (val: number) => {
+    if (pivotValueField === "goLivePercent") return `${val.toFixed(0)}%`;
+    if (pivotValueField === "arr") return val.toFixed(2);
+    if (pivotAggType === "count") return String(Math.round(val));
+    return val.toFixed(1);
   };
 
   const addRecipient = () => {
@@ -247,7 +363,7 @@ export const ReportsBuilder = ({ projects }: { projects: Project[] }) => {
     return val.toFixed(1);
   };
 
-  const renderPivotTable = () => {
+  const renderGroupedTable = () => {
     const displayCols = selectedColumns.filter(k => k !== groupByColumn);
     return (
       <Table>
@@ -337,6 +453,63 @@ export const ReportsBuilder = ({ projects }: { projects: Project[] }) => {
     </Table>
   );
 
+  const renderExcelPivot = () => {
+    if (!excelPivot) return <p className="text-sm text-muted-foreground p-4">Select a Row field to create a pivot table.</p>;
+    const { rows, cols, data, grandTotals } = excelPivot;
+    const rowLabel = AVAILABLE_COLUMNS.find(c => c.key === pivotRowField)?.label || pivotRowField;
+    const valLabel = AVAILABLE_COLUMNS.find(c => c.key === pivotValueField)?.label || pivotValueField;
+
+    return (
+      <div className="overflow-auto">
+        <Table>
+          <TableHeader>
+            <TableRow className="bg-muted/50">
+              <TableHead className="text-xs font-semibold whitespace-nowrap sticky left-0 bg-muted/50 z-10">{rowLabel}</TableHead>
+              {cols.map(col => (
+                <TableHead key={col} className="text-xs font-semibold whitespace-nowrap text-center">{col}</TableHead>
+              ))}
+              {cols.length > 1 && <TableHead className="text-xs font-semibold whitespace-nowrap text-center bg-muted/80">Grand Total</TableHead>}
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {rows.map(row => {
+              const rowTotal = cols.reduce((s, c) => s + (data[row]?.[c] || 0), 0);
+              return (
+                <TableRow key={row} className="hover:bg-muted/20">
+                  <TableCell className="text-xs font-medium whitespace-nowrap sticky left-0 bg-background z-10">{row}</TableCell>
+                  {cols.map(col => (
+                    <TableCell key={col} className="text-xs text-center font-mono">
+                      {formatPivotVal(data[row]?.[col] || 0)}
+                    </TableCell>
+                  ))}
+                  {cols.length > 1 && (
+                    <TableCell className="text-xs text-center font-mono font-semibold bg-muted/30">
+                      {formatPivotVal(rowTotal)}
+                    </TableCell>
+                  )}
+                </TableRow>
+              );
+            })}
+            {/* Grand total row */}
+            <TableRow className="bg-muted/60 font-semibold">
+              <TableCell className="text-xs font-semibold sticky left-0 bg-muted/60 z-10">Grand Total</TableCell>
+              {cols.map(col => (
+                <TableCell key={col} className="text-xs text-center font-mono font-semibold">
+                  {formatPivotVal(grandTotals[col] || 0)}
+                </TableCell>
+              ))}
+              {cols.length > 1 && (
+                <TableCell className="text-xs text-center font-mono font-bold bg-muted/80">
+                  {formatPivotVal(Object.values(grandTotals).reduce((s, v) => s + v, 0))}
+                </TableCell>
+              )}
+            </TableRow>
+          </TableBody>
+        </Table>
+      </div>
+    );
+  };
+
   return (
     <div className="space-y-4">
       {savedReports.length > 0 && (
@@ -368,7 +541,7 @@ export const ReportsBuilder = ({ projects }: { projects: Project[] }) => {
       <Card>
         <CardHeader className="py-3 px-4">
           <div className="flex items-center justify-between flex-wrap gap-2">
-            <CardTitle className="text-sm">Select Columns ({selectedColumns.length} selected)</CardTitle>
+            <CardTitle className="text-sm">Select Columns ({selectedColumns.length} selected) <span className="text-[10px] text-muted-foreground font-normal ml-1">— drag groups to reorder</span></CardTitle>
             <div className="flex gap-2 items-center">
               <div className="flex items-center gap-1.5">
                 <Label className="text-xs text-muted-foreground whitespace-nowrap">Group By:</Label>
@@ -394,10 +567,20 @@ export const ReportsBuilder = ({ projects }: { projects: Project[] }) => {
         </CardHeader>
         <CardContent className="px-4 pb-3 pt-0">
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-x-4 gap-y-1">
-            {Object.entries(columnGroups).map(([group, cols]) => (
-              <div key={group}>
-                <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">{group}</p>
-                {cols.map(col => (
+            {groupOrder.filter(g => columnGroups[g]).map(group => (
+              <div
+                key={group}
+                draggable
+                onDragStart={() => handleGroupDragStart(group)}
+                onDragOver={(e) => handleGroupDragOver(e, group)}
+                onDragEnd={handleGroupDragEnd}
+                className={`cursor-grab active:cursor-grabbing rounded-md p-1.5 transition-opacity ${draggedGroup === group ? "opacity-50 bg-primary/10" : "hover:bg-muted/40"}`}
+              >
+                <div className="flex items-center gap-1 mb-1">
+                  <GripVertical className="h-3 w-3 text-muted-foreground/50" />
+                  <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">{group}</p>
+                </div>
+                {columnGroups[group].map(col => (
                   <label key={col.key} className="flex items-center gap-1.5 py-0.5 cursor-pointer text-xs hover:text-primary transition-colors">
                     <Checkbox checked={selectedColumns.includes(col.key)} onCheckedChange={() => toggleColumn(col.key)} className="h-3.5 w-3.5" />
                     {col.label}
@@ -409,6 +592,7 @@ export const ReportsBuilder = ({ projects }: { projects: Project[] }) => {
         </CardContent>
       </Card>
 
+      {/* Report Preview - scrollable */}
       <Card>
         <CardHeader className="py-3 px-4">
           <div className="flex items-center justify-between">
@@ -433,9 +617,81 @@ export const ReportsBuilder = ({ projects }: { projects: Project[] }) => {
           </div>
         </CardHeader>
         <CardContent className="p-0">
-          <ScrollArea className="max-h-[500px]">
-            {groupByColumn !== "none" ? renderPivotTable() : renderFlatTable()}
-          </ScrollArea>
+          <div className="overflow-auto max-h-[70vh]">
+            {groupByColumn !== "none" ? renderGroupedTable() : renderFlatTable()}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Excel-style Pivot Table */}
+      <Card>
+        <CardHeader className="py-3 px-4">
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <Sigma className="h-4 w-4" />
+              Pivot Table
+            </CardTitle>
+            <div className="flex gap-2 items-center flex-wrap">
+              <div className="flex items-center gap-1.5">
+                <Label className="text-xs text-muted-foreground whitespace-nowrap">Rows:</Label>
+                <Select value={pivotRowField} onValueChange={(v) => { setPivotRowField(v); setShowPivot(true); }}>
+                  <SelectTrigger className="h-7 text-xs w-[130px]"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Select…</SelectItem>
+                    {GROUPABLE_COLUMNS.map(k => {
+                      const col = AVAILABLE_COLUMNS.find(c => c.key === k);
+                      return <SelectItem key={k} value={k}>{col?.label || k}</SelectItem>;
+                    })}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <Label className="text-xs text-muted-foreground whitespace-nowrap">Columns:</Label>
+                <Select value={pivotColField} onValueChange={(v) => { setPivotColField(v); setShowPivot(true); }}>
+                  <SelectTrigger className="h-7 text-xs w-[130px]"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">None</SelectItem>
+                    {GROUPABLE_COLUMNS.filter(k => k !== pivotRowField).map(k => {
+                      const col = AVAILABLE_COLUMNS.find(c => c.key === k);
+                      return <SelectItem key={k} value={k}>{col?.label || k}</SelectItem>;
+                    })}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <Label className="text-xs text-muted-foreground whitespace-nowrap">Values:</Label>
+                <Select value={pivotValueField} onValueChange={setPivotValueField}>
+                  <SelectTrigger className="h-7 text-xs w-[110px]"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {NUMERIC_COLUMNS.map(k => {
+                      const col = AVAILABLE_COLUMNS.find(c => c.key === k);
+                      return <SelectItem key={k} value={k}>{col?.label || k}</SelectItem>;
+                    })}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <Label className="text-xs text-muted-foreground whitespace-nowrap">Agg:</Label>
+                <Select value={pivotAggType} onValueChange={setPivotAggType}>
+                  <SelectTrigger className="h-7 text-xs w-[90px]"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="sum">Sum</SelectItem>
+                    <SelectItem value="avg">Average</SelectItem>
+                    <SelectItem value="count">Count</SelectItem>
+                    <SelectItem value="min">Min</SelectItem>
+                    <SelectItem value="max">Max</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="p-0">
+          <div className="overflow-auto max-h-[60vh]">
+            {showPivot ? renderExcelPivot() : (
+              <p className="text-sm text-muted-foreground p-4">Select Row and Column fields above to generate an Excel-style pivot table.</p>
+            )}
+          </div>
         </CardContent>
       </Card>
 

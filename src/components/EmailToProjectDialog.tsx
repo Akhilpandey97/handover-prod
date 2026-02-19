@@ -145,8 +145,8 @@ export const EmailToProjectDialog = ({ email, open, onOpenChange, onProjectCreat
       goLivePercent: 0,
       dates: {
         kickOffDate: new Date().toISOString().split("T")[0],
-        expectedGoLiveDate: "",
-        goLiveDate: "",
+        expectedGoLiveDate: undefined,
+        goLiveDate: undefined,
       },
       links: {
         brandUrl: getFinalValue("brandUrl") || "",
@@ -175,10 +175,10 @@ export const EmailToProjectDialog = ({ email, open, onOpenChange, onProjectCreat
 
     addProject(newProject);
 
-    // Update email status
+    // Update email status (don't set project_id to avoid FK issues since addProject generates a new server-side ID)
     await supabase
       .from("parsed_emails")
-      .update({ status: "project_created", project_id: newProject.id })
+      .update({ status: "project_created" })
       .eq("id", email.id);
 
     toast.success(`Project "${merchantName}" created — assign an owner from Projects tab`);
