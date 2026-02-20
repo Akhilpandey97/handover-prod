@@ -55,6 +55,9 @@ const NUMERIC_COLUMNS = ["arr", "txnsPerDay", "aov", "goLivePercent", "transferC
 
 const DEFAULT_GROUP_ORDER = ["Basic", "Financial", "Status", "Dates", "Details", "Links", "Notes", "Metrics"];
 
+const DAYS_OF_WEEK = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+const HOURS = Array.from({ length: 24 }, (_, i) => i);
+
 interface SavedReport {
   id: string;
   name: string;
@@ -62,6 +65,8 @@ interface SavedReport {
   schedule: string;
   recipients: string[];
 }
+
+type AggType = "sum" | "avg" | "count" | "min" | "max";
 
 function getCellValue(project: Project, key: string, labels: any): string {
   switch (key) {
@@ -113,11 +118,29 @@ function getNumericValue(project: Project, key: string): number {
   }
 }
 
+function computeAgg(values: number[], type: AggType): number {
+  if (values.length === 0) return 0;
+  switch (type) {
+    case "sum": return values.reduce((a, b) => a + b, 0);
+    case "avg": return values.reduce((a, b) => a + b, 0) / values.length;
+    case "count": return values.length;
+    case "min": return Math.min(...values);
+    case "max": return Math.max(...values);
+  }
+}
+
+function formatAggVal(key: string, val: number, aggType: AggType): string {
+  if (aggType === "count") return String(Math.round(val));
+  if (key === "arr") return val.toFixed(2);
+  if (key === "goLivePercent") return `${val.toFixed(0)}%`;
+  return val.toFixed(1);
+}
+
 interface PivotGroup {
   key: string;
   label: string;
   projects: Project[];
-  aggregates: Record<string, { sum: number; avg: number; count: number; min: number; max: number }>;
+  aggregates: Record<string, number>;
 }
 
 export const ReportsBuilder = ({ projects }: { projects: Project[] }) => {
@@ -126,23 +149,26 @@ export const ReportsBuilder = ({ projects }: { projects: Project[] }) => {
   const labels = { teamLabels, responsibilityLabels, phaseLabels, stateLabels };
 
   const [selectedColumns, setSelectedColumns] = useState<string[]>(["merchantName", "projectState", "arr", "currentPhase", "goLivePercent"]);
-  // Pivot: row grouping + column grouping (Excel-style)
+  const [reportAggType, setReportAggType] = useState<AggType>("sum");
+
+  // Pivot
   const [pivotRowField, setPivotRowField] = useState<string>("none");
   const [pivotColField, setPivotColField] = useState<string>("none");
   const [pivotValueField, setPivotValueField] = useState<string>("arr");
-  const [pivotAggType, setPivotAggType] = useState<string>("sum");
+  const [pivotAggType, setPivotAggType] = useState<AggType>("sum");
   const [showPivot, setShowPivot] = useState(false);
 
   const [savedReports, setSavedReports] = useState<SavedReport[]>([]);
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
   const [reportName, setReportName] = useState("");
-  const [schedule, setSchedule] = useState<string>("none");
+  const [scheduleDays, setScheduleDays] = useState<Set<string>>(new Set());
+  const [scheduleHour, setScheduleHour] = useState<number>(9);
+  const [scheduleMinute, setScheduleMinute] = useState<number>(0);
   const [recipientInput, setRecipientInput] = useState("");
   const [recipients, setRecipients] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
 
-  // Group By for flat table grouping
   const [groupByColumn, setGroupByColumn] = useState<string>("none");
 
   // Draggable column groups
@@ -182,7 +208,6 @@ export const ReportsBuilder = ({ projects }: { projects: Project[] }) => {
     return groups;
   }, []);
 
-  // Draggable group handlers
   const handleGroupDragStart = (group: string) => setDraggedGroup(group);
   const handleGroupDragOver = (e: React.DragEvent, targetGroup: string) => {
     e.preventDefault();
@@ -202,7 +227,10 @@ export const ReportsBuilder = ({ projects }: { projects: Project[] }) => {
     localStorage.setItem("report_group_order", JSON.stringify(groupOrder));
   };
 
-  // Flat table grouping pivot
+  // Selected numeric columns for agg footer
+  const selectedNumericCols = useMemo(() => selectedColumns.filter(k => NUMERIC_COLUMNS.includes(k)), [selectedColumns]);
+
+  // Grouped table data
   const pivotGroups = useMemo<PivotGroup[]>(() => {
     if (groupByColumn === "none") return [];
     const groupMap = new Map<string, Project[]>();
@@ -213,18 +241,14 @@ export const ReportsBuilder = ({ projects }: { projects: Project[] }) => {
       groupMap.set(val, existing);
     });
     return Array.from(groupMap.entries()).map(([key, groupProjects]) => {
-      const aggregates: Record<string, { sum: number; avg: number; count: number; min: number; max: number }> = {};
-      NUMERIC_COLUMNS.forEach(col => {
-        if (!selectedColumns.includes(col)) return;
+      const aggregates: Record<string, number> = {};
+      selectedNumericCols.forEach(col => {
         const values = groupProjects.map(p => getNumericValue(p, col));
-        const sum = values.reduce((a, b) => a + b, 0);
-        const min = values.length > 0 ? Math.min(...values) : 0;
-        const max = values.length > 0 ? Math.max(...values) : 0;
-        aggregates[col] = { sum, avg: values.length > 0 ? sum / values.length : 0, count: values.length, min, max };
+        aggregates[col] = computeAgg(values, reportAggType);
       });
       return { key, label: key || "—", projects: groupProjects, aggregates };
     });
-  }, [groupByColumn, projects, selectedColumns, labels]);
+  }, [groupByColumn, projects, selectedColumns, labels, reportAggType, selectedNumericCols]);
 
   const toggleGroup = (key: string) => {
     setExpandedGroups(prev => {
@@ -237,74 +261,45 @@ export const ReportsBuilder = ({ projects }: { projects: Project[] }) => {
   // Excel-style pivot table computation
   const excelPivot = useMemo(() => {
     if (!showPivot || pivotRowField === "none") return null;
-    
-    // Get unique row values
     const rowValues = new Set<string>();
     const colValues = new Set<string>();
     projects.forEach(p => {
       rowValues.add(getCellValue(p, pivotRowField, labels));
-      if (pivotColField !== "none") {
-        colValues.add(getCellValue(p, pivotColField, labels));
-      }
+      if (pivotColField !== "none") colValues.add(getCellValue(p, pivotColField, labels));
     });
-
     const sortedRows = Array.from(rowValues).sort();
     const sortedCols = pivotColField !== "none" ? Array.from(colValues).sort() : ["Total"];
-
-    // Build data grid
     const grid: Record<string, Record<string, number[]>> = {};
-    sortedRows.forEach(r => {
-      grid[r] = {};
-      sortedCols.forEach(c => { grid[r][c] = []; });
-    });
-
+    sortedRows.forEach(r => { grid[r] = {}; sortedCols.forEach(c => { grid[r][c] = []; }); });
     projects.forEach(p => {
       const rowVal = getCellValue(p, pivotRowField, labels);
       const colVal = pivotColField !== "none" ? getCellValue(p, pivotColField, labels) : "Total";
       const numVal = getNumericValue(p, pivotValueField);
-      if (grid[rowVal]?.[colVal]) {
-        grid[rowVal][colVal].push(numVal);
-      }
+      if (grid[rowVal]?.[colVal]) grid[rowVal][colVal].push(numVal);
     });
-
-    const aggregate = (values: number[]): number => {
-      if (values.length === 0) return 0;
-      switch (pivotAggType) {
-        case "sum": return values.reduce((a, b) => a + b, 0);
-        case "avg": return values.reduce((a, b) => a + b, 0) / values.length;
-        case "count": return values.length;
-        case "min": return Math.min(...values);
-        case "max": return Math.max(...values);
-        default: return values.reduce((a, b) => a + b, 0);
-      }
-    };
-
-    // Compute aggregated grid
     const result: Record<string, Record<string, number>> = {};
     const colTotals: Record<string, number[]> = {};
     sortedCols.forEach(c => { colTotals[c] = []; });
-
     sortedRows.forEach(r => {
       result[r] = {};
       sortedCols.forEach(c => {
-        const agg = aggregate(grid[r][c]);
-        result[r][c] = agg;
+        result[r][c] = computeAgg(grid[r][c], pivotAggType);
         colTotals[c].push(...grid[r][c]);
       });
     });
-
-    // Grand totals
     const grandTotals: Record<string, number> = {};
-    sortedCols.forEach(c => { grandTotals[c] = aggregate(colTotals[c]); });
-
+    sortedCols.forEach(c => { grandTotals[c] = computeAgg(colTotals[c], pivotAggType); });
     return { rows: sortedRows, cols: sortedCols, data: result, grandTotals };
   }, [showPivot, pivotRowField, pivotColField, pivotValueField, pivotAggType, projects, labels]);
 
-  const formatPivotVal = (val: number) => {
-    if (pivotValueField === "goLivePercent") return `${val.toFixed(0)}%`;
-    if (pivotValueField === "arr") return val.toFixed(2);
-    if (pivotAggType === "count") return String(Math.round(val));
-    return val.toFixed(1);
+  const formatPivotVal = (val: number) => formatAggVal(pivotValueField, val, pivotAggType);
+
+  const toggleScheduleDay = (day: string) => {
+    setScheduleDays(prev => {
+      const next = new Set(prev);
+      if (next.has(day)) next.delete(day); else next.add(day);
+      return next;
+    });
   };
 
   const addRecipient = () => {
@@ -323,14 +318,18 @@ export const ReportsBuilder = ({ projects }: { projects: Project[] }) => {
     if (!reportName.trim()) { toast.error("Please enter a report name"); return; }
     setLoading(true);
     try {
+      const scheduleValue = scheduleDays.size > 0
+        ? `${Array.from(scheduleDays).join(",")}@${String(scheduleHour).padStart(2, "0")}:${String(scheduleMinute).padStart(2, "0")}`
+        : "none";
+
       const { data, error } = await supabase.from("saved_reports").insert({
-        name: reportName.trim(), columns: selectedColumns, schedule, recipients,
+        name: reportName.trim(), columns: selectedColumns, schedule: scheduleValue, recipients,
         tenant_id: currentUser?.tenantId, created_by: currentUser?.id,
       }).select().single();
       if (error) throw error;
       setSavedReports(prev => [{ id: data.id, name: data.name, columns: data.columns || [], schedule: data.schedule || "none", recipients: data.recipients || [] }, ...prev]);
       toast.success(`Report "${reportName}" saved`);
-      setSaveDialogOpen(false); setReportName(""); setSchedule("none"); setRecipients([]);
+      setSaveDialogOpen(false); setReportName(""); setScheduleDays(new Set()); setRecipients([]);
     } catch (err: any) { toast.error(err.message || "Failed to save report"); }
     finally { setLoading(false); }
   };
@@ -357,11 +356,15 @@ export const ReportsBuilder = ({ projects }: { projects: Project[] }) => {
     toast.success("Report exported");
   };
 
-  const formatAgg = (key: string, val: number) => {
-    if (key === "arr") return val.toFixed(2);
-    if (key === "goLivePercent") return `${val.toFixed(0)}%`;
-    return val.toFixed(1);
-  };
+  // Compute footer aggregates for flat table
+  const footerAggregates = useMemo(() => {
+    const agg: Record<string, number> = {};
+    selectedNumericCols.forEach(col => {
+      const values = projects.map(p => getNumericValue(p, col));
+      agg[col] = computeAgg(values, reportAggType);
+    });
+    return agg;
+  }, [projects, selectedNumericCols, reportAggType]);
 
   const renderGroupedTable = () => {
     const displayCols = selectedColumns.filter(k => k !== groupByColumn);
@@ -397,13 +400,12 @@ export const ReportsBuilder = ({ projects }: { projects: Project[] }) => {
                   </TableCell>
                   {displayCols.slice(1).map(col => {
                     const agg = group.aggregates[col];
-                    if (agg) {
+                    if (agg !== undefined) {
                       return (
                         <TableCell key={col} className="text-xs py-2">
                           <div className="flex items-center gap-1 text-muted-foreground">
                             <Sigma className="h-3 w-3" />
-                            <span className="font-mono font-semibold text-foreground">{formatAgg(col, agg.sum)}</span>
-                            <span className="text-[10px]">avg {formatAgg(col, agg.avg)}</span>
+                            <span className="font-mono font-semibold text-foreground">{formatAggVal(col, agg, reportAggType)}</span>
                           </div>
                         </TableCell>
                       );
@@ -449,6 +451,25 @@ export const ReportsBuilder = ({ projects }: { projects: Project[] }) => {
             ))}
           </TableRow>
         ))}
+        {/* Aggregate footer row */}
+        {selectedNumericCols.length > 0 && (
+          <TableRow className="bg-muted/60 font-semibold border-t-2">
+            {selectedColumns.map(key => {
+              const agg = footerAggregates[key];
+              if (agg !== undefined) {
+                return (
+                  <TableCell key={key} className="text-xs py-2">
+                    <div className="flex items-center gap-1">
+                      <Sigma className="h-3 w-3 text-muted-foreground" />
+                      <span className="font-mono font-semibold">{formatAggVal(key, agg, reportAggType)}</span>
+                    </div>
+                  </TableCell>
+                );
+              }
+              return <TableCell key={key} className="text-xs py-2 text-muted-foreground">{key === selectedColumns[0] ? `${reportAggType.toUpperCase()}` : ""}</TableCell>;
+            })}
+          </TableRow>
+        )}
       </TableBody>
     </Table>
   );
@@ -457,7 +478,6 @@ export const ReportsBuilder = ({ projects }: { projects: Project[] }) => {
     if (!excelPivot) return <p className="text-sm text-muted-foreground p-4">Select a Row field to create a pivot table.</p>;
     const { rows, cols, data, grandTotals } = excelPivot;
     const rowLabel = AVAILABLE_COLUMNS.find(c => c.key === pivotRowField)?.label || pivotRowField;
-    const valLabel = AVAILABLE_COLUMNS.find(c => c.key === pivotValueField)?.label || pivotValueField;
 
     return (
       <div className="overflow-auto">
@@ -490,7 +510,6 @@ export const ReportsBuilder = ({ projects }: { projects: Project[] }) => {
                 </TableRow>
               );
             })}
-            {/* Grand total row */}
             <TableRow className="bg-muted/60 font-semibold">
               <TableCell className="text-xs font-semibold sticky left-0 bg-muted/60 z-10">Grand Total</TableCell>
               {cols.map(col => (
@@ -524,8 +543,8 @@ export const ReportsBuilder = ({ projects }: { projects: Project[] }) => {
                   <button onClick={() => loadReport(report)} className="text-sm font-medium hover:text-primary transition-colors">{report.name}</button>
                   {report.schedule !== "none" && (
                     <Badge variant="secondary" className="text-[10px] px-1.5 py-0 ml-1">
-                      {report.schedule === "daily" ? <Clock className="h-3 w-3 mr-0.5 inline" /> : <Calendar className="h-3 w-3 mr-0.5 inline" />}
-                      {report.schedule}
+                      <Calendar className="h-3 w-3 mr-0.5 inline" />
+                      scheduled
                     </Badge>
                   )}
                   <Button variant="ghost" size="icon" className="h-5 w-5 ml-1" onClick={() => handleDeleteReport(report.id)}>
@@ -542,7 +561,20 @@ export const ReportsBuilder = ({ projects }: { projects: Project[] }) => {
         <CardHeader className="py-3 px-4">
           <div className="flex items-center justify-between flex-wrap gap-2">
             <CardTitle className="text-sm">Select Columns ({selectedColumns.length} selected) <span className="text-[10px] text-muted-foreground font-normal ml-1">— drag groups to reorder</span></CardTitle>
-            <div className="flex gap-2 items-center">
+            <div className="flex gap-2 items-center flex-wrap">
+              <div className="flex items-center gap-1.5">
+                <Label className="text-xs text-muted-foreground whitespace-nowrap">Agg:</Label>
+                <Select value={reportAggType} onValueChange={(v) => setReportAggType(v as AggType)}>
+                  <SelectTrigger className="h-7 text-xs w-[90px]"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="sum">Sum</SelectItem>
+                    <SelectItem value="avg">Average</SelectItem>
+                    <SelectItem value="count">Count</SelectItem>
+                    <SelectItem value="min">Min</SelectItem>
+                    <SelectItem value="max">Max</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
               <div className="flex items-center gap-1.5">
                 <Label className="text-xs text-muted-foreground whitespace-nowrap">Group By:</Label>
                 <Select value={groupByColumn} onValueChange={setGroupByColumn}>
@@ -592,7 +624,7 @@ export const ReportsBuilder = ({ projects }: { projects: Project[] }) => {
         </CardContent>
       </Card>
 
-      {/* Report Preview - scrollable */}
+      {/* Report Preview */}
       <Card>
         <CardHeader className="py-3 px-4">
           <div className="flex items-center justify-between">
@@ -623,7 +655,7 @@ export const ReportsBuilder = ({ projects }: { projects: Project[] }) => {
         </CardContent>
       </Card>
 
-      {/* Excel-style Pivot Table */}
+      {/* Pivot Table */}
       <Card>
         <CardHeader className="py-3 px-4">
           <div className="flex items-center justify-between flex-wrap gap-2">
@@ -672,7 +704,7 @@ export const ReportsBuilder = ({ projects }: { projects: Project[] }) => {
               </div>
               <div className="flex items-center gap-1.5">
                 <Label className="text-xs text-muted-foreground whitespace-nowrap">Agg:</Label>
-                <Select value={pivotAggType} onValueChange={setPivotAggType}>
+                <Select value={pivotAggType} onValueChange={(v) => setPivotAggType(v as AggType)}>
                   <SelectTrigger className="h-7 text-xs w-[90px]"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="sum">Sum</SelectItem>
@@ -695,6 +727,7 @@ export const ReportsBuilder = ({ projects }: { projects: Project[] }) => {
         </CardContent>
       </Card>
 
+      {/* Save & Schedule Dialog - Google Calendar style */}
       <Dialog open={saveDialogOpen} onOpenChange={setSaveDialogOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader><DialogTitle>Save & Schedule Report</DialogTitle></DialogHeader>
@@ -703,18 +736,54 @@ export const ReportsBuilder = ({ projects }: { projects: Project[] }) => {
               <Label className="text-sm">Report Name</Label>
               <Input value={reportName} onChange={e => setReportName(e.target.value)} placeholder="e.g. Weekly ARR Summary" className="mt-1" />
             </div>
+
+            {/* Calendar-style day + time picker */}
             <div>
               <Label className="text-sm">Schedule</Label>
-              <Select value={schedule} onValueChange={setSchedule}>
-                <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">No Schedule</SelectItem>
-                  <SelectItem value="daily">Daily</SelectItem>
-                  <SelectItem value="weekly">Weekly</SelectItem>
-                </SelectContent>
-              </Select>
+              <p className="text-xs text-muted-foreground mb-2">Select days and time for the report to be triggered</p>
+              <div className="flex gap-1.5 mb-3">
+                {DAYS_OF_WEEK.map(day => (
+                  <button
+                    key={day}
+                    onClick={() => toggleScheduleDay(day)}
+                    className={`h-9 w-9 rounded-full text-xs font-medium transition-colors border ${
+                      scheduleDays.has(day)
+                        ? "bg-primary text-primary-foreground border-primary"
+                        : "bg-background text-muted-foreground border-border hover:bg-muted"
+                    }`}
+                  >
+                    {day.charAt(0)}
+                  </button>
+                ))}
+              </div>
+              {scheduleDays.size > 0 && (
+                <div className="flex items-center gap-2">
+                  <Label className="text-xs text-muted-foreground whitespace-nowrap">Time:</Label>
+                  <Select value={String(scheduleHour)} onValueChange={(v) => setScheduleHour(Number(v))}>
+                    <SelectTrigger className="h-8 w-[70px] text-xs"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {HOURS.map(h => (
+                        <SelectItem key={h} value={String(h)}>{String(h).padStart(2, "0")}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <span className="text-sm font-medium">:</span>
+                  <Select value={String(scheduleMinute)} onValueChange={(v) => setScheduleMinute(Number(v))}>
+                    <SelectTrigger className="h-8 w-[70px] text-xs"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {[0, 15, 30, 45].map(m => (
+                        <SelectItem key={m} value={String(m)}>{String(m).padStart(2, "0")}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <span className="text-xs text-muted-foreground ml-1">
+                    {Array.from(scheduleDays).join(", ")}
+                  </span>
+                </div>
+              )}
             </div>
-            {schedule !== "none" && (
+
+            {scheduleDays.size > 0 && (
               <div>
                 <Label className="text-sm">Email Recipients</Label>
                 <div className="flex gap-2 mt-1">
