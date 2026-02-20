@@ -12,10 +12,96 @@ serve(async (req) => {
   }
 
   try {
-    const { project, projects, type } = await req.json();
+    const body = await req.json();
+    const { project, projects, type } = body;
 
     const apiKey = Deno.env.get("LOVABLE_API_KEY");
     if (!apiKey) throw new Error("LOVABLE_API_KEY not set");
+
+    // AI-powered email field mapping
+    if (type === "map_email_fields") {
+      const { emailFields, projectFields } = body;
+
+      const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "google/gemini-3-flash-preview",
+          messages: [
+            {
+              role: "system",
+              content: `You are a data mapping assistant. Given email fields with values and project fields, map each email field to the most appropriate project field. Return a JSON object where keys are email field identifiers and values are project field keys. Use "skip" for fields that don't have a good match. Only output the JSON object, nothing else.`,
+            },
+            {
+              role: "user",
+              content: `Email fields: {${emailFields}}\n\nProject fields: ${projectFields}\n\nMap each email field to the best matching project field. Return JSON like: {"brand_name": "merchantName", "brand_url": "brandUrl", ...}`,
+            },
+          ],
+          tools: [
+            {
+              type: "function",
+              function: {
+                name: "map_fields",
+                description: "Map email fields to project fields",
+                parameters: {
+                  type: "object",
+                  properties: {
+                    mapping: {
+                      type: "object",
+                      description: "Object mapping email field keys to project field keys. Use 'skip' for unmappable fields.",
+                      additionalProperties: { type: "string" },
+                    },
+                  },
+                  required: ["mapping"],
+                  additionalProperties: false,
+                },
+              },
+            },
+          ],
+          tool_choice: { type: "function", function: { name: "map_fields" } },
+        }),
+      });
+
+      if (!response.ok) {
+        if (response.status === 429) {
+          return new Response(JSON.stringify({ error: "Rate limit exceeded. Please try again." }), {
+            status: 429,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        if (response.status === 402) {
+          return new Response(JSON.stringify({ error: "AI credits exhausted." }), {
+            status: 402,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        const errText = await response.text();
+        console.error("AI gateway error:", response.status, errText);
+        throw new Error(`AI gateway error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      const toolCall = data.choices?.[0]?.message?.tool_calls?.[0];
+      let result = {};
+      if (toolCall?.function?.arguments) {
+        try {
+          const parsed = JSON.parse(toolCall.function.arguments);
+          result = parsed.mapping || parsed;
+        } catch {
+          // Fallback: try to parse content directly
+          const content = data.choices?.[0]?.message?.content || "{}";
+          const jsonMatch = content.match(/\{[\s\S]*\}/);
+          result = jsonMatch ? JSON.parse(jsonMatch[0]) : {};
+        }
+      }
+
+      return new Response(JSON.stringify({ result }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     // Batch mode: generate next actions for multiple projects
     if (type === "next_actions" && projects) {
@@ -50,7 +136,6 @@ serve(async (req) => {
 
       const data = await response.json();
       const content = data.choices?.[0]?.message?.content || "[]";
-      // Extract JSON from content
       const jsonMatch = content.match(/\[[\s\S]*\]/);
       const parsed = jsonMatch ? JSON.parse(jsonMatch[0]) : [];
 

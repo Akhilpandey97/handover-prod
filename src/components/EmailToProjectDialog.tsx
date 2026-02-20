@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
-import { ArrowRight, Mail } from "lucide-react";
+import { ArrowRight, Mail, Sparkles, Loader2 } from "lucide-react";
 import { Project, createDefaultChecklist } from "@/data/projectsData";
 import { useProjects } from "@/contexts/ProjectContext";
 import { useAuth } from "@/contexts/AuthContext";
@@ -36,21 +36,6 @@ interface ParsedEmail {
   created_at: string;
 }
 
-// Email fields that can be mapped
-const EMAIL_FIELDS = [
-  { key: "brand_name", label: "Brand Name" },
-  { key: "brand_url", label: "Brand URL" },
-  { key: "platform", label: "Platform" },
-  { key: "sub_platform", label: "Sub Platform" },
-  { key: "arr", label: "ARR" },
-  { key: "category", label: "Category" },
-  { key: "txns_per_day", label: "Txns/Day" },
-  { key: "aov", label: "AOV" },
-  { key: "merchant_size", label: "Merchant Size" },
-  { key: "city", label: "City" },
-  { key: "sales_notes", label: "Sales Notes" },
-] as const;
-
 // Project fields that can receive mapped values
 const PROJECT_FIELDS = [
   { key: "merchantName", label: "Merchant Name", type: "text" },
@@ -67,23 +52,42 @@ const PROJECT_FIELDS = [
   { key: "projectNotes", label: "Project Notes", type: "text" },
 ] as const;
 
-function getEmailFieldValue(email: ParsedEmail, key: string): string {
-  const val = (email as any)[key];
-  if (val === null || val === undefined) return "";
-  return String(val);
-}
+function getAllEmailFields(email: ParsedEmail): { key: string; label: string; value: string }[] {
+  const fields: { key: string; label: string; value: string }[] = [];
+  
+  // Standard fields
+  const standardFields: { key: keyof ParsedEmail; label: string }[] = [
+    { key: "brand_name", label: "Brand Name" },
+    { key: "brand_url", label: "Brand URL" },
+    { key: "platform", label: "Platform" },
+    { key: "sub_platform", label: "Sub Platform" },
+    { key: "arr", label: "ARR" },
+    { key: "category", label: "Category" },
+    { key: "txns_per_day", label: "Txns/Day" },
+    { key: "aov", label: "AOV" },
+    { key: "merchant_size", label: "Merchant Size" },
+    { key: "city", label: "City" },
+    { key: "sales_notes", label: "Sales Notes" },
+  ];
 
-// Default mapping from email fields to project fields
-const DEFAULT_MAPPING: Record<string, string> = {
-  brand_name: "merchantName",
-  brand_url: "brandUrl",
-  platform: "platform",
-  arr: "arr",
-  category: "category",
-  txns_per_day: "txnsPerDay",
-  aov: "aov",
-  sales_notes: "projectNotes",
-};
+  standardFields.forEach(f => {
+    const val = email[f.key];
+    if (val !== null && val !== undefined && String(val).trim() !== "") {
+      fields.push({ key: f.key, label: f.label, value: String(val) });
+    }
+  });
+
+  // Dynamic parsed_fields
+  if (email.parsed_fields) {
+    Object.entries(email.parsed_fields).forEach(([key, value]) => {
+      if (value && !standardFields.some(sf => sf.key === key)) {
+        fields.push({ key: `parsed_${key}`, label: key, value: String(value) });
+      }
+    });
+  }
+
+  return fields;
+}
 
 interface EmailToProjectDialogProps {
   email: ParsedEmail;
@@ -96,23 +100,66 @@ export const EmailToProjectDialog = ({ email, open, onOpenChange, onProjectCreat
   const { addProject } = useProjects();
   const { currentUser } = useAuth();
 
-  // Mapping: emailFieldKey -> projectFieldKey
-  const [mapping, setMapping] = useState<Record<string, string>>(DEFAULT_MAPPING);
+  const emailFields = getAllEmailFields(email);
 
-  // Editable project field overrides
+  // Mapping: emailFieldKey -> projectFieldKey
+  const [mapping, setMapping] = useState<Record<string, string>>({});
   const [overrides, setOverrides] = useState<Record<string, string>>({});
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiMapped, setAiMapped] = useState(false);
 
   const updateMapping = (emailKey: string, projectKey: string) => {
     setMapping(prev => ({ ...prev, [emailKey]: projectKey }));
   };
 
-  // Compute final project values from mapping + overrides
+  // AI auto-mapping
+  const handleAiMap = async () => {
+    setAiLoading(true);
+    try {
+      const emailFieldsSummary = emailFields.map(f => `"${f.label}": "${f.value}"`).join(", ");
+      const projectFieldsSummary = PROJECT_FIELDS.map(f => `"${f.key}" (${f.label})`).join(", ");
+
+      const { data, error } = await supabase.functions.invoke("ai-project-insights", {
+        body: {
+          type: "map_email_fields",
+          emailFields: emailFieldsSummary,
+          projectFields: projectFieldsSummary,
+        },
+      });
+
+      if (error) throw error;
+
+      const result = data?.result;
+      if (result && typeof result === "object") {
+        const newMapping: Record<string, string> = {};
+        // result is { emailFieldKey: projectFieldKey }
+        for (const [emailKey, projectKey] of Object.entries(result)) {
+          if (typeof projectKey === "string" && projectKey !== "skip" && PROJECT_FIELDS.some(pf => pf.key === projectKey)) {
+            // Find matching email field key
+            const matchingField = emailFields.find(f => f.key === emailKey || f.label.toLowerCase() === emailKey.toLowerCase());
+            if (matchingField) {
+              newMapping[matchingField.key] = projectKey;
+            }
+          }
+        }
+        setMapping(newMapping);
+        setAiMapped(true);
+        toast.success("AI mapped fields successfully");
+      }
+    } catch (e: any) {
+      toast.error(e.message || "AI mapping failed");
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
+  // Compute final value for a project field
   const getFinalValue = (projectKey: string): string => {
     if (overrides[projectKey] !== undefined) return overrides[projectKey];
-    // Find if any email field is mapped to this project field
     for (const [eKey, pKey] of Object.entries(mapping)) {
       if (pKey === projectKey) {
-        return getEmailFieldValue(email, eKey);
+        const field = emailFields.find(f => f.key === eKey);
+        return field?.value || "";
       }
     }
     return "";
@@ -175,7 +222,6 @@ export const EmailToProjectDialog = ({ email, open, onOpenChange, onProjectCreat
 
     addProject(newProject);
 
-    // Update email status (don't set project_id to avoid FK issues since addProject generates a new server-side ID)
     await supabase
       .from("parsed_emails")
       .update({ status: "project_created" })
@@ -185,11 +231,6 @@ export const EmailToProjectDialog = ({ email, open, onOpenChange, onProjectCreat
     onOpenChange(false);
     onProjectCreated();
   };
-
-  // Parsed fields from email (extra fields beyond the standard ones)
-  const extraParsedFields = email.parsed_fields
-    ? Object.entries(email.parsed_fields).filter(([k]) => !EMAIL_FIELDS.some(f => f.key === k))
-    : [];
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -203,6 +244,21 @@ export const EmailToProjectDialog = ({ email, open, onOpenChange, onProjectCreat
 
         <ScrollArea className="max-h-[60vh] pr-2">
           <div className="space-y-5">
+            {/* AI Auto-Map Button */}
+            <div className="flex items-center gap-3">
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-1.5"
+                onClick={handleAiMap}
+                disabled={aiLoading}
+              >
+                {aiLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+                {aiLoading ? "AI Mapping…" : "Auto-Map with AI"}
+              </Button>
+              {aiMapped && <Badge variant="secondary" className="text-[10px]">AI mapped</Badge>}
+            </div>
+
             {/* Field Mapping Section */}
             <div>
               <h4 className="text-sm font-semibold mb-3">Field Mapping</h4>
@@ -213,21 +269,20 @@ export const EmailToProjectDialog = ({ email, open, onOpenChange, onProjectCreat
                   <span>Maps To</span>
                   <span>Value</span>
                 </div>
-                {EMAIL_FIELDS.map(ef => {
-                  const emailVal = getEmailFieldValue(email, ef.key);
+                {emailFields.map(ef => {
                   const mappedTo = mapping[ef.key] || "";
                   return (
                     <div key={ef.key} className="grid grid-cols-[1fr,auto,1fr,1fr] gap-2 items-center px-3 py-2 border-b last:border-b-0 hover:bg-muted/20">
                       <div className="text-sm">
                         <span className="font-medium">{ef.label}</span>
-                        {emailVal && (
+                        {ef.value && (
                           <Badge variant="secondary" className="ml-2 text-[10px] px-1.5 py-0 max-w-[120px] truncate">
-                            {emailVal}
+                            {ef.value}
                           </Badge>
                         )}
                       </div>
                       <ArrowRight className="h-3.5 w-3.5 text-muted-foreground" />
-                      <Select value={mappedTo} onValueChange={(v) => updateMapping(ef.key, v)}>
+                      <Select value={mappedTo || "__skip__"} onValueChange={(v) => updateMapping(ef.key, v === "__skip__" ? "" : v)}>
                         <SelectTrigger className="h-8 text-xs">
                           <SelectValue placeholder="Skip" />
                         </SelectTrigger>
@@ -239,28 +294,13 @@ export const EmailToProjectDialog = ({ email, open, onOpenChange, onProjectCreat
                         </SelectContent>
                       </Select>
                       <span className="text-xs text-muted-foreground truncate">
-                        {mappedTo && mappedTo !== "__skip__" ? emailVal || "—" : "—"}
+                        {mappedTo ? ef.value || "—" : "—"}
                       </span>
                     </div>
                   );
                 })}
               </div>
             </div>
-
-            {/* Extra Parsed Fields */}
-            {extraParsedFields.length > 0 && (
-              <div>
-                <h4 className="text-sm font-semibold mb-2">Additional Parsed Fields</h4>
-                <div className="grid grid-cols-2 gap-2">
-                  {extraParsedFields.map(([key, value]) => (
-                    <div key={key} className="bg-muted/30 rounded-md p-2 text-xs">
-                      <span className="text-muted-foreground">{key}:</span>{" "}
-                      <span className="font-medium">{value || "—"}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
 
             {/* Project Field Overrides */}
             <div>

@@ -2,12 +2,13 @@ import { Project, projectStateLabels, projectStateColors } from "@/data/projects
 import { useLabels } from "@/contexts/LabelsContext";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Sparkles } from "lucide-react";
+import { Sparkles, ListChecks } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 import { fetchAiInsights } from "@/utils/aiInsights";
 import { toast } from "sonner";
 import { ProjectDetailsDialog } from "./ProjectDetailsDialog";
+import { ChecklistDialog } from "./ChecklistDialog";
 
 const phaseLabels: Record<string, string> = {
   mint: "MINT",
@@ -20,6 +21,7 @@ export const KanbanCard = ({ project }: { project: Project }) => {
   const { stateLabels } = useLabels();
   const [loadingInsights, setLoadingInsights] = useState(false);
   const [detailsOpen, setDetailsOpen] = useState(false);
+  const [checklistOpen, setChecklistOpen] = useState(false);
 
   const stateLabel =
     stateLabels[project.projectState] ||
@@ -34,6 +36,9 @@ export const KanbanCard = ({ project }: { project: Project }) => {
       : project.arr >= 100000
         ? `${(project.arr / 100000).toFixed(1)} L`
         : project.arr.toLocaleString();
+
+  const completedChecklist = project.checklist.filter(c => c.completed).length;
+  const totalChecklist = project.checklist.length;
 
   const handleInsights = async () => {
     setLoadingInsights(true);
@@ -79,22 +84,39 @@ export const KanbanCard = ({ project }: { project: Project }) => {
           ARR: <span className="font-medium text-foreground">{arrDisplay}</span>
         </div>
 
-        <Button
-          variant="ghost"
-          size="sm"
-          className="h-6 px-2 text-[11px] gap-1 text-primary"
-          onClick={handleInsights}
-          disabled={loadingInsights}
-        >
-          <Sparkles className="h-3 w-3" />
-          {loadingInsights ? "Loading…" : "AI Insights"}
-        </Button>
+        <div className="flex items-center gap-1.5">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-6 px-2 text-[11px] gap-1 text-primary"
+            onClick={handleInsights}
+            disabled={loadingInsights}
+          >
+            <Sparkles className="h-3 w-3" />
+            {loadingInsights ? "Loading…" : "AI Insights"}
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-6 px-2 text-[11px] gap-1 text-muted-foreground hover:text-primary"
+            onClick={() => setChecklistOpen(true)}
+          >
+            <ListChecks className="h-3 w-3" />
+            {completedChecklist}/{totalChecklist}
+          </Button>
+        </div>
       </div>
 
       <ProjectDetailsDialog
         project={project}
         open={detailsOpen}
         onOpenChange={setDetailsOpen}
+      />
+
+      <ChecklistDialog
+        project={project}
+        open={checklistOpen}
+        onOpenChange={setChecklistOpen}
       />
     </>
   );
