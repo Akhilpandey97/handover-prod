@@ -116,35 +116,61 @@ export const EmailToProjectDialog = ({ email, open, onOpenChange, onProjectCreat
   const handleAiMap = async () => {
     setAiLoading(true);
     try {
-      const emailFieldsSummary = emailFields.map(f => `"${f.label}": "${f.value}"`).join(", ");
+      // Build a clear mapping request: use index-based keys to avoid ambiguity
+      const emailFieldEntries = emailFields.map((f, i) => ({
+        id: `field_${i}`,
+        label: f.label,
+        value: f.value,
+        originalKey: f.key,
+      }));
+      const emailFieldsSummary = emailFieldEntries.map(e => `"${e.id}" ("${e.label}"): "${e.value}"`).join(", ");
       const projectFieldsSummary = PROJECT_FIELDS.map(f => `"${f.key}" (${f.label})`).join(", ");
 
-      const { data, error } = await supabase.functions.invoke("ai-project-insights", {
-        body: {
+      const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+      const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/ai-project-insights`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${SUPABASE_KEY}`,
+          apikey: SUPABASE_KEY,
+        },
+        body: JSON.stringify({
           type: "map_email_fields",
           emailFields: emailFieldsSummary,
           projectFields: projectFieldsSummary,
-        },
+        }),
       });
 
-      if (error) throw error;
+      if (!res.ok) throw new Error(`AI request failed: ${res.status}`);
+      const data = await res.json();
 
       const result = data?.result;
       if (result && typeof result === "object") {
         const newMapping: Record<string, string> = {};
-        // result is { emailFieldKey: projectFieldKey }
-        for (const [emailKey, projectKey] of Object.entries(result)) {
-          if (typeof projectKey === "string" && projectKey !== "skip" && PROJECT_FIELDS.some(pf => pf.key === projectKey)) {
-            // Find matching email field key
-            const matchingField = emailFields.find(f => f.key === emailKey || f.label.toLowerCase() === emailKey.toLowerCase());
-            if (matchingField) {
-              newMapping[matchingField.key] = projectKey;
-            }
+        for (const [returnedKey, projectKey] of Object.entries(result)) {
+          if (typeof projectKey !== "string" || projectKey === "skip") continue;
+          if (!PROJECT_FIELDS.some(pf => pf.key === projectKey)) continue;
+
+          // Match by index-based id, original key, or label
+          const matchingEntry = emailFieldEntries.find(e =>
+            e.id === returnedKey ||
+            e.originalKey === returnedKey ||
+            e.label.toLowerCase() === returnedKey.toLowerCase() ||
+            e.originalKey.replace("parsed_", "") === returnedKey
+          );
+          if (matchingEntry) {
+            newMapping[matchingEntry.originalKey] = projectKey;
           }
         }
         setMapping(newMapping);
         setAiMapped(true);
-        toast.success("AI mapped fields successfully");
+        if (Object.keys(newMapping).length > 0) {
+          toast.success(`AI mapped ${Object.keys(newMapping).length} fields successfully`);
+        } else {
+          toast.warning("AI couldn't find matching fields. Please map manually.");
+        }
       }
     } catch (e: any) {
       toast.error(e.message || "AI mapping failed");

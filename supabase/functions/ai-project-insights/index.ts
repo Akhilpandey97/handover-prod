@@ -37,7 +37,7 @@ serve(async (req) => {
             },
             {
               role: "user",
-              content: `Email fields: {${emailFields}}\n\nProject fields: ${projectFields}\n\nMap each email field to the best matching project field. Return JSON like: {"brand_name": "merchantName", "brand_url": "brandUrl", ...}`,
+              content: `Email fields (format: "id" ("label"): "value"):\n${emailFields}\n\nProject fields (format: "key" (label)):\n${projectFields}\n\nMap each email field ID to the best matching project field key. Use the email field's ID (like "field_0") as the key and the project field's key (like "merchantName") as the value. Use "skip" if no good match. Example: {"field_0": "merchantName", "field_1": "brandUrl", "field_2": "skip"}`,
             },
           ],
           tools: [
