@@ -116,15 +116,21 @@ export const EmailToProjectDialog = ({ email, open, onOpenChange, onProjectCreat
   const handleAiMap = async () => {
     setAiLoading(true);
     try {
-      // Build a clear mapping request: use index-based keys to avoid ambiguity
+      // Build indexed entries for unambiguous mapping
       const emailFieldEntries = emailFields.map((f, i) => ({
         id: `field_${i}`,
         label: f.label,
         value: f.value,
         originalKey: f.key,
       }));
-      const emailFieldsSummary = emailFieldEntries.map(e => `"${e.id}" ("${e.label}"): "${e.value}"`).join(", ");
-      const projectFieldsSummary = PROJECT_FIELDS.map(f => `"${f.key}" (${f.label})`).join(", ");
+
+      // Build simple, clear prompt lines
+      const emailFieldsText = emailFieldEntries
+        .map(e => `${e.id}: "${e.label}" = "${e.value}"`)
+        .join("\n");
+      const projectFieldsText = PROJECT_FIELDS
+        .map(f => `${f.key}: "${f.label}"`)
+        .join("\n");
 
       const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
       const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
@@ -138,32 +144,42 @@ export const EmailToProjectDialog = ({ email, open, onOpenChange, onProjectCreat
         },
         body: JSON.stringify({
           type: "map_email_fields",
-          emailFields: emailFieldsSummary,
-          projectFields: projectFieldsSummary,
+          emailFields: emailFieldsText,
+          projectFields: projectFieldsText,
         }),
       });
 
-      if (!res.ok) throw new Error(`AI request failed: ${res.status}`);
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || `AI request failed: ${res.status}`);
+      }
       const data = await res.json();
 
       const result = data?.result;
       if (result && typeof result === "object") {
         const newMapping: Record<string, string> = {};
+        
+        // Build a lookup from field_N -> originalKey
+        const idToKey = new Map(emailFieldEntries.map(e => [e.id, e.originalKey]));
+        const labelToKey = new Map(emailFieldEntries.map(e => [e.label.toLowerCase(), e.originalKey]));
+        const origToKey = new Map(emailFieldEntries.map(e => [e.originalKey, e.originalKey]));
+
         for (const [returnedKey, projectKey] of Object.entries(result)) {
-          if (typeof projectKey !== "string" || projectKey === "skip") continue;
+          if (typeof projectKey !== "string" || projectKey === "skip" || projectKey === "none") continue;
           if (!PROJECT_FIELDS.some(pf => pf.key === projectKey)) continue;
 
-          // Match by index-based id, original key, or label
-          const matchingEntry = emailFieldEntries.find(e =>
-            e.id === returnedKey ||
-            e.originalKey === returnedKey ||
-            e.label.toLowerCase() === returnedKey.toLowerCase() ||
-            e.originalKey.replace("parsed_", "") === returnedKey
-          );
-          if (matchingEntry) {
-            newMapping[matchingEntry.originalKey] = projectKey;
+          // Try multiple match strategies
+          const originalKey = 
+            idToKey.get(returnedKey) ||                           // field_0, field_1, etc
+            origToKey.get(returnedKey) ||                         // direct key match
+            labelToKey.get(returnedKey.toLowerCase()) ||          // label match
+            idToKey.get(returnedKey.replace(/[^a-z0-9_]/gi, "")); // cleaned match
+
+          if (originalKey) {
+            newMapping[originalKey] = projectKey;
           }
         }
+
         setMapping(newMapping);
         setAiMapped(true);
         if (Object.keys(newMapping).length > 0) {
@@ -171,8 +187,11 @@ export const EmailToProjectDialog = ({ email, open, onOpenChange, onProjectCreat
         } else {
           toast.warning("AI couldn't find matching fields. Please map manually.");
         }
+      } else {
+        toast.warning("AI returned empty mapping. Please map manually.");
       }
     } catch (e: any) {
+      console.error("AI mapping error:", e);
       toast.error(e.message || "AI mapping failed");
     } finally {
       setAiLoading(false);
