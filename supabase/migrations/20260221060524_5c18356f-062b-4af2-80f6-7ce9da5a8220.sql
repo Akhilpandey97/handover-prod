@@ -1,0 +1,1 @@
+ALTER TABLE public.saved_reports DROP CONSTRAINT saved_reports_schedule_check;

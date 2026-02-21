@@ -242,6 +242,77 @@ serve(async (req) => {
           console.error(`Error inserting email ${msg.id}:`, insertError);
         } else {
           results.push(inserted);
+
+          // Auto-create project from the parsed email
+          try {
+            const autoProject = {
+              tenant_id: tenantId,
+              merchant_name: brandName || `Email-${msg.id.substring(0, 8)}`,
+              mid: `AUTO-${msg.id.substring(0, 8)}`,
+              current_phase: "mint",
+              current_owner_team: "mint",
+              arr: arrValue || 0,
+              txns_per_day: txnsPerDay || 0,
+              aov: aov || 0,
+              platform: platform || "Custom",
+              category: category || "",
+              brand_url: brandUrl || "",
+              integration_type: "Standard",
+              sales_spoc: "",
+              current_responsibility: "neutral",
+              pending_acceptance: false,
+              project_state: "not_started",
+              go_live_percent: 0,
+              kick_off_date: new Date().toISOString().split("T")[0],
+              current_phase_comment: "Auto-created from email — needs manager review",
+              project_notes: notes || "",
+              pg_onboarding: "",
+            };
+
+            const { data: createdProject, error: projectError } = await supabase
+              .from("projects")
+              .insert(autoProject)
+              .select("id")
+              .single();
+
+            if (projectError) {
+              console.error(`Error auto-creating project for ${msg.id}:`, projectError);
+            } else {
+              // Link email to project
+              await supabase
+                .from("parsed_emails")
+                .update({ status: "project_created", project_id: createdProject.id })
+                .eq("id", inserted.id);
+
+              // Create default checklist items for the project
+              const defaultChecklist = [
+                { title: "Brand Kick-Off Call", phase: "mint", owner_team: "mint" },
+                { title: "BRD Sign-Off", phase: "mint", owner_team: "mint" },
+                { title: "JIRA Ticket Created", phase: "mint", owner_team: "mint" },
+                { title: "API Keys Shared", phase: "integration", owner_team: "integration" },
+                { title: "Integration Development", phase: "integration", owner_team: "integration" },
+                { title: "UAT Testing", phase: "integration", owner_team: "integration" },
+                { title: "Go-Live Approval", phase: "ms", owner_team: "ms" },
+              ];
+
+              const checklistItems = defaultChecklist.map((item, idx) => ({
+                project_id: createdProject.id,
+                tenant_id: tenantId,
+                title: item.title,
+                phase: item.phase,
+                owner_team: item.owner_team,
+                sort_order: idx,
+                completed: false,
+                current_responsibility: "neutral",
+              }));
+
+              await supabase.from("checklist_items").insert(checklistItems);
+
+              console.log(`Auto-created project ${createdProject.id} for email ${msg.id}`);
+            }
+          } catch (autoErr) {
+            console.error(`Error in auto-project-creation for ${msg.id}:`, autoErr);
+          }
         }
       } catch (err) {
         console.error(`Error processing message ${msg.id}:`, err);
