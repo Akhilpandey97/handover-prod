@@ -33,11 +33,11 @@ serve(async (req) => {
           messages: [
             {
               role: "system",
-              content: `You are a data mapping assistant. Given email fields with values and project fields, map each email field to the most appropriate project field. Return a JSON object where keys are email field identifiers and values are project field keys. Use "skip" for fields that don't have a good match. Only output the JSON object, nothing else.`,
+              content: `You are a data mapping assistant. You must map email fields to project fields. Each email field has an ID (like "field_0"), a label, and a value. Each project field has a key (like "merchantName"). Return a JSON mapping where keys are the email field IDs (field_0, field_1, etc.) and values are the best matching project field keys. Use "skip" for fields with no good match. ONLY output valid JSON, nothing else.`,
             },
             {
               role: "user",
-              content: `Email fields (format: "id" ("label"): "value"):\n${emailFields}\n\nProject fields (format: "key" (label)):\n${projectFields}\n\nMap each email field ID to the best matching project field key. Use the email field's ID (like "field_0") as the key and the project field's key (like "merchantName") as the value. Use "skip" if no good match. Example: {"field_0": "merchantName", "field_1": "brandUrl", "field_2": "skip"}`,
+              content: `Map these email fields to the project fields below.\n\nEMAIL FIELDS:\n${emailFields}\n\nPROJECT FIELDS:\n${projectFields}\n\nReturn JSON like: {"field_0": "merchantName", "field_1": "arr", "field_2": "skip"}`,
             },
           ],
           tools: [

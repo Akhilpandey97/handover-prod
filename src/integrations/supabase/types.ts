@@ -527,6 +527,60 @@ export type Database = {
           },
         ]
       }
+      report_executions: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          email_count: number | null
+          error_message: string | null
+          id: string
+          recipients: string[] | null
+          report_id: string
+          status: string
+          tenant_id: string | null
+          triggered_at: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          email_count?: number | null
+          error_message?: string | null
+          id?: string
+          recipients?: string[] | null
+          report_id: string
+          status?: string
+          tenant_id?: string | null
+          triggered_at?: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          email_count?: number | null
+          error_message?: string | null
+          id?: string
+          recipients?: string[] | null
+          report_id?: string
+          status?: string
+          tenant_id?: string | null
+          triggered_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "report_executions_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "saved_reports"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "report_executions_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       saved_reports: {
         Row: {
           columns: string[]
