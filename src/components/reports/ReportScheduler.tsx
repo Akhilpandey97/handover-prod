@@ -4,12 +4,17 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import {
-  Calendar, Clock, Mail, Play, CheckCircle2, XCircle, AlertTriangle,
-  RefreshCw, Trash2, Loader2, Send, History
+  Calendar, Clock, Mail, CheckCircle2, XCircle, AlertTriangle,
+  RefreshCw, Trash2, Loader2, Send, History, Pencil, X
 } from "lucide-react";
 
 interface SavedReport {
@@ -39,14 +44,14 @@ const STATUS_CONFIG: Record<string, { icon: React.ReactNode; color: string; labe
   pending: { icon: <Clock className="h-3.5 w-3.5" />, color: "text-muted-foreground", label: "Pending" },
 };
 
+const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+
 function parseSchedule(schedule: string): string {
   if (!schedule || schedule === "none") return "Not scheduled";
   if (schedule === "daily") return "Daily";
   const parts = schedule.split("@");
   if (parts.length === 2) {
-    const days = parts[0];
-    const time = parts[1];
-    return `${days} at ${time}`;
+    return `${parts[0]} at ${parts[1]}`;
   }
   return schedule;
 }
@@ -58,6 +63,15 @@ export const ReportScheduler = () => {
   const [loading, setLoading] = useState(true);
   const [triggerLoading, setTriggerLoading] = useState<string | null>(null);
   const [selectedReport, setSelectedReport] = useState<string | null>(null);
+
+  // Edit dialog state
+  const [editOpen, setEditOpen] = useState(false);
+  const [editReport, setEditReport] = useState<SavedReport | null>(null);
+  const [editScheduleType, setEditScheduleType] = useState<"none" | "daily" | "weekly">("none");
+  const [editDays, setEditDays] = useState<string[]>([]);
+  const [editTime, setEditTime] = useState("09:00");
+  const [editRecipients, setEditRecipients] = useState("");
+  const [saving, setSaving] = useState(false);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -84,6 +98,65 @@ export const ReportScheduler = () => {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
+  const openEditDialog = (report: SavedReport) => {
+    setEditReport(report);
+    setEditRecipients(report.recipients.join(", "));
+
+    if (report.schedule === "none" || !report.schedule) {
+      setEditScheduleType("none");
+      setEditDays([]);
+      setEditTime("09:00");
+    } else if (report.schedule === "daily") {
+      setEditScheduleType("daily");
+      setEditDays([]);
+      setEditTime("09:00");
+    } else {
+      const parts = report.schedule.split("@");
+      if (parts.length === 2) {
+        const days = parts[0].split(",").map(d => d.trim()).filter(Boolean);
+        setEditScheduleType("weekly");
+        setEditDays(days);
+        setEditTime(parts[1]);
+      } else {
+        setEditScheduleType("none");
+        setEditDays([]);
+        setEditTime("09:00");
+      }
+    }
+    setEditOpen(true);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editReport) return;
+    setSaving(true);
+
+    let schedule = "none";
+    if (editScheduleType === "daily") {
+      schedule = "daily";
+    } else if (editScheduleType === "weekly" && editDays.length > 0) {
+      schedule = `${editDays.join(",")}@${editTime}`;
+    }
+
+    const recipients = editRecipients
+      .split(",")
+      .map(e => e.trim())
+      .filter(e => e.includes("@"));
+
+    const { error } = await supabase
+      .from("saved_reports")
+      .update({ schedule, recipients })
+      .eq("id", editReport.id);
+
+    if (error) {
+      toast.error("Failed to update schedule");
+    } else {
+      toast.success("Schedule updated");
+      setEditOpen(false);
+      await fetchData();
+    }
+    setSaving(false);
+  };
+
   const handleTriggerNow = async (reportId: string) => {
     setTriggerLoading(reportId);
     try {
@@ -97,10 +170,7 @@ export const ReportScheduler = () => {
           Authorization: `Bearer ${SUPABASE_KEY}`,
           apikey: SUPABASE_KEY,
         },
-        body: JSON.stringify({
-          report_id: reportId,
-          tenant_id: currentUser?.tenantId,
-        }),
+        body: JSON.stringify({ report_id: reportId, tenant_id: currentUser?.tenantId }),
       });
 
       const data = await res.json();
@@ -113,8 +183,6 @@ export const ReportScheduler = () => {
       } else {
         toast.error(`Failed: ${data.errors?.[0] || "Unknown error"}`);
       }
-
-      // Refresh data
       await fetchData();
     } catch (e: any) {
       toast.error(e.message || "Failed to trigger report");
@@ -128,8 +196,9 @@ export const ReportScheduler = () => {
     setExecutions(prev => prev.filter(e => e.id !== execId));
   };
 
-  const scheduledReports = reports.filter(r => r.schedule !== "none" && r.recipients.length > 0);
-  const unscheduledReports = reports.filter(r => r.schedule === "none" || r.recipients.length === 0);
+  // FIX: Show reports that have a schedule set (not "none"), regardless of recipients
+  const scheduledReports = reports.filter(r => r.schedule && r.schedule !== "none");
+  const unscheduledReports = reports.filter(r => !r.schedule || r.schedule === "none");
 
   const filteredExecutions = selectedReport
     ? executions.filter(e => e.report_id === selectedReport)
@@ -147,7 +216,7 @@ export const ReportScheduler = () => {
 
   return (
     <div className="space-y-4">
-      {/* Scheduled Reports Overview */}
+      {/* Scheduled Reports */}
       <Card>
         <CardHeader className="py-3 px-4">
           <div className="flex items-center justify-between">
@@ -170,6 +239,7 @@ export const ReportScheduler = () => {
               {scheduledReports.map(report => {
                 const lastExec = executions.find(e => e.report_id === report.id);
                 const statusCfg = lastExec ? STATUS_CONFIG[lastExec.status] || STATUS_CONFIG.pending : null;
+                const hasRecipients = report.recipients.length > 0;
                 return (
                   <div key={report.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/30 transition-colors">
                     <div className="flex-1 min-w-0">
@@ -179,12 +249,19 @@ export const ReportScheduler = () => {
                           <Clock className="h-3 w-3 mr-0.5 inline" />
                           {parseSchedule(report.schedule)}
                         </Badge>
+                        {!hasRecipients && (
+                          <Badge variant="outline" className="text-[10px] px-1.5 py-0 text-yellow-600 border-yellow-300">
+                            No recipients
+                          </Badge>
+                        )}
                       </div>
                       <div className="flex items-center gap-3 mt-1">
-                        <span className="text-xs text-muted-foreground flex items-center gap-1">
-                          <Mail className="h-3 w-3" />
-                          {report.recipients.join(", ")}
-                        </span>
+                        {hasRecipients && (
+                          <span className="text-xs text-muted-foreground flex items-center gap-1">
+                            <Mail className="h-3 w-3" />
+                            {report.recipients.join(", ")}
+                          </span>
+                        )}
                         {lastExec && statusCfg && (
                           <span className={`text-xs flex items-center gap-1 ${statusCfg.color}`}>
                             {statusCfg.icon}
@@ -201,7 +278,15 @@ export const ReportScheduler = () => {
                         size="sm"
                         variant="outline"
                         className="h-7 text-xs gap-1"
-                        disabled={triggerLoading === report.id}
+                        onClick={() => openEditDialog(report)}
+                      >
+                        <Pencil className="h-3 w-3" /> Edit
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-7 text-xs gap-1"
+                        disabled={triggerLoading === report.id || !hasRecipients}
                         onClick={() => handleTriggerNow(report.id)}
                       >
                         {triggerLoading === report.id ? (
@@ -217,8 +302,7 @@ export const ReportScheduler = () => {
                         className="h-7 text-xs gap-1"
                         onClick={() => setSelectedReport(prev => prev === report.id ? null : report.id)}
                       >
-                        <History className="h-3 w-3" />
-                        History
+                        <History className="h-3 w-3" /> History
                       </Button>
                     </div>
                   </div>
@@ -229,7 +313,7 @@ export const ReportScheduler = () => {
         </CardContent>
       </Card>
 
-      {/* Unscheduled Saved Reports */}
+      {/* Unscheduled Reports */}
       {unscheduledReports.length > 0 && (
         <Card>
           <CardHeader className="py-3 px-4">
@@ -246,6 +330,9 @@ export const ReportScheduler = () => {
                   <Badge variant="outline" className="text-[10px] px-1.5 py-0">
                     {report.columns.length} cols
                   </Badge>
+                  <Button size="sm" variant="ghost" className="h-6 px-1.5" onClick={() => openEditDialog(report)}>
+                    <Pencil className="h-3 w-3" />
+                  </Button>
                 </div>
               ))}
             </div>
@@ -301,8 +388,7 @@ export const ReportScheduler = () => {
                         </TableCell>
                         <TableCell>
                           <span className={`text-xs flex items-center gap-1 ${statusCfg.color}`}>
-                            {statusCfg.icon}
-                            {statusCfg.label}
+                            {statusCfg.icon} {statusCfg.label}
                           </span>
                         </TableCell>
                         <TableCell className="text-xs text-muted-foreground">
@@ -328,6 +414,73 @@ export const ReportScheduler = () => {
           </ScrollArea>
         </CardContent>
       </Card>
+
+      {/* Edit Schedule Dialog */}
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-base">Edit Schedule — {editReport?.name}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Schedule Type</Label>
+              <Select value={editScheduleType} onValueChange={(v: "none" | "daily" | "weekly") => setEditScheduleType(v)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">No Schedule</SelectItem>
+                  <SelectItem value="daily">Daily</SelectItem>
+                  <SelectItem value="weekly">Specific Days</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {editScheduleType === "weekly" && (
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Days</Label>
+                <div className="flex flex-wrap gap-2">
+                  {DAYS.map(day => (
+                    <Button
+                      key={day}
+                      type="button"
+                      size="sm"
+                      variant={editDays.includes(day) ? "default" : "outline"}
+                      className="h-7 text-xs px-3"
+                      onClick={() => setEditDays(prev =>
+                        prev.includes(day) ? prev.filter(d => d !== day) : [...prev, day]
+                      )}
+                    >
+                      {day}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {editScheduleType !== "none" && (
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Time</Label>
+                <Input type="time" value={editTime} onChange={e => setEditTime(e.target.value)} />
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Recipients (comma-separated emails)</Label>
+              <Input
+                value={editRecipients}
+                onChange={e => setEditRecipients(e.target.value)}
+                placeholder="email1@example.com, email2@example.com"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditOpen(false)}>Cancel</Button>
+            <Button onClick={handleSaveEdit} disabled={saving}>
+              {saving ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null}
+              Save Changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
