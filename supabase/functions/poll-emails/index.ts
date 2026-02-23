@@ -284,29 +284,40 @@ serve(async (req) => {
                 .update({ status: "project_created", project_id: createdProject.id })
                 .eq("id", inserted.id);
 
-              // Create default checklist items for the project
-              const defaultChecklist = [
-                { title: "Brand Kick-Off Call", phase: "mint", owner_team: "mint" },
-                { title: "BRD Sign-Off", phase: "mint", owner_team: "mint" },
-                { title: "JIRA Ticket Created", phase: "mint", owner_team: "mint" },
-                { title: "API Keys Shared", phase: "integration", owner_team: "integration" },
-                { title: "Integration Development", phase: "integration", owner_team: "integration" },
-                { title: "UAT Testing", phase: "integration", owner_team: "integration" },
-                { title: "Go-Live Approval", phase: "ms", owner_team: "ms" },
-              ];
+              // Fetch checklist templates from existing projects in this tenant
+              const { data: templateItems } = await supabase
+                .from("checklist_items")
+                .select("title, owner_team, phase, sort_order")
+                .eq("tenant_id", tenantId)
+                .order("sort_order", { ascending: true });
 
-              const checklistItems = defaultChecklist.map((item, idx) => ({
-                project_id: createdProject.id,
-                tenant_id: tenantId,
-                title: item.title,
-                phase: item.phase,
-                owner_team: item.owner_team,
-                sort_order: idx,
-                completed: false,
-                current_responsibility: "neutral",
-              }));
+              // Deduplicate by team+title to get unique template items
+              const seen = new Set<string>();
+              const uniqueTemplates: { title: string; owner_team: string; phase: string; sort_order: number }[] = [];
+              for (const item of (templateItems || [])) {
+                const key = `${item.owner_team}-${item.title}`;
+                if (!seen.has(key)) {
+                  seen.add(key);
+                  uniqueTemplates.push(item);
+                }
+              }
 
-              await supabase.from("checklist_items").insert(checklistItems);
+              if (uniqueTemplates.length > 0) {
+                const checklistItems = uniqueTemplates.map((item, idx) => ({
+                  project_id: createdProject.id,
+                  tenant_id: tenantId,
+                  title: item.title,
+                  phase: item.phase,
+                  owner_team: item.owner_team,
+                  sort_order: item.sort_order ?? idx,
+                  completed: false,
+                  current_responsibility: "neutral",
+                }));
+                await supabase.from("checklist_items").insert(checklistItems);
+                console.log(`Inserted ${checklistItems.length} checklist items from tenant templates`);
+              } else {
+                console.log("No checklist templates found for tenant, skipping checklist creation");
+              }
 
               console.log(`Auto-created project ${createdProject.id} for email ${msg.id}`);
             }
