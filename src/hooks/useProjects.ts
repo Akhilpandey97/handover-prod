@@ -252,16 +252,33 @@ export const useAddProject = () => {
 
       if (projectError) throw projectError;
 
-      // Insert checklist items
-      if (project.checklist.length > 0) {
-        const checklistToInsert = project.checklist.map((item, index) => ({
+      // Fetch checklist templates from existing projects in this tenant
+      const { data: templateItems } = await supabase
+        .from("checklist_items")
+        .select("title, owner_team, phase, sort_order")
+        .eq("tenant_id", currentUser?.tenantId)
+        .order("sort_order", { ascending: true });
+
+      // Deduplicate by team+title to get unique template items
+      const seen = new Set<string>();
+      const uniqueTemplates: { title: string; owner_team: string; phase: string; sort_order: number }[] = [];
+      for (const item of (templateItems || [])) {
+        const key = `${item.owner_team}-${item.title}`;
+        if (!seen.has(key)) {
+          seen.add(key);
+          uniqueTemplates.push(item);
+        }
+      }
+
+      if (uniqueTemplates.length > 0) {
+        const checklistToInsert = uniqueTemplates.map((item, index) => ({
           project_id: newProject.id,
           title: item.title,
-          completed: item.completed,
-          phase: item.phase,
-          owner_team: item.ownerTeam,
-          current_responsibility: item.currentResponsibility,
-          sort_order: index,
+          completed: false,
+          phase: item.phase as "mint" | "integration" | "ms" | "completed",
+          owner_team: item.owner_team as "mint" | "integration" | "ms" | "manager" | "super_admin",
+          current_responsibility: "neutral" as const,
+          sort_order: item.sort_order ?? index,
           tenant_id: currentUser?.tenantId || null,
         }));
 

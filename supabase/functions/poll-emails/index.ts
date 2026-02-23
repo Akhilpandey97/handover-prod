@@ -319,6 +319,15 @@ serve(async (req) => {
                 console.log("No checklist templates found for tenant, skipping checklist creation");
               }
 
+              // Insert initial responsibility log (parity with manual creation)
+              await supabase.from("project_responsibility_logs").insert({
+                project_id: createdProject.id,
+                party: "neutral",
+                phase: "mint",
+                started_at: new Date().toISOString(),
+                tenant_id: tenantId,
+              });
+
               console.log(`Auto-created project ${createdProject.id} for email ${msg.id}`);
             }
           } catch (autoErr) {
