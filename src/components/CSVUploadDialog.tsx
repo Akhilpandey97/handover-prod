@@ -297,37 +297,45 @@ export const CSVUploadDialog = ({ open, onOpenChange }: CSVUploadDialogProps) =>
 
           if (projectError) throw projectError;
 
-          // Insert checklist items
-          const checklistItems = [
-            ...mintChecklistItems.map((title, idx) => ({
-              project_id: newProject.id,
-              title,
-              phase: "mint" as const,
-              owner_team: "mint" as const,
-              current_responsibility: "neutral" as const,
-              sort_order: idx,
-              completed: false,
-              tenant_id: currentUser?.tenantId || null,
-            })),
-            ...integrationChecklistItems.map((title, idx) => ({
-              project_id: newProject.id,
-              title,
-              phase: "integration" as const,
-              owner_team: "integration" as const,
-              current_responsibility: "neutral" as const,
-              sort_order: mintChecklistItems.length + idx,
-              completed: false,
-              tenant_id: currentUser?.tenantId || null,
-            })),
-          ];
-
-          const { error: checklistError } = await supabase
+          // Fetch checklist templates from existing projects in this tenant
+          const { data: templateItems } = await supabase
             .from("checklist_items")
-            .insert(checklistItems);
+            .select("title, owner_team, phase, sort_order")
+            .eq("tenant_id", currentUser?.tenantId)
+            .order("sort_order", { ascending: true });
 
-          if (checklistError) {
-            console.error("Checklist error:", checklistError);
+          // Deduplicate by team+title to get unique template items
+          const seen = new Set<string>();
+          const uniqueTemplates: { title: string; owner_team: string; phase: string; sort_order: number }[] = [];
+          for (const item of (templateItems || [])) {
+            const key = `${item.owner_team}-${item.title}`;
+            if (!seen.has(key)) {
+              seen.add(key);
+              uniqueTemplates.push(item);
+            }
           }
+
+          if (uniqueTemplates.length > 0) {
+            const checklistItems = uniqueTemplates.map((item, idx) => ({
+              project_id: newProject.id,
+              title: item.title,
+              phase: item.phase as any,
+              owner_team: item.owner_team as any,
+              current_responsibility: "neutral" as const,
+              sort_order: item.sort_order ?? idx,
+              completed: false,
+              tenant_id: currentUser?.tenantId || null,
+            }));
+
+            const { error: checklistError } = await supabase
+              .from("checklist_items")
+              .insert(checklistItems);
+
+            if (checklistError) {
+              console.error("Checklist error:", checklistError);
+            }
+          }
+
 
           // Insert initial responsibility log
           await supabase.from("project_responsibility_logs").insert({
