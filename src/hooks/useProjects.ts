@@ -252,26 +252,15 @@ export const useAddProject = () => {
 
       if (projectError) throw projectError;
 
-      // Fetch checklist templates from existing projects in this tenant
+      // Fetch checklist templates from dedicated templates table
       const { data: templateItems } = await supabase
-        .from("checklist_items")
+        .from("checklist_templates")
         .select("title, owner_team, phase, sort_order")
         .eq("tenant_id", currentUser?.tenantId)
         .order("sort_order", { ascending: true });
 
-      // Deduplicate by team+title to get unique template items
-      const seen = new Set<string>();
-      const uniqueTemplates: { title: string; owner_team: string; phase: string; sort_order: number }[] = [];
-      for (const item of (templateItems || [])) {
-        const key = `${item.owner_team}-${item.title}`;
-        if (!seen.has(key)) {
-          seen.add(key);
-          uniqueTemplates.push(item);
-        }
-      }
-
-      if (uniqueTemplates.length > 0) {
-        const checklistToInsert = uniqueTemplates.map((item, index) => ({
+      if (templateItems && templateItems.length > 0) {
+        const checklistToInsert = templateItems.map((item, index) => ({
           project_id: newProject.id,
           title: item.title,
           completed: false,
@@ -397,6 +386,12 @@ export const useDeleteProject = () => {
           .delete()
           .in("checklist_item_id", checklistIds);
       }
+
+      // Unlink parsed emails referencing this project
+      await supabase
+        .from("parsed_emails")
+        .update({ project_id: null })
+        .eq("project_id", projectId);
 
       // Delete related records
       await supabase.from("checklist_items").delete().eq("project_id", projectId);

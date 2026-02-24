@@ -46,35 +46,25 @@ interface ChecklistTemplate {
   sortOrder: number;
 }
 
-// Fetch all unique checklist items grouped by team (as templates)
+// Fetch checklist templates from dedicated table
 const useChecklistTemplates = () => {
   return useQuery({
     queryKey: ["checklist-templates"],
     queryFn: async () => {
-      // Get distinct checklist items by title and owner_team
       const { data, error } = await supabase
-        .from("checklist_items")
-        .select("title, owner_team, phase, sort_order")
+        .from("checklist_templates")
+        .select("id, title, owner_team, phase, sort_order")
         .order("sort_order", { ascending: true });
 
       if (error) throw error;
 
-      // Group by team and deduplicate
-      const templates = new Map<string, ChecklistTemplate>();
-      (data || []).forEach((item, index) => {
-        const key = `${item.owner_team}-${item.title}`;
-        if (!templates.has(key)) {
-          templates.set(key, {
-            id: key,
-            title: item.title,
-            ownerTeam: item.owner_team as TeamRole,
-            phase: item.phase,
-            sortOrder: item.sort_order ?? index,
-          });
-        }
-      });
-
-      return Array.from(templates.values()).sort((a, b) => a.sortOrder - b.sortOrder);
+      return (data || []).map((item) => ({
+        id: item.id,
+        title: item.title,
+        ownerTeam: item.owner_team as TeamRole,
+        phase: item.phase,
+        sortOrder: item.sort_order ?? 0,
+      }));
     },
   });
 };
@@ -92,22 +82,35 @@ export const ChecklistManagement = () => {
   // Filter templates by team
   const teamTemplates = templates.filter((t) => t.ownerTeam === activeTeam);
 
-  // Add new checklist item to all projects
+  // Add new checklist item to templates table AND all existing projects
   const addItemMutation = useMutation({
     mutationFn: async ({ title, team }: { title: string; team: TeamRole }) => {
-      // Get all projects
+      const maxOrder = teamTemplates.reduce((max, t) => Math.max(max, t.sortOrder), -1) + 1;
+      const phase = team === "manager" ? "ms" : team;
+
+      // Get current user's tenant_id
+      const { data: { user } } = await supabase.auth.getUser();
+      const { data: profile } = await supabase.from("profiles").select("tenant_id").eq("id", user?.id).single();
+      const tenantId = profile?.tenant_id;
+
+      // Insert into templates table
+      const { error: templateError } = await supabase
+        .from("checklist_templates")
+        .insert({
+          title,
+          owner_team: team,
+          phase: phase as "mint" | "integration" | "ms",
+          sort_order: maxOrder,
+          tenant_id: tenantId,
+        });
+      if (templateError) throw templateError;
+
+      // Also add to all existing projects
       const { data: projects, error: projectsError } = await supabase
         .from("projects")
         .select("id, tenant_id");
-
       if (projectsError) throw projectsError;
 
-      // Get max sort order for this team
-      const maxOrder = teamTemplates.reduce((max, t) => Math.max(max, t.sortOrder), -1) + 1;
-
-      // Insert new checklist item for all projects
-      // Phase can only be mint, integration, or ms (not manager)
-      const phase = team === "manager" ? "ms" : team;
       const itemsToInsert = (projects || []).map((p) => ({
         project_id: p.id,
         title,
@@ -139,15 +142,17 @@ export const ChecklistManagement = () => {
     },
   });
 
-  // Update checklist item title across all projects
+  // Update checklist item title in templates AND across all projects
   const updateItemMutation = useMutation({
-    mutationFn: async ({ oldTitle, newTitle, team }: { oldTitle: string; newTitle: string; team: TeamRole }) => {
+    mutationFn: async ({ oldTitle, newTitle, team, templateId }: { oldTitle: string; newTitle: string; team: TeamRole; templateId?: string }) => {
+      if (templateId) {
+        await supabase.from("checklist_templates").update({ title: newTitle }).eq("id", templateId);
+      }
       const { error } = await supabase
         .from("checklist_items")
         .update({ title: newTitle })
         .eq("title", oldTitle)
         .eq("owner_team", team);
-
       if (error) throw error;
       return { oldTitle, newTitle, team };
     },
@@ -163,15 +168,17 @@ export const ChecklistManagement = () => {
     },
   });
 
-  // Delete checklist item from all projects
+  // Delete checklist item from templates AND all projects
   const deleteItemMutation = useMutation({
-    mutationFn: async ({ title, team }: { title: string; team: TeamRole }) => {
+    mutationFn: async ({ title, team, templateId }: { title: string; team: TeamRole; templateId?: string }) => {
+      if (templateId) {
+        await supabase.from("checklist_templates").delete().eq("id", templateId);
+      }
       const { error } = await supabase
         .from("checklist_items")
         .delete()
         .eq("title", title)
         .eq("owner_team", team);
-
       if (error) throw error;
       return { title, team };
     },
@@ -201,7 +208,11 @@ export const ChecklistManagement = () => {
       const currentItem = currentItems[currentIndex];
       const swapItem = currentItems[swapIndex];
 
-      // Swap sort orders
+      // Swap sort orders in templates table
+      await supabase.from("checklist_templates").update({ sort_order: swapItem.sortOrder }).eq("id", currentItem.id);
+      await supabase.from("checklist_templates").update({ sort_order: currentItem.sortOrder }).eq("id", swapItem.id);
+
+      // Also swap in checklist_items
       await supabase
         .from("checklist_items")
         .update({ sort_order: swapItem.sortOrder })
@@ -244,7 +255,7 @@ export const ChecklistManagement = () => {
     // Find original title
     const original = templates.find((t) => t.id === editingItem.id);
     if (original && original.title !== newTitle) {
-      updateItemMutation.mutate({ oldTitle: original.title, newTitle, team: activeTeam });
+      updateItemMutation.mutate({ oldTitle: original.title, newTitle, team: activeTeam, templateId: editingItem.id });
     } else {
       setEditingItem(null);
     }
@@ -473,7 +484,7 @@ export const ChecklistManagement = () => {
               variant="destructive"
               onClick={() => {
                 if (deleteConfirm) {
-                  deleteItemMutation.mutate({ title: deleteConfirm.title, team: deleteConfirm.ownerTeam });
+                  deleteItemMutation.mutate({ title: deleteConfirm.title, team: deleteConfirm.ownerTeam, templateId: deleteConfirm.id });
                 }
               }}
               disabled={deleteItemMutation.isPending}
