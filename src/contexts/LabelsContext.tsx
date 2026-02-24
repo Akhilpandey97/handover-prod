@@ -59,6 +59,25 @@ const DEFAULT_LABELS: Record<string, string> = {
   field_mint_notes: "MINT Notes",
   field_current_phase_comment: "Current Phase Comment",
   field_phase2_comment: "Phase 2 Comment",
+
+  // Color settings - team badge colors
+  color_team_mint_badge: "#3b82f6",
+  color_team_integration_badge: "#a855f7",
+  color_team_ms_badge: "#10b981",
+  color_team_completed_badge: "#6b7280",
+
+  // Color settings - card background colors (light mode)
+  color_card_mint_bg: "#eff6ff",
+  color_card_integration_bg: "#faf5ff",
+  color_card_ms_bg: "#ecfdf5",
+  color_card_completed_bg: "#f9fafb",
+
+  // Color settings - project state badge colors
+  color_state_not_started: "#6b7280",
+  color_state_on_hold: "#f59e0b",
+  color_state_in_progress: "#3b82f6",
+  color_state_live: "#10b981",
+  color_state_blocked: "#ef4444",
 };
 
 interface LabelsContextType {

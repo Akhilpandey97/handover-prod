@@ -65,7 +65,7 @@ interface ProjectCardNewProps {
   project: Project;
 }
 
-const phaseConfig = {
+const defaultPhaseConfig = {
   mint: { 
     bg: "bg-gradient-to-r from-blue-50 to-blue-100/50 dark:from-blue-950/30 dark:to-blue-900/20", 
     border: "border-blue-200/60 dark:border-blue-800/60",
@@ -118,7 +118,12 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
   const computedResponsibility = calculateProjectResponsibilityFromChecklist(project.checklist);
   const timeByParty = calculateTimeFromChecklist(project.checklist);
 
-  const phaseStyle = phaseConfig[project.currentPhase];
+  // Dynamic colors from settings
+  const badgeColor = getLabel(`color_team_${project.currentPhase}_badge`);
+  const cardBgColor = getLabel(`color_card_${project.currentPhase}_bg`);
+  const hasDynamicBadge = badgeColor.startsWith("#");
+  const hasDynamicCardBg = cardBgColor.startsWith("#");
+  const phaseStyle = defaultPhaseConfig[project.currentPhase];
 
   // Find next incomplete checklist item title (Project Phase display)
   // First try to find next incomplete item from the current owner team, then fallback to any team
@@ -225,7 +230,10 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
 
   return (
     <>
-      <Card className={`${phaseStyle.bg} ${phaseStyle.border} border hover:shadow-lg transition-all duration-300 overflow-hidden`}>
+      <Card
+        className={`${hasDynamicCardBg ? '' : phaseStyle.bg} ${phaseStyle.border} border hover:shadow-lg transition-all duration-300 overflow-hidden`}
+        style={hasDynamicCardBg ? { background: `linear-gradient(to right, ${cardBgColor}, ${cardBgColor}22)` } : undefined}
+      >
         <CardContent className="p-0">
           <div className="flex items-stretch">
             {/* Left Section - Main Info */}
@@ -255,7 +263,10 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
                     )}
                   </div>
                   <div className="flex items-center gap-2 flex-wrap text-xs text-muted-foreground">
-                    <Badge className={`${phaseStyle.badge} text-white text-xs px-2.5 py-0.5`}>
+                    <Badge
+                      className={`${hasDynamicBadge ? '' : phaseStyle.badge} text-white text-xs px-2.5 py-0.5`}
+                      style={hasDynamicBadge ? { backgroundColor: badgeColor } : undefined}
+                    >
                       {(teamLabels[project.currentOwnerTeam] || project.currentPhase).toUpperCase()}
                     </Badge>
                     <Badge variant="outline" className="text-xs px-2.5 py-0.5 font-mono bg-muted/50">

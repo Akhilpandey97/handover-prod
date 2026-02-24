@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
-import { Save, RotateCcw, Settings } from "lucide-react";
+import { Save, RotateCcw, Settings, Palette } from "lucide-react";
 
 interface LabelGroup {
   title: string;
@@ -123,6 +123,46 @@ const LABEL_GROUPS: LabelGroup[] = [
   },
 ];
 
+interface ColorLabelGroup {
+  title: string;
+  description: string;
+  keys: { key: string; label: string }[];
+}
+
+const COLOR_GROUPS: ColorLabelGroup[] = [
+  {
+    title: "Team Badge Colours",
+    description: "Set the badge colour for each team across project cards",
+    keys: [
+      { key: "color_team_mint_badge", label: "Team 1 (Presales) Badge" },
+      { key: "color_team_integration_badge", label: "Team 2 (Integration) Badge" },
+      { key: "color_team_ms_badge", label: "Team 3 (Post-Sales) Badge" },
+      { key: "color_team_completed_badge", label: "Completed Badge" },
+    ],
+  },
+  {
+    title: "Card Background Colours",
+    description: "Set the card tint colour for each team's projects",
+    keys: [
+      { key: "color_card_mint_bg", label: "Team 1 Card Background" },
+      { key: "color_card_integration_bg", label: "Team 2 Card Background" },
+      { key: "color_card_ms_bg", label: "Team 3 Card Background" },
+      { key: "color_card_completed_bg", label: "Completed Card Background" },
+    ],
+  },
+  {
+    title: "Project State Badge Colours",
+    description: "Set the colour for each project state badge",
+    keys: [
+      { key: "color_state_not_started", label: "Not Started" },
+      { key: "color_state_on_hold", label: "On Hold" },
+      { key: "color_state_in_progress", label: "In Progress" },
+      { key: "color_state_live", label: "Live" },
+      { key: "color_state_blocked", label: "Blocked" },
+    ],
+  },
+];
+
 export const SettingsPanel = () => {
   const { labels, updateLabels } = useLabels();
   const [draft, setDraft] = useState<Record<string, string>>({});
@@ -203,6 +243,57 @@ export const SettingsPanel = () => {
                       value={getValue(key)}
                       onChange={(e) => handleChange(key, e.target.value)}
                       className={draft[key] !== undefined ? "border-primary ring-1 ring-primary/20" : ""}
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </CardContent>
+      </Card>
+
+      {/* Colour Customisation Card */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Palette className="h-5 w-5" />
+            Colours & Branding
+          </CardTitle>
+          <CardDescription>
+            Customise the colours of team badges, card backgrounds, and state indicators across the app.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-8">
+          {COLOR_GROUPS.map((group, gi) => (
+            <div key={gi}>
+              {gi > 0 && <Separator className="mb-6" />}
+              <h3 className="text-base font-semibold mb-1">{group.title}</h3>
+              <p className="text-sm text-muted-foreground mb-4">{group.description}</p>
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                {group.keys.map(({ key, label }) => (
+                  <div key={key} className="space-y-2">
+                    <Label htmlFor={key} className="text-xs text-muted-foreground">
+                      {label}
+                    </Label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="color"
+                        id={key}
+                        value={getValue(key)}
+                        onChange={(e) => handleChange(key, e.target.value)}
+                        className="w-10 h-10 rounded-lg border border-border cursor-pointer p-0.5"
+                      />
+                      <Input
+                        value={getValue(key)}
+                        onChange={(e) => handleChange(key, e.target.value)}
+                        className={`font-mono text-xs h-10 ${draft[key] !== undefined ? "border-primary ring-1 ring-primary/20" : ""}`}
+                        placeholder="#000000"
+                      />
+                    </div>
+                    {/* Preview */}
+                    <div
+                      className="h-6 rounded-md border border-border/50"
+                      style={{ backgroundColor: getValue(key) }}
                     />
                   </div>
                 ))}
