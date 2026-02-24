@@ -297,26 +297,15 @@ export const CSVUploadDialog = ({ open, onOpenChange }: CSVUploadDialogProps) =>
 
           if (projectError) throw projectError;
 
-          // Fetch checklist templates from existing projects in this tenant
+          // Fetch checklist templates from dedicated templates table
           const { data: templateItems } = await supabase
-            .from("checklist_items")
+            .from("checklist_templates")
             .select("title, owner_team, phase, sort_order")
             .eq("tenant_id", currentUser?.tenantId)
             .order("sort_order", { ascending: true });
 
-          // Deduplicate by team+title to get unique template items
-          const seen = new Set<string>();
-          const uniqueTemplates: { title: string; owner_team: string; phase: string; sort_order: number }[] = [];
-          for (const item of (templateItems || [])) {
-            const key = `${item.owner_team}-${item.title}`;
-            if (!seen.has(key)) {
-              seen.add(key);
-              uniqueTemplates.push(item);
-            }
-          }
-
-          if (uniqueTemplates.length > 0) {
-            const checklistItems = uniqueTemplates.map((item, idx) => ({
+          if (templateItems && templateItems.length > 0) {
+            const checklistItems = templateItems.map((item, idx) => ({
               project_id: newProject.id,
               title: item.title,
               phase: item.phase as any,

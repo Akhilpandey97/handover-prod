@@ -223,6 +223,47 @@ export type Database = {
           },
         ]
       }
+      checklist_templates: {
+        Row: {
+          created_at: string
+          id: string
+          owner_team: Database["public"]["Enums"]["team_role"]
+          phase: Database["public"]["Enums"]["project_phase"]
+          sort_order: number
+          tenant_id: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          owner_team: Database["public"]["Enums"]["team_role"]
+          phase: Database["public"]["Enums"]["project_phase"]
+          sort_order?: number
+          tenant_id?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          owner_team?: Database["public"]["Enums"]["team_role"]
+          phase?: Database["public"]["Enums"]["project_phase"]
+          sort_order?: number
+          tenant_id?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "checklist_templates_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       parsed_emails: {
         Row: {
           aov: number | null
