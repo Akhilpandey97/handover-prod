@@ -840,12 +840,27 @@ export const useToggleResponsibility = () => {
 
       return { projectId, party };
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["projects"] });
+    onMutate: async ({ projectId, party }) => {
+      await queryClient.cancelQueries({ queryKey: ["projects"] });
+      const previous = queryClient.getQueryData(["projects"]);
+      queryClient.setQueryData(["projects"], (old: any[] | undefined) => {
+        if (!old) return old;
+        return old.map((p: any) =>
+          p.id === projectId ? { ...p, current_responsibility: party } : p
+        );
+      });
+      return { previous };
     },
-    onError: (error) => {
+    onError: (error, _vars, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(["projects"], context.previous);
+      }
       console.error("Error toggling responsibility:", error);
       toast.error("Failed to update responsibility");
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["projects"] });
+      queryClient.invalidateQueries({ queryKey: ["project_responsibility_logs"] });
     },
   });
 };
@@ -905,12 +920,27 @@ export const useToggleChecklistResponsibility = () => {
 
       return { checklistId, party };
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["projects"] });
+    onMutate: async ({ checklistId, party }) => {
+      await queryClient.cancelQueries({ queryKey: ["checklist_items"] });
+      const previous = queryClient.getQueryData(["checklist_items"]);
+      queryClient.setQueryData(["checklist_items"], (old: any[] | undefined) => {
+        if (!old) return old;
+        return old.map((item: any) =>
+          item.id === checklistId ? { ...item, current_responsibility: party } : item
+        );
+      });
+      return { previous };
     },
-    onError: (error) => {
+    onError: (error, _vars, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(["checklist_items"], context.previous);
+      }
       console.error("Error toggling checklist responsibility:", error);
       toast.error("Failed to update responsibility");
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["checklist_items"] });
+      queryClient.invalidateQueries({ queryKey: ["checklist_responsibility_logs"] });
     },
   });
 };
