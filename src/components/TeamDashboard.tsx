@@ -42,7 +42,7 @@ interface AiAlert {
 export const TeamDashboard = () => {
   const { currentUser, logout } = useAuth();
   const { getPendingProjects, getActiveProjects, projects, isLoading } = useProjects();
-  const { teamLabels } = useLabels();
+  const { teamLabels, labels } = useLabels();
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState<TabType>("active");
   const [aiAlerts, setAiAlerts] = useState<AiAlert[]>([]);
@@ -171,9 +171,13 @@ export const TeamDashboard = () => {
         {/* Logo & Team */}
         <div className="p-6 border-b">
           <div className="flex items-center gap-3">
-            <div className={`h-11 w-11 rounded-xl ${teamColors[currentUser.team]} flex items-center justify-center shadow-lg`}>
-              <FolderKanban className="h-6 w-6 text-white" />
-            </div>
+            {labels.org_logo_url ? (
+              <img src={labels.org_logo_url} alt="Logo" className="h-11 w-11 rounded-xl object-contain shadow-lg" />
+            ) : (
+              <div className={`h-11 w-11 rounded-xl ${teamColors[currentUser.team]} flex items-center justify-center shadow-lg`}>
+                <FolderKanban className="h-6 w-6 text-white" />
+              </div>
+            )}
             <div>
               <h1 className="font-bold text-lg">{teamLabels[currentUser.team]}</h1>
               <p className="text-xs text-muted-foreground">Team Dashboard</p>
