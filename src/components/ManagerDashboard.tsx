@@ -525,9 +525,13 @@ export const ManagerDashboard = () => {
         <div className="container mx-auto px-6">
           <div className="h-14 flex items-center justify-between gap-6">
             <div className="flex items-center gap-3">
-              <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
-                <BarChart3 className="h-4 w-4 text-primary-foreground" />
-              </div>
+              {appLabels.org_logo_url ? (
+                <img src={appLabels.org_logo_url} alt="Logo" className="h-8 w-8 rounded-lg object-contain" />
+              ) : (
+                <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
+                  <BarChart3 className="h-4 w-4 text-primary-foreground" />
+                </div>
+              )}
               <div>
                 <h1 className="font-semibold text-sm">{appLabels.app_title}</h1>
                 <p className="text-[11px] text-muted-foreground leading-none">{appLabels.app_subtitle}</p>

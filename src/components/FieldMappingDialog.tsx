@@ -1,0 +1,262 @@
+import { useState, useEffect } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Loader2, Wand2, ArrowRight, CheckCircle2, XCircle, AlertCircle } from "lucide-react";
+import { toast } from "sonner";
+
+const PROJECT_FIELDS = [
+  { key: "merchant_name", label: "Merchant/Brand Name", required: true },
+  { key: "mid", label: "Merchant ID (MID)" },
+  { key: "platform", label: "Platform" },
+  { key: "category", label: "Category" },
+  { key: "brand_url", label: "Brand URL" },
+  { key: "arr", label: "ARR (Revenue)" },
+  { key: "txns_per_day", label: "Txns/Day" },
+  { key: "aov", label: "AOV" },
+  { key: "sales_spoc", label: "Sales SPOC" },
+  { key: "mint_notes", label: "MINT Notes" },
+  { key: "project_notes", label: "Project Notes" },
+  { key: "current_phase_comment", label: "Phase Comment" },
+  { key: "integration_type", label: "Integration Type" },
+  { key: "pg_onboarding", label: "PG Onboarding" },
+  { key: "jira_link", label: "JIRA Link" },
+  { key: "brd_link", label: "BRD Link" },
+  { key: "kick_off_date", label: "Kick Off Date" },
+  { key: "expected_go_live_date", label: "Expected Go Live Date" },
+  { key: "go_live_percent", label: "Go Live %" },
+  { key: "current_phase", label: "Current Phase" },
+];
+
+interface FieldMappingDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  csvHeaders: string[];
+  sampleRows: string[][];
+  onConfirm: (mapping: Record<string, string>) => void;
+}
+
+export const FieldMappingDialog = ({
+  open,
+  onOpenChange,
+  csvHeaders,
+  sampleRows,
+  onConfirm,
+}: FieldMappingDialogProps) => {
+  const [mapping, setMapping] = useState<Record<string, string>>({});
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiDone, setAiDone] = useState(false);
+
+  useEffect(() => {
+    if (open && csvHeaders.length > 0 && !aiDone) {
+      autoMapWithAi();
+    }
+  }, [open, csvHeaders]);
+
+  const autoMapWithAi = async () => {
+    setAiLoading(true);
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-field-mapping`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          },
+          body: JSON.stringify({
+            csvHeaders,
+            sampleRows: sampleRows.slice(0, 2),
+          }),
+        }
+      );
+
+      if (!response.ok) throw new Error("AI mapping failed");
+
+      const data = await response.json();
+      const aiMapping: Record<string, string> = {};
+
+      if (data.mapping) {
+        Object.entries(data.mapping).forEach(([csvHeader, projectField]) => {
+          if (projectField && typeof projectField === "string") {
+            aiMapping[csvHeader] = projectField;
+          }
+        });
+      }
+
+      setMapping(aiMapping);
+      setAiDone(true);
+
+      const mappedCount = Object.values(aiMapping).filter(Boolean).length;
+      toast.success(`AI mapped ${mappedCount}/${csvHeaders.length} fields automatically`);
+    } catch (err) {
+      console.error("AI mapping error:", err);
+      toast.error("AI auto-mapping failed. Please map fields manually.");
+      setAiDone(true);
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
+  const handleFieldChange = (csvHeader: string, projectField: string) => {
+    setMapping((prev) => ({
+      ...prev,
+      [csvHeader]: projectField === "__skip__" ? "" : projectField,
+    }));
+  };
+
+  const handleConfirm = () => {
+    const activeMappings = Object.fromEntries(
+      Object.entries(mapping).filter(([, v]) => v)
+    );
+
+    if (!Object.values(activeMappings).includes("merchant_name")) {
+      toast.error("Please map at least the Merchant Name field");
+      return;
+    }
+
+    onConfirm(activeMappings);
+  };
+
+  const getMappedCount = () => Object.values(mapping).filter(Boolean).length;
+  const getUsedFields = () => new Set(Object.values(mapping).filter(Boolean));
+
+  const getSampleValue = (headerIdx: number) => {
+    if (sampleRows.length === 0) return "";
+    const val = sampleRows[0]?.[headerIdx] || "";
+    return val.length > 40 ? val.substring(0, 40) + "…" : val;
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-2xl max-h-[85vh] flex flex-col">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Wand2 className="h-5 w-5 text-primary" />
+            Map CSV Fields to Project Fields
+          </DialogTitle>
+          <DialogDescription>
+            {aiLoading
+              ? "AI is analyzing your CSV headers..."
+              : `${getMappedCount()} of ${csvHeaders.length} columns mapped. Adjust any incorrect mappings below.`}
+          </DialogDescription>
+        </DialogHeader>
+
+        {aiLoading ? (
+          <div className="flex flex-col items-center justify-center py-12 gap-3">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <p className="text-sm text-muted-foreground">AI is auto-mapping your fields...</p>
+          </div>
+        ) : (
+          <ScrollArea className="flex-1 -mx-6 px-6">
+            <div className="space-y-2">
+              {csvHeaders.map((header, idx) => {
+                const currentValue = mapping[header] || "";
+                const usedFields = getUsedFields();
+                const sample = getSampleValue(idx);
+
+                return (
+                  <div
+                    key={header}
+                    className="flex items-center gap-3 p-3 rounded-lg border bg-card hover:bg-accent/30 transition-colors"
+                  >
+                    {/* CSV Column */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        {currentValue ? (
+                          <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0" />
+                        ) : (
+                          <XCircle className="h-4 w-4 text-muted-foreground/40 shrink-0" />
+                        )}
+                        <span className="font-medium text-sm truncate">{header}</span>
+                      </div>
+                      {sample && (
+                        <p className="text-xs text-muted-foreground ml-6 truncate">
+                          e.g. "{sample}"
+                        </p>
+                      )}
+                    </div>
+
+                    <ArrowRight className="h-4 w-4 text-muted-foreground shrink-0" />
+
+                    {/* Project Field Selector */}
+                    <div className="w-52">
+                      <Select
+                        value={currentValue || "__skip__"}
+                        onValueChange={(val) => handleFieldChange(header, val)}
+                      >
+                        <SelectTrigger className="h-9 text-xs">
+                          <SelectValue placeholder="Skip this field" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="__skip__">
+                            <span className="text-muted-foreground">— Skip —</span>
+                          </SelectItem>
+                          {PROJECT_FIELDS.map((field) => (
+                            <SelectItem
+                              key={field.key}
+                              value={field.key}
+                              disabled={
+                                usedFields.has(field.key) && mapping[header] !== field.key
+                              }
+                            >
+                              <span className="flex items-center gap-1.5">
+                                {field.label}
+                                {field.required && (
+                                  <Badge variant="outline" className="text-[10px] px-1 py-0">
+                                    Required
+                                  </Badge>
+                                )}
+                              </span>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </ScrollArea>
+        )}
+
+        <DialogFooter className="flex items-center justify-between sm:justify-between">
+          <div className="flex items-center gap-2 text-sm">
+            {!Object.values(mapping).includes("merchant_name") && !aiLoading && (
+              <span className="flex items-center gap-1 text-amber-600">
+                <AlertCircle className="h-4 w-4" />
+                Merchant Name mapping required
+              </span>
+            )}
+          </div>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => onOpenChange(false)} disabled={aiLoading}>
+              Cancel
+            </Button>
+            <Button
+              onClick={() => autoMapWithAi()}
+              variant="secondary"
+              disabled={aiLoading}
+              className="gap-1.5"
+            >
+              <Wand2 className="h-4 w-4" />
+              Re-run AI
+            </Button>
+            <Button onClick={handleConfirm} disabled={aiLoading}>
+              Confirm & Import
+            </Button>
+          </div>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+};

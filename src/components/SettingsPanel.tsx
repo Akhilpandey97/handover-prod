@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 import { Save, RotateCcw, Settings, Palette } from "lucide-react";
+import { LogoUpload } from "./LogoUpload";
 
 interface LabelGroup {
   title: string;
@@ -200,6 +201,9 @@ export const SettingsPanel = () => {
 
   return (
     <div className="space-y-6">
+      {/* Logo Upload */}
+      <LogoUpload />
+
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
