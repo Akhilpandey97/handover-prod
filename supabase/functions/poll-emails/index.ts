@@ -291,8 +291,17 @@ serve(async (req) => {
                 .eq("tenant_id", tenantId)
                 .order("sort_order", { ascending: true });
 
-              if (templateItems && templateItems.length > 0) {
-                const checklistItems = uniqueTemplates.map((item, idx) => ({
+              // Deduplicate templates by owner_team + title
+              const seen = new Set<string>();
+              const uniqueTemplates = (templateItems || []).filter((item: any) => {
+                const key = `${item.owner_team}::${item.title}`;
+                if (seen.has(key)) return false;
+                seen.add(key);
+                return true;
+              });
+
+              if (uniqueTemplates.length > 0) {
+                const checklistItems = uniqueTemplates.map((item: any, idx: number) => ({
                   project_id: createdProject.id,
                   tenant_id: tenantId,
                   title: item.title,
