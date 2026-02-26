@@ -37,6 +37,79 @@ const PROJECT_FIELDS = [
   { key: "current_phase", label: "Current Phase" },
 ];
 
+const normalizeHeader = (value: string) =>
+  value
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, " ")
+    .replace(/\s+/g, " ");
+
+const HEADER_ALIASES: Record<string, string> = {
+  merchant: "merchant_name",
+  brand: "merchant_name",
+  merchantname: "merchant_name",
+  brandname: "merchant_name",
+  company: "merchant_name",
+  mid: "mid",
+  merchantid: "mid",
+  merchantcode: "mid",
+  website: "brand_url",
+  url: "brand_url",
+  brandurl: "brand_url",
+  revenue: "arr",
+  annualrevenue: "arr",
+  arr: "arr",
+  txn: "txns_per_day",
+  txns: "txns_per_day",
+  transactionsperday: "txns_per_day",
+  tpd: "txns_per_day",
+  aov: "aov",
+  avgordervalue: "aov",
+  salespoc: "sales_spoc",
+  salesspoc: "sales_spoc",
+  poc: "sales_spoc",
+  category: "category",
+  platform: "platform",
+  integrationtype: "integration_type",
+  pgonboarding: "pg_onboarding",
+  jira: "jira_link",
+  jiralink: "jira_link",
+  brd: "brd_link",
+  brdlink: "brd_link",
+  kickoffdate: "kick_off_date",
+  startdate: "kick_off_date",
+  expectedgolivedate: "expected_go_live_date",
+  golivepercent: "go_live_percent",
+  phase: "current_phase",
+  currentphase: "current_phase",
+  phasecomment: "current_phase_comment",
+  notes: "project_notes",
+  mintnotes: "mint_notes",
+};
+
+const getHeuristicMapping = (headers: string[]) => {
+  const result: Record<string, string> = {};
+  const used = new Set<string>();
+
+  headers.forEach((header) => {
+    const normalized = normalizeHeader(header);
+    const compact = normalized.replace(/\s+/g, "");
+
+    const byAlias = HEADER_ALIASES[compact] || HEADER_ALIASES[normalized];
+    const byFieldKey = PROJECT_FIELDS.find(
+      (field) => field.key === compact || field.key === normalized.replace(/\s+/g, "_")
+    )?.key;
+
+    const match = byAlias || byFieldKey;
+    if (match && !used.has(match)) {
+      result[header] = match;
+      used.add(match);
+    }
+  });
+
+  return result;
+};
+
 interface FieldMappingDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -54,16 +127,26 @@ export const FieldMappingDialog = ({
 }: FieldMappingDialogProps) => {
   const [mapping, setMapping] = useState<Record<string, string>>({});
   const [aiLoading, setAiLoading] = useState(false);
-  const [aiDone, setAiDone] = useState(false);
 
   useEffect(() => {
-    if (open && csvHeaders.length > 0 && !aiDone) {
-      autoMapWithAi();
+    if (!open) {
+      setAiLoading(false);
+      return;
     }
+
+    if (csvHeaders.length === 0) {
+      setMapping({});
+      return;
+    }
+
+    const heuristicMapping = getHeuristicMapping(csvHeaders);
+    setMapping(heuristicMapping);
+    autoMapWithAi(heuristicMapping);
   }, [open, csvHeaders]);
 
-  const autoMapWithAi = async () => {
+  const autoMapWithAi = async (baseMapping: Record<string, string> = mapping) => {
     setAiLoading(true);
+
     try {
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-field-mapping`,
@@ -72,6 +155,7 @@ export const FieldMappingDialog = ({
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
           },
           body: JSON.stringify({
             csvHeaders,
@@ -80,7 +164,10 @@ export const FieldMappingDialog = ({
         }
       );
 
-      if (!response.ok) throw new Error("AI mapping failed");
+      if (!response.ok) {
+        const errorBody = await response.json().catch(() => ({}));
+        throw new Error(errorBody?.error || "AI mapping failed");
+      }
 
       const data = await response.json();
       const aiMapping: Record<string, string> = {};
@@ -93,15 +180,16 @@ export const FieldMappingDialog = ({
         });
       }
 
-      setMapping(aiMapping);
-      setAiDone(true);
+      const mergedMapping = { ...baseMapping, ...aiMapping };
+      setMapping(mergedMapping);
 
-      const mappedCount = Object.values(aiMapping).filter(Boolean).length;
-      toast.success(`AI mapped ${mappedCount}/${csvHeaders.length} fields automatically`);
-    } catch (err) {
+      const mappedCount = Object.values(mergedMapping).filter(Boolean).length;
+      toast.success(`Mapped ${mappedCount}/${csvHeaders.length} fields`);
+    } catch (err: any) {
       console.error("AI mapping error:", err);
-      toast.error("AI auto-mapping failed. Please map fields manually.");
-      setAiDone(true);
+      setMapping(baseMapping);
+      
+      toast.error(err?.message || "AI auto-mapping failed. Review the suggested mappings.");
     } finally {
       setAiLoading(false);
     }
@@ -157,7 +245,7 @@ export const FieldMappingDialog = ({
             <p className="text-sm text-muted-foreground">AI is auto-mapping your fields...</p>
           </div>
         ) : (
-          <ScrollArea className="flex-1 -mx-6 px-6">
+          <ScrollArea className="h-[55vh] max-h-[560px] min-h-[260px] -mx-6 px-6">
             <div className="space-y-2">
               {csvHeaders.map((header, idx) => {
                 const currentValue = mapping[header] || "";
