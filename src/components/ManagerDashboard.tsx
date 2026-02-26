@@ -610,65 +610,35 @@ export const ManagerDashboard = () => {
           <TabsContent value="overview" className="space-y-6 mt-0">
             {/* KPI Cards */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-              <Card className="bg-gradient-to-br from-primary/10 to-blue-500/5 border-primary/20 hover:shadow-lg transition-shadow">
-                <CardContent className="p-5">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-muted-foreground mb-1">Total</p>
-                      <p className="text-3xl font-bold">{totalProjects}</p>
-                    </div>
-                    <div className="h-12 w-12 rounded-2xl bg-primary/20 flex items-center justify-center">
-                      <FolderKanban className="h-6 w-6 text-primary" />
-                    </div>
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-2">Pipeline ARR: {totalArr.toFixed(2)} Cr</p>
-                </CardContent>
-              </Card>
-
-              <Card className="bg-gradient-to-br from-amber-500/10 to-orange-500/5 border-amber-200/50 dark:border-amber-800/50">
-                <CardContent className="p-5">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-muted-foreground mb-1">Pending</p>
-                      <p className="text-3xl font-bold text-amber-600">{pendingProjects}</p>
-                    </div>
-                    <div className="h-12 w-12 rounded-2xl bg-amber-500/20 flex items-center justify-center">
-                      <AlertCircle className="h-6 w-6 text-amber-600" />
-                    </div>
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-2">Awaiting acceptance</p>
-                </CardContent>
-              </Card>
-
-              <Card className="bg-gradient-to-br from-blue-500/10 to-cyan-500/5 border-blue-200/50 dark:border-blue-800/50">
-                <CardContent className="p-5">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-muted-foreground mb-1">Active</p>
-                      <p className="text-3xl font-bold text-blue-600">{activeProjects}</p>
-                    </div>
-                    <div className="h-12 w-12 rounded-2xl bg-blue-500/20 flex items-center justify-center">
-                      <Rocket className="h-6 w-6 text-blue-600" />
-                    </div>
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-2">{blockedProjects} blocked, {onHoldProjects} on hold</p>
-                </CardContent>
-              </Card>
-
-              <Card className="bg-gradient-to-br from-emerald-500/10 to-green-500/5 border-emerald-200/50 dark:border-emerald-800/50">
-                <CardContent className="p-5">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-muted-foreground mb-1">Live</p>
-                      <p className="text-3xl font-bold text-emerald-600">{completedProjects}</p>
-                    </div>
-                    <div className="h-12 w-12 rounded-2xl bg-emerald-500/20 flex items-center justify-center">
-                      <CheckCircle2 className="h-6 w-6 text-emerald-600" />
-                    </div>
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-2">Live ARR: {liveArr.toFixed(2)} Cr</p>
-                </CardContent>
-              </Card>
+              {(() => {
+                const kpiColor = (key: string, fallback: string) => appLabels[key] || fallback;
+                const totalC = kpiColor("color_kpi_total", "#3b82f6");
+                const pendingC = kpiColor("color_kpi_pending", "#f59e0b");
+                const activeC = kpiColor("color_kpi_active", "#3b82f6");
+                const liveC = kpiColor("color_kpi_live", "#10b981");
+                const kpiCards = [
+                  { label: "Total", value: totalProjects, color: totalC, icon: FolderKanban, sub: `Pipeline ARR: ${totalArr.toFixed(2)} Cr` },
+                  { label: "Pending", value: pendingProjects, color: pendingC, icon: AlertCircle, sub: "Awaiting acceptance" },
+                  { label: "Active", value: activeProjects, color: activeC, icon: Rocket, sub: `${blockedProjects} blocked, ${onHoldProjects} on hold` },
+                  { label: "Live", value: completedProjects, color: liveC, icon: CheckCircle2, sub: `Live ARR: ${liveArr.toFixed(2)} Cr` },
+                ];
+                return kpiCards.map((kpi) => (
+                  <Card key={kpi.label} className="hover:shadow-lg transition-shadow" style={{ background: `linear-gradient(135deg, ${kpi.color}15 0%, ${kpi.color}08 100%)`, borderColor: `${kpi.color}33` }}>
+                    <CardContent className="p-5">
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <p className="text-sm font-medium text-muted-foreground mb-1">{kpi.label}</p>
+                          <p className="text-3xl font-bold" style={{ color: kpi.color }}>{kpi.value}</p>
+                        </div>
+                        <div className="h-12 w-12 rounded-2xl flex items-center justify-center" style={{ backgroundColor: `${kpi.color}20` }}>
+                          <kpi.icon className="h-6 w-6" style={{ color: kpi.color }} />
+                        </div>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-2">{kpi.sub}</p>
+                    </CardContent>
+                  </Card>
+                ));
+              })()}
             </div>
 
             {/* Team Performance & Time Distribution */}

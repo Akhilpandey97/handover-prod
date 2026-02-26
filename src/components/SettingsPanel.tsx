@@ -162,6 +162,16 @@ const COLOR_GROUPS: ColorLabelGroup[] = [
       { key: "color_state_blocked", label: "Blocked" },
     ],
   },
+  {
+    title: "Overview KPI Card Colours",
+    description: "Set the accent colour for each KPI card on the Overview tab",
+    keys: [
+      { key: "color_kpi_total", label: "Total Card" },
+      { key: "color_kpi_pending", label: "Pending Card" },
+      { key: "color_kpi_active", label: "Active Card" },
+      { key: "color_kpi_live", label: "Live Card" },
+    ],
+  },
 ];
 
 export const SettingsPanel = () => {
