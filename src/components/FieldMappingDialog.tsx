@@ -245,7 +245,7 @@ export const FieldMappingDialog = ({
             <p className="text-sm text-muted-foreground">AI is auto-mapping your fields...</p>
           </div>
         ) : (
-          <ScrollArea className="h-[55vh] max-h-[560px] min-h-[260px] -mx-6 px-6">
+          <ScrollArea className="h-[50vh] max-h-[500px] min-h-[260px] -mx-6 px-6 overflow-auto">
             <div className="space-y-2">
               {csvHeaders.map((header, idx) => {
                 const currentValue = mapping[header] || "";
