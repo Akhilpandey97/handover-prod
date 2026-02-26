@@ -78,6 +78,12 @@ const DEFAULT_LABELS: Record<string, string> = {
   color_state_in_progress: "#3b82f6",
   color_state_live: "#10b981",
   color_state_blocked: "#ef4444",
+
+  // Color settings - KPI overview cards
+  color_kpi_total: "#3b82f6",
+  color_kpi_pending: "#f59e0b",
+  color_kpi_active: "#3b82f6",
+  color_kpi_live: "#10b981",
 };
 
 interface LabelsContextType {
