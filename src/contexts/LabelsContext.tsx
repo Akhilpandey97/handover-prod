@@ -84,6 +84,16 @@ const DEFAULT_LABELS: Record<string, string> = {
   color_kpi_pending: "#f59e0b",
   color_kpi_active: "#3b82f6",
   color_kpi_live: "#10b981",
+
+  // Color settings - Team performance mini cards
+  color_team_perf_total: "#6b7280",
+  color_team_perf_pending: "#f59e0b",
+  color_team_perf_active: "#3b82f6",
+  color_team_perf_completed: "#10b981",
+
+  // Color settings - Time distribution cards
+  color_time_internal: "#3b82f6",
+  color_time_external: "#f59e0b",
 };
 
 interface LabelsContextType {

@@ -172,6 +172,24 @@ const COLOR_GROUPS: ColorLabelGroup[] = [
       { key: "color_kpi_live", label: "Live Card" },
     ],
   },
+  {
+    title: "Team Performance Card Colours",
+    description: "Set the colour for each mini stat card inside Team Performance (Total, Pending, Active, Completed)",
+    keys: [
+      { key: "color_team_perf_total", label: "Total" },
+      { key: "color_team_perf_pending", label: "Pending" },
+      { key: "color_team_perf_active", label: "Active" },
+      { key: "color_team_perf_completed", label: "Completed" },
+    ],
+  },
+  {
+    title: "Time Distribution Card Colours",
+    description: "Set the colour for the internal and external time cards",
+    keys: [
+      { key: "color_time_internal", label: "Internal (GoKwik) Time" },
+      { key: "color_time_external", label: "External (Merchant) Time" },
+    ],
+  },
 ];
 
 export const SettingsPanel = () => {
