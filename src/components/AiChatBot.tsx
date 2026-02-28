@@ -4,10 +4,11 @@ import { useProjects } from "@/contexts/ProjectContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLabels } from "@/contexts/LabelsContext";
 import { calculateTimeFromChecklist, formatDuration } from "@/data/projectsData";
-import { MessageCircle, X, Send, Loader2, Bot, User, Check, CheckCheck } from "lucide-react";
+import { MessageCircle, X, Send, Loader2, Bot, User, Check, CheckCheck, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import ReactMarkdown from "react-markdown";
+import { supabase } from "@/integrations/supabase/client";
 
 type Msg = { role: "user" | "assistant"; content: string; time: string };
 
@@ -23,11 +24,58 @@ export const AiChatBot = () => {
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [historyLoaded, setHistoryLoaded] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const { projects } = useProjects();
   const { currentUser } = useAuth();
   const { teamLabels, responsibilityLabels } = useLabels();
+
+  // Load chat history from DB
+  useEffect(() => {
+    if (!currentUser || historyLoaded) return;
+    const loadHistory = async () => {
+      const { data: session } = await supabase.auth.getSession();
+      if (!session?.session?.user) return;
+      const { data } = await supabase
+        .from("chat_messages")
+        .select("role, content, created_at")
+        .eq("user_id", session.session.user.id)
+        .order("created_at", { ascending: true })
+        .limit(50);
+      if (data && data.length > 0) {
+        setMessages(
+          data.map((m: any) => ({
+            role: m.role as "user" | "assistant",
+            content: m.content,
+            time: new Date(m.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+          }))
+        );
+      }
+      setHistoryLoaded(true);
+    };
+    loadHistory();
+  }, [currentUser, historyLoaded]);
+
+  // Save message to DB
+  const saveMessage = async (role: "user" | "assistant", content: string) => {
+    const { data: session } = await supabase.auth.getSession();
+    if (!session?.session?.user) return;
+    await supabase.from("chat_messages").insert({
+      user_id: session.session.user.id,
+      role,
+      content,
+    });
+  };
+
+  // Clear chat history
+  const clearHistory = async () => {
+    const { data: session } = await supabase.auth.getSession();
+    if (!session?.session?.user) return;
+    await supabase.from("chat_messages").delete().eq("user_id", session.session.user.id);
+    setMessages([]);
+    toast.success("Chat history cleared");
+  };
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -59,7 +107,9 @@ export const AiChatBot = () => {
     setMessages(prev => [...prev, userMsg]);
     setIsLoading(true);
 
-    // Reset textarea height
+    // Save user message
+    saveMessage("user", userMsg.content);
+
     if (inputRef.current) inputRef.current.style.height = "auto";
 
     let assistantSoFar = "";
@@ -144,6 +194,11 @@ export const AiChatBot = () => {
           } catch { /* ignore */ }
         }
       }
+
+      // Save final assistant message
+      if (assistantSoFar) {
+        saveMessage("assistant", assistantSoFar);
+      }
     } catch (e) {
       console.error("Chat error:", e);
       toast.error("Failed to get AI response");
@@ -171,7 +226,6 @@ export const AiChatBot = () => {
 
   return (
     <>
-      {/* Floating Button — bottom LEFT, WhatsApp style green circle */}
       {!isOpen && (
         <button
           onClick={() => setIsOpen(true)}
@@ -181,10 +235,9 @@ export const AiChatBot = () => {
         </button>
       )}
 
-      {/* Chat Panel — WhatsApp + ChatGPT fusion */}
       {isOpen && (
         <div className="fixed bottom-6 left-6 z-50 w-[420px] h-[600px] rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in slide-in-from-bottom-4 duration-300 border border-border">
-          {/* Header — WhatsApp-green gradient */}
+          {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 bg-[hsl(142,71%,35%)] text-white">
             <div className="flex items-center gap-3">
               <div className="h-10 w-10 rounded-full bg-white/20 flex items-center justify-center">
@@ -197,17 +250,30 @@ export const AiChatBot = () => {
                 </p>
               </div>
             </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 text-white hover:bg-white/20"
-              onClick={() => { setIsOpen(false); setMessages([]); }}
-            >
-              <X className="h-5 w-5" />
-            </Button>
+            <div className="flex items-center gap-1">
+              {messages.length > 0 && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 text-white hover:bg-white/20"
+                  onClick={clearHistory}
+                  title="Clear chat history"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              )}
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-white hover:bg-white/20"
+                onClick={() => setIsOpen(false)}
+              >
+                <X className="h-5 w-5" />
+              </Button>
+            </div>
           </div>
 
-          {/* Messages — WhatsApp chat wallpaper style */}
+          {/* Messages */}
           <div
             ref={scrollRef}
             className="flex-1 overflow-y-auto p-4 space-y-3"
@@ -289,7 +355,7 @@ export const AiChatBot = () => {
             )}
           </div>
 
-          {/* Input — WhatsApp style bottom bar */}
+          {/* Input */}
           <div className="px-3 py-2.5 border-t bg-card">
             <div className="flex items-end gap-2">
               <textarea
