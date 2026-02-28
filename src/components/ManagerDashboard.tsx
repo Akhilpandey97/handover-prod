@@ -94,6 +94,11 @@ export const ManagerDashboard = () => {
   const [ownerFilter, setOwnerFilter] = useState<string>("all");
   const [phaseFilter, setPhaseFilter] = useState<string>("all");
   const [stateFilter, setStateFilter] = useState<string>("all");
+  const [platformFilter, setPlatformFilter] = useState<string>("all");
+  const [categoryFilter, setCategoryFilter] = useState<string>("all");
+  const [responsibilityFilter, setResponsibilityFilter] = useState<string>("all");
+  const [arrMin, setArrMin] = useState<string>("");
+  const [arrMax, setArrMax] = useState<string>("");
   const [kickOffFrom, setKickOffFrom] = useState<string>("");
   const [kickOffTo, setKickOffTo] = useState<string>("");
   const [goLiveFrom, setGoLiveFrom] = useState<string>("");
@@ -357,6 +362,18 @@ export const ManagerDashboard = () => {
     return Array.from(labels).sort();
   }, [projects]);
 
+  const uniquePlatforms = useMemo(() => {
+    const vals = new Set<string>();
+    projects.forEach(p => { if (p.platform) vals.add(p.platform); });
+    return Array.from(vals).sort();
+  }, [projects]);
+
+  const uniqueCategories = useMemo(() => {
+    const vals = new Set<string>();
+    projects.forEach(p => { if (p.category) vals.add(p.category); });
+    return Array.from(vals).sort();
+  }, [projects]);
+
   if (!currentUser) return null;
 
   if (isLoading) {
@@ -379,11 +396,16 @@ export const ManagerDashboard = () => {
     const matchesOwner = ownerFilter === "all" || p.assignedOwner === ownerFilter;
     const matchesPhase = phaseFilter === "all" || getProjectPhaseLabel(p) === phaseFilter;
     const matchesState = stateFilter === "all" || p.projectState === stateFilter;
+    const matchesPlatform = platformFilter === "all" || p.platform === platformFilter;
+    const matchesCategory = categoryFilter === "all" || p.category === categoryFilter;
+    const matchesResponsibility = responsibilityFilter === "all" || p.currentResponsibility === responsibilityFilter;
+    const matchesArrMin = !arrMin || p.arr >= parseFloat(arrMin);
+    const matchesArrMax = !arrMax || p.arr <= parseFloat(arrMax);
     const matchesKickOffFrom = !kickOffFrom || p.dates.kickOffDate >= kickOffFrom;
     const matchesKickOffTo = !kickOffTo || p.dates.kickOffDate <= kickOffTo;
     const matchesGoLiveFrom = !goLiveFrom || (p.dates.goLiveDate && p.dates.goLiveDate >= goLiveFrom) || (p.dates.expectedGoLiveDate && p.dates.expectedGoLiveDate >= goLiveFrom);
     const matchesGoLiveTo = !goLiveTo || (p.dates.goLiveDate && p.dates.goLiveDate <= goLiveTo) || (p.dates.expectedGoLiveDate && p.dates.expectedGoLiveDate <= goLiveTo);
-    return matchesSearch && matchesTeam && matchesOwner && matchesPhase && matchesState && matchesKickOffFrom && matchesKickOffTo && matchesGoLiveFrom && matchesGoLiveTo;
+    return matchesSearch && matchesTeam && matchesOwner && matchesPhase && matchesState && matchesPlatform && matchesCategory && matchesResponsibility && matchesArrMin && matchesArrMax && matchesKickOffFrom && matchesKickOffTo && matchesGoLiveFrom && matchesGoLiveTo;
   });
 
   // Stats - use filteredProjects so search applies everywhere
@@ -421,13 +443,18 @@ export const ManagerDashboard = () => {
     setOwnerFilter("all");
     setPhaseFilter("all");
     setStateFilter("all");
+    setPlatformFilter("all");
+    setCategoryFilter("all");
+    setResponsibilityFilter("all");
+    setArrMin("");
+    setArrMax("");
     setKickOffFrom("");
     setKickOffTo("");
     setGoLiveFrom("");
     setGoLiveTo("");
   };
 
-  const hasActiveFilters = teamFilter !== "all" || ownerFilter !== "all" || phaseFilter !== "all" || stateFilter !== "all" || kickOffFrom || kickOffTo || goLiveFrom || goLiveTo;
+  const hasActiveFilters = teamFilter !== "all" || ownerFilter !== "all" || phaseFilter !== "all" || stateFilter !== "all" || platformFilter !== "all" || categoryFilter !== "all" || responsibilityFilter !== "all" || arrMin || arrMax || kickOffFrom || kickOffTo || goLiveFrom || goLiveTo;
 
   // Tab config for draggable tabs
   const TAB_CONFIG: Record<string, { icon: React.ReactNode; label: string }> = {
@@ -835,82 +862,166 @@ export const ManagerDashboard = () => {
                       <Badge variant="secondary" className="text-sm">{selectedProjects.size} selected</Badge>
                     )}
                   </div>
-                  <div className="flex gap-2 flex-wrap">
+                  <div className="flex gap-2 relative">
+                    <Collapsible>
+                      <CollapsibleTrigger asChild>
+                        <Button variant="outline" size="sm" className="gap-2">
+                          <Search className="h-4 w-4" />
+                          Filters
+                          {hasActiveFilters && <Badge variant="default" className="ml-1 h-5 px-1.5 text-[10px]">{[teamFilter !== "all", ownerFilter !== "all", phaseFilter !== "all", stateFilter !== "all", kickOffFrom, kickOffTo, goLiveFrom, goLiveTo].filter(Boolean).length}</Badge>}
+                          <ChevronDown className="h-3 w-3" />
+                        </Button>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent className="absolute z-20 mt-2 right-0 w-[600px] bg-card border rounded-lg shadow-xl p-4 space-y-3">
+                        <div className="flex items-center justify-between mb-2">
+                          <p className="text-sm font-semibold">Filters</p>
+                          {hasActiveFilters && (
+                            <Button variant="ghost" size="sm" onClick={clearFilters} className="text-xs h-7">Clear All</Button>
+                          )}
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="space-y-1">
+                            <label className="text-xs text-muted-foreground font-medium">Team</label>
+                            <Select value={teamFilter} onValueChange={(v) => { setTeamFilter(v); setOwnerFilter("all"); }}>
+                              <SelectTrigger className="w-full"><SelectValue placeholder="All Teams" /></SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="all">All Teams</SelectItem>
+                                <SelectItem value="mint">{teamLabels.mint}</SelectItem>
+                                <SelectItem value="integration">{teamLabels.integration}</SelectItem>
+                                <SelectItem value="ms">{teamLabels.ms}</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="space-y-1">
+                            <label className="text-xs text-muted-foreground font-medium">Owner</label>
+                            <Select value={ownerFilter} onValueChange={setOwnerFilter}>
+                              <SelectTrigger className="w-full"><SelectValue placeholder="All Owners" /></SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="all">All Owners</SelectItem>
+                                {filteredOwners.map((owner) => (
+                                  <SelectItem key={owner.id} value={owner.id}>{owner.name}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="space-y-1">
+                            <label className="text-xs text-muted-foreground font-medium">Phase</label>
+                            <Select value={phaseFilter} onValueChange={setPhaseFilter}>
+                              <SelectTrigger className="w-full"><SelectValue placeholder="All Phases" /></SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="all">All Phases</SelectItem>
+                                {uniquePhaseLabels.map(label => (
+                                  <SelectItem key={label} value={label}>{label}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="space-y-1">
+                            <label className="text-xs text-muted-foreground font-medium">State</label>
+                            <Select value={stateFilter} onValueChange={setStateFilter}>
+                              <SelectTrigger className="w-full"><SelectValue placeholder="All States" /></SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="all">All States</SelectItem>
+                                {(Object.keys(projectStateLabels) as ProjectState[]).map(s => (
+                                  <SelectItem key={s} value={s}>{stateLabelsFromCtx[s] || projectStateLabels[s]}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="space-y-1">
+                            <label className="text-xs text-muted-foreground font-medium">Platform</label>
+                            <Select value={platformFilter} onValueChange={setPlatformFilter}>
+                              <SelectTrigger className="w-full"><SelectValue placeholder="All Platforms" /></SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="all">All Platforms</SelectItem>
+                                {uniquePlatforms.map(p => (
+                                  <SelectItem key={p} value={p}>{p}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="space-y-1">
+                            <label className="text-xs text-muted-foreground font-medium">Category</label>
+                            <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                              <SelectTrigger className="w-full"><SelectValue placeholder="All Categories" /></SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="all">All Categories</SelectItem>
+                                {uniqueCategories.map(c => (
+                                  <SelectItem key={c} value={c}>{c}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="space-y-1">
+                            <label className="text-xs text-muted-foreground font-medium">Responsibility</label>
+                            <Select value={responsibilityFilter} onValueChange={setResponsibilityFilter}>
+                              <SelectTrigger className="w-full"><SelectValue placeholder="All" /></SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="all">All</SelectItem>
+                                <SelectItem value="gokwik">{responsibilityLabels.gokwik}</SelectItem>
+                                <SelectItem value="merchant">{responsibilityLabels.merchant}</SelectItem>
+                                <SelectItem value="neutral">Neutral</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="space-y-1">
+                            <label className="text-xs text-muted-foreground font-medium">ARR Range (Cr)</label>
+                            <div className="flex gap-1">
+                              <Input type="number" placeholder="Min" value={arrMin} onChange={e => setArrMin(e.target.value)} className="w-full h-9 text-xs" />
+                              <Input type="number" placeholder="Max" value={arrMax} onChange={e => setArrMax(e.target.value)} className="w-full h-9 text-xs" />
+                            </div>
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3 pt-2 border-t">
+                          <div className="space-y-1">
+                            <label className="text-xs text-muted-foreground font-medium">Start Date Range</label>
+                            <div className="flex items-center gap-1">
+                              <Input type="date" value={kickOffFrom} onChange={e => setKickOffFrom(e.target.value)} className="w-full h-9 text-xs" />
+                              <span className="text-xs text-muted-foreground">to</span>
+                              <Input type="date" value={kickOffTo} onChange={e => setKickOffTo(e.target.value)} className="w-full h-9 text-xs" />
+                            </div>
+                          </div>
+                          <div className="space-y-1">
+                            <label className="text-xs text-muted-foreground font-medium">Go-Live Date Range</label>
+                            <div className="flex items-center gap-1">
+                              <Input type="date" value={goLiveFrom} onChange={e => setGoLiveFrom(e.target.value)} className="w-full h-9 text-xs" />
+                              <span className="text-xs text-muted-foreground">to</span>
+                              <Input type="date" value={goLiveTo} onChange={e => setGoLiveTo(e.target.value)} className="w-full h-9 text-xs" />
+                            </div>
+                          </div>
+                        </div>
+                      </CollapsibleContent>
+                    </Collapsible>
                     {selectedProjects.size > 0 && (
-                      <>
-                        <Button variant="outline" className="gap-2" onClick={() => setBulkAssignDialogOpen(true)}>
-                          <UserPlus className="h-4 w-4" />
-                          Assign ({selectedProjects.size})
-                        </Button>
-                        <Button variant="outline" className="gap-2" onClick={() => setBulkEditDialogOpen(true)}>
-                          <Pencil className="h-4 w-4" />
-                          Bulk Edit ({selectedProjects.size})
-                        </Button>
-                        <Button variant="outline" className="gap-2" onClick={() => setBulkStateDialogOpen(true)}>
-                          <RefreshCw className="h-4 w-4" />
-                          Update State ({selectedProjects.size})
-                        </Button>
-                        <Button variant="destructive" className="gap-2" onClick={() => setBulkDeleteDialogOpen(true)}>
-                          <Trash2 className="h-4 w-4" />
-                          Delete ({selectedProjects.size})
-                        </Button>
-                      </>
+                      <Collapsible>
+                        <CollapsibleTrigger asChild>
+                          <Button variant="outline" size="sm" className="gap-2">
+                            <Pencil className="h-4 w-4" />
+                            Bulk Actions ({selectedProjects.size})
+                            <ChevronDown className="h-3 w-3" />
+                          </Button>
+                        </CollapsibleTrigger>
+                        <CollapsibleContent className="absolute z-20 mt-2 right-0 bg-card border rounded-lg shadow-xl p-3 space-y-1 min-w-[200px]">
+                          <Button variant="ghost" className="w-full justify-start gap-2 h-9" onClick={() => setBulkAssignDialogOpen(true)}>
+                            <UserPlus className="h-4 w-4" />
+                            Assign Owner
+                          </Button>
+                          <Button variant="ghost" className="w-full justify-start gap-2 h-9" onClick={() => setBulkEditDialogOpen(true)}>
+                            <Pencil className="h-4 w-4" />
+                            Bulk Edit
+                          </Button>
+                          <Button variant="ghost" className="w-full justify-start gap-2 h-9" onClick={() => setBulkStateDialogOpen(true)}>
+                            <RefreshCw className="h-4 w-4" />
+                            Update State
+                          </Button>
+                          <Button variant="ghost" className="w-full justify-start gap-2 h-9 text-destructive hover:text-destructive" onClick={() => setBulkDeleteDialogOpen(true)}>
+                            <Trash2 className="h-4 w-4" />
+                            Delete
+                          </Button>
+                        </CollapsibleContent>
+                      </Collapsible>
                     )}
                   </div>
-                </div>
-                {/* Filters */}
-                <div className="flex gap-2 flex-wrap mt-3">
-                  <Select value={teamFilter} onValueChange={(v) => { setTeamFilter(v); setOwnerFilter("all"); }}>
-                    <SelectTrigger className="w-[140px]"><SelectValue placeholder="Team" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Teams</SelectItem>
-                      <SelectItem value="mint">{teamLabels.mint}</SelectItem>
-                      <SelectItem value="integration">{teamLabels.integration}</SelectItem>
-                      <SelectItem value="ms">{teamLabels.ms}</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <Select value={ownerFilter} onValueChange={setOwnerFilter}>
-                    <SelectTrigger className="w-[140px]"><SelectValue placeholder="Owner" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Owners</SelectItem>
-                      {filteredOwners.map((owner) => (
-                        <SelectItem key={owner.id} value={owner.id}>{owner.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <Select value={phaseFilter} onValueChange={setPhaseFilter}>
-                    <SelectTrigger className="w-[180px]"><SelectValue placeholder="Phase" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Phases</SelectItem>
-                      {uniquePhaseLabels.map(label => (
-                        <SelectItem key={label} value={label}>{label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <Select value={stateFilter} onValueChange={setStateFilter}>
-                    <SelectTrigger className="w-[140px]"><SelectValue placeholder="State" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All States</SelectItem>
-                      {(Object.keys(projectStateLabels) as ProjectState[]).map(s => (
-                        <SelectItem key={s} value={s}>{stateLabelsFromCtx[s] || projectStateLabels[s]}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <div className="flex items-center gap-1">
-                    <span className="text-xs text-muted-foreground whitespace-nowrap">Start:</span>
-                    <Input type="date" value={kickOffFrom} onChange={e => setKickOffFrom(e.target.value)} className="w-[130px] h-9 text-xs" />
-                    <span className="text-xs text-muted-foreground">to</span>
-                    <Input type="date" value={kickOffTo} onChange={e => setKickOffTo(e.target.value)} className="w-[130px] h-9 text-xs" />
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <span className="text-xs text-muted-foreground whitespace-nowrap">Go-Live:</span>
-                    <Input type="date" value={goLiveFrom} onChange={e => setGoLiveFrom(e.target.value)} className="w-[130px] h-9 text-xs" />
-                    <span className="text-xs text-muted-foreground">to</span>
-                    <Input type="date" value={goLiveTo} onChange={e => setGoLiveTo(e.target.value)} className="w-[130px] h-9 text-xs" />
-                  </div>
-                  {hasActiveFilters && (
-                    <Button variant="ghost" size="sm" onClick={clearFilters} className="text-xs">Clear</Button>
-                  )}
                 </div>
               </CardHeader>
               <CardContent className="p-0">
