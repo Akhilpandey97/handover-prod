@@ -675,24 +675,28 @@ export const ManagerDashboard = () => {
                               </div>
                             </div>
                           </div>
-                          <div className="grid grid-cols-4 gap-2 text-center">
-                            <div className="bg-muted/50 rounded-lg p-2">
-                              <p className="text-lg font-bold">{totalCount}</p>
-                              <p className="text-[10px] text-muted-foreground">Total</p>
-                            </div>
-                            <div className="bg-amber-500/10 rounded-lg p-2">
-                              <p className="text-lg font-bold text-amber-600">{pendingCount}</p>
-                              <p className="text-[10px] text-muted-foreground">Pending</p>
-                            </div>
-                            <div className="bg-blue-500/10 rounded-lg p-2">
-                              <p className="text-lg font-bold text-blue-600">{activeCount}</p>
-                              <p className="text-[10px] text-muted-foreground">Active</p>
-                            </div>
-                            <div className="bg-emerald-500/10 rounded-lg p-2">
-                              <p className="text-lg font-bold text-emerald-600">{completedCount}</p>
-                              <p className="text-[10px] text-muted-foreground">Completed</p>
-                            </div>
-                          </div>
+                          {(() => {
+                            const tpTotal = appLabels.color_team_perf_total || "#6b7280";
+                            const tpPending = appLabels.color_team_perf_pending || "#f59e0b";
+                            const tpActive = appLabels.color_team_perf_active || "#3b82f6";
+                            const tpCompleted = appLabels.color_team_perf_completed || "#10b981";
+                            const miniCards = [
+                              { label: "Total", value: totalCount, color: tpTotal },
+                              { label: "Pending", value: pendingCount, color: tpPending },
+                              { label: "Active", value: activeCount, color: tpActive },
+                              { label: "Completed", value: completedCount, color: tpCompleted },
+                            ];
+                            return (
+                              <div className="grid grid-cols-4 gap-2 text-center">
+                                {miniCards.map(mc => (
+                                  <div key={mc.label} className="rounded-lg p-2" style={{ backgroundColor: `${mc.color}15` }}>
+                                    <p className="text-lg font-bold" style={{ color: mc.color }}>{mc.value}</p>
+                                    <p className="text-[10px] text-muted-foreground">{mc.label}</p>
+                                  </div>
+                                ))}
+                              </div>
+                            );
+                          })()}
                           {team.pendingCount > 0 && (
                             <Badge variant="outline" className="text-amber-600 border-amber-200">
                               {team.pendingCount} pending acceptance
@@ -715,18 +719,24 @@ export const ManagerDashboard = () => {
                 </CardHeader>
                 <CardContent className="p-6">
                   <div className="space-y-6">
-                    <div className="grid grid-cols-2 gap-6">
-                      <div className="bg-gradient-to-br from-primary/10 to-blue-500/5 rounded-xl p-6 text-center">
-                        <Building2 className="h-8 w-8 mx-auto text-primary mb-3" />
-                        <p className="text-3xl font-bold text-primary">{formatDuration(totalGokwikTime)}</p>
-                        <p className="text-sm text-muted-foreground mt-1">{responsibilityLabels.gokwik} Time</p>
-                      </div>
-                      <div className="bg-gradient-to-br from-amber-500/10 to-orange-500/5 rounded-xl p-6 text-center">
-                        <Users className="h-8 w-8 mx-auto text-amber-500 mb-3" />
-                        <p className="text-3xl font-bold text-amber-500">{formatDuration(totalMerchantTime)}</p>
-                        <p className="text-sm text-muted-foreground mt-1">{responsibilityLabels.merchant} Time</p>
-                      </div>
-                    </div>
+                    {(() => {
+                      const intColor = appLabels.color_time_internal || "#3b82f6";
+                      const extColor = appLabels.color_time_external || "#f59e0b";
+                      return (
+                        <div className="grid grid-cols-2 gap-6">
+                          <div className="rounded-xl p-6 text-center" style={{ background: `linear-gradient(135deg, ${intColor}18 0%, ${intColor}08 100%)` }}>
+                            <Building2 className="h-8 w-8 mx-auto mb-3" style={{ color: intColor }} />
+                            <p className="text-3xl font-bold" style={{ color: intColor }}>{formatDuration(totalGokwikTime)}</p>
+                            <p className="text-sm text-muted-foreground mt-1">{responsibilityLabels.gokwik} Time</p>
+                          </div>
+                          <div className="rounded-xl p-6 text-center" style={{ background: `linear-gradient(135deg, ${extColor}18 0%, ${extColor}08 100%)` }}>
+                            <Users className="h-8 w-8 mx-auto mb-3" style={{ color: extColor }} />
+                            <p className="text-3xl font-bold" style={{ color: extColor }}>{formatDuration(totalMerchantTime)}</p>
+                            <p className="text-sm text-muted-foreground mt-1">{responsibilityLabels.merchant} Time</p>
+                          </div>
+                        </div>
+                      );
+                    })()}
                     <div className="space-y-2">
                       <div className="flex items-center justify-between text-sm">
                         <span className="text-muted-foreground">Distribution</span>
@@ -735,8 +745,8 @@ export const ManagerDashboard = () => {
                         </span>
                       </div>
                       <div className="flex h-3 rounded-full overflow-hidden">
-                        <div className="bg-primary transition-all" style={{ width: `${(totalGokwikTime / (totalGokwikTime + totalMerchantTime || 1)) * 100}%` }} />
-                        <div className="bg-amber-500 transition-all" style={{ width: `${(totalMerchantTime / (totalGokwikTime + totalMerchantTime || 1)) * 100}%` }} />
+                        <div className="transition-all" style={{ width: `${(totalGokwikTime / (totalGokwikTime + totalMerchantTime || 1)) * 100}%`, backgroundColor: appLabels.color_time_internal || "#3b82f6" }} />
+                        <div className="transition-all" style={{ width: `${(totalMerchantTime / (totalGokwikTime + totalMerchantTime || 1)) * 100}%`, backgroundColor: appLabels.color_time_external || "#f59e0b" }} />
                       </div>
                     </div>
                   </div>
