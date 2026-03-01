@@ -5,9 +5,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Save, RotateCcw, Settings, Palette } from "lucide-react";
+import { Save, RotateCcw, Settings, Palette, Tags, Layers, Mail } from "lucide-react";
 import { LogoUpload } from "./LogoUpload";
+import { CustomFieldsManager } from "./settings/CustomFieldsManager";
 
 interface LabelGroup {
   title: string;
@@ -15,9 +17,9 @@ interface LabelGroup {
   keys: { key: string; label: string }[];
 }
 
-const LABEL_GROUPS: LabelGroup[] = [
+const GENERAL_GROUPS: LabelGroup[] = [
   {
-    title: "General",
+    title: "Application Branding",
     description: "Application name and branding",
     keys: [
       { key: "app_title", label: "Dashboard Title" },
@@ -44,6 +46,9 @@ const LABEL_GROUPS: LabelGroup[] = [
       { key: "responsibility_neutral", label: "Neutral State" },
     ],
   },
+];
+
+const WORKFLOW_GROUPS: LabelGroup[] = [
   {
     title: "Project Phases",
     description: "Names for each workflow phase",
@@ -65,6 +70,9 @@ const LABEL_GROUPS: LabelGroup[] = [
       { key: "state_blocked", label: "State: Blocked" },
     ],
   },
+];
+
+const FIELD_GROUPS: LabelGroup[] = [
   {
     title: "Field Labels",
     description: "Labels for project data fields shown across the app",
@@ -114,6 +122,9 @@ const LABEL_GROUPS: LabelGroup[] = [
       { key: "field_phase2_comment", label: "Phase 2 Comment Label" },
     ],
   },
+];
+
+const EMAIL_GROUPS: LabelGroup[] = [
   {
     title: "Email Monitoring",
     description: "Configure the email address and subject keywords for auto-parsing new brand onboarding emails",
@@ -174,7 +185,7 @@ const COLOR_GROUPS: ColorLabelGroup[] = [
   },
   {
     title: "Team Performance Card Colours",
-    description: "Set the colour for each mini stat card inside Team Performance (Total, Pending, Active, Completed)",
+    description: "Set the colour for each mini stat card inside Team Performance",
     keys: [
       { key: "color_team_perf_total", label: "Total" },
       { key: "color_team_perf_pending", label: "Pending" },
@@ -186,8 +197,8 @@ const COLOR_GROUPS: ColorLabelGroup[] = [
     title: "Time Distribution Card Colours",
     description: "Set the colour for the internal and external time cards",
     keys: [
-      { key: "color_time_internal", label: "Internal (GoKwik) Time" },
-      { key: "color_time_external", label: "External (Merchant) Time" },
+      { key: "color_time_internal", label: "Internal Time" },
+      { key: "color_time_external", label: "External Time" },
     ],
   },
 ];
@@ -227,113 +238,178 @@ export const SettingsPanel = () => {
 
   const hasChanges = Object.keys(draft).length > 0;
 
+  const renderLabelGroups = (groups: LabelGroup[]) => (
+    <div className="space-y-8">
+      {groups.map((group, gi) => (
+        <div key={gi}>
+          {gi > 0 && <Separator className="mb-6" />}
+          <h3 className="text-base font-semibold mb-1">{group.title}</h3>
+          <p className="text-sm text-muted-foreground mb-4">{group.description}</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {group.keys.map(({ key, label }) => (
+              <div key={key} className="space-y-1.5">
+                <Label htmlFor={key} className="text-xs text-muted-foreground">{label}</Label>
+                <Input
+                  id={key}
+                  value={getValue(key)}
+                  onChange={(e) => handleChange(key, e.target.value)}
+                  className={draft[key] !== undefined ? "border-primary ring-1 ring-primary/20" : ""}
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+
+  const renderColorGroups = (groups: ColorLabelGroup[]) => (
+    <div className="space-y-8">
+      {groups.map((group, gi) => (
+        <div key={gi}>
+          {gi > 0 && <Separator className="mb-6" />}
+          <h3 className="text-base font-semibold mb-1">{group.title}</h3>
+          <p className="text-sm text-muted-foreground mb-4">{group.description}</p>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+            {group.keys.map(({ key, label }) => (
+              <div key={key} className="space-y-2">
+                <Label htmlFor={key} className="text-xs text-muted-foreground">{label}</Label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="color"
+                    id={key}
+                    value={getValue(key)}
+                    onChange={(e) => handleChange(key, e.target.value)}
+                    className="w-10 h-10 rounded-lg border border-border cursor-pointer p-0.5"
+                  />
+                  <Input
+                    value={getValue(key)}
+                    onChange={(e) => handleChange(key, e.target.value)}
+                    className={`font-mono text-xs h-10 ${draft[key] !== undefined ? "border-primary ring-1 ring-primary/20" : ""}`}
+                    placeholder="#000000"
+                  />
+                </div>
+                <div className="h-6 rounded-md border border-border/50" style={{ backgroundColor: getValue(key) }} />
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+
   return (
     <div className="space-y-6">
-      {/* Logo Upload */}
-      <LogoUpload />
-
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="flex items-center gap-2">
-                <Settings className="h-5 w-5" />
-                Global Labels & Customisation
-              </CardTitle>
-              <CardDescription>
-                Edit labels below to white-label the app for your organisation and industry. Changes apply everywhere instantly.
-              </CardDescription>
-            </div>
-            <div className="flex gap-2">
-              {hasChanges && (
-                <Button variant="outline" size="sm" onClick={handleReset}>
-                  <RotateCcw className="h-4 w-4 mr-2" />
-                  Revert
-                </Button>
-              )}
-              <Button size="sm" onClick={handleSave} disabled={!hasChanges || isSaving}>
-                <Save className="h-4 w-4 mr-2" />
-                {isSaving ? "Saving..." : "Save All Changes"}
-              </Button>
-            </div>
+      {/* Save bar */}
+      {hasChanges && (
+        <div className="sticky top-0 z-10 flex items-center justify-between bg-background/95 backdrop-blur border border-border rounded-lg p-3">
+          <p className="text-sm text-muted-foreground">
+            You have <strong>{Object.keys(draft).length}</strong> unsaved change(s)
+          </p>
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={handleReset}>
+              <RotateCcw className="h-4 w-4 mr-2" />Revert
+            </Button>
+            <Button size="sm" onClick={handleSave} disabled={isSaving}>
+              <Save className="h-4 w-4 mr-2" />{isSaving ? "Saving..." : "Save All Changes"}
+            </Button>
           </div>
-        </CardHeader>
-        <CardContent className="space-y-8">
-          {LABEL_GROUPS.map((group, gi) => (
-            <div key={gi}>
-              {gi > 0 && <Separator className="mb-6" />}
-              <h3 className="text-base font-semibold mb-1">{group.title}</h3>
-              <p className="text-sm text-muted-foreground mb-4">{group.description}</p>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {group.keys.map(({ key, label }) => (
-                  <div key={key} className="space-y-1.5">
-                    <Label htmlFor={key} className="text-xs text-muted-foreground">
-                      {label}
-                    </Label>
-                    <Input
-                      id={key}
-                      value={getValue(key)}
-                      onChange={(e) => handleChange(key, e.target.value)}
-                      className={draft[key] !== undefined ? "border-primary ring-1 ring-primary/20" : ""}
-                    />
-                  </div>
-                ))}
-              </div>
-            </div>
-          ))}
-        </CardContent>
-      </Card>
+        </div>
+      )}
 
-      {/* Colour Customisation Card */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Palette className="h-5 w-5" />
-            Colours & Branding
-          </CardTitle>
-          <CardDescription>
-            Customise the colours of team badges, card backgrounds, and state indicators across the app.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-8">
-          {COLOR_GROUPS.map((group, gi) => (
-            <div key={gi}>
-              {gi > 0 && <Separator className="mb-6" />}
-              <h3 className="text-base font-semibold mb-1">{group.title}</h3>
-              <p className="text-sm text-muted-foreground mb-4">{group.description}</p>
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-                {group.keys.map(({ key, label }) => (
-                  <div key={key} className="space-y-2">
-                    <Label htmlFor={key} className="text-xs text-muted-foreground">
-                      {label}
-                    </Label>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="color"
-                        id={key}
-                        value={getValue(key)}
-                        onChange={(e) => handleChange(key, e.target.value)}
-                        className="w-10 h-10 rounded-lg border border-border cursor-pointer p-0.5"
-                      />
-                      <Input
-                        value={getValue(key)}
-                        onChange={(e) => handleChange(key, e.target.value)}
-                        className={`font-mono text-xs h-10 ${draft[key] !== undefined ? "border-primary ring-1 ring-primary/20" : ""}`}
-                        placeholder="#000000"
-                      />
-                    </div>
-                    {/* Preview */}
-                    <div
-                      className="h-6 rounded-md border border-border/50"
-                      style={{ backgroundColor: getValue(key) }}
-                    />
-                  </div>
-                ))}
-              </div>
-            </div>
-          ))}
-        </CardContent>
-      </Card>
+      <Tabs defaultValue="general" className="w-full">
+        <TabsList className="flex flex-wrap h-auto gap-1 mb-4">
+          <TabsTrigger value="general" className="gap-1.5">
+            <Settings className="h-3.5 w-3.5" />General
+          </TabsTrigger>
+          <TabsTrigger value="workflow" className="gap-1.5">
+            <Tags className="h-3.5 w-3.5" />Workflow
+          </TabsTrigger>
+          <TabsTrigger value="fields" className="gap-1.5">
+            <Tags className="h-3.5 w-3.5" />Field Labels
+          </TabsTrigger>
+          <TabsTrigger value="custom-fields" className="gap-1.5">
+            <Layers className="h-3.5 w-3.5" />Custom Fields
+          </TabsTrigger>
+          <TabsTrigger value="colours" className="gap-1.5">
+            <Palette className="h-3.5 w-3.5" />Colours
+          </TabsTrigger>
+          <TabsTrigger value="email" className="gap-1.5">
+            <Mail className="h-3.5 w-3.5" />Email
+          </TabsTrigger>
+        </TabsList>
+
+        {/* General Tab */}
+        <TabsContent value="general" className="space-y-6">
+          <LogoUpload />
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Settings className="h-5 w-5" />General & Teams
+              </CardTitle>
+              <CardDescription>Application branding, team names, and responsibility labels</CardDescription>
+            </CardHeader>
+            <CardContent>{renderLabelGroups(GENERAL_GROUPS)}</CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Workflow Tab */}
+        <TabsContent value="workflow">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Tags className="h-5 w-5" />Phases & States
+              </CardTitle>
+              <CardDescription>Configure project phase and state labels</CardDescription>
+            </CardHeader>
+            <CardContent>{renderLabelGroups(WORKFLOW_GROUPS)}</CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Field Labels Tab */}
+        <TabsContent value="fields">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Tags className="h-5 w-5" />Field Labels
+              </CardTitle>
+              <CardDescription>Customise labels for built-in project fields, links, dates, and notes</CardDescription>
+            </CardHeader>
+            <CardContent>{renderLabelGroups(FIELD_GROUPS)}</CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Custom Fields Tab */}
+        <TabsContent value="custom-fields">
+          <CustomFieldsManager />
+        </TabsContent>
+
+        {/* Colours Tab */}
+        <TabsContent value="colours">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Palette className="h-5 w-5" />Colours & Branding
+              </CardTitle>
+              <CardDescription>Customise colours of team badges, card backgrounds, and state indicators</CardDescription>
+            </CardHeader>
+            <CardContent>{renderColorGroups(COLOR_GROUPS)}</CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Email Tab */}
+        <TabsContent value="email">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Mail className="h-5 w-5" />Email Monitoring
+              </CardTitle>
+              <CardDescription>Configure email parsing for auto-creating projects from emails</CardDescription>
+            </CardHeader>
+            <CardContent>{renderLabelGroups(EMAIL_GROUPS)}</CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
