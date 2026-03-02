@@ -239,13 +239,14 @@ export const CSVUploadDialog = ({ open, onOpenChange }: CSVUploadDialogProps) =>
             continue;
           }
 
+          const { _customFieldValues, ...projectData } = project;
           const { data: newProject, error: projectError } = await supabase
             .from("projects")
             .insert({
-              ...project,
-              expected_go_live_date: project.expected_go_live_date || null,
-              current_phase: project.current_phase as any,
-              current_owner_team: project.current_owner_team as any,
+              ...projectData,
+              expected_go_live_date: projectData.expected_go_live_date || null,
+              current_phase: projectData.current_phase as any,
+              current_owner_team: projectData.current_owner_team as any,
               current_responsibility: "neutral",
               pending_acceptance: false,
               tenant_id: currentUser?.tenantId || null,
