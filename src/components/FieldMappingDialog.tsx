@@ -13,8 +13,9 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Loader2, Wand2, ArrowRight, CheckCircle2, XCircle, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
+import { useCustomFields, CustomField } from "@/hooks/useCustomFields";
 
-const PROJECT_FIELDS = [
+const BASE_PROJECT_FIELDS = [
   { key: "merchant_name", label: "Merchant/Brand Name", required: true },
   { key: "mid", label: "Merchant ID (MID)" },
   { key: "platform", label: "Platform" },
@@ -87,7 +88,7 @@ const HEADER_ALIASES: Record<string, string> = {
   mintnotes: "mint_notes",
 };
 
-const getHeuristicMapping = (headers: string[]) => {
+const getHeuristicMapping = (headers: string[], projectFields: { key: string; label: string; required?: boolean }[]) => {
   const result: Record<string, string> = {};
   const used = new Set<string>();
 
@@ -96,11 +97,15 @@ const getHeuristicMapping = (headers: string[]) => {
     const compact = normalized.replace(/\s+/g, "");
 
     const byAlias = HEADER_ALIASES[compact] || HEADER_ALIASES[normalized];
-    const byFieldKey = PROJECT_FIELDS.find(
+    const byFieldKey = projectFields.find(
       (field) => field.key === compact || field.key === normalized.replace(/\s+/g, "_")
     )?.key;
+    // Also match by label for custom fields
+    const byLabel = projectFields.find(
+      (field) => normalizeHeader(field.label).replace(/\s+/g, "") === compact
+    )?.key;
 
-    const match = byAlias || byFieldKey;
+    const match = byAlias || byFieldKey || byLabel;
     if (match && !used.has(match)) {
       result[header] = match;
       used.add(match);
@@ -125,6 +130,12 @@ export const FieldMappingDialog = ({
   sampleRows,
   onConfirm,
 }: FieldMappingDialogProps) => {
+  const { fields: customFieldsDefs } = useCustomFields();
+  const PROJECT_FIELDS: { key: string; label: string; required?: boolean }[] = [
+    ...BASE_PROJECT_FIELDS,
+    ...customFieldsDefs.map(f => ({ key: `custom_${f.id}`, label: f.field_label })),
+  ];
+
   const [mapping, setMapping] = useState<Record<string, string>>({});
   const [aiLoading, setAiLoading] = useState(false);
 
@@ -139,10 +150,10 @@ export const FieldMappingDialog = ({
       return;
     }
 
-    const heuristicMapping = getHeuristicMapping(csvHeaders);
+    const heuristicMapping = getHeuristicMapping(csvHeaders, PROJECT_FIELDS);
     setMapping(heuristicMapping);
     autoMapWithAi(heuristicMapping);
-  }, [open, csvHeaders]);
+  }, [open, csvHeaders, customFieldsDefs]);
 
   const autoMapWithAi = async (baseMapping: Record<string, string> = mapping) => {
     setAiLoading(true);

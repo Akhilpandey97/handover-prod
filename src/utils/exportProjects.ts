@@ -1,6 +1,7 @@
 import { Project, calculateTimeByParty, formatDuration } from "@/data/projectsData";
 import { teamLabels as defaultTeamLabels } from "@/data/teams";
 import { projectStateLabels as defaultStateLabels } from "@/data/projectsData";
+import { CustomField } from "@/hooks/useCustomFields";
 
 const escapeCSV = (value: string | number | undefined | null): string => {
   const str = String(value ?? "");
@@ -17,7 +18,16 @@ interface ExportLabels {
   getLabel?: (key: string) => string;
 }
 
-export const exportProjectsToCSV = (projects: Project[], labels?: ExportLabels) => {
+interface ExportCustomFields {
+  fields: CustomField[];
+  valuesMap: Record<string, Record<string, string>>; // projectId -> fieldId -> value
+}
+
+export const exportProjectsToCSV = (
+  projects: Project[],
+  labels?: ExportLabels,
+  customFieldsData?: ExportCustomFields
+) => {
   const teamLbls = labels?.teamLabels || defaultTeamLabels;
   const stateLbls = labels?.stateLabels || defaultStateLabels;
   const respLbls = labels?.responsibilityLabels || { gokwik: "GoKwik", merchant: "Merchant" };
@@ -47,6 +57,9 @@ export const exportProjectsToCSV = (projects: Project[], labels?: ExportLabels) 
     return defaults[key] || key;
   });
 
+  const customFields = customFieldsData?.fields || [];
+  const customValuesMap = customFieldsData?.valuesMap || {};
+
   // Collect all unique checklist titles across projects (for column headers)
   const allChecklistTitles: string[] = [];
   const titleSet = new Set<string>();
@@ -60,7 +73,6 @@ export const exportProjectsToCSV = (projects: Project[], labels?: ExportLabels) 
     });
   });
 
-  // Get team labels for header columns
   const mintLabel = teamLbls.mint || "MINT";
   const intLabel = teamLbls.integration || "Integration";
   const gokwikLabel = respLbls.gokwik || "GoKwik";
@@ -93,13 +105,13 @@ export const exportProjectsToCSV = (projects: Project[], labels?: ExportLabels) 
     getLabel("field_mint_notes"),
     getLabel("field_project_notes"),
     "Phase Comment",
+    // Custom field headers
+    ...customFields.map(f => f.field_label),
     "Checklist Total",
     "Checklist Completed",
     "Transfer Count",
-    // Project-level time tracking
     `Project ${gokwikLabel} Time`,
     `Project ${merchantLabel} Time`,
-    // Team-wise checklist progress
     `${mintLabel} Tasks Completed`,
     `${mintLabel} Tasks Total`,
     `${mintLabel} ${gokwikLabel} Time`,
@@ -108,7 +120,6 @@ export const exportProjectsToCSV = (projects: Project[], labels?: ExportLabels) 
     `${intLabel} Tasks Total`,
     `${intLabel} ${gokwikLabel} Time`,
     `${intLabel} ${merchantLabel} Time`,
-    // Per-checklist item columns
     ...allChecklistTitles.flatMap((key) => {
       const [, title] = key.split("|");
       return [
@@ -124,7 +135,6 @@ export const exportProjectsToCSV = (projects: Project[], labels?: ExportLabels) 
     const completedChecklist = p.checklist.filter((c) => c.completed).length;
     const projectTime = calculateTimeByParty(p.responsibilityLog);
 
-    // Team-wise stats
     const mintItems = p.checklist.filter((c) => c.ownerTeam === "mint");
     const intItems = p.checklist.filter((c) => c.ownerTeam === "integration");
 
@@ -145,7 +155,6 @@ export const exportProjectsToCSV = (projects: Project[], labels?: ExportLabels) 
       intMerchant += t.merchant;
     });
 
-    // Per-checklist item data
     const checklistMap = new Map<string, typeof p.checklist[0]>();
     p.checklist.forEach((item) => {
       checklistMap.set(`${item.phase}|${item.title}`, item);
@@ -161,6 +170,14 @@ export const exportProjectsToCSV = (projects: Project[], labels?: ExportLabels) 
         formatDuration(time.gokwik),
         formatDuration(time.merchant),
       ];
+    });
+
+    // Custom field values for this project
+    const projectCustomValues = customValuesMap[p.id] || {};
+    const customFieldColumns = customFields.map(f => {
+      const val = projectCustomValues[f.id] || "";
+      if (f.field_type === "boolean") return val === "true" ? "Yes" : val === "false" ? "No" : "";
+      return val;
     });
 
     return [
@@ -190,6 +207,7 @@ export const exportProjectsToCSV = (projects: Project[], labels?: ExportLabels) 
       p.notes.mintNotes || "",
       p.notes.projectNotes || "",
       p.notes.currentPhaseComment || "",
+      ...customFieldColumns,
       p.checklist.length,
       completedChecklist,
       p.transferHistory.length,

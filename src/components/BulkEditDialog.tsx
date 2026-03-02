@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Project, ProjectState, projectStateLabels } from "@/data/projectsData";
 import { useLabels } from "@/contexts/LabelsContext";
+import { useCustomFields } from "@/hooks/useCustomFields";
 import {
   Dialog,
   DialogContent,
@@ -15,6 +16,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
@@ -22,13 +24,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Building2, Calendar, Link2, FileText, Pencil } from "lucide-react";
+import { Building2, Calendar, Link2, FileText, Pencil, Layers } from "lucide-react";
 
 interface BulkEditDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   selectedCount: number;
-  onSave: (updates: Partial<BulkFieldUpdates>) => void;
+  onSave: (updates: Partial<BulkFieldUpdates>, customFieldUpdates?: Record<string, string>) => void;
 }
 
 export interface BulkFieldUpdates {
@@ -94,14 +96,26 @@ export const BulkEditDialog = ({
   onSave,
 }: BulkEditDialogProps) => {
   const { getLabel, stateLabels } = useLabels();
+  const { fields: customFieldDefs } = useCustomFields();
   const [enabledFields, setEnabledFields] = useState<Set<FieldKey>>(new Set());
   const [values, setValues] = useState<BulkFieldUpdates>({ ...EMPTY_VALUES });
+  const [customFieldValues, setCustomFieldValues] = useState<Record<string, string>>({});
+  const [enabledCustomFields, setEnabledCustomFields] = useState<Set<string>>(new Set());
 
   const toggleField = (field: FieldKey) => {
     setEnabledFields((prev) => {
       const next = new Set(prev);
       if (next.has(field)) next.delete(field);
       else next.add(field);
+      return next;
+    });
+  };
+
+  const toggleCustomField = (fieldId: string) => {
+    setEnabledCustomFields((prev) => {
+      const next = new Set(prev);
+      if (next.has(fieldId)) next.delete(fieldId);
+      else next.add(fieldId);
       return next;
     });
   };
@@ -115,10 +129,16 @@ export const BulkEditDialog = ({
     enabledFields.forEach((field) => {
       (updates as any)[field] = values[field];
     });
-    onSave(updates);
+    const cfUpdates: Record<string, string> = {};
+    enabledCustomFields.forEach((fieldId) => {
+      cfUpdates[fieldId] = customFieldValues[fieldId] || "";
+    });
+    onSave(updates, Object.keys(cfUpdates).length > 0 ? cfUpdates : undefined);
     onOpenChange(false);
     setEnabledFields(new Set());
     setValues({ ...EMPTY_VALUES });
+    setCustomFieldValues({});
+    setEnabledCustomFields(new Set());
   };
 
   const renderField = (
@@ -161,7 +181,7 @@ export const BulkEditDialog = ({
 
         <div className="max-h-[55vh] overflow-y-auto pr-2">
           <Tabs defaultValue="info" className="w-full">
-            <TabsList className="grid w-full grid-cols-4 mb-4">
+            <TabsList className="grid w-full grid-cols-5 mb-4">
               <TabsTrigger value="info" className="gap-1 text-xs">
                 <Building2 className="h-3 w-3" />
                 Info
@@ -178,6 +198,12 @@ export const BulkEditDialog = ({
                 <FileText className="h-3 w-3" />
                 Notes
               </TabsTrigger>
+              {customFieldDefs.length > 0 && (
+                <TabsTrigger value="custom" className="gap-1 text-xs">
+                  <Layers className="h-3 w-3" />
+                  Custom
+                </TabsTrigger>
+              )}
             </TabsList>
 
             <TabsContent value="info" className="space-y-1">
@@ -279,17 +305,59 @@ export const BulkEditDialog = ({
                 <Textarea value={values.phase2Comment} onChange={(e) => updateValue("phase2Comment", e.target.value)} rows={2} />
               )}
             </TabsContent>
+
+            {customFieldDefs.length > 0 && (
+              <TabsContent value="custom" className="space-y-1">
+                {customFieldDefs.map((field) => (
+                  <div key={field.id} className="flex items-start gap-3 p-2 rounded-lg hover:bg-muted/30 transition-colors">
+                    <Checkbox
+                      checked={enabledCustomFields.has(field.id)}
+                      onCheckedChange={() => toggleCustomField(field.id)}
+                      className="mt-1"
+                    />
+                    <div className={`flex-1 space-y-1.5 ${!enabledCustomFields.has(field.id) ? "opacity-40 pointer-events-none" : ""}`}>
+                      <Label className="text-xs text-muted-foreground">{field.field_label}</Label>
+                      {field.field_type === "select" ? (
+                        <Select value={customFieldValues[field.id] || ""} onValueChange={(v) => setCustomFieldValues(prev => ({ ...prev, [field.id]: v }))}>
+                          <SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger>
+                          <SelectContent>
+                            {field.options.map((opt) => (
+                              <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      ) : field.field_type === "boolean" ? (
+                        <div className="flex items-center gap-2 pt-1">
+                          <Switch
+                            checked={customFieldValues[field.id] === "true"}
+                            onCheckedChange={(c) => setCustomFieldValues(prev => ({ ...prev, [field.id]: c ? "true" : "false" }))}
+                          />
+                          <span className="text-sm text-muted-foreground">{customFieldValues[field.id] === "true" ? "Yes" : "No"}</span>
+                        </div>
+                      ) : (
+                        <Input
+                          type={field.field_type === "number" ? "number" : field.field_type === "date" ? "date" : field.field_type === "url" ? "url" : "text"}
+                          value={customFieldValues[field.id] || ""}
+                          onChange={(e) => setCustomFieldValues(prev => ({ ...prev, [field.id]: e.target.value }))}
+                          placeholder={`Enter ${field.field_label.toLowerCase()}`}
+                        />
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </TabsContent>
+            )}
           </Tabs>
         </div>
 
         <DialogFooter className="gap-2">
           <p className="text-xs text-muted-foreground mr-auto">
-            {enabledFields.size} field(s) selected
+            {enabledFields.size + enabledCustomFields.size} field(s) selected
           </p>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button onClick={handleSave} disabled={enabledFields.size === 0}>
+          <Button onClick={handleSave} disabled={enabledFields.size === 0 && enabledCustomFields.size === 0}>
             Update {selectedCount} Project(s)
           </Button>
         </DialogFooter>
