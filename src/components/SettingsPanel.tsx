@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { Save, RotateCcw, Settings, Palette, Tags, Layers, Mail } from "lucide-react";
 import { LogoUpload } from "./LogoUpload";
 import { CustomFieldsManager } from "./settings/CustomFieldsManager";
+import { ThemePresets } from "./settings/ThemePresets";
 
 interface LabelGroup {
   title: string;
@@ -385,13 +386,23 @@ export const SettingsPanel = () => {
         </TabsContent>
 
         {/* Colours Tab */}
-        <TabsContent value="colours">
+        <TabsContent value="colours" className="space-y-6">
+          <ThemePresets
+            onApply={(colors) => {
+              Object.entries(colors).forEach(([key, value]) => {
+                handleChange(key, value);
+              });
+            }}
+            currentColors={Object.fromEntries(
+              COLOR_GROUPS.flatMap(g => g.keys).map(({ key }) => [key, getValue(key)])
+            )}
+          />
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Palette className="h-5 w-5" />Colours & Branding
               </CardTitle>
-              <CardDescription>Customise colours of team badges, card backgrounds, and state indicators</CardDescription>
+              <CardDescription>Fine-tune individual colours for team badges, card backgrounds, and state indicators</CardDescription>
             </CardHeader>
             <CardContent>{renderColorGroups(COLOR_GROUPS)}</CardContent>
           </Card>

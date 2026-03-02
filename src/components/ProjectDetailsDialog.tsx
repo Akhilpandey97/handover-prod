@@ -1,5 +1,7 @@
 import { Project, calculateTimeFromChecklist, calculateProjectResponsibilityFromChecklist, formatDuration } from "@/data/projectsData";
 import { useLabels } from "@/contexts/LabelsContext";
+import { useCustomFields, useCustomFieldValues } from "@/hooks/useCustomFields";
+import { CustomFieldsDisplay } from "./CustomFieldsRenderer";
 import {
   Dialog,
   DialogContent,
@@ -37,6 +39,8 @@ export const ProjectDetailsDialog = ({
   onOpenChange,
 }: ProjectDetailsDialogProps) => {
   const { getLabel, teamLabels, responsibilityLabels } = useLabels();
+  const { fields: customFields } = useCustomFields();
+  const { values: customValues } = useCustomFieldValues(project?.id);
 
   if (!project) return null;
 
@@ -211,6 +215,11 @@ export const ProjectDetailsDialog = ({
                 <DetailRow icon={Link2} label={getLabel("field_integration_checklist_link")} value={project.links.integrationChecklistLink} isLink />
               </div>
             </div>
+
+            <Separator />
+
+            {/* Custom Fields */}
+            <CustomFieldsDisplay fields={customFields} values={customValues} />
 
             <Separator />
 

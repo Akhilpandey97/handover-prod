@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { Project, ProjectLinks, ProjectDates, ProjectNotes } from "@/data/projectsData";
 import { useLabels } from "@/contexts/LabelsContext";
+import { useCustomFields, useCustomFieldValues } from "@/hooks/useCustomFields";
+import { CustomFieldsForm } from "./CustomFieldsRenderer";
 import {
   Dialog,
   DialogContent,
@@ -21,7 +23,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Building2, Calendar, Link2, FileText, Pencil } from "lucide-react";
+import { Building2, Calendar, Link2, FileText, Pencil, Layers } from "lucide-react";
 import { DatePickerField } from "@/components/ui/date-picker-field";
 
 interface EditProjectDialogProps {
@@ -38,11 +40,15 @@ export const EditProjectDialog = ({
   onSave,
 }: EditProjectDialogProps) => {
   const { getLabel } = useLabels();
+  const { fields: customFields } = useCustomFields();
+  const { values: customValues, setValues: setCustomValues, saveValues } = useCustomFieldValues(project?.id);
   const [editedProject, setEditedProject] = useState<Project | null>(null);
+  const [customDraft, setCustomDraft] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (project) {
       setEditedProject({ ...project });
+      setCustomDraft({});
     }
   }, [project]);
 
@@ -70,11 +76,18 @@ export const EditProjectDialog = ({
     );
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (editedProject) {
+      // Save custom field values
+      const merged = { ...customValues, ...customDraft };
+      await saveValues(editedProject.id, merged);
       onSave(editedProject);
       onOpenChange(false);
     }
+  };
+
+  const handleCustomFieldChange = (fieldId: string, value: string) => {
+    setCustomDraft(prev => ({ ...prev, [fieldId]: value }));
   };
 
   return (
@@ -96,7 +109,7 @@ export const EditProjectDialog = ({
 
         <ScrollArea className="max-h-[60vh] pr-4">
           <Tabs defaultValue="info" className="w-full">
-            <TabsList className="grid w-full grid-cols-4 mb-4">
+            <TabsList className="grid w-full grid-cols-5 mb-4">
               <TabsTrigger value="info" className="gap-1 text-xs">
                 <Building2 className="h-3 w-3" />
                 Info
@@ -113,6 +126,12 @@ export const EditProjectDialog = ({
                 <FileText className="h-3 w-3" />
                 Notes
               </TabsTrigger>
+              {customFields.length > 0 && (
+                <TabsTrigger value="custom" className="gap-1 text-xs">
+                  <Layers className="h-3 w-3" />
+                  Custom
+                </TabsTrigger>
+              )}
             </TabsList>
 
             <TabsContent value="info" className="space-y-4">
@@ -357,6 +376,16 @@ export const EditProjectDialog = ({
                 />
               </div>
             </TabsContent>
+
+            {customFields.length > 0 && (
+              <TabsContent value="custom" className="space-y-4">
+                <CustomFieldsForm
+                  fields={customFields}
+                  values={{ ...customValues, ...customDraft }}
+                  onChange={handleCustomFieldChange}
+                />
+              </TabsContent>
+            )}
           </Tabs>
         </ScrollArea>
 

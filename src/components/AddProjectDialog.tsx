@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { createDefaultProject, Project, ProjectLinks, ProjectDates, ProjectNotes } from "@/data/projectsData";
 import { useLabels } from "@/contexts/LabelsContext";
+import { useCustomFields, useCustomFieldValues } from "@/hooks/useCustomFields";
+import { CustomFieldsForm } from "./CustomFieldsRenderer";
 import {
   Dialog,
   DialogContent,
@@ -21,7 +23,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Building2, Calendar, Link2, FileText } from "lucide-react";
+import { Building2, Calendar, Link2, FileText, Layers } from "lucide-react";
 import { DatePickerField } from "@/components/ui/date-picker-field";
 
 interface AddProjectDialogProps {
@@ -36,7 +38,10 @@ export const AddProjectDialog = ({
   onSave,
 }: AddProjectDialogProps) => {
   const { getLabel } = useLabels();
+  const { fields: customFields } = useCustomFields();
+  const { saveValues } = useCustomFieldValues(undefined);
   const [project, setProject] = useState<Project>(createDefaultProject());
+  const [customDraft, setCustomDraft] = useState<Record<string, string>>({});
 
   const updateField = <K extends keyof Project>(field: K, value: Project[K]) => {
     setProject((prev) => ({ ...prev, [field]: value }));
@@ -63,18 +68,28 @@ export const AddProjectDialog = ({
     }));
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!project.merchantName.trim() || !project.mid.trim()) {
       return;
     }
     onSave(project);
+    // Save custom field values after project is created
+    if (Object.keys(customDraft).length > 0) {
+      await saveValues(project.id, customDraft);
+    }
     setProject(createDefaultProject());
+    setCustomDraft({});
     onOpenChange(false);
   };
 
   const handleCancel = () => {
     setProject(createDefaultProject());
+    setCustomDraft({});
     onOpenChange(false);
+  };
+
+  const handleCustomFieldChange = (fieldId: string, value: string) => {
+    setCustomDraft(prev => ({ ...prev, [fieldId]: value }));
   };
 
   return (
@@ -91,7 +106,7 @@ export const AddProjectDialog = ({
 
         <ScrollArea className="max-h-[60vh] pr-4">
           <Tabs defaultValue="info" className="w-full">
-            <TabsList className="grid w-full grid-cols-4 mb-4">
+            <TabsList className={`grid w-full mb-4 ${customFields.length > 0 ? 'grid-cols-5' : 'grid-cols-4'}`}>
               <TabsTrigger value="info" className="gap-1 text-xs">
                 <Building2 className="h-3 w-3" />
                 Info
@@ -108,6 +123,12 @@ export const AddProjectDialog = ({
                 <FileText className="h-3 w-3" />
                 Notes
               </TabsTrigger>
+              {customFields.length > 0 && (
+                <TabsTrigger value="custom" className="gap-1 text-xs">
+                  <Layers className="h-3 w-3" />
+                  Custom
+                </TabsTrigger>
+              )}
             </TabsList>
 
             <TabsContent value="info" className="space-y-4">
@@ -353,6 +374,16 @@ export const AddProjectDialog = ({
                 />
               </div>
             </TabsContent>
+
+            {customFields.length > 0 && (
+              <TabsContent value="custom" className="space-y-4">
+                <CustomFieldsForm
+                  fields={customFields}
+                  values={customDraft}
+                  onChange={handleCustomFieldChange}
+                />
+              </TabsContent>
+            )}
           </Tabs>
         </ScrollArea>
 
