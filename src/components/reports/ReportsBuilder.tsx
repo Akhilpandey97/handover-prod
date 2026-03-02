@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { Project, projectStateLabels, formatDuration, calculateTimeFromChecklist } from "@/data/projectsData";
+import { CustomField } from "@/hooks/useCustomFields";
 import { useLabels } from "@/contexts/LabelsContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -53,7 +54,7 @@ const AVAILABLE_COLUMNS: { key: string; label: string; group: string }[] = [
 const GROUPABLE_COLUMNS = ["projectState", "currentPhase", "currentOwnerTeam", "platform", "category", "assignedOwnerName", "currentResponsibility", "integrationType", "pgOnboarding", "salesSpoc"];
 const NUMERIC_COLUMNS = ["arr", "txnsPerDay", "aov", "goLivePercent", "transferCount"];
 
-const DEFAULT_GROUP_ORDER = ["Basic", "Financial", "Status", "Dates", "Details", "Links", "Notes", "Metrics"];
+const DEFAULT_GROUP_ORDER = ["Basic", "Financial", "Status", "Dates", "Details", "Links", "Notes", "Metrics", "Custom Fields"];
 
 const DAYS_OF_WEEK = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
@@ -103,7 +104,14 @@ function getCellValue(project: Project, key: string, labels: any): string {
     case "gokwikTime": return formatDuration(calculateTimeFromChecklist(project.checklist).gokwik);
     case "merchantTime": return formatDuration(calculateTimeFromChecklist(project.checklist).merchant);
     case "transferCount": return String(project.transferHistory.length);
-    default: return "";
+    default: {
+      // Check for custom field values
+      if (key.startsWith("custom_field_") && labels.customValuesMap) {
+        const fieldId = key.replace("custom_field_", "");
+        return labels.customValuesMap[project.id]?.[fieldId] || "";
+      }
+      return "";
+    }
   }
 }
 
@@ -143,10 +151,10 @@ interface PivotGroup {
   aggregates: Record<string, number>;
 }
 
-export const ReportsBuilder = ({ projects }: { projects: Project[] }) => {
+export const ReportsBuilder = ({ projects, customFields = [], customValuesMap = {} }: { projects: Project[]; customFields?: CustomField[]; customValuesMap?: Record<string, Record<string, string>> }) => {
   const { teamLabels, responsibilityLabels, phaseLabels, stateLabels } = useLabels();
   const { currentUser } = useAuth();
-  const labels = { teamLabels, responsibilityLabels, phaseLabels, stateLabels };
+  const labels = { teamLabels, responsibilityLabels, phaseLabels, stateLabels, customValuesMap };
 
   const [selectedColumns, setSelectedColumns] = useState<string[]>(["merchantName", "projectState", "arr", "currentPhase", "goLivePercent"]);
   const [reportAggType, setReportAggType] = useState<AggType>("sum");
@@ -199,14 +207,23 @@ export const ReportsBuilder = ({ projects }: { projects: Project[] }) => {
     setSelectedColumns(prev => prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]);
   };
 
+  const allColumns = useMemo(() => {
+    const customCols = customFields.map(f => ({
+      key: `custom_field_${f.id}`,
+      label: f.field_label,
+      group: "Custom Fields",
+    }));
+    return [...AVAILABLE_COLUMNS, ...customCols];
+  }, [customFields]);
+
   const columnGroups = useMemo(() => {
-    const groups: Record<string, typeof AVAILABLE_COLUMNS> = {};
-    AVAILABLE_COLUMNS.forEach(col => {
+    const groups: Record<string, { key: string; label: string; group: string }[]> = {};
+    allColumns.forEach(col => {
       if (!groups[col.group]) groups[col.group] = [];
       groups[col.group].push(col);
     });
     return groups;
-  }, []);
+  }, [allColumns]);
 
   const handleGroupDragStart = (group: string) => setDraggedGroup(group);
   const handleGroupDragOver = (e: React.DragEvent, targetGroup: string) => {
@@ -342,7 +359,7 @@ export const ReportsBuilder = ({ projects }: { projects: Project[] }) => {
   const loadReport = (report: SavedReport) => { setSelectedColumns(report.columns); toast.info(`Loaded "${report.name}"`); };
 
   const exportReportCSV = () => {
-    const headers = selectedColumns.map(k => AVAILABLE_COLUMNS.find(c => c.key === k)?.label || k);
+    const headers = selectedColumns.map(k => allColumns.find(c => c.key === k)?.label || k);
     const rows = projects.map(p => selectedColumns.map(k => {
       const val = getCellValue(p, k, labels);
       return val.includes(",") || val.includes('"') ? `"${val.replace(/"/g, '""')}"` : val;
@@ -374,7 +391,7 @@ export const ReportsBuilder = ({ projects }: { projects: Project[] }) => {
           <TableRow>
             <TableHead className="text-xs w-8"></TableHead>
             {displayCols.map(key => {
-              const col = AVAILABLE_COLUMNS.find(c => c.key === key);
+              const col = allColumns.find(c => c.key === key);
               return <TableHead key={key} className="text-xs whitespace-nowrap">{col?.label || key}</TableHead>;
             })}
           </TableRow>
@@ -382,7 +399,7 @@ export const ReportsBuilder = ({ projects }: { projects: Project[] }) => {
         <TableBody>
           {pivotGroups.map(group => {
             const isExpanded = expandedGroups.has(group.key);
-            const groupLabel = AVAILABLE_COLUMNS.find(c => c.key === groupByColumn)?.label || groupByColumn;
+            const groupLabel = allColumns.find(c => c.key === groupByColumn)?.label || groupByColumn;
             return (
               <> 
                 <TableRow
@@ -436,7 +453,7 @@ export const ReportsBuilder = ({ projects }: { projects: Project[] }) => {
       <TableHeader>
         <TableRow>
           {selectedColumns.map(key => {
-            const col = AVAILABLE_COLUMNS.find(c => c.key === key);
+            const col = allColumns.find(c => c.key === key);
             return <TableHead key={key} className="text-xs whitespace-nowrap">{col?.label || key}</TableHead>;
           })}
         </TableRow>
@@ -477,7 +494,7 @@ export const ReportsBuilder = ({ projects }: { projects: Project[] }) => {
   const renderExcelPivot = () => {
     if (!excelPivot) return <p className="text-sm text-muted-foreground p-4">Select a Row field to create a pivot table.</p>;
     const { rows, cols, data, grandTotals } = excelPivot;
-    const rowLabel = AVAILABLE_COLUMNS.find(c => c.key === pivotRowField)?.label || pivotRowField;
+    const rowLabel = allColumns.find(c => c.key === pivotRowField)?.label || pivotRowField;
 
     return (
       <div className="overflow-auto">
@@ -582,7 +599,7 @@ export const ReportsBuilder = ({ projects }: { projects: Project[] }) => {
                   <SelectContent>
                     <SelectItem value="none">No Grouping</SelectItem>
                     {GROUPABLE_COLUMNS.filter(k => selectedColumns.includes(k)).map(k => {
-                      const col = AVAILABLE_COLUMNS.find(c => c.key === k);
+                      const col = allColumns.find(c => c.key === k);
                       return <SelectItem key={k} value={k}>{col?.label || k}</SelectItem>;
                     })}
                   </SelectContent>
@@ -632,7 +649,7 @@ export const ReportsBuilder = ({ projects }: { projects: Project[] }) => {
               Report Preview ({projects.length} projects)
               {groupByColumn !== "none" && (
                 <Badge variant="outline" className="ml-2 text-[10px] px-1.5 py-0">
-                  Grouped by {AVAILABLE_COLUMNS.find(c => c.key === groupByColumn)?.label}
+                  Grouped by {allColumns.find(c => c.key === groupByColumn)?.label}
                 </Badge>
               )}
             </CardTitle>
@@ -671,7 +688,7 @@ export const ReportsBuilder = ({ projects }: { projects: Project[] }) => {
                   <SelectContent>
                     <SelectItem value="none">Select…</SelectItem>
                     {GROUPABLE_COLUMNS.map(k => {
-                      const col = AVAILABLE_COLUMNS.find(c => c.key === k);
+                      const col = allColumns.find(c => c.key === k);
                       return <SelectItem key={k} value={k}>{col?.label || k}</SelectItem>;
                     })}
                   </SelectContent>
@@ -684,7 +701,7 @@ export const ReportsBuilder = ({ projects }: { projects: Project[] }) => {
                   <SelectContent>
                     <SelectItem value="none">None</SelectItem>
                     {GROUPABLE_COLUMNS.filter(k => k !== pivotRowField).map(k => {
-                      const col = AVAILABLE_COLUMNS.find(c => c.key === k);
+                      const col = allColumns.find(c => c.key === k);
                       return <SelectItem key={k} value={k}>{col?.label || k}</SelectItem>;
                     })}
                   </SelectContent>
@@ -696,7 +713,7 @@ export const ReportsBuilder = ({ projects }: { projects: Project[] }) => {
                   <SelectTrigger className="h-7 text-xs w-[110px]"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     {NUMERIC_COLUMNS.map(k => {
-                      const col = AVAILABLE_COLUMNS.find(c => c.key === k);
+                      const col = allColumns.find(c => c.key === k);
                       return <SelectItem key={k} value={k}>{col?.label || k}</SelectItem>;
                     })}
                   </SelectContent>

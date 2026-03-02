@@ -124,6 +124,17 @@ const buildProject = (
 
   const phase = getVal("current_phase") || "mint";
 
+  // Extract custom field values (keys starting with "custom_")
+  const customFieldValues: Record<string, string> = {};
+  Object.entries(mapping).forEach(([csvHeader, fieldKey]) => {
+    if (fieldKey.startsWith("custom_")) {
+      const fieldId = fieldKey.replace("custom_", "");
+      const idx = headers.indexOf(csvHeader);
+      const val = idx >= 0 ? (row[idx] || "").trim() : "";
+      if (val) customFieldValues[fieldId] = val;
+    }
+  });
+
   return {
     merchant_name: merchant,
     mid,
@@ -146,6 +157,7 @@ const buildProject = (
     go_live_percent: parseInt(getVal("go_live_percent")) || 0,
     current_phase: mapPhaseToEnum(phase),
     current_owner_team: mapPhaseToTeam(phase),
+    _customFieldValues: customFieldValues,
   };
 };
 
@@ -272,6 +284,17 @@ export const CSVUploadDialog = ({ open, onOpenChange }: CSVUploadDialogProps) =>
             started_at: new Date().toISOString(),
             tenant_id: currentUser?.tenantId || null,
           });
+
+          // Save custom field values if any
+          if (project._customFieldValues && Object.keys(project._customFieldValues).length > 0) {
+            const cfRows = Object.entries(project._customFieldValues).map(([field_id, value]) => ({
+              project_id: newProject.id,
+              field_id,
+              value,
+              tenant_id: currentUser?.tenantId || null,
+            }));
+            await supabase.from("custom_field_values").insert(cfRows);
+          }
 
           importResults.push({ success: true, merchantName: project.merchant_name });
         } catch (error: any) {

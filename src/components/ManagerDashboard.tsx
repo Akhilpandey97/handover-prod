@@ -72,6 +72,7 @@ import {
   GripVertical,
 } from "lucide-react";
 import { exportProjectsToCSV } from "@/utils/exportProjects";
+import { useCustomFields, useAllCustomFieldValues } from "@/hooks/useCustomFields";
 import { ThemeToggle } from "./ThemeToggle";
 import { toast } from "sonner";
 import { fetchAiInsights } from "@/utils/aiInsights";
@@ -88,6 +89,9 @@ export const ManagerDashboard = () => {
   const { currentUser, logout } = useAuth();
   const { labels: appLabels, teamLabels, responsibilityLabels, phaseLabels, stateLabels: stateLabelsFromCtx } = useLabels();
   const { projects, isLoading, addProject, deleteProject, updateProject } = useProjects();
+  const { fields: customFields } = useCustomFields();
+  const projectIds = useMemo(() => projects.map(p => p.id), [projects]);
+  const { valuesMap: customValuesMap } = useAllCustomFieldValues(projectIds);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("overview");
   const [teamFilter, setTeamFilter] = useState<string>("all");
@@ -314,7 +318,7 @@ export const ManagerDashboard = () => {
     toast.success(`Updated ${ids.length} project(s) to ${stateLabelsFromCtx[bulkStateValue] || projectStateLabels[bulkStateValue]}`);
   };
 
-  const handleBulkEdit = (updates: Partial<BulkFieldUpdates>) => {
+  const handleBulkEdit = async (updates: Partial<BulkFieldUpdates>, customFieldUpdates?: Record<string, string>) => {
     const ids = Array.from(selectedProjects);
     for (const id of ids) {
       const project = projects.find(p => p.id === id);
@@ -343,9 +347,28 @@ export const ManagerDashboard = () => {
       if (updates.currentPhaseComment !== undefined) patched.notes = { ...patched.notes, currentPhaseComment: updates.currentPhaseComment };
       if (updates.phase2Comment !== undefined) patched.notes = { ...patched.notes, phase2Comment: updates.phase2Comment };
       updateProject(patched);
+
+      // Save custom field values
+      if (customFieldUpdates && Object.keys(customFieldUpdates).length > 0) {
+        for (const [fieldId, value] of Object.entries(customFieldUpdates)) {
+          const { data: existing } = await supabase
+            .from("custom_field_values")
+            .select("id")
+            .eq("project_id", id)
+            .eq("field_id", fieldId)
+            .maybeSingle();
+          if (existing) {
+            await supabase.from("custom_field_values").update({ value }).eq("id", existing.id);
+          } else {
+            await supabase.from("custom_field_values").insert({
+              project_id: id, field_id: fieldId, value, tenant_id: currentUser?.tenantId || null,
+            });
+          }
+        }
+      }
     }
     setSelectedProjects(new Set());
-    toast.success(`Updated ${ids.length} project(s) — ${Object.keys(updates).length} field(s)`);
+    toast.success(`Updated ${ids.length} project(s)`);
   };
 
   // Helper to get project phase label (next incomplete checklist item from current owner team)
@@ -578,7 +601,7 @@ export const ManagerDashboard = () => {
             </div>
 
             <div className="flex items-center gap-2">
-              <Button onClick={() => exportProjectsToCSV(projects, { teamLabels, stateLabels: stateLabelsFromCtx, responsibilityLabels, getLabel: (k: string) => appLabels[k] || k })} variant="outline" size="sm" className="gap-1.5 h-8 text-xs">
+              <Button onClick={() => exportProjectsToCSV(projects, { teamLabels, stateLabels: stateLabelsFromCtx, responsibilityLabels, getLabel: (k: string) => appLabels[k] || k }, { fields: customFields, valuesMap: customValuesMap })} variant="outline" size="sm" className="gap-1.5 h-8 text-xs">
                 <Download className="h-3.5 w-3.5" />
                 Export
               </Button>
@@ -1093,7 +1116,7 @@ export const ManagerDashboard = () => {
                     {reportType === "operational" && <OperationalReports projects={displayProjects} />}
                     {reportType === "merchant" && <MerchantResponsibility projects={displayProjects} />}
                     {reportType === "tactical" && <TacticalLists projects={displayProjects} />}
-                    {reportType === "builder" && <ReportsBuilder projects={displayProjects} />}
+                    {reportType === "builder" && <ReportsBuilder projects={displayProjects} customFields={customFields} customValuesMap={customValuesMap} />}
                     {reportType === "scheduler" && <ReportScheduler />}
 
                     {/* Merged Project + Checklist Report */}

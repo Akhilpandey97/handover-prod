@@ -73,7 +73,6 @@ export const useCustomFieldValues = (projectId: string | undefined) => {
 
     if (rows.length === 0) return;
 
-    // Upsert each value
     for (const row of rows) {
       const { data: existing } = await supabase
         .from("custom_field_values")
@@ -91,4 +90,34 @@ export const useCustomFieldValues = (projectId: string | undefined) => {
   }, []);
 
   return { values, setValues, isLoading, saveValues };
+};
+
+/** Batch-fetch custom field values for multiple projects at once */
+export const useAllCustomFieldValues = (projectIds: string[]) => {
+  const [valuesMap, setValuesMap] = useState<Record<string, Record<string, string>>>({});
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    if (projectIds.length === 0) { setIsLoading(false); return; }
+    const fetch = async () => {
+      const { data, error } = await supabase
+        .from("custom_field_values")
+        .select("project_id, field_id, value")
+        .in("project_id", projectIds);
+      if (!error && data) {
+        const map: Record<string, Record<string, string>> = {};
+        data.forEach((r: any) => {
+          if (r.value) {
+            if (!map[r.project_id]) map[r.project_id] = {};
+            map[r.project_id][r.field_id] = r.value;
+          }
+        });
+        setValuesMap(map);
+      }
+      setIsLoading(false);
+    };
+    fetch();
+  }, [projectIds.join(",")]);
+
+  return { valuesMap, isLoading };
 };
