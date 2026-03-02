@@ -130,18 +130,18 @@ export const FieldMappingDialog = ({
   sampleRows,
   onConfirm,
 }: FieldMappingDialogProps) => {
-  const { fields: customFieldsDefs } = useCustomFields();
-  const PROJECT_FIELDS: { key: string; label: string; required?: boolean }[] = [
+  const { fields: customFieldsDefs, isLoading: customFieldsLoading } = useCustomFields();
+  const PROJECT_FIELDS: { key: string; label: string; required?: boolean; isCustom?: boolean }[] = [
     ...BASE_PROJECT_FIELDS,
-    ...customFieldsDefs.map(f => ({ key: `custom_${f.id}`, label: f.field_label })),
+    ...customFieldsDefs.map(f => ({ key: `custom_${f.id}`, label: f.field_label, isCustom: true })),
   ];
 
   const [mapping, setMapping] = useState<Record<string, string>>({});
   const [aiLoading, setAiLoading] = useState(false);
 
   useEffect(() => {
-    if (!open) {
-      setAiLoading(false);
+    if (!open || customFieldsLoading) {
+      if (!open) setAiLoading(false);
       return;
     }
 
@@ -153,7 +153,7 @@ export const FieldMappingDialog = ({
     const heuristicMapping = getHeuristicMapping(csvHeaders, PROJECT_FIELDS);
     setMapping(heuristicMapping);
     autoMapWithAi(heuristicMapping);
-  }, [open, csvHeaders, customFieldsDefs]);
+  }, [open, csvHeaders, customFieldsLoading]);
 
   const autoMapWithAi = async (baseMapping: Record<string, string> = mapping) => {
     setAiLoading(true);
@@ -300,7 +300,7 @@ export const FieldMappingDialog = ({
                           <SelectItem value="__skip__">
                             <span className="text-muted-foreground">— Skip —</span>
                           </SelectItem>
-                          {PROJECT_FIELDS.map((field) => (
+                          {PROJECT_FIELDS.filter(f => !f.isCustom).map((field) => (
                             <SelectItem
                               key={field.key}
                               value={field.key}
@@ -318,6 +318,24 @@ export const FieldMappingDialog = ({
                               </span>
                             </SelectItem>
                           ))}
+                          {customFieldsDefs.length > 0 && (
+                            <>
+                              <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground border-t mt-1 pt-1.5">
+                                Custom Fields
+                              </div>
+                              {PROJECT_FIELDS.filter(f => f.isCustom).map((field) => (
+                                <SelectItem
+                                  key={field.key}
+                                  value={field.key}
+                                  disabled={
+                                    usedFields.has(field.key) && mapping[header] !== field.key
+                                  }
+                                >
+                                  {field.label}
+                                </SelectItem>
+                              ))}
+                            </>
+                          )}
                         </SelectContent>
                       </Select>
                     </div>
