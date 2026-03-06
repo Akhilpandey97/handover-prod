@@ -891,6 +891,50 @@ export const ManagerDashboard = () => {
                     )}
                   </div>
                   <div className="flex gap-2 relative">
+                    {/* Sort Dropdown */}
+                    <Collapsible>
+                      <CollapsibleTrigger asChild>
+                        <Button variant="outline" size="sm" className="gap-2">
+                          <ArrowUpDown className="h-4 w-4" />
+                          Sort
+                          {sortField !== "none" && <Badge variant="default" className="ml-1 h-5 px-1.5 text-[10px]">1</Badge>}
+                          <ChevronDown className="h-3 w-3" />
+                        </Button>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent className="absolute z-20 mt-2 right-0 w-[320px] bg-card border rounded-lg shadow-xl p-4 space-y-3">
+                        <div className="flex items-center justify-between mb-2">
+                          <p className="text-sm font-semibold">Sort By</p>
+                          {sortField !== "none" && (
+                            <Button variant="ghost" size="sm" onClick={() => { setSortField("none"); setSortDirection("asc"); }} className="text-xs h-7">Clear</Button>
+                          )}
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="space-y-1">
+                            <label className="text-xs text-muted-foreground font-medium">Field</label>
+                            <Select value={sortField} onValueChange={setSortField}>
+                              <SelectTrigger className="w-full"><SelectValue placeholder="None" /></SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="none">None</SelectItem>
+                                <SelectItem value="arr">ARR</SelectItem>
+                                <SelectItem value="owner">Owner</SelectItem>
+                                <SelectItem value="phase">Phase</SelectItem>
+                                <SelectItem value="platform">Platform</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="space-y-1">
+                            <label className="text-xs text-muted-foreground font-medium">Direction</label>
+                            <Select value={sortDirection} onValueChange={(v) => setSortDirection(v as "asc" | "desc")}>
+                              <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="asc">Ascending</SelectItem>
+                                <SelectItem value="desc">Descending</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+                      </CollapsibleContent>
+                    </Collapsible>
                     <Collapsible>
                       <CollapsibleTrigger asChild>
                         <Button variant="outline" size="sm" className="gap-2">
