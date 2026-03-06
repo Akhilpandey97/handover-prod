@@ -136,6 +136,10 @@ export const ManagerDashboard = () => {
   const [bulkEditDialogOpen, setBulkEditDialogOpen] = useState(false);
   const [bulkStateValue, setBulkStateValue] = useState<ProjectState>("in_progress");
 
+  // Sort state for projects tab
+  const [sortField, setSortField] = useState<string>("none");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
+
   // Fetch profiles for owner filter
   const [allProfiles, setAllProfiles] = useState<{ id: string; name: string; team: string }[]>([]);
   useEffect(() => {
