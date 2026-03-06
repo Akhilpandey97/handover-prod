@@ -1124,7 +1124,7 @@ export const ManagerDashboard = () => {
                         <p className="text-muted-foreground">Try adjusting your filters or add a new project.</p>
                       </div>
                     ) : (
-                      filteredProjects.map((project) => (
+                      sortedProjects.map((project) => (
                         <div key={project.id} className="flex items-start gap-3">
                           <div className="pt-4">
                             <Checkbox checked={selectedProjects.has(project.id)} onCheckedChange={() => toggleProjectSelection(project.id)} />
@@ -1135,6 +1135,9 @@ export const ManagerDashboard = () => {
                         </div>
                       ))
                     )}
+                        </>
+                      );
+                    })()}
                   </div>
               </CardContent>
             </Card>
