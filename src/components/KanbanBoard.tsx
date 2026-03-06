@@ -89,11 +89,9 @@ export const KanbanBoard = () => {
   const projectIds = useMemo(() => projects.map(p => p.id), [projects]);
   const { valuesMap: customValuesMap } = useAllCustomFieldValues(projectIds);
 
-  // Build combined group-by options including select-type custom fields
+  // Build combined group-by options including custom fields
   const allFieldOptions = useMemo(() => {
-    const customOptions = customFields
-      .filter(f => f.field_type === "select")
-      .map(f => ({ key: `custom_field_${f.id}`, label: f.field_label }));
+    const customOptions = customFields.map(f => ({ key: `custom_field_${f.id}`, label: f.field_label }));
     return [...KANBAN_FIELD_OPTIONS, ...customOptions];
   }, [customFields]);
 
