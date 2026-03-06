@@ -216,6 +216,11 @@ export const ReportsBuilder = ({ projects, customFields = [], customValuesMap = 
     return [...AVAILABLE_COLUMNS, ...customCols];
   }, [customFields]);
 
+  const groupableColumns = useMemo(() => {
+    const customGroupableColumns = customFields.map(f => `custom_field_${f.id}`);
+    return [...BASE_GROUPABLE_COLUMNS, ...customGroupableColumns];
+  }, [customFields]);
+
   const columnGroups = useMemo(() => {
     const groups: Record<string, { key: string; label: string; group: string }[]> = {};
     allColumns.forEach(col => {
