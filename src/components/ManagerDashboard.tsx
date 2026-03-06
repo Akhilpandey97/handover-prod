@@ -1096,15 +1096,28 @@ export const ManagerDashboard = () => {
                   </div>
                 </div>
               </CardHeader>
-              <CardContent className="p-0">
+               <CardContent className="p-0">
                   <div className="p-6 space-y-4">
-                    {filteredProjects.length > 0 && (
+                    {(() => {
+                      const sortedProjects = sortField === "none" ? filteredProjects : [...filteredProjects].sort((a, b) => {
+                        let cmp = 0;
+                        switch (sortField) {
+                          case "arr": cmp = a.arr - b.arr; break;
+                          case "owner": cmp = (a.assignedOwnerName || "").localeCompare(b.assignedOwnerName || ""); break;
+                          case "phase": cmp = getProjectPhaseLabel(a).localeCompare(getProjectPhaseLabel(b)); break;
+                          case "platform": cmp = (a.platform || "").localeCompare(b.platform || ""); break;
+                        }
+                        return sortDirection === "desc" ? -cmp : cmp;
+                      });
+                      return (
+                        <>
+                    {sortedProjects.length > 0 && (
                       <div className="flex items-center gap-3 pb-2 border-b">
                         <Checkbox checked={allFilteredSelected} onCheckedChange={() => toggleSelectAll(filteredProjectIds)} />
-                        <span className="text-sm text-muted-foreground">Select all ({filteredProjects.length})</span>
+                        <span className="text-sm text-muted-foreground">Select all ({sortedProjects.length})</span>
                       </div>
                     )}
-                    {filteredProjects.length === 0 ? (
+                    {sortedProjects.length === 0 ? (
                       <div className="text-center py-20">
                         <FolderKanban className="h-16 w-16 mx-auto text-muted-foreground/30 mb-4" />
                         <h3 className="font-semibold text-lg mb-2">No Projects Found</h3>
