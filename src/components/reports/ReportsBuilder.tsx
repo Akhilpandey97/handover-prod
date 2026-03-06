@@ -603,7 +603,7 @@ export const ReportsBuilder = ({ projects, customFields = [], customValuesMap = 
                   <SelectTrigger className="h-7 text-xs w-[140px]"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none">No Grouping</SelectItem>
-                    {GROUPABLE_COLUMNS.filter(k => selectedColumns.includes(k)).map(k => {
+                    {groupableColumns.filter(k => selectedColumns.includes(k)).map(k => {
                       const col = allColumns.find(c => c.key === k);
                       return <SelectItem key={k} value={k}>{col?.label || k}</SelectItem>;
                     })}
