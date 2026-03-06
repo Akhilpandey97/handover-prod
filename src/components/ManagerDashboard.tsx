@@ -39,6 +39,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import {
+  ArrowUpDown,
   BarChart3,
   Clock,
   Download,
@@ -135,6 +136,10 @@ export const ManagerDashboard = () => {
   const [bulkStateDialogOpen, setBulkStateDialogOpen] = useState(false);
   const [bulkEditDialogOpen, setBulkEditDialogOpen] = useState(false);
   const [bulkStateValue, setBulkStateValue] = useState<ProjectState>("in_progress");
+
+  // Sort state for projects tab
+  const [sortField, setSortField] = useState<string>("none");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
 
   // Fetch profiles for owner filter
   const [allProfiles, setAllProfiles] = useState<{ id: string; name: string; team: string }[]>([]);
@@ -886,6 +891,50 @@ export const ManagerDashboard = () => {
                     )}
                   </div>
                   <div className="flex gap-2 relative">
+                    {/* Sort Dropdown */}
+                    <Collapsible>
+                      <CollapsibleTrigger asChild>
+                        <Button variant="outline" size="sm" className="gap-2">
+                          <ArrowUpDown className="h-4 w-4" />
+                          Sort
+                          {sortField !== "none" && <Badge variant="default" className="ml-1 h-5 px-1.5 text-[10px]">1</Badge>}
+                          <ChevronDown className="h-3 w-3" />
+                        </Button>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent className="absolute z-20 mt-2 right-0 w-[320px] bg-card border rounded-lg shadow-xl p-4 space-y-3">
+                        <div className="flex items-center justify-between mb-2">
+                          <p className="text-sm font-semibold">Sort By</p>
+                          {sortField !== "none" && (
+                            <Button variant="ghost" size="sm" onClick={() => { setSortField("none"); setSortDirection("asc"); }} className="text-xs h-7">Clear</Button>
+                          )}
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="space-y-1">
+                            <label className="text-xs text-muted-foreground font-medium">Field</label>
+                            <Select value={sortField} onValueChange={setSortField}>
+                              <SelectTrigger className="w-full"><SelectValue placeholder="None" /></SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="none">None</SelectItem>
+                                <SelectItem value="arr">ARR</SelectItem>
+                                <SelectItem value="owner">Owner</SelectItem>
+                                <SelectItem value="phase">Phase</SelectItem>
+                                <SelectItem value="platform">Platform</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="space-y-1">
+                            <label className="text-xs text-muted-foreground font-medium">Direction</label>
+                            <Select value={sortDirection} onValueChange={(v) => setSortDirection(v as "asc" | "desc")}>
+                              <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="asc">Ascending</SelectItem>
+                                <SelectItem value="desc">Descending</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+                      </CollapsibleContent>
+                    </Collapsible>
                     <Collapsible>
                       <CollapsibleTrigger asChild>
                         <Button variant="outline" size="sm" className="gap-2">
@@ -1047,22 +1096,35 @@ export const ManagerDashboard = () => {
                   </div>
                 </div>
               </CardHeader>
-              <CardContent className="p-0">
+               <CardContent className="p-0">
                   <div className="p-6 space-y-4">
-                    {filteredProjects.length > 0 && (
+                    {(() => {
+                      const sortedProjects = sortField === "none" ? filteredProjects : [...filteredProjects].sort((a, b) => {
+                        let cmp = 0;
+                        switch (sortField) {
+                          case "arr": cmp = a.arr - b.arr; break;
+                          case "owner": cmp = (a.assignedOwnerName || "").localeCompare(b.assignedOwnerName || ""); break;
+                          case "phase": cmp = getProjectPhaseLabel(a).localeCompare(getProjectPhaseLabel(b)); break;
+                          case "platform": cmp = (a.platform || "").localeCompare(b.platform || ""); break;
+                        }
+                        return sortDirection === "desc" ? -cmp : cmp;
+                      });
+                      return (
+                        <>
+                    {sortedProjects.length > 0 && (
                       <div className="flex items-center gap-3 pb-2 border-b">
                         <Checkbox checked={allFilteredSelected} onCheckedChange={() => toggleSelectAll(filteredProjectIds)} />
-                        <span className="text-sm text-muted-foreground">Select all ({filteredProjects.length})</span>
+                        <span className="text-sm text-muted-foreground">Select all ({sortedProjects.length})</span>
                       </div>
                     )}
-                    {filteredProjects.length === 0 ? (
+                    {sortedProjects.length === 0 ? (
                       <div className="text-center py-20">
                         <FolderKanban className="h-16 w-16 mx-auto text-muted-foreground/30 mb-4" />
                         <h3 className="font-semibold text-lg mb-2">No Projects Found</h3>
                         <p className="text-muted-foreground">Try adjusting your filters or add a new project.</p>
                       </div>
                     ) : (
-                      filteredProjects.map((project) => (
+                      sortedProjects.map((project) => (
                         <div key={project.id} className="flex items-start gap-3">
                           <div className="pt-4">
                             <Checkbox checked={selectedProjects.has(project.id)} onCheckedChange={() => toggleProjectSelection(project.id)} />
@@ -1073,6 +1135,9 @@ export const ManagerDashboard = () => {
                         </div>
                       ))
                     )}
+                        </>
+                      );
+                    })()}
                   </div>
               </CardContent>
             </Card>
