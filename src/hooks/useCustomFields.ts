@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
 export interface CustomField {
   id: string;
@@ -42,6 +43,7 @@ export const useCustomFields = () => {
 };
 
 export const useCustomFieldValues = (projectId: string | undefined) => {
+  const { currentUser } = useAuth();
   const [values, setValues] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(true);
 
@@ -63,12 +65,14 @@ export const useCustomFieldValues = (projectId: string | undefined) => {
   }, [projectId]);
 
   const saveValues = useCallback(async (projectId: string, fieldValues: Record<string, string>) => {
+    const tenantId = currentUser?.tenantId || null;
     const rows = Object.entries(fieldValues)
       .filter(([, v]) => v !== undefined && v !== "")
       .map(([field_id, value]) => ({
         project_id: projectId,
         field_id,
         value,
+        tenant_id: tenantId,
       }));
 
     if (rows.length === 0) return;
@@ -87,7 +91,7 @@ export const useCustomFieldValues = (projectId: string | undefined) => {
         await supabase.from("custom_field_values").insert(row);
       }
     }
-  }, []);
+  }, [currentUser?.tenantId]);
 
   return { values, setValues, isLoading, saveValues };
 };

@@ -1,12 +1,14 @@
 import { useMemo, useState } from "react";
 import { useProjects } from "@/contexts/ProjectContext";
 import { useLabels } from "@/contexts/LabelsContext";
+import { useCustomFields, useAllCustomFieldValues } from "@/hooks/useCustomFields";
 import { Project, ProjectState, projectStateLabels } from "@/data/projectsData";
 import { KanbanCard } from "./KanbanCard";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Separator } from "@/components/ui/separator";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 
@@ -35,7 +37,7 @@ const PHASE_COLORS: Record<string, { color: string; bg: string }> = {
   completed: { color: "text-emerald-600", bg: "bg-emerald-500/5" },
 };
 
-function getFieldValue(project: Project, field: string): string {
+function getFieldValue(project: Project, field: string, customValuesMap?: Record<string, Record<string, string>>): string {
   switch (field) {
     case "projectState": return project.projectState;
     case "currentPhase": return project.currentPhase;
@@ -44,7 +46,13 @@ function getFieldValue(project: Project, field: string): string {
     case "category": return project.category || "Uncategorized";
     case "currentResponsibility": return project.currentResponsibility;
     case "assignedOwnerName": return project.assignedOwnerName || "Unassigned";
-    default: return project.projectState;
+    default:
+      // Check if it's a custom field
+      if (field.startsWith("custom_field_") && customValuesMap) {
+        const fieldId = field.replace("custom_field_", "");
+        return customValuesMap[project.id]?.[fieldId] || "Unset";
+      }
+      return project.projectState;
   }
 }
 
@@ -61,7 +69,6 @@ function getFieldLabel(value: string, field: string, labels: any): string {
 function getColumnStyle(value: string, field: string): { color: string; bg: string } {
   if (field === "projectState") return STATE_COLORS[value] || { color: "text-muted-foreground", bg: "bg-muted/40" };
   if (field === "currentPhase") return PHASE_COLORS[value] || { color: "text-muted-foreground", bg: "bg-muted/40" };
-  // Use a rotating set of muted colors for other fields
   const hash = value.split("").reduce((a, c) => a + c.charCodeAt(0), 0);
   const colors = [
     { color: "text-blue-600", bg: "bg-blue-500/5" },
@@ -76,12 +83,24 @@ function getColumnStyle(value: string, field: string): { color: string; bg: stri
 export const KanbanBoard = () => {
   const { projects } = useProjects();
   const labels = useLabels();
+  const { fields: customFields } = useCustomFields();
   const [groupField, setGroupField] = useState("projectState");
+
+  const projectIds = useMemo(() => projects.map(p => p.id), [projects]);
+  const { valuesMap: customValuesMap } = useAllCustomFieldValues(projectIds);
+
+  // Build combined group-by options including select-type custom fields
+  const allFieldOptions = useMemo(() => {
+    const customOptions = customFields
+      .filter(f => f.field_type === "select")
+      .map(f => ({ key: `custom_field_${f.id}`, label: f.field_label }));
+    return [...KANBAN_FIELD_OPTIONS, ...customOptions];
+  }, [customFields]);
 
   const columns = useMemo(() => {
     const groupMap = new Map<string, Project[]>();
     projects.forEach(p => {
-      const val = getFieldValue(p, groupField);
+      const val = getFieldValue(p, groupField, customValuesMap);
       const existing = groupMap.get(val) || [];
       existing.push(p);
       groupMap.set(val, existing);
@@ -95,20 +114,32 @@ export const KanbanBoard = () => {
         ...getColumnStyle(key, groupField),
       }))
       .sort((a, b) => a.label.localeCompare(b.label));
-  }, [projects, groupField, labels]);
+  }, [projects, groupField, labels, customValuesMap]);
+
+  const standardOptions = allFieldOptions.filter(o => !o.key.startsWith("custom_field_"));
+  const customOptions = allFieldOptions.filter(o => o.key.startsWith("custom_field_"));
 
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2">
         <Label className="text-xs text-muted-foreground whitespace-nowrap">Group By:</Label>
         <Select value={groupField} onValueChange={setGroupField}>
-          <SelectTrigger className="h-8 text-xs w-[160px]">
+          <SelectTrigger className="h-8 text-xs w-[180px]">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            {KANBAN_FIELD_OPTIONS.map(opt => (
+            {standardOptions.map(opt => (
               <SelectItem key={opt.key} value={opt.key}>{opt.label}</SelectItem>
             ))}
+            {customOptions.length > 0 && (
+              <>
+                <Separator className="my-1" />
+                <div className="px-2 py-1 text-xs text-muted-foreground font-medium">Custom Fields</div>
+                {customOptions.map(opt => (
+                  <SelectItem key={opt.key} value={opt.key}>{opt.label}</SelectItem>
+                ))}
+              </>
+            )}
           </SelectContent>
         </Select>
       </div>
