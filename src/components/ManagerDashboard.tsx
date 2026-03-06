@@ -1045,20 +1045,20 @@ export const ManagerDashboard = () => {
                           </div>
                         </div>
                         <div className="grid grid-cols-2 gap-3 pt-2 border-t">
-                          <div className="space-y-1 border rounded-md p-3">
+                          <div className="space-y-1 border rounded-md p-3 overflow-hidden">
                             <label className="text-xs text-muted-foreground font-medium">Start Date Range</label>
-                            <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
-                              <Input type="date" value={kickOffFrom} onChange={e => setKickOffFrom(e.target.value)} className="h-9 text-xs" />
-                              <span className="text-xs text-muted-foreground">to</span>
-                              <Input type="date" value={kickOffTo} onChange={e => setKickOffTo(e.target.value)} className="h-9 text-xs" />
+                            <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-1">
+                              <Input type="date" value={kickOffFrom} onChange={e => setKickOffFrom(e.target.value)} className="h-9 text-xs min-w-0" />
+                              <span className="text-xs text-muted-foreground px-1">to</span>
+                              <Input type="date" value={kickOffTo} onChange={e => setKickOffTo(e.target.value)} className="h-9 text-xs min-w-0" />
                             </div>
                           </div>
-                          <div className="space-y-1 border rounded-md p-3">
+                          <div className="space-y-1 border rounded-md p-3 overflow-hidden">
                             <label className="text-xs text-muted-foreground font-medium">Go-Live Date Range</label>
-                            <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
-                              <Input type="date" value={goLiveFrom} onChange={e => setGoLiveFrom(e.target.value)} className="h-9 text-xs" />
-                              <span className="text-xs text-muted-foreground">to</span>
-                              <Input type="date" value={goLiveTo} onChange={e => setGoLiveTo(e.target.value)} className="h-9 text-xs" />
+                            <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-1">
+                              <Input type="date" value={goLiveFrom} onChange={e => setGoLiveFrom(e.target.value)} className="h-9 text-xs min-w-0" />
+                              <span className="text-xs text-muted-foreground px-1">to</span>
+                              <Input type="date" value={goLiveTo} onChange={e => setGoLiveTo(e.target.value)} className="h-9 text-xs min-w-0" />
                             </div>
                           </div>
                         </div>
