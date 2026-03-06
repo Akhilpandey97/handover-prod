@@ -51,7 +51,7 @@ const AVAILABLE_COLUMNS: { key: string; label: string; group: string }[] = [
   { key: "transferCount", label: "Transfer Count", group: "Metrics" },
 ];
 
-const GROUPABLE_COLUMNS = ["projectState", "currentPhase", "currentOwnerTeam", "platform", "category", "assignedOwnerName", "currentResponsibility", "integrationType", "pgOnboarding", "salesSpoc"];
+const BASE_GROUPABLE_COLUMNS = ["projectState", "currentPhase", "currentOwnerTeam", "platform", "category", "assignedOwnerName", "currentResponsibility", "integrationType", "pgOnboarding", "salesSpoc"];
 const NUMERIC_COLUMNS = ["arr", "txnsPerDay", "aov", "goLivePercent", "transferCount"];
 
 const DEFAULT_GROUP_ORDER = ["Basic", "Financial", "Status", "Dates", "Details", "Links", "Notes", "Metrics", "Custom Fields"];
@@ -214,6 +214,11 @@ export const ReportsBuilder = ({ projects, customFields = [], customValuesMap = 
       group: "Custom Fields",
     }));
     return [...AVAILABLE_COLUMNS, ...customCols];
+  }, [customFields]);
+
+  const groupableColumns = useMemo(() => {
+    const customGroupableColumns = customFields.map(f => `custom_field_${f.id}`);
+    return [...BASE_GROUPABLE_COLUMNS, ...customGroupableColumns];
   }, [customFields]);
 
   const columnGroups = useMemo(() => {
@@ -598,7 +603,7 @@ export const ReportsBuilder = ({ projects, customFields = [], customValuesMap = 
                   <SelectTrigger className="h-7 text-xs w-[140px]"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none">No Grouping</SelectItem>
-                    {GROUPABLE_COLUMNS.filter(k => selectedColumns.includes(k)).map(k => {
+                    {groupableColumns.filter(k => selectedColumns.includes(k)).map(k => {
                       const col = allColumns.find(c => c.key === k);
                       return <SelectItem key={k} value={k}>{col?.label || k}</SelectItem>;
                     })}
@@ -687,7 +692,7 @@ export const ReportsBuilder = ({ projects, customFields = [], customValuesMap = 
                   <SelectTrigger className="h-7 text-xs w-[130px]"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none">Select…</SelectItem>
-                    {GROUPABLE_COLUMNS.map(k => {
+                    {groupableColumns.map(k => {
                       const col = allColumns.find(c => c.key === k);
                       return <SelectItem key={k} value={k}>{col?.label || k}</SelectItem>;
                     })}
@@ -700,7 +705,7 @@ export const ReportsBuilder = ({ projects, customFields = [], customValuesMap = 
                   <SelectTrigger className="h-7 text-xs w-[130px]"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none">None</SelectItem>
-                    {GROUPABLE_COLUMNS.filter(k => k !== pivotRowField).map(k => {
+                    {groupableColumns.filter(k => k !== pivotRowField).map(k => {
                       const col = allColumns.find(c => c.key === k);
                       return <SelectItem key={k} value={k}>{col?.label || k}</SelectItem>;
                     })}
