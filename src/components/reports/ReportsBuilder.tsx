@@ -705,7 +705,7 @@ export const ReportsBuilder = ({ projects, customFields = [], customValuesMap = 
                   <SelectTrigger className="h-7 text-xs w-[130px]"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none">None</SelectItem>
-                    {GROUPABLE_COLUMNS.filter(k => k !== pivotRowField).map(k => {
+                    {groupableColumns.filter(k => k !== pivotRowField).map(k => {
                       const col = allColumns.find(c => c.key === k);
                       return <SelectItem key={k} value={k}>{col?.label || k}</SelectItem>;
                     })}
