@@ -346,7 +346,7 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
               {/* Stats Row */}
               <div className="grid grid-cols-4 gap-2 mb-2">
                 {/* ARR */}
-                <div className="bg-muted/50 dark:bg-muted/30 rounded-lg p-2.5 border border-border/50">
+                <div className="bg-muted/50 dark:bg-[hsl(222,16%,22%)] rounded-lg p-2.5 border border-border/50 dark:border-border/30">
                   <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground mb-0.5">
                     <TrendingUp className="h-3 w-3" />
                     {getLabel("field_arr")}
