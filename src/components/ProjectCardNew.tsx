@@ -232,7 +232,7 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
     <>
       <Card
         className={`${hasDynamicCardBg ? '' : phaseStyle.bg} ${phaseStyle.border} border hover:shadow-lg transition-all duration-300 overflow-hidden`}
-        style={hasDynamicCardBg ? { background: `linear-gradient(to right, ${cardBgColor}, ${cardBgColor}22)` } : undefined}
+        style={hasDynamicCardBg ? { backgroundColor: cardBgColor } : undefined}
       >
         <CardContent className="p-0">
           <div className="flex items-stretch">
