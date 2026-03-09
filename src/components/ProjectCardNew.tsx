@@ -67,26 +67,26 @@ interface ProjectCardNewProps {
 
 const defaultPhaseConfig = {
   mint: { 
-    bg: "bg-card dark:bg-card", 
-    border: "border-blue-200/60 dark:border-blue-800/60",
+    bg: "bg-card dark:bg-[hsl(222,18%,16%)]", 
+    border: "border-blue-200/60 dark:border-blue-700/50",
     badge: "bg-blue-500 hover:bg-blue-600",
     accent: "text-blue-600 dark:text-blue-400"
   },
   integration: { 
-    bg: "bg-card dark:bg-card", 
-    border: "border-purple-200/60 dark:border-purple-800/60",
+    bg: "bg-card dark:bg-[hsl(222,18%,16%)]", 
+    border: "border-purple-200/60 dark:border-purple-700/50",
     badge: "bg-purple-500 hover:bg-purple-600",
     accent: "text-purple-600 dark:text-purple-400"
   },
   ms: { 
-    bg: "bg-card dark:bg-card", 
-    border: "border-emerald-200/60 dark:border-emerald-800/60",
+    bg: "bg-card dark:bg-[hsl(222,18%,16%)]", 
+    border: "border-emerald-200/60 dark:border-emerald-700/50",
     badge: "bg-emerald-500 hover:bg-emerald-600",
     accent: "text-emerald-600 dark:text-emerald-400"
   },
   completed: { 
-    bg: "bg-card dark:bg-card", 
-    border: "border-gray-200/60 dark:border-gray-800/60",
+    bg: "bg-card dark:bg-[hsl(222,18%,16%)]", 
+    border: "border-gray-200/60 dark:border-gray-700/50",
     badge: "bg-gray-500 hover:bg-gray-600",
     accent: "text-gray-600 dark:text-gray-400"
   },
@@ -346,7 +346,7 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
               {/* Stats Row */}
               <div className="grid grid-cols-4 gap-2 mb-2">
                 {/* ARR */}
-                <div className="bg-muted/50 dark:bg-muted/30 rounded-lg p-2.5 border border-border/50">
+                <div className="bg-muted/50 dark:bg-[hsl(222,16%,22%)] rounded-lg p-2.5 border border-border/50 dark:border-border/30">
                   <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground mb-0.5">
                     <TrendingUp className="h-3 w-3" />
                     {getLabel("field_arr")}
@@ -355,7 +355,7 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
                 </div>
 
                 {/* Pending With */}
-                <div className="bg-muted/50 dark:bg-muted/30 rounded-lg p-2.5 border border-border/50">
+                <div className="bg-muted/50 dark:bg-[hsl(222,16%,22%)] rounded-lg p-2.5 border border-border/50 dark:border-border/30">
                   <div className="text-[10px] text-muted-foreground mb-0.5">Pending With</div>
                   <div className={`flex items-center gap-1 font-semibold ${responsibility.color} px-1.5 py-0.5 rounded-md w-fit`}>
                     <responsibility.icon className="h-3.5 w-3.5" />
@@ -364,7 +364,7 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
                 </div>
 
                 {/* Time Tracked */}
-                <div className="bg-muted/50 dark:bg-muted/30 rounded-lg p-2.5 border border-border/50">
+                <div className="bg-muted/50 dark:bg-[hsl(222,16%,22%)] rounded-lg p-2.5 border border-border/50 dark:border-border/30">
                   <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground mb-0.5">
                     <Clock className="h-3 w-3" />
                     Time
@@ -377,7 +377,7 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
                 </div>
 
                 {/* Checklist Team-wise */}
-                <div className="bg-muted/50 dark:bg-muted/30 rounded-lg p-2.5 border border-border/50">
+                <div className="bg-muted/50 dark:bg-[hsl(222,16%,22%)] rounded-lg p-2.5 border border-border/50 dark:border-border/30">
                   <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground mb-0.5">
                     <ClipboardList className="h-3 w-3" />
                     Checklist
@@ -398,7 +398,7 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
               {/* Info Row */}
               <div className="grid grid-cols-4 gap-2">
                 {/* Kick Off Date */}
-                <div className="bg-muted/50 dark:bg-muted/30 rounded-lg p-2.5 border border-border/50">
+                <div className="bg-muted/50 dark:bg-[hsl(222,16%,22%)] rounded-lg p-2.5 border border-border/50 dark:border-border/30">
                   <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground mb-0.5">
                     <Calendar className="h-3 w-3" />
                     {getLabel("field_kick_off_date")}
@@ -407,7 +407,7 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
                 </div>
 
                 {/* Go Live Date */}
-                <div className="bg-muted/50 dark:bg-muted/30 rounded-lg p-2.5 border border-border/50">
+                <div className="bg-muted/50 dark:bg-[hsl(222,16%,22%)] rounded-lg p-2.5 border border-border/50 dark:border-border/30">
                   <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground mb-0.5">
                     <Calendar className="h-3 w-3" />
                     {getLabel("field_go_live_date")}
@@ -416,7 +416,7 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
                 </div>
 
                 {/* Project Phase */}
-                <div className="bg-muted/50 dark:bg-muted/30 rounded-lg p-2.5 border border-border/50">
+                <div className="bg-muted/50 dark:bg-[hsl(222,16%,22%)] rounded-lg p-2.5 border border-border/50 dark:border-border/30">
                   <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground mb-0.5">
                     <Activity className="h-3 w-3" />
                     Project Phase
@@ -425,7 +425,7 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
                 </div>
 
                 {/* Project State */}
-                <div className="bg-muted/50 dark:bg-muted/30 rounded-lg p-2.5 border border-border/50">
+                <div className="bg-muted/50 dark:bg-[hsl(222,16%,22%)] rounded-lg p-2.5 border border-border/50 dark:border-border/30">
                   <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground mb-0.5">
                     <Activity className="h-3 w-3" />
                     Project State
@@ -447,7 +447,7 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
             </div>
 
             {/* Right Section - Actions */}
-            <div className="w-44 border-l border-border/50 bg-muted/30 p-3 flex flex-col">
+            <div className="w-44 border-l border-border/50 dark:border-border/30 bg-muted/30 dark:bg-[hsl(222,16%,13%)] p-3 flex flex-col">
               <div className="flex-1 flex flex-col justify-center space-y-2.5">
                 <Button 
                   variant="ghost" 
