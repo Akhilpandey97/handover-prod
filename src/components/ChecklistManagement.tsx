@@ -602,6 +602,41 @@ export const ChecklistManagement = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* CSV Upload Preview Dialog */}
+      <Dialog open={csvUploadOpen} onOpenChange={setCsvUploadOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Import Checklist Items from CSV</DialogTitle>
+            <DialogDescription>
+              {csvPreview.length} item(s) found. These will be added to the template and all existing projects.
+              <br />
+              <span className="text-xs text-muted-foreground mt-1 block">
+                CSV format: <code>title,team</code> (team is optional — mint, integration, or ms)
+              </span>
+            </DialogDescription>
+          </DialogHeader>
+          <ScrollArea className="max-h-64">
+            <div className="space-y-1 p-1">
+              {csvPreview.map((item, i) => (
+                <div key={i} className="flex items-center gap-2 p-2 bg-muted/30 rounded text-sm">
+                  <Badge variant="outline" className="text-xs">{i + 1}</Badge>
+                  <span className="flex-1 font-medium">{item.title}</span>
+                  <Badge variant="secondary" className="text-xs">{teamLabels[item.team]}</Badge>
+                </div>
+              ))}
+            </div>
+          </ScrollArea>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setCsvUploadOpen(false); setCsvPreview([]); }}>
+              Cancel
+            </Button>
+            <Button onClick={() => bulkImportMutation.mutate(csvPreview)} disabled={bulkImportMutation.isPending}>
+              {bulkImportMutation.isPending ? "Importing..." : `Import ${csvPreview.length} Items`}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 };
