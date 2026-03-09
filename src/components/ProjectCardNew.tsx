@@ -355,7 +355,7 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
                 </div>
 
                 {/* Pending With */}
-                <div className="bg-muted/50 dark:bg-muted/30 rounded-lg p-2.5 border border-border/50">
+                <div className="bg-muted/50 dark:bg-[hsl(222,16%,22%)] rounded-lg p-2.5 border border-border/50 dark:border-border/30">
                   <div className="text-[10px] text-muted-foreground mb-0.5">Pending With</div>
                   <div className={`flex items-center gap-1 font-semibold ${responsibility.color} px-1.5 py-0.5 rounded-md w-fit`}>
                     <responsibility.icon className="h-3.5 w-3.5" />
