@@ -380,10 +380,17 @@ export const ChecklistManagement = () => {
             <ClipboardList className="h-5 w-5 text-primary" />
             Checklist Templates
           </CardTitle>
-          <Button onClick={() => setIsAddDialogOpen(true)} className="gap-2">
-            <Plus className="h-4 w-4" />
-            Add Item
-          </Button>
+          <div className="flex gap-2">
+            <input type="file" ref={fileInputRef} accept=".csv" className="hidden" onChange={handleCSVFileSelect} />
+            <Button variant="outline" onClick={() => fileInputRef.current?.click()} className="gap-2">
+              <Upload className="h-4 w-4" />
+              Import CSV
+            </Button>
+            <Button onClick={() => setIsAddDialogOpen(true)} className="gap-2">
+              <Plus className="h-4 w-4" />
+              Add Item
+            </Button>
+          </div>
         </div>
         <p className="text-sm text-muted-foreground mt-1">
           Manage checklist items that appear for all projects. Changes apply globally.
