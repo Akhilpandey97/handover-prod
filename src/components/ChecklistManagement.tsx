@@ -241,6 +241,103 @@ export const ChecklistManagement = () => {
     },
   });
 
+  const handleCSVFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const text = event.target?.result as string;
+      const lines = text.split("\n").filter(l => l.trim());
+      // Expect CSV: title,team (team is optional, defaults to activeTeam)
+      const teamAliases: Record<string, TeamRole> = {
+        mint: "mint", integration: "integration", ms: "ms",
+        MINT: "mint", Integration: "integration", MS: "ms",
+      };
+      const items: { title: string; team: TeamRole }[] = [];
+      const startIdx = lines[0]?.toLowerCase().includes("title") ? 1 : 0;
+      for (let i = startIdx; i < lines.length; i++) {
+        const parts = lines[i].split(",").map(p => p.trim().replace(/^"|"$/g, ""));
+        const title = parts[0];
+        if (!title) continue;
+        const team = teamAliases[parts[1]] || activeTeam;
+        items.push({ title, team });
+      }
+      if (items.length === 0) {
+        toast.error("No valid items found in CSV");
+        return;
+      }
+      setCsvPreview(items);
+      setCsvUploadOpen(true);
+    };
+    reader.readAsText(file);
+    e.target.value = "";
+  };
+
+  const bulkImportMutation = useMutation({
+    mutationFn: async (items: { title: string; team: TeamRole }[]) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      const { data: profile } = await supabase.from("profiles").select("tenant_id").eq("id", user?.id).single();
+      const tenantId = profile?.tenant_id;
+
+      const existingTitles = new Set(templates.map(t => `${t.ownerTeam}|${t.title}`));
+      const newItems = items.filter(i => !existingTitles.has(`${i.team}|${i.title}`));
+
+      if (newItems.length === 0) throw new Error("All items already exist");
+
+      // Get max sort orders per team
+      const teamMaxOrders: Record<string, number> = {};
+      templates.forEach(t => {
+        teamMaxOrders[t.ownerTeam] = Math.max(teamMaxOrders[t.ownerTeam] ?? -1, t.sortOrder);
+      });
+
+      const templateInserts = newItems.map((item, idx) => {
+        const phase = item.team === "manager" ? "ms" : item.team;
+        teamMaxOrders[item.team] = (teamMaxOrders[item.team] ?? -1) + 1;
+        return {
+          title: item.title,
+          owner_team: item.team,
+          phase: phase as "mint" | "integration" | "ms",
+          sort_order: teamMaxOrders[item.team],
+          tenant_id: tenantId,
+        };
+      });
+
+      const { error: tErr } = await supabase.from("checklist_templates").insert(templateInserts);
+      if (tErr) throw tErr;
+
+      // Add to all existing projects
+      const { data: projects } = await supabase.from("projects").select("id, tenant_id");
+      if (projects && projects.length > 0) {
+        const checklistInserts = projects.flatMap(p =>
+          templateInserts.map(t => ({
+            project_id: p.id,
+            title: t.title,
+            owner_team: t.owner_team,
+            phase: t.phase,
+            sort_order: t.sort_order,
+            completed: false,
+            current_responsibility: "neutral" as const,
+            tenant_id: p.tenant_id,
+          }))
+        );
+        const { error } = await supabase.from("checklist_items").insert(checklistInserts);
+        if (error) throw error;
+      }
+
+      return newItems.length;
+    },
+    onSuccess: (count) => {
+      queryClient.invalidateQueries({ queryKey: ["checklist-templates"] });
+      queryClient.invalidateQueries({ queryKey: ["projects"] });
+      toast.success(`${count} checklist items imported to all projects`);
+      setCsvUploadOpen(false);
+      setCsvPreview([]);
+    },
+    onError: (error) => {
+      toast.error(error.message || "Failed to import checklist items");
+    },
+  });
+
   const handleAddItem = () => {
     if (!newItemTitle.trim()) {
       toast.error("Please enter a title");
