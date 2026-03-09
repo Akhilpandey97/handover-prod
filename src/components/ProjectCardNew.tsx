@@ -346,16 +346,16 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
               {/* Stats Row */}
               <div className="grid grid-cols-4 gap-2 mb-2">
                 {/* ARR */}
-                <div className="bg-background/60 backdrop-blur-sm rounded-lg p-2.5 border border-border/50">
+                <div className="bg-muted/50 dark:bg-muted/30 rounded-lg p-2.5 border border-border/50">
                   <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground mb-0.5">
                     <TrendingUp className="h-3 w-3" />
                     {getLabel("field_arr")}
                   </div>
-                  <p className="text-sm font-bold">{project.arr} Cr</p>
+                  <p className="text-sm font-bold text-foreground">{project.arr} Cr</p>
                 </div>
 
                 {/* Pending With */}
-                <div className="bg-background/60 backdrop-blur-sm rounded-lg p-2.5 border border-border/50">
+                <div className="bg-muted/50 dark:bg-muted/30 rounded-lg p-2.5 border border-border/50">
                   <div className="text-[10px] text-muted-foreground mb-0.5">Pending With</div>
                   <div className={`flex items-center gap-1 font-semibold ${responsibility.color} px-1.5 py-0.5 rounded-md w-fit`}>
                     <responsibility.icon className="h-3.5 w-3.5" />
@@ -364,7 +364,7 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
                 </div>
 
                 {/* Time Tracked */}
-                <div className="bg-background/60 backdrop-blur-sm rounded-lg p-2.5 border border-border/50">
+                <div className="bg-muted/50 dark:bg-muted/30 rounded-lg p-2.5 border border-border/50">
                   <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground mb-0.5">
                     <Clock className="h-3 w-3" />
                     Time
@@ -377,7 +377,7 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
                 </div>
 
                 {/* Checklist Team-wise */}
-                <div className="bg-background/60 backdrop-blur-sm rounded-lg p-2.5 border border-border/50">
+                <div className="bg-muted/50 dark:bg-muted/30 rounded-lg p-2.5 border border-border/50">
                   <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground mb-0.5">
                     <ClipboardList className="h-3 w-3" />
                     Checklist
@@ -398,40 +398,40 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
               {/* Info Row */}
               <div className="grid grid-cols-4 gap-2">
                 {/* Kick Off Date */}
-                <div className="bg-background/60 backdrop-blur-sm rounded-lg p-2.5 border border-border/50">
+                <div className="bg-muted/50 dark:bg-muted/30 rounded-lg p-2.5 border border-border/50">
                   <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground mb-0.5">
                     <Calendar className="h-3 w-3" />
                     {getLabel("field_kick_off_date")}
                   </div>
-                  <p className="text-sm font-semibold">{project.dates.kickOffDate || "—"}</p>
+                  <p className="text-sm font-semibold text-foreground">{project.dates.kickOffDate || "—"}</p>
                 </div>
 
                 {/* Go Live Date */}
-                <div className="bg-background/60 backdrop-blur-sm rounded-lg p-2.5 border border-border/50">
+                <div className="bg-muted/50 dark:bg-muted/30 rounded-lg p-2.5 border border-border/50">
                   <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground mb-0.5">
                     <Calendar className="h-3 w-3" />
                     {getLabel("field_go_live_date")}
                   </div>
-                  <p className="text-sm font-semibold">{project.dates.goLiveDate || project.dates.expectedGoLiveDate || "—"}</p>
+                  <p className="text-sm font-semibold text-foreground">{project.dates.goLiveDate || project.dates.expectedGoLiveDate || "—"}</p>
                 </div>
 
                 {/* Project Phase */}
-                <div className="bg-background/60 backdrop-blur-sm rounded-lg p-2.5 border border-border/50">
+                <div className="bg-muted/50 dark:bg-muted/30 rounded-lg p-2.5 border border-border/50">
                   <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground mb-0.5">
                     <Activity className="h-3 w-3" />
                     Project Phase
                   </div>
-                  <p className="text-sm font-semibold truncate" title={projectPhaseDisplay}>{projectPhaseDisplay}</p>
+                  <p className="text-sm font-semibold text-foreground truncate" title={projectPhaseDisplay}>{projectPhaseDisplay}</p>
                 </div>
 
                 {/* Project State */}
-                <div className="bg-background/60 backdrop-blur-sm rounded-lg p-2.5 border border-border/50">
+                <div className="bg-muted/50 dark:bg-muted/30 rounded-lg p-2.5 border border-border/50">
                   <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground mb-0.5">
                     <Activity className="h-3 w-3" />
                     Project State
                   </div>
                   <Select value={project.projectState} onValueChange={(val) => handleStateChange(val as ProjectState)}>
-                    <SelectTrigger className="h-6 text-sm font-semibold border-0 p-0 shadow-none focus:ring-0 bg-transparent">
+                    <SelectTrigger className="h-6 text-sm font-semibold border-0 p-0 shadow-none focus:ring-0 bg-transparent text-foreground">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -447,7 +447,7 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
             </div>
 
             {/* Right Section - Actions */}
-            <div className="w-44 border-l border-border/50 bg-background/40 p-3 flex flex-col">
+            <div className="w-44 border-l border-border/50 bg-muted/30 p-3 flex flex-col">
               <div className="flex-1 flex flex-col justify-center space-y-2.5">
                 <Button 
                   variant="ghost" 
