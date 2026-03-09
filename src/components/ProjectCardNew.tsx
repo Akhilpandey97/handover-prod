@@ -364,7 +364,7 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
                 </div>
 
                 {/* Time Tracked */}
-                <div className="bg-muted/50 dark:bg-muted/30 rounded-lg p-2.5 border border-border/50">
+                <div className="bg-muted/50 dark:bg-[hsl(222,16%,22%)] rounded-lg p-2.5 border border-border/50 dark:border-border/30">
                   <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground mb-0.5">
                     <Clock className="h-3 w-3" />
                     Time
