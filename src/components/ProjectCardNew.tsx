@@ -447,7 +447,7 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
             </div>
 
             {/* Right Section - Actions */}
-            <div className="w-44 border-l border-border/50 bg-muted/30 p-3 flex flex-col">
+            <div className="w-44 border-l border-border/50 dark:border-border/30 bg-muted/30 dark:bg-[hsl(222,16%,13%)] p-3 flex flex-col">
               <div className="flex-1 flex flex-col justify-center space-y-2.5">
                 <Button 
                   variant="ghost" 
