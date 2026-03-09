@@ -921,25 +921,28 @@ export const useToggleChecklistResponsibility = () => {
       return { checklistId, party };
     },
     onMutate: async ({ checklistId, party }) => {
-      await queryClient.cancelQueries({ queryKey: ["checklist_items"] });
-      const previous = queryClient.getQueryData(["checklist_items"]);
-      queryClient.setQueryData(["checklist_items"], (old: any[] | undefined) => {
+      await queryClient.cancelQueries({ queryKey: ["projects"] });
+      const previous = queryClient.getQueryData<Project[]>(["projects"]);
+      queryClient.setQueryData<Project[]>(["projects"], (old) => {
         if (!old) return old;
-        return old.map((item: any) =>
-          item.id === checklistId ? { ...item, current_responsibility: party } : item
-        );
+        return old.map((project) => ({
+          ...project,
+          checklist: project.checklist.map((item) =>
+            item.id === checklistId ? { ...item, currentResponsibility: party } : item
+          ),
+        }));
       });
       return { previous };
     },
     onError: (error, _vars, context) => {
       if (context?.previous) {
-        queryClient.setQueryData(["checklist_items"], context.previous);
+        queryClient.setQueryData(["projects"], context.previous);
       }
       console.error("Error toggling checklist responsibility:", error);
       toast.error("Failed to update responsibility");
     },
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ["checklist_items"] });
+      queryClient.invalidateQueries({ queryKey: ["projects"] });
       queryClient.invalidateQueries({ queryKey: ["checklist_responsibility_logs"] });
     },
   });
