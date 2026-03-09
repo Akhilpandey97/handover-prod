@@ -67,26 +67,26 @@ interface ProjectCardNewProps {
 
 const defaultPhaseConfig = {
   mint: { 
-    bg: "bg-card dark:bg-card", 
-    border: "border-blue-200/60 dark:border-blue-800/60",
+    bg: "bg-card dark:bg-[hsl(222,18%,16%)]", 
+    border: "border-blue-200/60 dark:border-blue-700/50",
     badge: "bg-blue-500 hover:bg-blue-600",
     accent: "text-blue-600 dark:text-blue-400"
   },
   integration: { 
-    bg: "bg-card dark:bg-card", 
-    border: "border-purple-200/60 dark:border-purple-800/60",
+    bg: "bg-card dark:bg-[hsl(222,18%,16%)]", 
+    border: "border-purple-200/60 dark:border-purple-700/50",
     badge: "bg-purple-500 hover:bg-purple-600",
     accent: "text-purple-600 dark:text-purple-400"
   },
   ms: { 
-    bg: "bg-card dark:bg-card", 
-    border: "border-emerald-200/60 dark:border-emerald-800/60",
+    bg: "bg-card dark:bg-[hsl(222,18%,16%)]", 
+    border: "border-emerald-200/60 dark:border-emerald-700/50",
     badge: "bg-emerald-500 hover:bg-emerald-600",
     accent: "text-emerald-600 dark:text-emerald-400"
   },
   completed: { 
-    bg: "bg-card dark:bg-card", 
-    border: "border-gray-200/60 dark:border-gray-800/60",
+    bg: "bg-card dark:bg-[hsl(222,18%,16%)]", 
+    border: "border-gray-200/60 dark:border-gray-700/50",
     badge: "bg-gray-500 hover:bg-gray-600",
     accent: "text-gray-600 dark:text-gray-400"
   },
