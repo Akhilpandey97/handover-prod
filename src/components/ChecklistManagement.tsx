@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { TeamRole } from "@/data/teams";
@@ -36,6 +36,7 @@ import {
   AlertTriangle,
   ArrowUp,
   ArrowDown,
+  Upload,
 } from "lucide-react";
 
 interface ChecklistTemplate {
@@ -78,6 +79,9 @@ export const ChecklistManagement = () => {
   const [newItemTitle, setNewItemTitle] = useState("");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<ChecklistTemplate | null>(null);
+  const [csvUploadOpen, setCsvUploadOpen] = useState(false);
+  const [csvPreview, setCsvPreview] = useState<{ title: string; team: TeamRole }[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Filter templates by team
   const teamTemplates = templates.filter((t) => t.ownerTeam === activeTeam);
@@ -237,6 +241,103 @@ export const ChecklistManagement = () => {
     },
   });
 
+  const handleCSVFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const text = event.target?.result as string;
+      const lines = text.split("\n").filter(l => l.trim());
+      // Expect CSV: title,team (team is optional, defaults to activeTeam)
+      const teamAliases: Record<string, TeamRole> = {
+        mint: "mint", integration: "integration", ms: "ms",
+        MINT: "mint", Integration: "integration", MS: "ms",
+      };
+      const items: { title: string; team: TeamRole }[] = [];
+      const startIdx = lines[0]?.toLowerCase().includes("title") ? 1 : 0;
+      for (let i = startIdx; i < lines.length; i++) {
+        const parts = lines[i].split(",").map(p => p.trim().replace(/^"|"$/g, ""));
+        const title = parts[0];
+        if (!title) continue;
+        const team = teamAliases[parts[1]] || activeTeam;
+        items.push({ title, team });
+      }
+      if (items.length === 0) {
+        toast.error("No valid items found in CSV");
+        return;
+      }
+      setCsvPreview(items);
+      setCsvUploadOpen(true);
+    };
+    reader.readAsText(file);
+    e.target.value = "";
+  };
+
+  const bulkImportMutation = useMutation({
+    mutationFn: async (items: { title: string; team: TeamRole }[]) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      const { data: profile } = await supabase.from("profiles").select("tenant_id").eq("id", user?.id).single();
+      const tenantId = profile?.tenant_id;
+
+      const existingTitles = new Set(templates.map(t => `${t.ownerTeam}|${t.title}`));
+      const newItems = items.filter(i => !existingTitles.has(`${i.team}|${i.title}`));
+
+      if (newItems.length === 0) throw new Error("All items already exist");
+
+      // Get max sort orders per team
+      const teamMaxOrders: Record<string, number> = {};
+      templates.forEach(t => {
+        teamMaxOrders[t.ownerTeam] = Math.max(teamMaxOrders[t.ownerTeam] ?? -1, t.sortOrder);
+      });
+
+      const templateInserts = newItems.map((item, idx) => {
+        const phase = item.team === "manager" ? "ms" : item.team;
+        teamMaxOrders[item.team] = (teamMaxOrders[item.team] ?? -1) + 1;
+        return {
+          title: item.title,
+          owner_team: item.team,
+          phase: phase as "mint" | "integration" | "ms",
+          sort_order: teamMaxOrders[item.team],
+          tenant_id: tenantId,
+        };
+      });
+
+      const { error: tErr } = await supabase.from("checklist_templates").insert(templateInserts);
+      if (tErr) throw tErr;
+
+      // Add to all existing projects
+      const { data: projects } = await supabase.from("projects").select("id, tenant_id");
+      if (projects && projects.length > 0) {
+        const checklistInserts = projects.flatMap(p =>
+          templateInserts.map(t => ({
+            project_id: p.id,
+            title: t.title,
+            owner_team: t.owner_team,
+            phase: t.phase,
+            sort_order: t.sort_order,
+            completed: false,
+            current_responsibility: "neutral" as const,
+            tenant_id: p.tenant_id,
+          }))
+        );
+        const { error } = await supabase.from("checklist_items").insert(checklistInserts);
+        if (error) throw error;
+      }
+
+      return newItems.length;
+    },
+    onSuccess: (count) => {
+      queryClient.invalidateQueries({ queryKey: ["checklist-templates"] });
+      queryClient.invalidateQueries({ queryKey: ["projects"] });
+      toast.success(`${count} checklist items imported to all projects`);
+      setCsvUploadOpen(false);
+      setCsvPreview([]);
+    },
+    onError: (error) => {
+      toast.error(error.message || "Failed to import checklist items");
+    },
+  });
+
   const handleAddItem = () => {
     if (!newItemTitle.trim()) {
       toast.error("Please enter a title");
@@ -279,10 +380,17 @@ export const ChecklistManagement = () => {
             <ClipboardList className="h-5 w-5 text-primary" />
             Checklist Templates
           </CardTitle>
-          <Button onClick={() => setIsAddDialogOpen(true)} className="gap-2">
-            <Plus className="h-4 w-4" />
-            Add Item
-          </Button>
+          <div className="flex gap-2">
+            <input type="file" ref={fileInputRef} accept=".csv" className="hidden" onChange={handleCSVFileSelect} />
+            <Button variant="outline" onClick={() => fileInputRef.current?.click()} className="gap-2">
+              <Upload className="h-4 w-4" />
+              Import CSV
+            </Button>
+            <Button onClick={() => setIsAddDialogOpen(true)} className="gap-2">
+              <Plus className="h-4 w-4" />
+              Add Item
+            </Button>
+          </div>
         </div>
         <p className="text-sm text-muted-foreground mt-1">
           Manage checklist items that appear for all projects. Changes apply globally.
@@ -490,6 +598,41 @@ export const ChecklistManagement = () => {
               disabled={deleteItemMutation.isPending}
             >
               {deleteItemMutation.isPending ? "Deleting..." : "Delete"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* CSV Upload Preview Dialog */}
+      <Dialog open={csvUploadOpen} onOpenChange={setCsvUploadOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Import Checklist Items from CSV</DialogTitle>
+            <DialogDescription>
+              {csvPreview.length} item(s) found. These will be added to the template and all existing projects.
+              <br />
+              <span className="text-xs text-muted-foreground mt-1 block">
+                CSV format: <code>title,team</code> (team is optional — mint, integration, or ms)
+              </span>
+            </DialogDescription>
+          </DialogHeader>
+          <ScrollArea className="max-h-64">
+            <div className="space-y-1 p-1">
+              {csvPreview.map((item, i) => (
+                <div key={i} className="flex items-center gap-2 p-2 bg-muted/30 rounded text-sm">
+                  <Badge variant="outline" className="text-xs">{i + 1}</Badge>
+                  <span className="flex-1 font-medium">{item.title}</span>
+                  <Badge variant="secondary" className="text-xs">{teamLabels[item.team]}</Badge>
+                </div>
+              ))}
+            </div>
+          </ScrollArea>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setCsvUploadOpen(false); setCsvPreview([]); }}>
+              Cancel
+            </Button>
+            <Button onClick={() => bulkImportMutation.mutate(csvPreview)} disabled={bulkImportMutation.isPending}>
+              {bulkImportMutation.isPending ? "Importing..." : `Import ${csvPreview.length} Items`}
             </Button>
           </DialogFooter>
         </DialogContent>

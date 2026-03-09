@@ -73,6 +73,7 @@ import {
   GripVertical,
 } from "lucide-react";
 import { exportProjectsToCSV } from "@/utils/exportProjects";
+import { exportProjectChecklistCSV, exportTeamOwnerCSV } from "@/utils/reportExportCSV";
 import { useCustomFields, useAllCustomFieldValues } from "@/hooks/useCustomFields";
 import { ThemeToggle } from "./ThemeToggle";
 import { toast } from "sonner";
@@ -1187,7 +1188,7 @@ export const ManagerDashboard = () => {
                     {/* Merged Project + Checklist Report */}
                     {reportType === "project" && (
                       <div className="space-y-3">
-                        {/* AI Insights */}
+                        {/* AI Insights + Download */}
                         <Card className="border-primary/20 bg-gradient-to-r from-primary/5 to-accent/5">
                           <CardHeader className="pb-3">
                             <div className="flex items-center justify-between">
@@ -1195,10 +1196,16 @@ export const ManagerDashboard = () => {
                                 <Sparkles className="h-4 w-4 text-primary" />
                                 AI Project & Checklist Insights
                               </CardTitle>
-                              <Button size="sm" variant="outline" onClick={fetchProjectAiInsight} disabled={projectAiLoading} className="gap-2">
-                                {projectAiLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
-                                {projectAiInsight ? "Refresh" : "Generate"}
-                              </Button>
+                              <div className="flex gap-2">
+                                <Button size="sm" variant="outline" onClick={() => exportProjectChecklistCSV(displayProjects, { teamLabels, responsibilityLabels, phaseLabels, stateLabels: stateLabelsFromCtx, getLabel: (k: string) => k })} className="gap-2">
+                                  <Download className="h-3 w-3" />
+                                  Export CSV
+                                </Button>
+                                <Button size="sm" variant="outline" onClick={fetchProjectAiInsight} disabled={projectAiLoading} className="gap-2">
+                                  {projectAiLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
+                                  {projectAiInsight ? "Refresh" : "Generate"}
+                                </Button>
+                              </div>
                             </div>
                           </CardHeader>
                           {projectAiInsight && (
@@ -1290,7 +1297,7 @@ export const ManagerDashboard = () => {
                     {/* Merged Team + Owner Report */}
                     {reportType === "team" && (
                       <div className="space-y-6">
-                        {/* AI Insights */}
+                        {/* AI Insights + Download */}
                         <Card className="border-primary/20 bg-gradient-to-r from-primary/5 to-accent/5">
                           <CardHeader className="pb-3">
                             <div className="flex items-center justify-between">
@@ -1298,10 +1305,16 @@ export const ManagerDashboard = () => {
                                 <Sparkles className="h-4 w-4 text-primary" />
                                 AI Team & Owner Insights
                               </CardTitle>
-                              <Button size="sm" variant="outline" onClick={fetchTeamAiInsight} disabled={teamAiLoading} className="gap-2">
-                                {teamAiLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
-                                {teamAiInsight ? "Refresh" : "Generate"}
-                              </Button>
+                              <div className="flex gap-2">
+                                <Button size="sm" variant="outline" onClick={() => exportTeamOwnerCSV(teamOwnerReport)} className="gap-2">
+                                  <Download className="h-3 w-3" />
+                                  Export CSV
+                                </Button>
+                                <Button size="sm" variant="outline" onClick={fetchTeamAiInsight} disabled={teamAiLoading} className="gap-2">
+                                  {teamAiLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
+                                  {teamAiInsight ? "Refresh" : "Generate"}
+                                </Button>
+                              </div>
                             </div>
                           </CardHeader>
                           {teamAiInsight && (
