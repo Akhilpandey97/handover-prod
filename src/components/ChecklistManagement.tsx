@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { TeamRole } from "@/data/teams";
@@ -36,6 +36,7 @@ import {
   AlertTriangle,
   ArrowUp,
   ArrowDown,
+  Upload,
 } from "lucide-react";
 
 interface ChecklistTemplate {
