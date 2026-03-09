@@ -67,25 +67,25 @@ interface ProjectCardNewProps {
 
 const defaultPhaseConfig = {
   mint: { 
-    bg: "bg-gradient-to-r from-blue-50 to-blue-100/50 dark:from-blue-950/30 dark:to-blue-900/20", 
+    bg: "bg-card dark:bg-card", 
     border: "border-blue-200/60 dark:border-blue-800/60",
     badge: "bg-blue-500 hover:bg-blue-600",
     accent: "text-blue-600 dark:text-blue-400"
   },
   integration: { 
-    bg: "bg-gradient-to-r from-purple-50 to-purple-100/50 dark:from-purple-950/30 dark:to-purple-900/20", 
+    bg: "bg-card dark:bg-card", 
     border: "border-purple-200/60 dark:border-purple-800/60",
     badge: "bg-purple-500 hover:bg-purple-600",
     accent: "text-purple-600 dark:text-purple-400"
   },
   ms: { 
-    bg: "bg-gradient-to-r from-emerald-50 to-emerald-100/50 dark:from-emerald-950/30 dark:to-emerald-900/20", 
+    bg: "bg-card dark:bg-card", 
     border: "border-emerald-200/60 dark:border-emerald-800/60",
     badge: "bg-emerald-500 hover:bg-emerald-600",
     accent: "text-emerald-600 dark:text-emerald-400"
   },
   completed: { 
-    bg: "bg-gradient-to-r from-gray-50 to-gray-100/50 dark:from-gray-950/30 dark:to-gray-900/20", 
+    bg: "bg-card dark:bg-card", 
     border: "border-gray-200/60 dark:border-gray-800/60",
     badge: "bg-gray-500 hover:bg-gray-600",
     accent: "text-gray-600 dark:text-gray-400"
