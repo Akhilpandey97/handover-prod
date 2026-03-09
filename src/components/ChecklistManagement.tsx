@@ -79,6 +79,9 @@ export const ChecklistManagement = () => {
   const [newItemTitle, setNewItemTitle] = useState("");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<ChecklistTemplate | null>(null);
+  const [csvUploadOpen, setCsvUploadOpen] = useState(false);
+  const [csvPreview, setCsvPreview] = useState<{ title: string; team: TeamRole }[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Filter templates by team
   const teamTemplates = templates.filter((t) => t.ownerTeam === activeTeam);
