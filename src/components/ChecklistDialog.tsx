@@ -1,8 +1,10 @@
-import { useMemo, useEffect, useRef } from "react";
+import { useMemo, useEffect, useRef, useState } from "react";
 import { Project, calculateTimeByParty, formatDuration, ResponsibilityParty } from "@/data/projectsData";
 import { useProjects } from "@/contexts/ProjectContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLabels } from "@/contexts/LabelsContext";
+import { useFormAssignments, useFormTemplates } from "@/hooks/useChecklistForms";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import {
   Dialog,
@@ -18,7 +20,8 @@ import { Progress } from "@/components/ui/progress";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { ChecklistCommentThread } from "@/components/ChecklistCommentThread";
-import { CheckCircle2, ClipboardList, Building2, Users, Minus, Lock, AlertCircle } from "lucide-react";
+import { ChecklistFormDialog } from "@/components/ChecklistFormDialog";
+import { CheckCircle2, ClipboardList, Building2, Users, Minus, Lock, AlertCircle, FileText } from "lucide-react";
 
 interface ChecklistDialogProps {
   project: Project | null;
@@ -43,6 +46,37 @@ export const ChecklistDialog = ({
   const { updateChecklist, toggleChecklistResponsibility } = useProjects();
   const { currentUser } = useAuth();
   const { teamLabels, responsibilityLabels } = useLabels();
+  const { assignments } = useFormAssignments();
+  const { templates: formTemplates } = useFormTemplates();
+
+  // Form dialog state
+  const [formDialogState, setFormDialogState] = useState<{
+    open: boolean;
+    checklistItemId: string;
+    checklistItemTitle: string;
+    formTemplateId: string;
+    formTemplateName: string;
+  } | null>(null);
+
+  // Build a lookup: checklist item title -> form assignments
+  // We match by title because checklist_items are created from checklist_templates
+  const formAssignmentsByTitle = useMemo(() => {
+    const map = new Map<string, { formTemplateId: string; formTemplateName: string }[]>();
+    // We need checklist_templates titles, but we can match via assignments
+    // assignments link checklist_template_id -> form_template_id
+    // checklist items have titles that match template titles
+    return map;
+  }, [assignments, formTemplates]);
+
+  // Build lookup: checklist_template_id -> form info
+  const formsByChecklistTemplateId = useMemo(() => {
+    const map = new Map<string, { formTemplateId: string; formTemplateName: string }>();
+    assignments.forEach(a => {
+      const ft = formTemplates.find(t => t.id === a.form_template_id);
+      if (ft) map.set(a.checklist_template_id, { formTemplateId: ft.id, formTemplateName: ft.name });
+    });
+    return map;
+  }, [assignments, formTemplates]);
 
   // Dynamic team labels for checklist sections
   const ownerTeamLabelsFromCtx: Record<string, string> = {
@@ -51,6 +85,20 @@ export const ChecklistDialog = ({
     ms: teamLabels.ms || "MS Team",
     manager: teamLabels.manager || "Manager",
   };
+
+  // Fetch checklist templates to map titles to template IDs for form assignment matching
+  const [checklistTemplatesByTitle, setChecklistTemplatesByTitle] = useState<Record<string, string>>({});
+  useEffect(() => {
+    const fetch = async () => {
+      const { data } = await supabase.from("checklist_templates").select("id, title");
+      if (data) {
+        const map: Record<string, string> = {};
+        data.forEach((t: any) => { map[t.title] = t.id; });
+        setChecklistTemplatesByTitle(map);
+      }
+    };
+    fetch();
+  }, []);
 
   const checklist = project?.checklist || [];
   const completedCount = checklist.filter((c) => c.completed).length;
@@ -284,7 +332,7 @@ export const ChecklistDialog = ({
                             {/* Content */}
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2 mb-2">
-                                <span className={`font-medium ${item.completed ? "line-through text-muted-foreground" : ""}`}>
+                                 <span className={`font-medium ${item.completed ? "line-through text-muted-foreground" : ""}`}>
                                   {item.title}
                                 </span>
                                 {item.completed && (
@@ -296,6 +344,32 @@ export const ChecklistDialog = ({
                                     Locked
                                   </Badge>
                                 )}
+                                {/* Form button - show if a form is assigned to this checklist item */}
+                                {(() => {
+                                  const templateId = checklistTemplatesByTitle[item.title];
+                                  const formInfo = templateId ? formsByChecklistTemplateId.get(templateId) : undefined;
+                                  if (!formInfo) return null;
+                                  return (
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      className="h-6 px-2 text-xs gap-1"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setFormDialogState({
+                                          open: true,
+                                          checklistItemId: item.id,
+                                          checklistItemTitle: item.title,
+                                          formTemplateId: formInfo.formTemplateId,
+                                          formTemplateName: formInfo.formTemplateName,
+                                        });
+                                      }}
+                                    >
+                                      <FileText className="h-3 w-3" />
+                                      {formInfo.formTemplateName}
+                                    </Button>
+                                  );
+                                })()}
                               </div>
                               
                               {item.completedBy && (
@@ -366,6 +440,22 @@ export const ChecklistDialog = ({
             })}
           </div>
         </ScrollArea>
+
+        {/* Checklist Form Dialog */}
+        {formDialogState && project && (
+          <ChecklistFormDialog
+            open={formDialogState.open}
+            onOpenChange={(open) => {
+              if (!open) setFormDialogState(null);
+            }}
+            projectId={project.id}
+            projectName={project.merchantName}
+            checklistItemId={formDialogState.checklistItemId}
+            checklistItemTitle={formDialogState.checklistItemTitle}
+            formTemplateId={formDialogState.formTemplateId}
+            formTemplateName={formDialogState.formTemplateName}
+          />
+        )}
       </DialogContent>
     </Dialog>
   );

@@ -7,9 +7,10 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Save, RotateCcw, Settings, Palette, Tags, Layers, Mail } from "lucide-react";
+import { Save, RotateCcw, Settings, Palette, Tags, Layers, Mail, FileText } from "lucide-react";
 import { LogoUpload } from "./LogoUpload";
 import { CustomFieldsManager } from "./settings/CustomFieldsManager";
+import { ChecklistFormsManager } from "./settings/ChecklistFormsManager";
 import { ThemePresets } from "./settings/ThemePresets";
 
 interface LabelGroup {
@@ -332,6 +333,9 @@ export const SettingsPanel = () => {
           <TabsTrigger value="custom-fields" className="gap-1.5">
             <Layers className="h-3.5 w-3.5" />Custom Fields
           </TabsTrigger>
+          <TabsTrigger value="checklist-forms" className="gap-1.5">
+            <FileText className="h-3.5 w-3.5" />Checklist Forms
+          </TabsTrigger>
           <TabsTrigger value="colours" className="gap-1.5">
             <Palette className="h-3.5 w-3.5" />Colours
           </TabsTrigger>
@@ -383,6 +387,11 @@ export const SettingsPanel = () => {
         {/* Custom Fields Tab */}
         <TabsContent value="custom-fields">
           <CustomFieldsManager />
+        </TabsContent>
+
+        {/* Checklist Forms Tab */}
+        <TabsContent value="checklist-forms">
+          <ChecklistFormsManager />
         </TabsContent>
 
         {/* Colours Tab */}
