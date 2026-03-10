@@ -332,7 +332,7 @@ export const ChecklistDialog = ({
                             {/* Content */}
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2 mb-2">
-                                <span className={`font-medium ${item.completed ? "line-through text-muted-foreground" : ""}`}>
+                                 <span className={`font-medium ${item.completed ? "line-through text-muted-foreground" : ""}`}>
                                   {item.title}
                                 </span>
                                 {item.completed && (
@@ -344,6 +344,32 @@ export const ChecklistDialog = ({
                                     Locked
                                   </Badge>
                                 )}
+                                {/* Form button - show if a form is assigned to this checklist item */}
+                                {(() => {
+                                  const templateId = checklistTemplatesByTitle[item.title];
+                                  const formInfo = templateId ? formsByChecklistTemplateId.get(templateId) : undefined;
+                                  if (!formInfo) return null;
+                                  return (
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      className="h-6 px-2 text-xs gap-1"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setFormDialogState({
+                                          open: true,
+                                          checklistItemId: item.id,
+                                          checklistItemTitle: item.title,
+                                          formTemplateId: formInfo.formTemplateId,
+                                          formTemplateName: formInfo.formTemplateName,
+                                        });
+                                      }}
+                                    >
+                                      <FileText className="h-3 w-3" />
+                                      {formInfo.formTemplateName}
+                                    </Button>
+                                  );
+                                })()}
                               </div>
                               
                               {item.completedBy && (
