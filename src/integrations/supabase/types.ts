@@ -138,6 +138,213 @@ export type Database = {
           },
         ]
       }
+      checklist_form_assignments: {
+        Row: {
+          checklist_template_id: string
+          created_at: string
+          form_template_id: string
+          id: string
+          tenant_id: string | null
+        }
+        Insert: {
+          checklist_template_id: string
+          created_at?: string
+          form_template_id: string
+          id?: string
+          tenant_id?: string | null
+        }
+        Update: {
+          checklist_template_id?: string
+          created_at?: string
+          form_template_id?: string
+          id?: string
+          tenant_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "checklist_form_assignments_checklist_template_id_fkey"
+            columns: ["checklist_template_id"]
+            isOneToOne: false
+            referencedRelation: "checklist_templates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "checklist_form_assignments_form_template_id_fkey"
+            columns: ["form_template_id"]
+            isOneToOne: false
+            referencedRelation: "checklist_form_templates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "checklist_form_assignments_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      checklist_form_fields: {
+        Row: {
+          category: string
+          created_at: string
+          field_type: string
+          id: string
+          is_required: boolean
+          options: Json | null
+          question: string
+          sort_order: number
+          template_id: string
+          tenant_id: string | null
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          field_type?: string
+          id?: string
+          is_required?: boolean
+          options?: Json | null
+          question: string
+          sort_order?: number
+          template_id: string
+          tenant_id?: string | null
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          field_type?: string
+          id?: string
+          is_required?: boolean
+          options?: Json | null
+          question?: string
+          sort_order?: number
+          template_id?: string
+          tenant_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "checklist_form_fields_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "checklist_form_templates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "checklist_form_fields_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      checklist_form_responses: {
+        Row: {
+          checklist_item_id: string
+          created_at: string
+          field_id: string
+          form_template_id: string
+          id: string
+          project_id: string
+          tenant_id: string | null
+          updated_at: string
+          value: string | null
+        }
+        Insert: {
+          checklist_item_id: string
+          created_at?: string
+          field_id: string
+          form_template_id: string
+          id?: string
+          project_id: string
+          tenant_id?: string | null
+          updated_at?: string
+          value?: string | null
+        }
+        Update: {
+          checklist_item_id?: string
+          created_at?: string
+          field_id?: string
+          form_template_id?: string
+          id?: string
+          project_id?: string
+          tenant_id?: string | null
+          updated_at?: string
+          value?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "checklist_form_responses_checklist_item_id_fkey"
+            columns: ["checklist_item_id"]
+            isOneToOne: false
+            referencedRelation: "checklist_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "checklist_form_responses_field_id_fkey"
+            columns: ["field_id"]
+            isOneToOne: false
+            referencedRelation: "checklist_form_fields"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "checklist_form_responses_form_template_id_fkey"
+            columns: ["form_template_id"]
+            isOneToOne: false
+            referencedRelation: "checklist_form_templates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "checklist_form_responses_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "checklist_form_responses_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      checklist_form_templates: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          tenant_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          tenant_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          tenant_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "checklist_form_templates_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       checklist_items: {
         Row: {
           comment: string | null
