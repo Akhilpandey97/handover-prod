@@ -242,7 +242,7 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
               <div className="flex items-start justify-between mb-3">
                 <div>
                   <div className="flex items-center gap-2 mb-1">
-                    <h3 className="font-bold text-lg leading-tight text-foreground">{project.merchantName}</h3>
+                    <h3 className="font-bold text-lg leading-tight text-foreground dark:text-black">{project.merchantName}</h3>
                     {isPending && (
                       <Badge className="bg-amber-500 text-white animate-pulse px-2 py-0.5 text-xs font-semibold">
                         <Sparkles className="h-3 w-3 mr-1" />
