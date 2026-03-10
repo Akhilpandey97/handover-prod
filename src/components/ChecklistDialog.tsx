@@ -19,7 +19,8 @@ import { Progress } from "@/components/ui/progress";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { ChecklistCommentThread } from "@/components/ChecklistCommentThread";
-import { CheckCircle2, ClipboardList, Building2, Users, Minus, Lock, AlertCircle } from "lucide-react";
+import { ChecklistFormDialog } from "@/components/ChecklistFormDialog";
+import { CheckCircle2, ClipboardList, Building2, Users, Minus, Lock, AlertCircle, FileText } from "lucide-react";
 
 interface ChecklistDialogProps {
   project: Project | null;
