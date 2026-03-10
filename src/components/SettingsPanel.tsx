@@ -389,6 +389,11 @@ export const SettingsPanel = () => {
           <CustomFieldsManager />
         </TabsContent>
 
+        {/* Checklist Forms Tab */}
+        <TabsContent value="checklist-forms">
+          <ChecklistFormsManager />
+        </TabsContent>
+
         {/* Colours Tab */}
         <TabsContent value="colours" className="space-y-6">
           <ThemePresets
