@@ -7,9 +7,10 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Save, RotateCcw, Settings, Palette, Tags, Layers, Mail } from "lucide-react";
+import { Save, RotateCcw, Settings, Palette, Tags, Layers, Mail, FileText } from "lucide-react";
 import { LogoUpload } from "./LogoUpload";
 import { CustomFieldsManager } from "./settings/CustomFieldsManager";
+import { ChecklistFormsManager } from "./settings/ChecklistFormsManager";
 import { ThemePresets } from "./settings/ThemePresets";
 
 interface LabelGroup {
