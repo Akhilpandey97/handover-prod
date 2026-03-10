@@ -45,6 +45,37 @@ export const ChecklistDialog = ({
   const { updateChecklist, toggleChecklistResponsibility } = useProjects();
   const { currentUser } = useAuth();
   const { teamLabels, responsibilityLabels } = useLabels();
+  const { assignments } = useFormAssignments();
+  const { templates: formTemplates } = useFormTemplates();
+
+  // Form dialog state
+  const [formDialogState, setFormDialogState] = useState<{
+    open: boolean;
+    checklistItemId: string;
+    checklistItemTitle: string;
+    formTemplateId: string;
+    formTemplateName: string;
+  } | null>(null);
+
+  // Build a lookup: checklist item title -> form assignments
+  // We match by title because checklist_items are created from checklist_templates
+  const formAssignmentsByTitle = useMemo(() => {
+    const map = new Map<string, { formTemplateId: string; formTemplateName: string }[]>();
+    // We need checklist_templates titles, but we can match via assignments
+    // assignments link checklist_template_id -> form_template_id
+    // checklist items have titles that match template titles
+    return map;
+  }, [assignments, formTemplates]);
+
+  // Build lookup: checklist_template_id -> form info
+  const formsByChecklistTemplateId = useMemo(() => {
+    const map = new Map<string, { formTemplateId: string; formTemplateName: string }>();
+    assignments.forEach(a => {
+      const ft = formTemplates.find(t => t.id === a.form_template_id);
+      if (ft) map.set(a.checklist_template_id, { formTemplateId: ft.id, formTemplateName: ft.name });
+    });
+    return map;
+  }, [assignments, formTemplates]);
 
   // Dynamic team labels for checklist sections
   const ownerTeamLabelsFromCtx: Record<string, string> = {
