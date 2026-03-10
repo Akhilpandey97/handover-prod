@@ -333,6 +333,9 @@ export const SettingsPanel = () => {
           <TabsTrigger value="custom-fields" className="gap-1.5">
             <Layers className="h-3.5 w-3.5" />Custom Fields
           </TabsTrigger>
+          <TabsTrigger value="checklist-forms" className="gap-1.5">
+            <FileText className="h-3.5 w-3.5" />Checklist Forms
+          </TabsTrigger>
           <TabsTrigger value="colours" className="gap-1.5">
             <Palette className="h-3.5 w-3.5" />Colours
           </TabsTrigger>
