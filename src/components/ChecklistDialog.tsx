@@ -85,6 +85,20 @@ export const ChecklistDialog = ({
     manager: teamLabels.manager || "Manager",
   };
 
+  // Fetch checklist templates to map titles to template IDs for form assignment matching
+  const [checklistTemplatesByTitle, setChecklistTemplatesByTitle] = useState<Record<string, string>>({});
+  useEffect(() => {
+    const fetch = async () => {
+      const { data } = await supabase.from("checklist_templates").select("id, title");
+      if (data) {
+        const map: Record<string, string> = {};
+        data.forEach((t: any) => { map[t.title] = t.id; });
+        setChecklistTemplatesByTitle(map);
+      }
+    };
+    fetch();
+  }, []);
+
   const checklist = project?.checklist || [];
   const completedCount = checklist.filter((c) => c.completed).length;
   const totalCount = checklist.length;
