@@ -440,6 +440,22 @@ export const ChecklistDialog = ({
             })}
           </div>
         </ScrollArea>
+
+        {/* Checklist Form Dialog */}
+        {formDialogState && project && (
+          <ChecklistFormDialog
+            open={formDialogState.open}
+            onOpenChange={(open) => {
+              if (!open) setFormDialogState(null);
+            }}
+            projectId={project.id}
+            projectName={project.merchantName}
+            checklistItemId={formDialogState.checklistItemId}
+            checklistItemTitle={formDialogState.checklistItemTitle}
+            formTemplateId={formDialogState.formTemplateId}
+            formTemplateName={formDialogState.formTemplateName}
+          />
+        )}
       </DialogContent>
     </Dialog>
   );
