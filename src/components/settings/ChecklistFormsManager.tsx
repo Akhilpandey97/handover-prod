@@ -210,6 +210,93 @@ export const ChecklistFormsManager = () => {
     }
   };
 
+  // CSV Import
+  const handleCSVImport = (templateId: string) => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = ".csv";
+    input.onchange = async (e: any) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      const text = await file.text();
+      const lines = text.split(/\r?\n/).filter((l: string) => l.trim());
+      if (lines.length < 2) {
+        toast.error("CSV must have a header row and at least one data row");
+        return;
+      }
+      // Parse header
+      const header = lines[0].split(",").map((h: string) => h.trim().toLowerCase().replace(/['"]/g, ""));
+      const catIdx = header.findIndex((h: string) => h.includes("category") || h.includes("section"));
+      const qIdx = header.findIndex((h: string) => h.includes("question") || h.includes("field") || h.includes("label"));
+      const typeIdx = header.findIndex((h: string) => h.includes("type"));
+      const reqIdx = header.findIndex((h: string) => h.includes("req") || h.includes("mandatory"));
+      const optIdx = header.findIndex((h: string) => h.includes("option"));
+
+      if (qIdx === -1) {
+        toast.error("CSV must have a 'Question' column");
+        return;
+      }
+
+      const parseCSVLine = (line: string): string[] => {
+        const result: string[] = [];
+        let current = "";
+        let inQuotes = false;
+        for (let i = 0; i < line.length; i++) {
+          const ch = line[i];
+          if (ch === '"') { inQuotes = !inQuotes; }
+          else if (ch === "," && !inQuotes) { result.push(current.trim()); current = ""; }
+          else { current += ch; }
+        }
+        result.push(current.trim());
+        return result;
+      };
+
+      const validTypes = ["text", "textarea", "number", "date", "url", "boolean", "select"];
+      const rows = lines.slice(1).map((line: string) => parseCSVLine(line));
+      const inserts = rows.filter((cols: string[]) => cols[qIdx]?.trim()).map((cols: string[], idx: number) => {
+        const rawType = typeIdx >= 0 ? cols[typeIdx]?.toLowerCase().trim() : "text";
+        const fieldType = validTypes.includes(rawType) ? rawType
+          : rawType.includes("long") || rawType.includes("area") ? "textarea"
+          : rawType.includes("num") ? "number"
+          : rawType.includes("bool") || rawType.includes("yes") ? "boolean"
+          : rawType.includes("drop") || rawType.includes("select") ? "select"
+          : rawType.includes("date") ? "date"
+          : rawType.includes("url") || rawType.includes("link") ? "url"
+          : "text";
+        const reqVal = reqIdx >= 0 ? cols[reqIdx]?.toLowerCase().trim() : "";
+        const isReq = ["yes", "true", "1", "required", "y"].includes(reqVal);
+        const options = optIdx >= 0 && fieldType === "select"
+          ? cols[optIdx]?.split(";").map((o: string) => o.trim()).filter(Boolean) || []
+          : [];
+        return {
+          template_id: templateId,
+          category: catIdx >= 0 ? cols[catIdx]?.trim() || "" : "",
+          question: cols[qIdx].trim(),
+          field_type: fieldType,
+          is_required: isReq,
+          options,
+          sort_order: fields.length + idx,
+          tenant_id: currentUser?.tenantId || null,
+        };
+      });
+
+      if (inserts.length === 0) {
+        toast.error("No valid rows found in CSV");
+        return;
+      }
+
+      try {
+        const { error } = await supabase.from("checklist_form_fields").insert(inserts);
+        if (error) throw error;
+        toast.success(`Imported ${inserts.length} fields from CSV`);
+        refetchFields();
+      } catch (err: any) {
+        toast.error(err.message || "Failed to import CSV");
+      }
+    };
+    input.click();
+  };
+
   const selectedTemplate = templates.find(t => t.id === selectedTemplateId);
   const typeLabel = (type: string) => FIELD_TYPES.find(t => t.value === type)?.label || type;
 
