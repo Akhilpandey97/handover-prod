@@ -219,13 +219,50 @@ export const ChecklistFormsManager = () => {
       const file = e.target.files?.[0];
       if (!file) return;
       const text = await file.text();
-      const lines = text.split(/\r?\n/).filter((l: string) => l.trim());
-      if (lines.length < 2) {
+
+      // Full RFC-compliant CSV parser that handles multi-line quoted fields
+      const parseCSV = (csv: string): string[][] => {
+        const rows: string[][] = [];
+        let current = "";
+        let inQuotes = false;
+        let row: string[] = [];
+        for (let i = 0; i < csv.length; i++) {
+          const ch = csv[i];
+          if (inQuotes) {
+            if (ch === '"') {
+              if (i + 1 < csv.length && csv[i + 1] === '"') {
+                current += '"'; i++; // escaped quote
+              } else {
+                inQuotes = false;
+              }
+            } else {
+              current += ch;
+            }
+          } else {
+            if (ch === '"') { inQuotes = true; }
+            else if (ch === ',') { row.push(current.trim()); current = ""; }
+            else if (ch === '\n' || (ch === '\r' && csv[i + 1] === '\n')) {
+              if (ch === '\r') i++; // skip \n after \r
+              row.push(current.trim());
+              if (row.some(c => c)) rows.push(row);
+              row = []; current = "";
+            } else {
+              current += ch;
+            }
+          }
+        }
+        row.push(current.trim());
+        if (row.some(c => c)) rows.push(row);
+        return rows;
+      };
+
+      const allRows = parseCSV(text);
+      if (allRows.length < 2) {
         toast.error("CSV must have a header row and at least one data row");
         return;
       }
-      // Parse header
-      const header = lines[0].split(",").map((h: string) => h.trim().toLowerCase().replace(/['"]/g, ""));
+
+      const header = allRows[0].map((h: string) => h.toLowerCase().replace(/['"]/g, ""));
       const catIdx = header.findIndex((h: string) => h.includes("category") || h.includes("section"));
       const qIdx = header.findIndex((h: string) => h.includes("question") || h.includes("field") || h.includes("label"));
       const typeIdx = header.findIndex((h: string) => h.includes("type"));
@@ -237,22 +274,8 @@ export const ChecklistFormsManager = () => {
         return;
       }
 
-      const parseCSVLine = (line: string): string[] => {
-        const result: string[] = [];
-        let current = "";
-        let inQuotes = false;
-        for (let i = 0; i < line.length; i++) {
-          const ch = line[i];
-          if (ch === '"') { inQuotes = !inQuotes; }
-          else if (ch === "," && !inQuotes) { result.push(current.trim()); current = ""; }
-          else { current += ch; }
-        }
-        result.push(current.trim());
-        return result;
-      };
-
       const validTypes = ["text", "textarea", "number", "date", "url", "boolean", "select"];
-      const rows = lines.slice(1).map((line: string) => parseCSVLine(line));
+      const rows = allRows.slice(1);
       const inserts = rows.filter((cols: string[]) => cols[qIdx]?.trim()).map((cols: string[], idx: number) => {
         const rawType = typeIdx >= 0 ? cols[typeIdx]?.toLowerCase().trim() : "text";
         const fieldType = validTypes.includes(rawType) ? rawType
