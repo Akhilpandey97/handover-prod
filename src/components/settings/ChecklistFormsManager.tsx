@@ -279,9 +279,14 @@ export const ChecklistFormsManager = () => {
                     <div className="ml-8 mt-2 mb-4 space-y-3">
                       <div className="flex items-center justify-between">
                         <h4 className="text-sm font-semibold">Fields / Questions</h4>
-                        <Button size="sm" variant="outline" onClick={openCreateField}>
-                          <Plus className="h-3 w-3 mr-1" />Add Field
-                        </Button>
+                        <div className="flex items-center gap-2">
+                          <Button size="sm" variant="outline" onClick={() => handleCSVImport(t.id)}>
+                            <Upload className="h-3 w-3 mr-1" />Import CSV
+                          </Button>
+                          <Button size="sm" variant="outline" onClick={openCreateField}>
+                            <Plus className="h-3 w-3 mr-1" />Add Field
+                          </Button>
+                        </div>
                       </div>
                       {fieldsLoading ? (
                         <div className="text-xs text-muted-foreground">Loading fields...</div>
