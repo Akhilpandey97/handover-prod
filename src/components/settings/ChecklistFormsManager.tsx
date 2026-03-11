@@ -367,6 +367,11 @@ export const ChecklistFormsManager = () => {
                       <div className="flex items-center justify-between">
                         <h4 className="text-sm font-semibold">Fields / Questions</h4>
                         <div className="flex items-center gap-2">
+                          <a href="/sample-form-fields.csv" download="sample-form-fields.csv">
+                            <Button size="sm" variant="ghost" type="button">
+                              <Download className="h-3 w-3 mr-1" />Sample CSV
+                            </Button>
+                          </a>
                           <Button size="sm" variant="outline" onClick={() => handleCSVImport(t.id)}>
                             <Upload className="h-3 w-3 mr-1" />Import CSV
                           </Button>

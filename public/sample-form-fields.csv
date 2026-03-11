@@ -1,0 +1,22 @@
+Category,Question,Type,Required,Options
+Merchant Identifiers,Merchant Name,text,Yes,
+Merchant Identifiers,MID (Merchant ID),text,Yes,
+Merchant Identifiers,Brand URL,url,No,
+Merchant Identifiers,Platform,select,Yes,Shopify;WooCommerce;Magento;Custom
+Merchant Identifiers,Integration Type,select,No,API;Plugin;SDK
+Value Discovery,Annual Revenue (ARR),number,No,
+Value Discovery,Average Order Value (AOV),number,No,
+Value Discovery,Transactions Per Day,number,No,
+Value Discovery,Merchant Size,select,No,Small;Medium;Large;Enterprise
+Feature Discovery - PDP,PDP Widget Required?,boolean,Yes,
+Feature Discovery - PDP,PDP Layout Preference,select,No,Standard;Compact;Custom
+Feature Discovery - Side Cart,Side Cart Integration?,boolean,No,
+Feature Discovery - Side Cart,Side Cart Notes,textarea,No,
+Feature Discovery - Payments,Payment Methods Required,text,No,
+Feature Discovery - Payments,COD Enabled?,boolean,No,
+Feature Discovery - Checkout,Checkout Flow Type,select,No,Standard;Express;Custom
+Feature Discovery - Checkout,Custom Checkout Notes,textarea,No,
+Technical Requirements,API Key Provided?,boolean,No,
+Technical Requirements,Staging URL,url,No,
+Technical Requirements,Go-Live Target Date,date,No,
+Technical Requirements,Additional Technical Notes,textarea,No,
