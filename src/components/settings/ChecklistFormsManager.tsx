@@ -15,7 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2, FileText, ChevronRight, ChevronDown, Link2 } from "lucide-react";
+import { Plus, Pencil, Trash2, FileText, ChevronRight, ChevronDown, Link2, Upload } from "lucide-react";
 
 const FIELD_TYPES = [
   { value: "text", label: "Text" },
