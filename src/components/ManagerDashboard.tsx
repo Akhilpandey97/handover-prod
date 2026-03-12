@@ -1033,17 +1033,13 @@ export const ManagerDashboard = () => {
             <Card className="shadow-xl border-border/50">
               <CardHeader className="border-b bg-muted/30">
                 <div className="flex items-center justify-between flex-wrap gap-3">
-                  <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-3">
                     <CardTitle className="text-lg flex items-center gap-2">
                       <Target className="h-5 w-5 text-primary" />
                       All Projects
                     </CardTitle>
-                    {selectedProjects.size > 0 && (
-                      <Badge variant="secondary" className="text-sm">{selectedProjects.size} selected</Badge>
-                    )}
-                  </div>
-                  <div className="flex gap-2 relative">
-                    {/* Sort Dropdown */}
+                    {/* Sort Dropdown - moved to left */}
+                    <div className="relative">
                     <Collapsible>
                       <CollapsibleTrigger asChild>
                         <Button variant="outline" size="sm" className="gap-2">
@@ -1053,7 +1049,7 @@ export const ManagerDashboard = () => {
                           <ChevronDown className="h-3 w-3" />
                         </Button>
                       </CollapsibleTrigger>
-                      <CollapsibleContent className="absolute z-20 mt-2 right-0 w-[320px] bg-card border rounded-lg shadow-xl p-4 space-y-3">
+                      <CollapsibleContent className="absolute z-20 mt-2 left-0 w-[320px] bg-card border rounded-lg shadow-xl p-4 space-y-3">
                         <div className="flex items-center justify-between mb-2">
                           <p className="text-sm font-semibold">Sort By</p>
                           {sortField !== "none" && (
