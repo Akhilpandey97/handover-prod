@@ -1174,15 +1174,15 @@ export const ManagerDashboard = () => {
                   </div>
               </CardContent>
             </Card>
-          </TabsContent>
+          </div>}
 
           {/* ========= CALENDAR TAB ========= */}
-          <TabsContent value="calendar" className="space-y-6 mt-0">
+          {activeTab === "calendar" && <div className="space-y-6">
             <ProjectCalendar />
-          </TabsContent>
+          </div>}
 
           {/* ========= REPORTS TAB ========= */}
-          <TabsContent value="reports" className="space-y-6 mt-0">
+          {activeTab === "reports" && <div className="space-y-6">
             <Card className="shadow-xl border-border/50">
               <CardHeader className="border-b bg-muted/30">
                 <div className="flex items-center justify-between flex-wrap gap-2">
