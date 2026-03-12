@@ -695,7 +695,7 @@ export const ManagerDashboard = () => {
           <div className="p-8">
 
           {/* ========= OVERVIEW TAB ========= */}
-          <TabsContent value="overview" className="space-y-6 mt-0">
+          {activeTab === "overview" && <div className="space-y-6">
             {/* KPI Cards */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
               {(() => {
