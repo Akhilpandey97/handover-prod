@@ -907,10 +907,10 @@ export const ManagerDashboard = () => {
                 </CardContent>
               </Card>
             </div>
-          </TabsContent>
+          </div>}
 
           {/* ========= PROJECTS TAB ========= */}
-          <TabsContent value="projects" className="space-y-6 mt-0">
+          {activeTab === "projects" && <div className="space-y-6">
             <Card className="shadow-xl border-border/50">
               <CardHeader className="border-b bg-muted/30">
                 <div className="flex items-center justify-between flex-wrap gap-3">
