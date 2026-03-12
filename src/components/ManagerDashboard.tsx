@@ -88,15 +88,23 @@ import { TacticalLists } from "./reports/TacticalLists";
 import { ReportsBuilder } from "./reports/ReportsBuilder";
 import { ReportScheduler } from "./reports/ReportScheduler";
 
+// Sub-tab keys for reports and settings
+const REPORTS_SUB_TABS = ["predefined", "builder", "scheduler"];
+const SETTINGS_SUB_TABS = ["general", "workflow", "fields", "custom-fields", "checklist-forms", "colours", "email"];
+const PREDEFINED_REPORT_TYPES = ["executive", "operational", "merchant", "tactical", "project", "team"];
+
+// All nav items that can be toggled
+const ALL_NAV_ITEMS = ["dashboard", "projects", "kanban", "calendar", "reports", "checklist", "users", "settings", "emails"];
+
 export const ManagerDashboard = () => {
   const { currentUser, logout } = useAuth();
-  const { labels: appLabels, teamLabels, responsibilityLabels, phaseLabels, stateLabels: stateLabelsFromCtx } = useLabels();
+  const { labels: appLabels, teamLabels, responsibilityLabels, phaseLabels, stateLabels: stateLabelsFromCtx, updateLabels } = useLabels();
   const { projects, isLoading, addProject, deleteProject, updateProject } = useProjects();
   const { fields: customFields } = useCustomFields();
   const projectIds = useMemo(() => projects.map(p => p.id), [projects]);
   const { valuesMap: customValuesMap } = useAllCustomFieldValues(projectIds);
   const [searchQuery, setSearchQuery] = useState("");
-  const [activeTab, setActiveTab] = useState("overview");
+  const [activeTab, setActiveTab] = useState("dashboard");
   const [teamFilter, setTeamFilter] = useState<string>("all");
   const [ownerFilter, setOwnerFilter] = useState<string>("all");
   const [phaseFilter, setPhaseFilter] = useState<string>("all");
@@ -111,16 +119,34 @@ export const ManagerDashboard = () => {
   const [goLiveFrom, setGoLiveFrom] = useState<string>("");
   const [goLiveTo, setGoLiveTo] = useState<string>("");
   const [reportType, setReportType] = useState<string>("executive");
+  const [reportSubTab, setReportSubTab] = useState<string>("predefined");
+  const [settingsSubTab, setSettingsSubTab] = useState<string>("general");
   const [expandedProjects, setExpandedProjects] = useState<Set<string>>(new Set());
   const [csvDialogOpen, setCsvDialogOpen] = useState(false);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
 
+  // Sidebar expand state for sub-menus
+  const [reportsExpanded, setReportsExpanded] = useState(false);
+  const [settingsExpanded, setSettingsExpanded] = useState(false);
+
+  // Nav visibility from labels
+  const getNavVisibility = (): Record<string, boolean> => {
+    try {
+      const saved = appLabels.nav_visibility;
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return Object.fromEntries(ALL_NAV_ITEMS.map(k => [k, true]));
+  };
+  const navVisibility = getNavVisibility();
+
   // Draggable tab order
-  const DEFAULT_TAB_ORDER = ["overview", "projects", "calendar", "reports", "checklist", "users", "settings", "kanban", "emails"];
+  const DEFAULT_TAB_ORDER = ["dashboard", "projects", "calendar", "reports", "checklist", "users", "settings", "kanban", "emails"];
   const [tabOrder, setTabOrder] = useState<string[]>(() => {
     try {
       const saved = localStorage.getItem("manager_tab_order");
-      return saved ? JSON.parse(saved) : DEFAULT_TAB_ORDER;
+      const parsed = saved ? JSON.parse(saved) : DEFAULT_TAB_ORDER;
+      // Migrate: rename "overview" to "dashboard"
+      return parsed.map((t: string) => t === "overview" ? "dashboard" : t);
     } catch { return DEFAULT_TAB_ORDER; }
   });
   const [draggedTab, setDraggedTab] = useState<string | null>(null);
@@ -486,18 +512,35 @@ export const ManagerDashboard = () => {
 
   const hasActiveFilters = teamFilter !== "all" || ownerFilter !== "all" || phaseFilter !== "all" || stateFilter !== "all" || platformFilter !== "all" || categoryFilter !== "all" || responsibilityFilter !== "all" || arrMin || arrMax || kickOffFrom || kickOffTo || goLiveFrom || goLiveTo;
 
-  // Tab config for draggable tabs
+  // Tab config for sidebar
   const TAB_CONFIG: Record<string, { icon: React.ReactNode; label: string }> = {
-    overview: { icon: <PieChart className="h-3.5 w-3.5" />, label: "Overview" },
-    projects: { icon: <FolderKanban className="h-3.5 w-3.5" />, label: "Projects" },
-    calendar: { icon: <CalendarDays className="h-3.5 w-3.5" />, label: "Calendar" },
-    reports: { icon: <TrendingUp className="h-3.5 w-3.5" />, label: "Reports" },
-    checklist: { icon: <ListChecks className="h-3.5 w-3.5" />, label: "Checklist" },
-    users: { icon: <Users className="h-3.5 w-3.5" />, label: "Users" },
-    settings: { icon: <Settings className="h-3.5 w-3.5" />, label: "Settings" },
-    kanban: { icon: <FolderKanban className="h-3.5 w-3.5" />, label: "Kanban" },
-    emails: { icon: <Mail className="h-3.5 w-3.5" />, label: "Emails" },
-    tenants: { icon: <Building2 className="h-3.5 w-3.5" />, label: "Tenants" },
+    dashboard: { icon: <PieChart className="h-4 w-4" />, label: "Dashboard" },
+    projects: { icon: <FolderKanban className="h-4 w-4" />, label: "Projects" },
+    calendar: { icon: <CalendarDays className="h-4 w-4" />, label: "Calendar" },
+    reports: { icon: <TrendingUp className="h-4 w-4" />, label: "Reports" },
+    checklist: { icon: <ListChecks className="h-4 w-4" />, label: "Checklist" },
+    users: { icon: <Users className="h-4 w-4" />, label: "Users" },
+    settings: { icon: <Settings className="h-4 w-4" />, label: "Settings" },
+    kanban: { icon: <FolderKanban className="h-4 w-4" />, label: "Kanban" },
+    emails: { icon: <Mail className="h-4 w-4" />, label: "Emails" },
+    tenants: { icon: <Building2 className="h-4 w-4" />, label: "Tenants" },
+  };
+
+  const SETTINGS_SUB_CONFIG: Record<string, { label: string }> = {
+    general: { label: "General" },
+    workflow: { label: "Workflow" },
+    fields: { label: "Field Labels" },
+    "custom-fields": { label: "Custom Fields" },
+    "checklist-forms": { label: "Checklist Forms" },
+    colours: { label: "Colours" },
+    email: { label: "Email" },
+    navigation: { label: "Navigation" },
+  };
+
+  const REPORTS_SUB_CONFIG: Record<string, { label: string }> = {
+    predefined: { label: "Pre Defined" },
+    builder: { label: "Report Builder" },
+    scheduler: { label: "📅 Scheduler" },
   };
 
   const handleTabDragStart = (tab: string) => setDraggedTab(tab);
