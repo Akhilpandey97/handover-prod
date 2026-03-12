@@ -323,30 +323,32 @@ export const SettingsPanel = ({ activeSubTab }: SettingsPanelProps = {}) => {
         </div>
       )}
 
-      <Tabs defaultValue="general" className="w-full">
-        <TabsList className="flex flex-wrap h-auto gap-1 mb-4">
-          <TabsTrigger value="general" className="gap-1.5">
-            <Settings className="h-3.5 w-3.5" />General
-          </TabsTrigger>
-          <TabsTrigger value="workflow" className="gap-1.5">
-            <Tags className="h-3.5 w-3.5" />Workflow
-          </TabsTrigger>
-          <TabsTrigger value="fields" className="gap-1.5">
-            <Tags className="h-3.5 w-3.5" />Field Labels
-          </TabsTrigger>
-          <TabsTrigger value="custom-fields" className="gap-1.5">
-            <Layers className="h-3.5 w-3.5" />Custom Fields
-          </TabsTrigger>
-          <TabsTrigger value="checklist-forms" className="gap-1.5">
-            <FileText className="h-3.5 w-3.5" />Checklist Forms
-          </TabsTrigger>
-          <TabsTrigger value="colours" className="gap-1.5">
-            <Palette className="h-3.5 w-3.5" />Colours
-          </TabsTrigger>
-          <TabsTrigger value="email" className="gap-1.5">
-            <Mail className="h-3.5 w-3.5" />Email
-          </TabsTrigger>
-        </TabsList>
+      <Tabs value={activeSubTab || "general"} defaultValue="general" className="w-full">
+        {!activeSubTab && (
+          <TabsList className="flex flex-wrap h-auto gap-1 mb-4">
+            <TabsTrigger value="general" className="gap-1.5">
+              <Settings className="h-3.5 w-3.5" />General
+            </TabsTrigger>
+            <TabsTrigger value="workflow" className="gap-1.5">
+              <Tags className="h-3.5 w-3.5" />Workflow
+            </TabsTrigger>
+            <TabsTrigger value="fields" className="gap-1.5">
+              <Tags className="h-3.5 w-3.5" />Field Labels
+            </TabsTrigger>
+            <TabsTrigger value="custom-fields" className="gap-1.5">
+              <Layers className="h-3.5 w-3.5" />Custom Fields
+            </TabsTrigger>
+            <TabsTrigger value="checklist-forms" className="gap-1.5">
+              <FileText className="h-3.5 w-3.5" />Checklist Forms
+            </TabsTrigger>
+            <TabsTrigger value="colours" className="gap-1.5">
+              <Palette className="h-3.5 w-3.5" />Colours
+            </TabsTrigger>
+            <TabsTrigger value="email" className="gap-1.5">
+              <Mail className="h-3.5 w-3.5" />Email
+            </TabsTrigger>
+          </TabsList>
+        )}
 
         {/* General Tab */}
         <TabsContent value="general" className="space-y-6">
