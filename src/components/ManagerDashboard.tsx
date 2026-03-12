@@ -1550,7 +1550,19 @@ export const ManagerDashboard = () => {
                         ))}
                       </div>
                     )}
-                  </div>
+                    </div>
+                  )}
+
+                  {/* Sub-tab: Report Builder */}
+                  {reportSubTab === "builder" && (
+                    <ReportsBuilder projects={displayProjects} customFields={customFields} customValuesMap={customValuesMap} />
+                  )}
+
+                  {/* Sub-tab: Scheduler */}
+                  {reportSubTab === "scheduler" && (
+                    <ReportScheduler />
+                  )}
+                </div>
               </CardContent>
             </Card>
           </div>}
@@ -1563,7 +1575,35 @@ export const ManagerDashboard = () => {
 
           {/* Settings Tab */}
           {activeTab === "settings" && <div className="space-y-6">
-            <SettingsPanel />
+            {settingsSubTab === "navigation" ? (
+              <Card className="shadow-xl border-border/50">
+                <CardHeader className="border-b bg-muted/30">
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <Settings className="h-5 w-5 text-primary" />
+                    Navigation Visibility
+                  </CardTitle>
+                  <CardDescription>Enable or disable navigation items for the sidebar</CardDescription>
+                </CardHeader>
+                <CardContent className="p-6">
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    {ALL_NAV_ITEMS.map((navKey) => (
+                      <div key={navKey} className="flex items-center justify-between p-3 border rounded-lg">
+                        <div className="flex items-center gap-2">
+                          {TAB_CONFIG[navKey]?.icon}
+                          <span className="text-sm font-medium">{TAB_CONFIG[navKey]?.label || navKey}</span>
+                        </div>
+                        <Checkbox
+                          checked={navVisibility[navKey] !== false}
+                          onCheckedChange={(checked) => handleNavToggle(navKey, !!checked)}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            ) : (
+              <SettingsPanel activeSubTab={settingsSubTab} />
+            )}
             {currentUser?.team === "super_admin" && <TenantManagement />}
           </div>}
 
