@@ -88,15 +88,23 @@ import { TacticalLists } from "./reports/TacticalLists";
 import { ReportsBuilder } from "./reports/ReportsBuilder";
 import { ReportScheduler } from "./reports/ReportScheduler";
 
+// Sub-tab keys for reports and settings
+const REPORTS_SUB_TABS = ["predefined", "builder", "scheduler"];
+const SETTINGS_SUB_TABS = ["general", "workflow", "fields", "custom-fields", "checklist-forms", "colours", "email"];
+const PREDEFINED_REPORT_TYPES = ["executive", "operational", "merchant", "tactical", "project", "team"];
+
+// All nav items that can be toggled
+const ALL_NAV_ITEMS = ["dashboard", "projects", "kanban", "calendar", "reports", "checklist", "users", "settings", "emails"];
+
 export const ManagerDashboard = () => {
   const { currentUser, logout } = useAuth();
-  const { labels: appLabels, teamLabels, responsibilityLabels, phaseLabels, stateLabels: stateLabelsFromCtx } = useLabels();
+  const { labels: appLabels, teamLabels, responsibilityLabels, phaseLabels, stateLabels: stateLabelsFromCtx, updateLabels } = useLabels();
   const { projects, isLoading, addProject, deleteProject, updateProject } = useProjects();
   const { fields: customFields } = useCustomFields();
   const projectIds = useMemo(() => projects.map(p => p.id), [projects]);
   const { valuesMap: customValuesMap } = useAllCustomFieldValues(projectIds);
   const [searchQuery, setSearchQuery] = useState("");
-  const [activeTab, setActiveTab] = useState("overview");
+  const [activeTab, setActiveTab] = useState("dashboard");
   const [teamFilter, setTeamFilter] = useState<string>("all");
   const [ownerFilter, setOwnerFilter] = useState<string>("all");
   const [phaseFilter, setPhaseFilter] = useState<string>("all");
@@ -111,16 +119,34 @@ export const ManagerDashboard = () => {
   const [goLiveFrom, setGoLiveFrom] = useState<string>("");
   const [goLiveTo, setGoLiveTo] = useState<string>("");
   const [reportType, setReportType] = useState<string>("executive");
+  const [reportSubTab, setReportSubTab] = useState<string>("predefined");
+  const [settingsSubTab, setSettingsSubTab] = useState<string>("general");
   const [expandedProjects, setExpandedProjects] = useState<Set<string>>(new Set());
   const [csvDialogOpen, setCsvDialogOpen] = useState(false);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
 
+  // Sidebar expand state for sub-menus
+  const [reportsExpanded, setReportsExpanded] = useState(false);
+  const [settingsExpanded, setSettingsExpanded] = useState(false);
+
+  // Nav visibility from labels
+  const getNavVisibility = (): Record<string, boolean> => {
+    try {
+      const saved = appLabels.nav_visibility;
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return Object.fromEntries(ALL_NAV_ITEMS.map(k => [k, true]));
+  };
+  const navVisibility = getNavVisibility();
+
   // Draggable tab order
-  const DEFAULT_TAB_ORDER = ["overview", "projects", "calendar", "reports", "checklist", "users", "settings", "kanban", "emails"];
+  const DEFAULT_TAB_ORDER = ["dashboard", "projects", "calendar", "reports", "checklist", "users", "settings", "kanban", "emails"];
   const [tabOrder, setTabOrder] = useState<string[]>(() => {
     try {
       const saved = localStorage.getItem("manager_tab_order");
-      return saved ? JSON.parse(saved) : DEFAULT_TAB_ORDER;
+      const parsed = saved ? JSON.parse(saved) : DEFAULT_TAB_ORDER;
+      // Migrate: rename "overview" to "dashboard"
+      return parsed.map((t: string) => t === "overview" ? "dashboard" : t);
     } catch { return DEFAULT_TAB_ORDER; }
   });
   const [draggedTab, setDraggedTab] = useState<string | null>(null);
@@ -486,18 +512,35 @@ export const ManagerDashboard = () => {
 
   const hasActiveFilters = teamFilter !== "all" || ownerFilter !== "all" || phaseFilter !== "all" || stateFilter !== "all" || platformFilter !== "all" || categoryFilter !== "all" || responsibilityFilter !== "all" || arrMin || arrMax || kickOffFrom || kickOffTo || goLiveFrom || goLiveTo;
 
-  // Tab config for draggable tabs
+  // Tab config for sidebar
   const TAB_CONFIG: Record<string, { icon: React.ReactNode; label: string }> = {
-    overview: { icon: <PieChart className="h-3.5 w-3.5" />, label: "Overview" },
-    projects: { icon: <FolderKanban className="h-3.5 w-3.5" />, label: "Projects" },
-    calendar: { icon: <CalendarDays className="h-3.5 w-3.5" />, label: "Calendar" },
-    reports: { icon: <TrendingUp className="h-3.5 w-3.5" />, label: "Reports" },
-    checklist: { icon: <ListChecks className="h-3.5 w-3.5" />, label: "Checklist" },
-    users: { icon: <Users className="h-3.5 w-3.5" />, label: "Users" },
-    settings: { icon: <Settings className="h-3.5 w-3.5" />, label: "Settings" },
-    kanban: { icon: <FolderKanban className="h-3.5 w-3.5" />, label: "Kanban" },
-    emails: { icon: <Mail className="h-3.5 w-3.5" />, label: "Emails" },
-    tenants: { icon: <Building2 className="h-3.5 w-3.5" />, label: "Tenants" },
+    dashboard: { icon: <PieChart className="h-4 w-4" />, label: "Dashboard" },
+    projects: { icon: <FolderKanban className="h-4 w-4" />, label: "Projects" },
+    calendar: { icon: <CalendarDays className="h-4 w-4" />, label: "Calendar" },
+    reports: { icon: <TrendingUp className="h-4 w-4" />, label: "Reports" },
+    checklist: { icon: <ListChecks className="h-4 w-4" />, label: "Checklist" },
+    users: { icon: <Users className="h-4 w-4" />, label: "Users" },
+    settings: { icon: <Settings className="h-4 w-4" />, label: "Settings" },
+    kanban: { icon: <FolderKanban className="h-4 w-4" />, label: "Kanban" },
+    emails: { icon: <Mail className="h-4 w-4" />, label: "Emails" },
+    tenants: { icon: <Building2 className="h-4 w-4" />, label: "Tenants" },
+  };
+
+  const SETTINGS_SUB_CONFIG: Record<string, { label: string }> = {
+    general: { label: "General" },
+    workflow: { label: "Workflow" },
+    fields: { label: "Field Labels" },
+    "custom-fields": { label: "Custom Fields" },
+    "checklist-forms": { label: "Checklist Forms" },
+    colours: { label: "Colours" },
+    email: { label: "Email" },
+    navigation: { label: "Navigation" },
+  };
+
+  const REPORTS_SUB_CONFIG: Record<string, { label: string }> = {
+    predefined: { label: "Pre Defined" },
+    builder: { label: "Report Builder" },
+    scheduler: { label: "📅 Scheduler" },
   };
 
   const handleTabDragStart = (tab: string) => setDraggedTab(tab);
@@ -517,6 +560,12 @@ export const ManagerDashboard = () => {
   const handleTabDragEnd = () => {
     setDraggedTab(null);
     localStorage.setItem("manager_tab_order", JSON.stringify(tabOrder));
+  };
+
+  const handleNavToggle = async (navKey: string, enabled: boolean) => {
+    const current = getNavVisibility();
+    current[navKey] = enabled;
+    await updateLabels({ nav_visibility: JSON.stringify(current) });
   };
 
   const fetchProjectAiInsight = async () => {
@@ -577,9 +626,99 @@ export const ManagerDashboard = () => {
 
   const sidebarTabs = [...tabOrder, ...(currentUser?.team === "super_admin" && !tabOrder.includes("tenants") ? ["tenants"] : [])]
     .filter(tab => tab !== "tenants" || currentUser?.team === "super_admin")
-    .filter(tab => TAB_CONFIG[tab]);
+    .filter(tab => TAB_CONFIG[tab])
+    .filter(tab => navVisibility[tab] !== false || tab === "tenants");
 
-  const activeTabLabel = TAB_CONFIG[activeTab]?.label || "Dashboard";
+  const activeTabLabel = activeTab === "settings" 
+    ? `Settings — ${SETTINGS_SUB_CONFIG[settingsSubTab]?.label || "General"}`
+    : activeTab === "reports"
+    ? `Reports — ${REPORTS_SUB_CONFIG[reportSubTab]?.label || "Pre Defined"}`
+    : TAB_CONFIG[activeTab]?.label || "Dashboard";
+
+  // Render a single nav item
+  const renderNavItem = (tab: string) => {
+    const isReports = tab === "reports";
+    const isSettings = tab === "settings";
+    const isActive = activeTab === tab;
+    const isParentActive = isActive || (isReports && reportsExpanded) || (isSettings && settingsExpanded);
+
+    return (
+      <div key={tab}>
+        <button
+          onClick={() => {
+            if (isReports) {
+              setReportsExpanded(!reportsExpanded);
+              setActiveTab("reports");
+            } else if (isSettings) {
+              setSettingsExpanded(!settingsExpanded);
+              setActiveTab("settings");
+            } else {
+              setActiveTab(tab);
+              setReportsExpanded(false);
+              setSettingsExpanded(false);
+            }
+          }}
+          draggable
+          onDragStart={() => handleTabDragStart(tab)}
+          onDragOver={(e) => handleTabDragOver(e, tab)}
+          onDragEnd={handleTabDragEnd}
+          className={cn(
+            "w-full flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all duration-200 text-left",
+            isActive && !isReports && !isSettings
+              ? "bg-primary text-primary-foreground shadow-lg"
+              : isParentActive
+              ? "bg-primary/10 text-primary font-semibold"
+              : "hover:bg-muted/80 text-muted-foreground hover:text-foreground",
+            draggedTab === tab ? "opacity-50" : ""
+          )}
+        >
+          <span className={isActive && !isReports && !isSettings ? "text-primary-foreground" : isParentActive ? "text-primary" : "text-muted-foreground"}>
+            {TAB_CONFIG[tab].icon}
+          </span>
+          <span className="font-medium text-sm flex-1">{TAB_CONFIG[tab].label}</span>
+          {(isReports || isSettings) && (
+            <ChevronDown className={cn("h-3.5 w-3.5 transition-transform", (isReports ? reportsExpanded : settingsExpanded) ? "rotate-180" : "")} />
+          )}
+        </button>
+
+        {/* Reports sub-menu */}
+        {isReports && reportsExpanded && (
+          <div className="ml-7 mt-1 space-y-0.5 border-l-2 border-primary/20 pl-3">
+            {Object.entries(REPORTS_SUB_CONFIG).map(([key, { label }]) => (
+              <button
+                key={key}
+                onClick={() => { setActiveTab("reports"); setReportSubTab(key); }}
+                className={cn(
+                  "w-full text-left px-3 py-1.5 rounded-lg text-xs font-medium transition-colors",
+                  reportSubTab === key && activeTab === "reports" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                )}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Settings sub-menu */}
+        {isSettings && settingsExpanded && (
+          <div className="ml-7 mt-1 space-y-0.5 border-l-2 border-primary/20 pl-3">
+            {Object.entries(SETTINGS_SUB_CONFIG).map(([key, { label }]) => (
+              <button
+                key={key}
+                onClick={() => { setActiveTab("settings"); setSettingsSubTab(key); }}
+                className={cn(
+                  "w-full text-left px-3 py-1.5 rounded-lg text-xs font-medium transition-colors",
+                  settingsSubTab === key && activeTab === "settings" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                )}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 flex">
@@ -608,28 +747,7 @@ export const ManagerDashboard = () => {
             Navigation
           </p>
           <div className="space-y-1">
-            {sidebarTabs.map((tab) => (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                draggable
-                onDragStart={() => handleTabDragStart(tab)}
-                onDragOver={(e) => handleTabDragOver(e, tab)}
-                onDragEnd={handleTabDragEnd}
-                className={cn(
-                  "w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 text-left",
-                  activeTab === tab
-                    ? "bg-primary text-primary-foreground shadow-lg"
-                    : "hover:bg-muted/80 text-muted-foreground hover:text-foreground",
-                  draggedTab === tab ? "opacity-50" : ""
-                )}
-              >
-                <span className={activeTab === tab ? "text-primary-foreground" : "text-muted-foreground"}>
-                  {TAB_CONFIG[tab].icon}
-                </span>
-                <span className="font-medium text-sm">{TAB_CONFIG[tab].label}</span>
-              </button>
-            ))}
+            {sidebarTabs.map((tab) => renderNavItem(tab))}
           </div>
         </nav>
       </aside>
@@ -696,7 +814,7 @@ export const ManagerDashboard = () => {
           <div className="p-8">
 
           {/* ========= OVERVIEW TAB ========= */}
-          {activeTab === "overview" && <div className="space-y-6">
+          {activeTab === "dashboard" && <div className="space-y-6">
             {/* KPI Cards */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
               {(() => {
@@ -915,17 +1033,12 @@ export const ManagerDashboard = () => {
             <Card className="shadow-xl border-border/50">
               <CardHeader className="border-b bg-muted/30">
                 <div className="flex items-center justify-between flex-wrap gap-3">
-                  <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-3 relative">
                     <CardTitle className="text-lg flex items-center gap-2">
                       <Target className="h-5 w-5 text-primary" />
                       All Projects
                     </CardTitle>
-                    {selectedProjects.size > 0 && (
-                      <Badge variant="secondary" className="text-sm">{selectedProjects.size} selected</Badge>
-                    )}
-                  </div>
-                  <div className="flex gap-2 relative">
-                    {/* Sort Dropdown */}
+                    {/* Sort Dropdown - left side */}
                     <Collapsible>
                       <CollapsibleTrigger asChild>
                         <Button variant="outline" size="sm" className="gap-2">
@@ -935,7 +1048,7 @@ export const ManagerDashboard = () => {
                           <ChevronDown className="h-3 w-3" />
                         </Button>
                       </CollapsibleTrigger>
-                      <CollapsibleContent className="absolute z-20 mt-2 right-0 w-[320px] bg-card border rounded-lg shadow-xl p-4 space-y-3">
+                      <CollapsibleContent className="absolute z-20 mt-2 left-0 top-full w-[320px] bg-card border rounded-lg shadow-xl p-4 space-y-3">
                         <div className="flex items-center justify-between mb-2">
                           <p className="text-sm font-semibold">Sort By</p>
                           {sortField !== "none" && (
@@ -969,6 +1082,7 @@ export const ManagerDashboard = () => {
                         </div>
                       </CollapsibleContent>
                     </Collapsible>
+                    {/* Filters - left side */}
                     <Collapsible>
                       <CollapsibleTrigger asChild>
                         <Button variant="outline" size="sm" className="gap-2">
@@ -978,7 +1092,7 @@ export const ManagerDashboard = () => {
                           <ChevronDown className="h-3 w-3" />
                         </Button>
                       </CollapsibleTrigger>
-                      <CollapsibleContent className="absolute z-20 mt-2 right-0 w-[600px] bg-card border rounded-lg shadow-xl p-4 space-y-3">
+                      <CollapsibleContent className="absolute z-20 mt-2 left-0 top-full w-[600px] bg-card border rounded-lg shadow-xl p-4 space-y-3">
                         <div className="flex items-center justify-between mb-2">
                           <p className="text-sm font-semibold">Filters</p>
                           {hasActiveFilters && (
@@ -1099,6 +1213,11 @@ export const ManagerDashboard = () => {
                       </CollapsibleContent>
                     </Collapsible>
                     {selectedProjects.size > 0 && (
+                      <Badge variant="secondary" className="text-sm">{selectedProjects.size} selected</Badge>
+                    )}
+                  </div>
+                  <div className="flex gap-2 relative">
+                    {selectedProjects.size > 0 && (
                       <Collapsible>
                         <CollapsibleTrigger asChild>
                           <Button variant="outline" size="sm" className="gap-2">
@@ -1191,32 +1310,31 @@ export const ManagerDashboard = () => {
                     <BarChart3 className="h-5 w-5 text-primary" />
                     Reports
                   </CardTitle>
-                  <div className="flex gap-2 flex-wrap">
-                    {[
-                      { key: "executive", label: "Executive" },
-                      { key: "operational", label: "Operational" },
-                      { key: "merchant", label: responsibilityLabels.merchant },
-                      { key: "tactical", label: "Tactical" },
-                      { key: "project", label: "Project & Checklist" },
-                      { key: "team", label: "Team & Owner" },
-                      { key: "builder", label: "Report Builder" },
-                      { key: "scheduler", label: "📅 Scheduler" },
-                    ].map(({ key, label }) => (
-                      <Button key={key} variant={reportType === key ? "default" : "outline"} size="sm" onClick={() => setReportType(key)}>
-                        {label}
-                      </Button>
-                    ))}
-                  </div>
                 </div>
               </CardHeader>
               <CardContent className="p-0">
-                  <div className="p-6">
-                    {reportType === "executive" && <ExecutiveDashboard projects={displayProjects} />}
-                    {reportType === "operational" && <OperationalReports projects={displayProjects} />}
-                    {reportType === "merchant" && <MerchantResponsibility projects={displayProjects} />}
-                    {reportType === "tactical" && <TacticalLists projects={displayProjects} />}
-                    {reportType === "builder" && <ReportsBuilder projects={displayProjects} customFields={customFields} customValuesMap={customValuesMap} />}
-                    {reportType === "scheduler" && <ReportScheduler />}
+                <div className="p-6">
+                  {/* Sub-tab: Pre Defined */}
+                  {reportSubTab === "predefined" && (
+                    <div className="space-y-4">
+                      <div className="flex gap-2 flex-wrap">
+                        {[
+                          { key: "executive", label: "Executive" },
+                          { key: "operational", label: "Operational" },
+                          { key: "merchant", label: responsibilityLabels.merchant },
+                          { key: "tactical", label: "Tactical" },
+                          { key: "project", label: "Project & Checklist" },
+                          { key: "team", label: "Team & Owner" },
+                        ].map(({ key, label }) => (
+                          <Button key={key} variant={reportType === key ? "default" : "outline"} size="sm" onClick={() => setReportType(key)}>
+                            {label}
+                          </Button>
+                        ))}
+                      </div>
+                      {reportType === "executive" && <ExecutiveDashboard projects={displayProjects} />}
+                      {reportType === "operational" && <OperationalReports projects={displayProjects} />}
+                      {reportType === "merchant" && <MerchantResponsibility projects={displayProjects} />}
+                      {reportType === "tactical" && <TacticalLists projects={displayProjects} />}
 
                     {/* Merged Project + Checklist Report */}
                     {reportType === "project" && (
@@ -1432,7 +1550,19 @@ export const ManagerDashboard = () => {
                         ))}
                       </div>
                     )}
-                  </div>
+                    </div>
+                  )}
+
+                  {/* Sub-tab: Report Builder */}
+                  {reportSubTab === "builder" && (
+                    <ReportsBuilder projects={displayProjects} customFields={customFields} customValuesMap={customValuesMap} />
+                  )}
+
+                  {/* Sub-tab: Scheduler */}
+                  {reportSubTab === "scheduler" && (
+                    <ReportScheduler />
+                  )}
+                </div>
               </CardContent>
             </Card>
           </div>}
@@ -1445,7 +1575,35 @@ export const ManagerDashboard = () => {
 
           {/* Settings Tab */}
           {activeTab === "settings" && <div className="space-y-6">
-            <SettingsPanel />
+            {settingsSubTab === "navigation" ? (
+              <Card className="shadow-xl border-border/50">
+                <CardHeader className="border-b bg-muted/30">
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <Settings className="h-5 w-5 text-primary" />
+                    Navigation Visibility
+                  </CardTitle>
+                  <CardDescription>Enable or disable navigation items for the sidebar</CardDescription>
+                </CardHeader>
+                <CardContent className="p-6">
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    {ALL_NAV_ITEMS.map((navKey) => (
+                      <div key={navKey} className="flex items-center justify-between p-3 border rounded-lg">
+                        <div className="flex items-center gap-2">
+                          {TAB_CONFIG[navKey]?.icon}
+                          <span className="text-sm font-medium">{TAB_CONFIG[navKey]?.label || navKey}</span>
+                        </div>
+                        <Checkbox
+                          checked={navVisibility[navKey] !== false}
+                          onCheckedChange={(checked) => handleNavToggle(navKey, !!checked)}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            ) : (
+              <SettingsPanel activeSubTab={settingsSubTab} />
+            )}
             {currentUser?.team === "super_admin" && <TenantManagement />}
           </div>}
 
