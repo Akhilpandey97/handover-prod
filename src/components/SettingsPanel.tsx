@@ -205,7 +205,11 @@ const COLOR_GROUPS: ColorLabelGroup[] = [
   },
 ];
 
-export const SettingsPanel = () => {
+interface SettingsPanelProps {
+  activeSubTab?: string;
+}
+
+export const SettingsPanel = ({ activeSubTab }: SettingsPanelProps = {}) => {
   const { labels, updateLabels } = useLabels();
   const [draft, setDraft] = useState<Record<string, string>>({});
   const [isSaving, setIsSaving] = useState(false);
