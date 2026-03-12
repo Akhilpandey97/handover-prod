@@ -562,6 +562,12 @@ export const ManagerDashboard = () => {
     localStorage.setItem("manager_tab_order", JSON.stringify(tabOrder));
   };
 
+  const handleNavToggle = async (navKey: string, enabled: boolean) => {
+    const current = getNavVisibility();
+    current[navKey] = enabled;
+    await updateLabels({ nav_visibility: JSON.stringify(current) });
+  };
+
   const fetchProjectAiInsight = async () => {
     setProjectAiLoading(true);
     try {
