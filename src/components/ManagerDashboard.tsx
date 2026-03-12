@@ -626,9 +626,99 @@ export const ManagerDashboard = () => {
 
   const sidebarTabs = [...tabOrder, ...(currentUser?.team === "super_admin" && !tabOrder.includes("tenants") ? ["tenants"] : [])]
     .filter(tab => tab !== "tenants" || currentUser?.team === "super_admin")
-    .filter(tab => TAB_CONFIG[tab]);
+    .filter(tab => TAB_CONFIG[tab])
+    .filter(tab => navVisibility[tab] !== false || tab === "tenants");
 
-  const activeTabLabel = TAB_CONFIG[activeTab]?.label || "Dashboard";
+  const activeTabLabel = activeTab === "settings" 
+    ? `Settings — ${SETTINGS_SUB_CONFIG[settingsSubTab]?.label || "General"}`
+    : activeTab === "reports"
+    ? `Reports — ${REPORTS_SUB_CONFIG[reportSubTab]?.label || "Pre Defined"}`
+    : TAB_CONFIG[activeTab]?.label || "Dashboard";
+
+  // Render a single nav item
+  const renderNavItem = (tab: string) => {
+    const isReports = tab === "reports";
+    const isSettings = tab === "settings";
+    const isActive = activeTab === tab;
+    const isParentActive = isActive || (isReports && reportsExpanded) || (isSettings && settingsExpanded);
+
+    return (
+      <div key={tab}>
+        <button
+          onClick={() => {
+            if (isReports) {
+              setReportsExpanded(!reportsExpanded);
+              setActiveTab("reports");
+            } else if (isSettings) {
+              setSettingsExpanded(!settingsExpanded);
+              setActiveTab("settings");
+            } else {
+              setActiveTab(tab);
+              setReportsExpanded(false);
+              setSettingsExpanded(false);
+            }
+          }}
+          draggable
+          onDragStart={() => handleTabDragStart(tab)}
+          onDragOver={(e) => handleTabDragOver(e, tab)}
+          onDragEnd={handleTabDragEnd}
+          className={cn(
+            "w-full flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all duration-200 text-left",
+            isActive && !isReports && !isSettings
+              ? "bg-primary text-primary-foreground shadow-lg"
+              : isParentActive
+              ? "bg-primary/10 text-primary font-semibold"
+              : "hover:bg-muted/80 text-muted-foreground hover:text-foreground",
+            draggedTab === tab ? "opacity-50" : ""
+          )}
+        >
+          <span className={isActive && !isReports && !isSettings ? "text-primary-foreground" : isParentActive ? "text-primary" : "text-muted-foreground"}>
+            {TAB_CONFIG[tab].icon}
+          </span>
+          <span className="font-medium text-sm flex-1">{TAB_CONFIG[tab].label}</span>
+          {(isReports || isSettings) && (
+            <ChevronDown className={cn("h-3.5 w-3.5 transition-transform", (isReports ? reportsExpanded : settingsExpanded) ? "rotate-180" : "")} />
+          )}
+        </button>
+
+        {/* Reports sub-menu */}
+        {isReports && reportsExpanded && (
+          <div className="ml-7 mt-1 space-y-0.5 border-l-2 border-primary/20 pl-3">
+            {Object.entries(REPORTS_SUB_CONFIG).map(([key, { label }]) => (
+              <button
+                key={key}
+                onClick={() => { setActiveTab("reports"); setReportSubTab(key); }}
+                className={cn(
+                  "w-full text-left px-3 py-1.5 rounded-lg text-xs font-medium transition-colors",
+                  reportSubTab === key && activeTab === "reports" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                )}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Settings sub-menu */}
+        {isSettings && settingsExpanded && (
+          <div className="ml-7 mt-1 space-y-0.5 border-l-2 border-primary/20 pl-3">
+            {Object.entries(SETTINGS_SUB_CONFIG).map(([key, { label }]) => (
+              <button
+                key={key}
+                onClick={() => { setActiveTab("settings"); setSettingsSubTab(key); }}
+                className={cn(
+                  "w-full text-left px-3 py-1.5 rounded-lg text-xs font-medium transition-colors",
+                  settingsSubTab === key && activeTab === "settings" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                )}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 flex">
@@ -657,28 +747,7 @@ export const ManagerDashboard = () => {
             Navigation
           </p>
           <div className="space-y-1">
-            {sidebarTabs.map((tab) => (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                draggable
-                onDragStart={() => handleTabDragStart(tab)}
-                onDragOver={(e) => handleTabDragOver(e, tab)}
-                onDragEnd={handleTabDragEnd}
-                className={cn(
-                  "w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 text-left",
-                  activeTab === tab
-                    ? "bg-primary text-primary-foreground shadow-lg"
-                    : "hover:bg-muted/80 text-muted-foreground hover:text-foreground",
-                  draggedTab === tab ? "opacity-50" : ""
-                )}
-              >
-                <span className={activeTab === tab ? "text-primary-foreground" : "text-muted-foreground"}>
-                  {TAB_CONFIG[tab].icon}
-                </span>
-                <span className="font-medium text-sm">{TAB_CONFIG[tab].label}</span>
-              </button>
-            ))}
+            {sidebarTabs.map((tab) => renderNavItem(tab))}
           </div>
         </nav>
       </aside>
