@@ -1310,32 +1310,31 @@ export const ManagerDashboard = () => {
                     <BarChart3 className="h-5 w-5 text-primary" />
                     Reports
                   </CardTitle>
-                  <div className="flex gap-2 flex-wrap">
-                    {[
-                      { key: "executive", label: "Executive" },
-                      { key: "operational", label: "Operational" },
-                      { key: "merchant", label: responsibilityLabels.merchant },
-                      { key: "tactical", label: "Tactical" },
-                      { key: "project", label: "Project & Checklist" },
-                      { key: "team", label: "Team & Owner" },
-                      { key: "builder", label: "Report Builder" },
-                      { key: "scheduler", label: "📅 Scheduler" },
-                    ].map(({ key, label }) => (
-                      <Button key={key} variant={reportType === key ? "default" : "outline"} size="sm" onClick={() => setReportType(key)}>
-                        {label}
-                      </Button>
-                    ))}
-                  </div>
                 </div>
               </CardHeader>
               <CardContent className="p-0">
-                  <div className="p-6">
-                    {reportType === "executive" && <ExecutiveDashboard projects={displayProjects} />}
-                    {reportType === "operational" && <OperationalReports projects={displayProjects} />}
-                    {reportType === "merchant" && <MerchantResponsibility projects={displayProjects} />}
-                    {reportType === "tactical" && <TacticalLists projects={displayProjects} />}
-                    {reportType === "builder" && <ReportsBuilder projects={displayProjects} customFields={customFields} customValuesMap={customValuesMap} />}
-                    {reportType === "scheduler" && <ReportScheduler />}
+                <div className="p-6">
+                  {/* Sub-tab: Pre Defined */}
+                  {reportSubTab === "predefined" && (
+                    <div className="space-y-4">
+                      <div className="flex gap-2 flex-wrap">
+                        {[
+                          { key: "executive", label: "Executive" },
+                          { key: "operational", label: "Operational" },
+                          { key: "merchant", label: responsibilityLabels.merchant },
+                          { key: "tactical", label: "Tactical" },
+                          { key: "project", label: "Project & Checklist" },
+                          { key: "team", label: "Team & Owner" },
+                        ].map(({ key, label }) => (
+                          <Button key={key} variant={reportType === key ? "default" : "outline"} size="sm" onClick={() => setReportType(key)}>
+                            {label}
+                          </Button>
+                        ))}
+                      </div>
+                      {reportType === "executive" && <ExecutiveDashboard projects={displayProjects} />}
+                      {reportType === "operational" && <OperationalReports projects={displayProjects} />}
+                      {reportType === "merchant" && <MerchantResponsibility projects={displayProjects} />}
+                      {reportType === "tactical" && <TacticalLists projects={displayProjects} />}
 
                     {/* Merged Project + Checklist Report */}
                     {reportType === "project" && (
