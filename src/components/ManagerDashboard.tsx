@@ -1434,41 +1434,33 @@ export const ManagerDashboard = () => {
                   </div>
               </CardContent>
             </Card>
-          </TabsContent>
+          </div>}
 
           {/* Checklist Tab */}
-          <TabsContent value="checklist" className="mt-0">
-            <ChecklistManagement />
-          </TabsContent>
+          {activeTab === "checklist" && <ChecklistManagement />}
 
           {/* Users Tab */}
-          <TabsContent value="users" className="mt-0">
-            <UserManagement />
-          </TabsContent>
+          {activeTab === "users" && <UserManagement />}
 
           {/* Settings Tab */}
-          <TabsContent value="settings" className="mt-0 space-y-6">
+          {activeTab === "settings" && <div className="space-y-6">
             <SettingsPanel />
             {currentUser?.team === "super_admin" && <TenantManagement />}
-          </TabsContent>
+          </div>}
 
           {/* Kanban Tab */}
-          <TabsContent value="kanban" className="mt-0">
-            <KanbanBoard />
-          </TabsContent>
+          {activeTab === "kanban" && <KanbanBoard />}
 
           {/* Emails Tab */}
-          <TabsContent value="emails" className="mt-0 space-y-6">
+          {activeTab === "emails" && <div className="space-y-6">
             <ParsedEmailsTab />
-          </TabsContent>
+          </div>}
 
           {/* Tenants Tab (Super Admin only) */}
-          {currentUser?.team === "super_admin" && (
-            <TabsContent value="tenants" className="mt-0">
-              <TenantManagement />
-            </TabsContent>
-          )}
-        </Tabs>
+          {activeTab === "tenants" && currentUser?.team === "super_admin" && <TenantManagement />}
+
+          </div>
+        </ScrollArea>
       </main>
 
       <CSVUploadDialog open={csvDialogOpen} onOpenChange={setCsvDialogOpen} />
