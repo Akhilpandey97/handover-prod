@@ -574,27 +574,79 @@ export const ManagerDashboard = () => {
     }
   };
 
-  return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="sticky top-0 z-40 border-b bg-card/95 backdrop-blur-sm">
-        <div className="container mx-auto px-6">
-          <div className="h-14 flex items-center justify-between gap-6">
-            <div className="flex items-center gap-3">
-              {appLabels.org_logo_url ? (
-                <img src={appLabels.org_logo_url} alt="Logo" className="h-8 w-8 rounded-lg object-contain" />
-              ) : (
-                <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
-                  <BarChart3 className="h-4 w-4 text-primary-foreground" />
-                </div>
-              )}
-              <div>
-                <h1 className="font-semibold text-sm">{appLabels.app_title}</h1>
-                <p className="text-[11px] text-muted-foreground leading-none">{appLabels.app_subtitle}</p>
-              </div>
-            </div>
+  const sidebarTabs = [...tabOrder, ...(currentUser?.team === "super_admin" && !tabOrder.includes("tenants") ? ["tenants"] : [])]
+    .filter(tab => tab !== "tenants" || currentUser?.team === "super_admin")
+    .filter(tab => TAB_CONFIG[tab]);
 
-            <div className="flex-1 max-w-md">
+  const activeTabLabel = TAB_CONFIG[activeTab]?.label || "Dashboard";
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 flex">
+      {/* Left Sidebar */}
+      <aside className="w-72 border-r bg-card/50 backdrop-blur-sm flex flex-col shrink-0">
+        {/* Logo & Title */}
+        <div className="p-6 border-b">
+          <div className="flex items-center gap-3">
+            {appLabels.org_logo_url ? (
+              <img src={appLabels.org_logo_url} alt="Logo" className="h-11 w-11 rounded-xl object-contain shadow-lg" />
+            ) : (
+              <div className="h-11 w-11 rounded-xl bg-primary flex items-center justify-center shadow-lg">
+                <BarChart3 className="h-6 w-6 text-primary-foreground" />
+              </div>
+            )}
+            <div>
+              <h1 className="font-bold text-lg">{appLabels.app_title}</h1>
+              <p className="text-xs text-muted-foreground">{appLabels.app_subtitle}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Navigation */}
+        <nav className="flex-1 p-4 overflow-y-auto">
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3 px-3">
+            Navigation
+          </p>
+          <div className="space-y-1">
+            {sidebarTabs.map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                draggable
+                onDragStart={() => handleTabDragStart(tab)}
+                onDragOver={(e) => handleTabDragOver(e, tab)}
+                onDragEnd={handleTabDragEnd}
+                className={cn(
+                  "w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 text-left",
+                  activeTab === tab
+                    ? "bg-primary text-primary-foreground shadow-lg"
+                    : "hover:bg-muted/80 text-muted-foreground hover:text-foreground",
+                  draggedTab === tab ? "opacity-50" : ""
+                )}
+              >
+                <span className={activeTab === tab ? "text-primary-foreground" : "text-muted-foreground"}>
+                  {TAB_CONFIG[tab].icon}
+                </span>
+                <span className="font-medium text-sm">{TAB_CONFIG[tab].label}</span>
+              </button>
+            ))}
+          </div>
+        </nav>
+      </aside>
+
+      {/* Main Content */}
+      <main className="flex-1 flex flex-col min-w-0">
+        {/* Header */}
+        <header className="h-16 border-b bg-background/80 backdrop-blur-sm flex items-center justify-between px-8 shrink-0">
+          <div>
+            <h2 className="text-xl font-bold">{activeTabLabel}</h2>
+            <p className="text-sm text-muted-foreground">
+              {activeTab === "projects" ? `${filteredProjects.length} project${filteredProjects.length !== 1 ? "s" : ""} found` : appLabels.app_subtitle}
+            </p>
+          </div>
+
+          <div className="flex items-center gap-4">
+            {/* Search */}
+            <div className="w-80">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
@@ -621,9 +673,10 @@ export const ManagerDashboard = () => {
               </Button>
             </div>
 
+            {/* User Info */}
             <div className="flex items-center gap-3 pl-4 border-l">
               <ThemeToggle />
-              <div className="text-right hidden md:block">
+              <div className="text-right">
                 <p className="font-medium text-sm">{currentUser.name}</p>
                 <p className="text-xs text-muted-foreground">Manager</p>
               </div>
@@ -635,32 +688,11 @@ export const ManagerDashboard = () => {
               </Button>
             </div>
           </div>
-        </div>
-      </header>
+        </header>
 
-      {/* Main Content */}
-      <main className="container mx-auto px-6 py-6">
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="h-auto bg-muted/50 p-1 mb-6 rounded-lg flex flex-wrap gap-0">
-            {[...tabOrder, ...(currentUser?.team === "super_admin" && !tabOrder.includes("tenants") ? ["tenants"] : [])]
-              .filter(tab => tab !== "tenants" || currentUser?.team === "super_admin")
-              .filter(tab => TAB_CONFIG[tab])
-              .map(tab => (
-              <TabsTrigger
-                key={tab}
-                value={tab}
-                draggable
-                onDragStart={() => handleTabDragStart(tab)}
-                onDragOver={(e) => handleTabDragOver(e, tab)}
-                onDragEnd={handleTabDragEnd}
-                className={`gap-1.5 px-4 h-8 text-xs font-medium rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm cursor-grab active:cursor-grabbing ${draggedTab === tab ? "opacity-50" : ""}`}
-              >
-                <GripVertical className="h-3 w-3 text-muted-foreground/50" />
-                {TAB_CONFIG[tab].icon}
-                {TAB_CONFIG[tab].label}
-              </TabsTrigger>
-            ))}
-          </TabsList>
+        {/* Content Area */}
+        <ScrollArea className="flex-1">
+          <div className="p-8">
 
           {/* ========= OVERVIEW TAB ========= */}
           <TabsContent value="overview" className="space-y-6 mt-0">
