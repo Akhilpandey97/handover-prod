@@ -664,14 +664,12 @@ export const ManagerDashboard = () => {
           onClick={() => {
             if (isReports) {
               setReportsExpanded(!reportsExpanded);
-              setActiveTab("reports");
+              if (!reportsExpanded) { setActiveTab("reports"); }
             } else if (isSettings) {
               setSettingsExpanded(!settingsExpanded);
-              setActiveTab("settings");
+              if (!settingsExpanded) { setActiveTab("settings"); }
             } else {
               setActiveTab(tab);
-              setReportsExpanded(false);
-              setSettingsExpanded(false);
             }
           }}
           draggable
@@ -679,37 +677,49 @@ export const ManagerDashboard = () => {
           onDragOver={(e) => handleTabDragOver(e, tab)}
           onDragEnd={handleTabDragEnd}
           className={cn(
-            "w-full flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all duration-200 text-left",
+            "w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 text-left group",
             isActive && !isReports && !isSettings
-              ? "bg-primary text-primary-foreground shadow-lg"
+              ? "bg-primary text-primary-foreground shadow-lg shadow-primary/25"
               : isParentActive
-              ? "bg-primary/10 text-primary font-semibold"
-              : "hover:bg-muted/80 text-muted-foreground hover:text-foreground",
+              ? "bg-sidebar-accent text-sidebar-accent-foreground font-semibold"
+              : "hover:bg-sidebar-accent/60 text-sidebar-foreground/70 hover:text-sidebar-foreground",
             draggedTab === tab ? "opacity-50" : ""
           )}
         >
-          <span className={isActive && !isReports && !isSettings ? "text-primary-foreground" : isParentActive ? "text-primary" : "text-muted-foreground"}>
+          <span className={cn(
+            "flex items-center justify-center h-8 w-8 rounded-lg shrink-0 transition-colors",
+            isActive && !isReports && !isSettings
+              ? "bg-primary-foreground/20 text-primary-foreground"
+              : isParentActive
+              ? "bg-primary/10 text-primary"
+              : "bg-sidebar-accent/50 text-sidebar-foreground/60 group-hover:text-sidebar-foreground"
+          )}>
             {TAB_CONFIG[tab].icon}
           </span>
           <span className="font-medium text-sm flex-1">{TAB_CONFIG[tab].label}</span>
           {(isReports || isSettings) && (
-            <ChevronDown className={cn("h-3.5 w-3.5 transition-transform", (isReports ? reportsExpanded : settingsExpanded) ? "rotate-180" : "")} />
+            <ChevronDown className={cn(
+              "h-4 w-4 transition-transform duration-200",
+              (isReports ? reportsExpanded : settingsExpanded) ? "rotate-180" : ""
+            )} />
           )}
         </button>
 
         {/* Reports sub-menu */}
         {isReports && reportsExpanded && (
-          <div className="ml-7 mt-1 space-y-0.5 border-l-2 border-primary/20 pl-3">
-            {Object.entries(REPORTS_SUB_CONFIG).map(([key, { label }]) => (
+          <div className="ml-5 mt-1 mb-1 space-y-0.5 border-l-2 border-primary/20 pl-3">
+            {Object.entries(REPORTS_SUB_CONFIG).map(([key, cfg]) => (
               <button
                 key={key}
                 onClick={() => { setActiveTab("reports"); setReportSubTab(key); }}
                 className={cn(
-                  "w-full text-left px-3 py-1.5 rounded-lg text-xs font-medium transition-colors",
-                  reportSubTab === key && activeTab === "reports" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                  "w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150",
+                  reportSubTab === key && activeTab === "reports"
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent/50"
                 )}
               >
-                {label}
+                {cfg.icon ? `${cfg.icon} ${cfg.label}` : cfg.label}
               </button>
             ))}
           </div>
@@ -717,14 +727,16 @@ export const ManagerDashboard = () => {
 
         {/* Settings sub-menu */}
         {isSettings && settingsExpanded && (
-          <div className="ml-7 mt-1 space-y-0.5 border-l-2 border-primary/20 pl-3">
+          <div className="ml-5 mt-1 mb-1 space-y-0.5 border-l-2 border-primary/20 pl-3">
             {Object.entries(SETTINGS_SUB_CONFIG).map(([key, { label }]) => (
               <button
                 key={key}
                 onClick={() => { setActiveTab("settings"); setSettingsSubTab(key); }}
                 className={cn(
-                  "w-full text-left px-3 py-1.5 rounded-lg text-xs font-medium transition-colors",
-                  settingsSubTab === key && activeTab === "settings" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                  "w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150",
+                  settingsSubTab === key && activeTab === "settings"
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent/50"
                 )}
               >
                 {label}
