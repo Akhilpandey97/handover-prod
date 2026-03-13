@@ -781,16 +781,16 @@ export const ManagerDashboard = () => {
         </nav>
 
         {/* User card at bottom */}
-        <div className="p-4 border-t border-sidebar-border">
+        <div className="p-4 border-t border-border">
           <div className="flex items-center gap-3">
             <div className="h-10 w-10 rounded-xl bg-primary flex items-center justify-center text-primary-foreground font-bold text-sm shadow-md">
               {currentUser.name.charAt(0)}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="font-semibold text-sm text-sidebar-foreground truncate">{currentUser.name}</p>
-              <p className="text-xs text-sidebar-foreground/50">Manager</p>
+              <p className="font-semibold text-sm text-foreground truncate">{currentUser.name}</p>
+              <p className="text-xs text-muted-foreground">Manager</p>
             </div>
-            <Button variant="ghost" size="icon" onClick={logout} className="h-8 w-8 text-sidebar-foreground/50 hover:text-destructive hover:bg-destructive/10">
+            <Button variant="ghost" size="icon" onClick={logout} className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10">
               <LogOut className="h-4 w-4" />
             </Button>
           </div>
