@@ -757,7 +757,7 @@ export const ManagerDashboard = () => {
         <div className="p-5 border-b border-border">
           <div className="flex items-center gap-3">
             {appLabels.org_logo_url ? (
-              <img src={appLabels.org_logo_url} alt="Logo" className="h-12 w-12 rounded-xl object-contain shadow-lg ring-2 ring-sidebar-accent" />
+              <img src={appLabels.org_logo_url} alt="Logo" className="h-12 w-12 rounded-xl object-contain shadow-lg ring-2 ring-primary/20" />
             ) : (
               <div className="h-12 w-12 rounded-xl bg-primary flex items-center justify-center shadow-lg ring-2 ring-primary/30">
                 <BarChart3 className="h-6 w-6 text-primary-foreground" />
