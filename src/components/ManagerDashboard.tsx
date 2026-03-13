@@ -764,8 +764,8 @@ export const ManagerDashboard = () => {
               </div>
             )}
             <div>
-              <h1 className="font-bold text-base text-sidebar-foreground">{appLabels.app_title}</h1>
-              <p className="text-xs text-sidebar-foreground/50">{appLabels.app_subtitle}</p>
+              <h1 className="font-bold text-base text-foreground">{appLabels.app_title}</h1>
+              <p className="text-xs text-muted-foreground">{appLabels.app_subtitle}</p>
             </div>
           </div>
         </div>
