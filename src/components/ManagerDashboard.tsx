@@ -126,8 +126,8 @@ export const ManagerDashboard = () => {
   const [addDialogOpen, setAddDialogOpen] = useState(false);
 
   // Sidebar expand state for sub-menus
-  const [reportsExpanded, setReportsExpanded] = useState(true);
-  const [settingsExpanded, setSettingsExpanded] = useState(true);
+  const [reportsExpanded, setReportsExpanded] = useState(false);
+  const [settingsExpanded, setSettingsExpanded] = useState(false);
 
   // Nav visibility from labels
   const getNavVisibility = (): Record<string, boolean> => {
