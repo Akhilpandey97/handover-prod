@@ -89,7 +89,7 @@ import { ReportsBuilder } from "./reports/ReportsBuilder";
 import { ReportScheduler } from "./reports/ReportScheduler";
 
 // Sub-tab keys for reports and settings
-const REPORTS_SUB_TABS = ["predefined", "builder", "scheduler"];
+const REPORTS_SUB_TABS = ["predefined", "builder", "pivot", "scheduler"];
 const SETTINGS_SUB_TABS = ["general", "workflow", "fields", "custom-fields", "checklist-forms", "colours", "email"];
 const PREDEFINED_REPORT_TYPES = ["executive", "operational", "merchant", "tactical", "project", "team"];
 
