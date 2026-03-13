@@ -104,7 +104,7 @@ export const ManagerDashboard = () => {
   const projectIds = useMemo(() => projects.map(p => p.id), [projects]);
   const { valuesMap: customValuesMap } = useAllCustomFieldValues(projectIds);
   const [searchQuery, setSearchQuery] = useState("");
-  const [activeTab, setActiveTab] = useState("dashboard");
+  const [activeTab, setActiveTab] = useState("");
   const [teamFilter, setTeamFilter] = useState<string>("all");
   const [ownerFilter, setOwnerFilter] = useState<string>("all");
   const [phaseFilter, setPhaseFilter] = useState<string>("all");
