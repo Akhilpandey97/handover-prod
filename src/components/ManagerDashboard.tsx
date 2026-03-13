@@ -681,8 +681,8 @@ export const ManagerDashboard = () => {
             isActive && !isReports && !isSettings
               ? "bg-primary text-primary-foreground shadow-lg shadow-primary/25"
               : isParentActive
-              ? "bg-sidebar-accent text-sidebar-accent-foreground font-semibold"
-              : "hover:bg-sidebar-accent/60 text-sidebar-foreground/70 hover:text-sidebar-foreground",
+              ? "bg-muted text-foreground font-semibold"
+              : "hover:bg-muted/60 text-foreground/60 hover:text-foreground",
             draggedTab === tab ? "opacity-50" : ""
           )}
         >
@@ -692,7 +692,7 @@ export const ManagerDashboard = () => {
               ? "bg-primary-foreground/20 text-primary-foreground"
               : isParentActive
               ? "bg-primary/10 text-primary"
-              : "bg-sidebar-accent/50 text-sidebar-foreground/60 group-hover:text-sidebar-foreground"
+              : "bg-muted/80 text-foreground/50 group-hover:text-foreground"
           )}>
             {TAB_CONFIG[tab].icon}
           </span>
