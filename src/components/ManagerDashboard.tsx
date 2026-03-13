@@ -707,19 +707,20 @@ export const ManagerDashboard = () => {
 
         {/* Reports sub-menu */}
         {isReports && reportsExpanded && (
-          <div className="ml-5 mt-1 mb-1 space-y-0.5 border-l-2 border-primary/20 pl-3">
+          <div className="ml-6 mt-1 mb-1 space-y-1 pl-4">
             {Object.entries(REPORTS_SUB_CONFIG).map(([key, cfg]) => (
               <button
                 key={key}
                 onClick={() => { setActiveTab("reports"); setReportSubTab(key); }}
                 className={cn(
-                  "w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150",
+                  "w-full flex items-center gap-2.5 text-left px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150",
                   reportSubTab === key && activeTab === "reports"
-                    ? "bg-primary text-primary-foreground shadow-sm"
-                    : "text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent/50"
+                    ? "bg-primary text-primary-foreground shadow-md"
+                    : "text-foreground/60 hover:text-foreground hover:bg-muted/60"
                 )}
               >
-                {cfg.icon ? `${cfg.icon} ${cfg.label}` : cfg.label}
+                {cfg.icon && <span className="text-base">{cfg.icon}</span>}
+                {cfg.label}
               </button>
             ))}
           </div>
@@ -727,16 +728,16 @@ export const ManagerDashboard = () => {
 
         {/* Settings sub-menu */}
         {isSettings && settingsExpanded && (
-          <div className="ml-5 mt-1 mb-1 space-y-0.5 border-l-2 border-primary/20 pl-3">
+          <div className="ml-6 mt-1 mb-1 space-y-1 pl-4">
             {Object.entries(SETTINGS_SUB_CONFIG).map(([key, { label }]) => (
               <button
                 key={key}
                 onClick={() => { setActiveTab("settings"); setSettingsSubTab(key); }}
                 className={cn(
-                  "w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150",
+                  "w-full flex items-center gap-2.5 text-left px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150",
                   settingsSubTab === key && activeTab === "settings"
-                    ? "bg-primary text-primary-foreground shadow-sm"
-                    : "text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent/50"
+                    ? "bg-primary text-primary-foreground shadow-md"
+                    : "text-foreground/60 hover:text-foreground hover:bg-muted/60"
                 )}
               >
                 {label}
