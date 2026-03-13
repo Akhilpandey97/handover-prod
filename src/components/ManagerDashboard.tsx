@@ -89,7 +89,7 @@ import { ReportsBuilder } from "./reports/ReportsBuilder";
 import { ReportScheduler } from "./reports/ReportScheduler";
 
 // Sub-tab keys for reports and settings
-const REPORTS_SUB_TABS = ["predefined", "builder", "scheduler"];
+const REPORTS_SUB_TABS = ["predefined", "builder", "pivot", "scheduler"];
 const SETTINGS_SUB_TABS = ["general", "workflow", "fields", "custom-fields", "checklist-forms", "colours", "email"];
 const PREDEFINED_REPORT_TYPES = ["executive", "operational", "merchant", "tactical", "project", "team"];
 
@@ -104,7 +104,7 @@ export const ManagerDashboard = () => {
   const projectIds = useMemo(() => projects.map(p => p.id), [projects]);
   const { valuesMap: customValuesMap } = useAllCustomFieldValues(projectIds);
   const [searchQuery, setSearchQuery] = useState("");
-  const [activeTab, setActiveTab] = useState("dashboard");
+  const [activeTab, setActiveTab] = useState("");
   const [teamFilter, setTeamFilter] = useState<string>("all");
   const [ownerFilter, setOwnerFilter] = useState<string>("all");
   const [phaseFilter, setPhaseFilter] = useState<string>("all");
@@ -126,8 +126,8 @@ export const ManagerDashboard = () => {
   const [addDialogOpen, setAddDialogOpen] = useState(false);
 
   // Sidebar expand state for sub-menus
-  const [reportsExpanded, setReportsExpanded] = useState(false);
-  const [settingsExpanded, setSettingsExpanded] = useState(false);
+  const [reportsExpanded, setReportsExpanded] = useState(true);
+  const [settingsExpanded, setSettingsExpanded] = useState(true);
 
   // Nav visibility from labels
   const getNavVisibility = (): Record<string, boolean> => {
@@ -178,6 +178,21 @@ export const ManagerDashboard = () => {
     };
     fetchProfiles();
   }, []);
+
+  // Set default active tab to first visible nav item on mount
+  useEffect(() => {
+    if (activeTab === "") {
+      const visibleTabs = [...tabOrder, ...(currentUser?.team === "super_admin" && !tabOrder.includes("tenants") ? ["tenants"] : [])]
+        .filter(tab => TAB_CONFIG_KEYS.includes(tab))
+        .filter(tab => navVisibility[tab] !== false || tab === "tenants");
+      if (visibleTabs.length > 0) {
+        setActiveTab(visibleTabs[0]);
+      } else {
+        setActiveTab("dashboard");
+      }
+    }
+  }, []);
+  const TAB_CONFIG_KEYS = ["dashboard", "projects", "calendar", "reports", "checklist", "users", "settings", "kanban", "emails", "tenants"];
 
   // Calculate project time stats helper - FIXED: uses checklist-level time
   const calculateProjectStats = (project: Project) => {
@@ -537,9 +552,10 @@ export const ManagerDashboard = () => {
     navigation: { label: "Navigation" },
   };
 
-  const REPORTS_SUB_CONFIG: Record<string, { label: string }> = {
+  const REPORTS_SUB_CONFIG: Record<string, { label: string; icon?: string }> = {
     predefined: { label: "Pre Defined" },
     builder: { label: "Report Builder" },
+    pivot: { label: "Pivot Table", icon: "Σ" },
     scheduler: { label: "📅 Scheduler" },
   };
 
@@ -648,14 +664,12 @@ export const ManagerDashboard = () => {
           onClick={() => {
             if (isReports) {
               setReportsExpanded(!reportsExpanded);
-              setActiveTab("reports");
+              if (!reportsExpanded) { setActiveTab("reports"); }
             } else if (isSettings) {
               setSettingsExpanded(!settingsExpanded);
-              setActiveTab("settings");
+              if (!settingsExpanded) { setActiveTab("settings"); }
             } else {
               setActiveTab(tab);
-              setReportsExpanded(false);
-              setSettingsExpanded(false);
             }
           }}
           draggable
@@ -663,37 +677,49 @@ export const ManagerDashboard = () => {
           onDragOver={(e) => handleTabDragOver(e, tab)}
           onDragEnd={handleTabDragEnd}
           className={cn(
-            "w-full flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all duration-200 text-left",
+            "w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 text-left group",
             isActive && !isReports && !isSettings
-              ? "bg-primary text-primary-foreground shadow-lg"
+              ? "bg-primary text-primary-foreground shadow-lg shadow-primary/25"
               : isParentActive
-              ? "bg-primary/10 text-primary font-semibold"
-              : "hover:bg-muted/80 text-muted-foreground hover:text-foreground",
+              ? "bg-sidebar-accent text-sidebar-accent-foreground font-semibold"
+              : "hover:bg-sidebar-accent/60 text-sidebar-foreground/70 hover:text-sidebar-foreground",
             draggedTab === tab ? "opacity-50" : ""
           )}
         >
-          <span className={isActive && !isReports && !isSettings ? "text-primary-foreground" : isParentActive ? "text-primary" : "text-muted-foreground"}>
+          <span className={cn(
+            "flex items-center justify-center h-8 w-8 rounded-lg shrink-0 transition-colors",
+            isActive && !isReports && !isSettings
+              ? "bg-primary-foreground/20 text-primary-foreground"
+              : isParentActive
+              ? "bg-primary/10 text-primary"
+              : "bg-sidebar-accent/50 text-sidebar-foreground/60 group-hover:text-sidebar-foreground"
+          )}>
             {TAB_CONFIG[tab].icon}
           </span>
           <span className="font-medium text-sm flex-1">{TAB_CONFIG[tab].label}</span>
           {(isReports || isSettings) && (
-            <ChevronDown className={cn("h-3.5 w-3.5 transition-transform", (isReports ? reportsExpanded : settingsExpanded) ? "rotate-180" : "")} />
+            <ChevronDown className={cn(
+              "h-4 w-4 transition-transform duration-200",
+              (isReports ? reportsExpanded : settingsExpanded) ? "rotate-180" : ""
+            )} />
           )}
         </button>
 
         {/* Reports sub-menu */}
         {isReports && reportsExpanded && (
-          <div className="ml-7 mt-1 space-y-0.5 border-l-2 border-primary/20 pl-3">
-            {Object.entries(REPORTS_SUB_CONFIG).map(([key, { label }]) => (
+          <div className="ml-5 mt-1 mb-1 space-y-0.5 border-l-2 border-primary/20 pl-3">
+            {Object.entries(REPORTS_SUB_CONFIG).map(([key, cfg]) => (
               <button
                 key={key}
                 onClick={() => { setActiveTab("reports"); setReportSubTab(key); }}
                 className={cn(
-                  "w-full text-left px-3 py-1.5 rounded-lg text-xs font-medium transition-colors",
-                  reportSubTab === key && activeTab === "reports" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                  "w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150",
+                  reportSubTab === key && activeTab === "reports"
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent/50"
                 )}
               >
-                {label}
+                {cfg.icon ? `${cfg.icon} ${cfg.label}` : cfg.label}
               </button>
             ))}
           </div>
@@ -701,14 +727,16 @@ export const ManagerDashboard = () => {
 
         {/* Settings sub-menu */}
         {isSettings && settingsExpanded && (
-          <div className="ml-7 mt-1 space-y-0.5 border-l-2 border-primary/20 pl-3">
+          <div className="ml-5 mt-1 mb-1 space-y-0.5 border-l-2 border-primary/20 pl-3">
             {Object.entries(SETTINGS_SUB_CONFIG).map(([key, { label }]) => (
               <button
                 key={key}
                 onClick={() => { setActiveTab("settings"); setSettingsSubTab(key); }}
                 className={cn(
-                  "w-full text-left px-3 py-1.5 rounded-lg text-xs font-medium transition-colors",
-                  settingsSubTab === key && activeTab === "settings" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                  "w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150",
+                  settingsSubTab === key && activeTab === "settings"
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent/50"
                 )}
               >
                 {label}
@@ -722,62 +750,80 @@ export const ManagerDashboard = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 flex">
-      {/* Left Sidebar */}
-      <aside className="w-72 border-r bg-card/50 backdrop-blur-sm flex flex-col shrink-0">
+      {/* Left Sidebar — dark themed */}
+      <aside className="w-72 bg-sidebar border-r border-sidebar-border flex flex-col shrink-0">
         {/* Logo & Title */}
-        <div className="p-6 border-b">
+        <div className="p-5 border-b border-sidebar-border">
           <div className="flex items-center gap-3">
             {appLabels.org_logo_url ? (
-              <img src={appLabels.org_logo_url} alt="Logo" className="h-11 w-11 rounded-xl object-contain shadow-lg" />
+              <img src={appLabels.org_logo_url} alt="Logo" className="h-12 w-12 rounded-xl object-contain shadow-lg ring-2 ring-sidebar-accent" />
             ) : (
-              <div className="h-11 w-11 rounded-xl bg-primary flex items-center justify-center shadow-lg">
+              <div className="h-12 w-12 rounded-xl bg-primary flex items-center justify-center shadow-lg ring-2 ring-primary/30">
                 <BarChart3 className="h-6 w-6 text-primary-foreground" />
               </div>
             )}
             <div>
-              <h1 className="font-bold text-lg">{appLabels.app_title}</h1>
-              <p className="text-xs text-muted-foreground">{appLabels.app_subtitle}</p>
+              <h1 className="font-bold text-base text-sidebar-foreground">{appLabels.app_title}</h1>
+              <p className="text-xs text-sidebar-foreground/50">{appLabels.app_subtitle}</p>
             </div>
           </div>
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 p-4 overflow-y-auto">
-          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3 px-3">
+        <nav className="flex-1 px-3 py-4 overflow-y-auto">
+          <p className="text-[11px] font-semibold text-sidebar-foreground/40 uppercase tracking-widest mb-3 px-4">
             Navigation
           </p>
           <div className="space-y-1">
             {sidebarTabs.map((tab) => renderNavItem(tab))}
           </div>
         </nav>
+
+        {/* User card at bottom */}
+        <div className="p-4 border-t border-sidebar-border">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-xl bg-primary flex items-center justify-center text-primary-foreground font-bold text-sm shadow-md">
+              {currentUser.name.charAt(0)}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-semibold text-sm text-sidebar-foreground truncate">{currentUser.name}</p>
+              <p className="text-xs text-sidebar-foreground/50">Manager</p>
+            </div>
+            <Button variant="ghost" size="icon" onClick={logout} className="h-8 w-8 text-sidebar-foreground/50 hover:text-destructive hover:bg-destructive/10">
+              <LogOut className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
       </aside>
 
       {/* Main Content */}
       <main className="flex-1 flex flex-col min-w-0">
         {/* Header */}
-        <header className="h-16 border-b bg-background/80 backdrop-blur-sm flex items-center justify-between px-8 shrink-0">
-          <div>
-            <h2 className="text-xl font-bold">{activeTabLabel}</h2>
-            <p className="text-sm text-muted-foreground">
+        <header className="h-14 border-b bg-background/90 backdrop-blur-md flex items-center justify-between px-6 shrink-0">
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
+              <h2 className="text-lg font-bold">{activeTabLabel}</h2>
+            </div>
+            <span className="text-xs text-muted-foreground">
               {activeTab === "projects" ? `${filteredProjects.length} project${filteredProjects.length !== 1 ? "s" : ""} found` : appLabels.app_subtitle}
-            </p>
+            </span>
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
             {/* Search */}
-            <div className="w-80">
+            <div className="w-64">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   placeholder="Search projects..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 h-10 bg-muted/50 border-0 focus:ring-2 focus:ring-primary/20"
+                  className="pl-9 h-9 bg-muted/40 border-border/50 focus:ring-2 focus:ring-primary/20 text-sm"
                 />
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5">
               <Button onClick={() => exportProjectsToCSV(projects, { teamLabels, stateLabels: stateLabelsFromCtx, responsibilityLabels, getLabel: (k: string) => appLabels[k] || k }, { fields: customFields, valuesMap: customValuesMap })} variant="outline" size="sm" className="gap-1.5 h-8 text-xs">
                 <Download className="h-3.5 w-3.5" />
                 Export
@@ -792,19 +838,8 @@ export const ManagerDashboard = () => {
               </Button>
             </div>
 
-            {/* User Info */}
-            <div className="flex items-center gap-3 pl-4 border-l">
+            <div className="flex items-center gap-2 pl-3 border-l border-border/50">
               <ThemeToggle />
-              <div className="text-right">
-                <p className="font-medium text-sm">{currentUser.name}</p>
-                <p className="text-xs text-muted-foreground">Manager</p>
-              </div>
-              <div className="h-9 w-9 rounded-lg bg-primary flex items-center justify-center text-primary-foreground font-semibold text-sm">
-                {currentUser.name.charAt(0)}
-              </div>
-              <Button variant="ghost" size="icon" onClick={logout} className="h-9 w-9 hover:bg-destructive/10 hover:text-destructive">
-                <LogOut className="h-4 w-4" />
-              </Button>
             </div>
           </div>
         </header>
@@ -1556,6 +1591,11 @@ export const ManagerDashboard = () => {
                   {/* Sub-tab: Report Builder */}
                   {reportSubTab === "builder" && (
                     <ReportsBuilder projects={displayProjects} customFields={customFields} customValuesMap={customValuesMap} />
+                  )}
+
+                  {/* Sub-tab: Pivot Table */}
+                  {reportSubTab === "pivot" && (
+                    <ReportsBuilder projects={displayProjects} customFields={customFields} customValuesMap={customValuesMap} initialPivot />
                   )}
 
                   {/* Sub-tab: Scheduler */}

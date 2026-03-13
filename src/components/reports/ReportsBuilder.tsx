@@ -151,7 +151,7 @@ interface PivotGroup {
   aggregates: Record<string, number>;
 }
 
-export const ReportsBuilder = ({ projects, customFields = [], customValuesMap = {} }: { projects: Project[]; customFields?: CustomField[]; customValuesMap?: Record<string, Record<string, string>> }) => {
+export const ReportsBuilder = ({ projects, customFields = [], customValuesMap = {}, initialPivot = false }: { projects: Project[]; customFields?: CustomField[]; customValuesMap?: Record<string, Record<string, string>>; initialPivot?: boolean }) => {
   const { teamLabels, responsibilityLabels, phaseLabels, stateLabels } = useLabels();
   const { currentUser } = useAuth();
   const labels = { teamLabels, responsibilityLabels, phaseLabels, stateLabels, customValuesMap };
@@ -164,7 +164,7 @@ export const ReportsBuilder = ({ projects, customFields = [], customValuesMap = 
   const [pivotColField, setPivotColField] = useState<string>("none");
   const [pivotValueField, setPivotValueField] = useState<string>("arr");
   const [pivotAggType, setPivotAggType] = useState<AggType>("sum");
-  const [showPivot, setShowPivot] = useState(false);
+  const [showPivot, setShowPivot] = useState(initialPivot);
 
   const [savedReports, setSavedReports] = useState<SavedReport[]>([]);
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
