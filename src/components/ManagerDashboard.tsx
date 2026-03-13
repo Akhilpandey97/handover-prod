@@ -772,7 +772,7 @@ export const ManagerDashboard = () => {
 
         {/* Navigation */}
         <nav className="flex-1 px-3 py-4 overflow-y-auto">
-          <p className="text-[11px] font-semibold text-sidebar-foreground/40 uppercase tracking-widest mb-3 px-4">
+          <p className="text-[11px] font-semibold text-muted-foreground/60 uppercase tracking-widest mb-3 px-4">
             Navigation
           </p>
           <div className="space-y-1">
