@@ -179,6 +179,21 @@ export const ManagerDashboard = () => {
     fetchProfiles();
   }, []);
 
+  // Set default active tab to first visible nav item on mount
+  useEffect(() => {
+    if (activeTab === "") {
+      const visibleTabs = [...tabOrder, ...(currentUser?.team === "super_admin" && !tabOrder.includes("tenants") ? ["tenants"] : [])]
+        .filter(tab => TAB_CONFIG_KEYS.includes(tab))
+        .filter(tab => navVisibility[tab] !== false || tab === "tenants");
+      if (visibleTabs.length > 0) {
+        setActiveTab(visibleTabs[0]);
+      } else {
+        setActiveTab("dashboard");
+      }
+    }
+  }, []);
+  const TAB_CONFIG_KEYS = ["dashboard", "projects", "calendar", "reports", "checklist", "users", "settings", "kanban", "emails", "tenants"];
+
   // Calculate project time stats helper - FIXED: uses checklist-level time
   const calculateProjectStats = (project: Project) => {
     const checklistTime = calculateTimeFromChecklist(project.checklist);
