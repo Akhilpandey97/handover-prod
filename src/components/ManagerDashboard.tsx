@@ -843,14 +843,6 @@ export const ManagerDashboard = () => {
             </div>
           </div>
         </header>
-                {currentUser.name.charAt(0)}
-              </div>
-              <Button variant="ghost" size="icon" onClick={logout} className="h-9 w-9 hover:bg-destructive/10 hover:text-destructive">
-                <LogOut className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-        </header>
 
         {/* Content Area */}
         <ScrollArea className="flex-1">
