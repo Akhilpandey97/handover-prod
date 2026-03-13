@@ -537,9 +537,10 @@ export const ManagerDashboard = () => {
     navigation: { label: "Navigation" },
   };
 
-  const REPORTS_SUB_CONFIG: Record<string, { label: string }> = {
+  const REPORTS_SUB_CONFIG: Record<string, { label: string; icon?: string }> = {
     predefined: { label: "Pre Defined" },
     builder: { label: "Report Builder" },
+    pivot: { label: "Pivot Table", icon: "Σ" },
     scheduler: { label: "📅 Scheduler" },
   };
 
