@@ -754,7 +754,7 @@ export const ManagerDashboard = () => {
       {/* Left Sidebar — dark themed */}
       <aside className="w-72 bg-card border-r border-border flex flex-col shrink-0">
         {/* Logo & Title */}
-        <div className="p-5 border-b border-sidebar-border">
+        <div className="p-5 border-b border-border">
           <div className="flex items-center gap-3">
             {appLabels.org_logo_url ? (
               <img src={appLabels.org_logo_url} alt="Logo" className="h-12 w-12 rounded-xl object-contain shadow-lg ring-2 ring-sidebar-accent" />
