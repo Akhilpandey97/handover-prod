@@ -14,7 +14,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -24,7 +23,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import {
-  ArrowLeft, Building2, Calendar, CheckCircle2, Clock, ClipboardList, DollarSign, ExternalLink, FileText, Globe, Link2, MapPin, Pencil, Trash2, TrendingUp, User, UserPlus, Users, Minus, Activity,
+  ArrowLeft, Building2, Calendar, CheckCircle2, Clock, ClipboardList, DollarSign, ExternalLink, FileText, Globe, Link2, MapPin, Pencil, Trash2, TrendingUp, User, UserPlus, Users, Activity,
 } from "lucide-react";
 
 const ProjectPage = () => {
@@ -43,6 +42,53 @@ const ProjectPage = () => {
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
 
   const project = useMemo(() => projects.find(p => p.id === id), [projects, id]);
+
+  const computedResponsibility = useMemo(() => {
+    if (!project) return "neutral";
+    return calculateProjectResponsibilityFromChecklist(project.checklist);
+  }, [project]);
+
+  const timeByParty = useMemo(() => {
+    if (!project) return { gokwik: 0, merchant: 0, neutral: 0 };
+    return calculateTimeFromChecklist(project.checklist);
+  }, [project]);
+
+  const activityTimeline = useMemo(() => {
+    if (!project) return [];
+    const activities: { date: string; type: string; description: string; by?: string }[] = [];
+
+    project.transferHistory.forEach(t => {
+      activities.push({ date: t.transferredAt, type: "transfer", description: `Transferred from ${teamLabels[t.fromTeam] || t.fromTeam} to ${teamLabels[t.toTeam] || t.toTeam}`, by: t.transferredBy });
+      if (t.acceptedAt && t.acceptedBy) {
+        activities.push({ date: t.acceptedAt, type: "accept", description: `Accepted by ${teamLabels[t.toTeam] || t.toTeam}`, by: t.acceptedBy });
+      }
+      if (t.notes?.startsWith("REJECTED:")) {
+        activities.push({ date: t.transferredAt, type: "reject", description: `Rejected: ${t.notes.replace("REJECTED:", "").trim()}`, by: t.transferredBy });
+      }
+    });
+
+    project.checklist.forEach(c => {
+      if (c.completed && c.completedAt) {
+        activities.push({ date: c.completedAt, type: "checklist", description: `Completed: "${c.title}"`, by: c.completedBy });
+      }
+      if (c.commentAt && c.commentBy) {
+        activities.push({ date: c.commentAt, type: "comment", description: `Comment on "${c.title}": ${c.comment?.substring(0, 80) || ""}`, by: c.commentBy });
+      }
+      c.responsibilityLog.forEach((log, idx) => {
+        if (idx > 0) {
+          activities.push({ date: log.startedAt, type: "responsibility", description: `"${c.title}" responsibility → ${responsibilityLabels[log.party] || log.party}` });
+        }
+      });
+    });
+
+    project.responsibilityLog.forEach((log, idx) => {
+      if (idx > 0) {
+        activities.push({ date: log.startedAt, type: "responsibility", description: `Project responsibility → ${responsibilityLabels[log.party] || log.party} (Phase: ${teamLabels[log.phase] || log.phase})` });
+      }
+    });
+
+    return activities.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  }, [project, teamLabels, responsibilityLabels]);
 
   if (authLoading || projectsLoading) {
     return (
@@ -71,8 +117,6 @@ const ProjectPage = () => {
     );
   }
 
-  const computedResponsibility = calculateProjectResponsibilityFromChecklist(project.checklist);
-  const timeByParty = calculateTimeFromChecklist(project.checklist);
   const mintChecklist = project.checklist.filter(c => c.ownerTeam === "mint");
   const integrationChecklist = project.checklist.filter(c => c.ownerTeam === "integration");
   const mintCompleted = mintChecklist.filter(c => c.completed).length;
@@ -97,85 +141,14 @@ const ProjectPage = () => {
     toast.success("Project updated");
   };
 
-  // Build activity timeline from transfer history + checklist completions
-  const activityTimeline = useMemo(() => {
-    const activities: { date: string; type: string; description: string; by?: string }[] = [];
-
-    project.transferHistory.forEach(t => {
-      activities.push({
-        date: t.transferredAt,
-        type: "transfer",
-        description: `Transferred from ${teamLabels[t.fromTeam] || t.fromTeam} to ${teamLabels[t.toTeam] || t.toTeam}`,
-        by: t.transferredBy,
-      });
-      if (t.acceptedAt && t.acceptedBy) {
-        activities.push({
-          date: t.acceptedAt,
-          type: "accept",
-          description: `Accepted by ${teamLabels[t.toTeam] || t.toTeam}`,
-          by: t.acceptedBy,
-        });
-      }
-      if (t.notes?.startsWith("REJECTED:")) {
-        activities.push({
-          date: t.transferredAt,
-          type: "reject",
-          description: `Rejected: ${t.notes.replace("REJECTED:", "").trim()}`,
-          by: t.transferredBy,
-        });
-      }
-    });
-
-    project.checklist.forEach(c => {
-      if (c.completed && c.completedAt) {
-        activities.push({
-          date: c.completedAt,
-          type: "checklist",
-          description: `Completed: "${c.title}"`,
-          by: c.completedBy,
-        });
-      }
-      if (c.commentAt && c.commentBy) {
-        activities.push({
-          date: c.commentAt,
-          type: "comment",
-          description: `Comment on "${c.title}": ${c.comment?.substring(0, 80) || ""}`,
-          by: c.commentBy,
-        });
-      }
-      // Responsibility changes
-      c.responsibilityLog.forEach((log, idx) => {
-        if (idx > 0) {
-          activities.push({
-            date: log.startedAt,
-            type: "responsibility",
-            description: `"${c.title}" responsibility changed to ${responsibilityLabels[log.party] || log.party}`,
-          });
-        }
-      });
-    });
-
-    project.responsibilityLog.forEach((log, idx) => {
-      if (idx > 0) {
-        activities.push({
-          date: log.startedAt,
-          type: "responsibility",
-          description: `Project responsibility changed to ${responsibilityLabels[log.party] || log.party} (Phase: ${teamLabels[log.phase] || log.phase})`,
-        });
-      }
-    });
-
-    return activities.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  }, [project, teamLabels, responsibilityLabels]);
-
   const getActivityIcon = (type: string) => {
     switch (type) {
       case "transfer": return <ArrowLeft className="h-3.5 w-3.5 text-blue-500" />;
       case "accept": return <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />;
-      case "reject": return <Trash2 className="h-3.5 w-3.5 text-red-500" />;
+      case "reject": return <Trash2 className="h-3.5 w-3.5 text-destructive" />;
       case "checklist": return <ClipboardList className="h-3.5 w-3.5 text-purple-500" />;
       case "comment": return <FileText className="h-3.5 w-3.5 text-amber-500" />;
-      case "responsibility": return <Users className="h-3.5 w-3.5 text-cyan-500" />;
+      case "responsibility": return <Users className="h-3.5 w-3.5 text-primary" />;
       default: return <Activity className="h-3.5 w-3.5 text-muted-foreground" />;
     }
   };
@@ -217,9 +190,7 @@ const ProjectPage = () => {
             {stateLabels[project.projectState] || projectStateLabels[project.projectState]}
           </Badge>
         </div>
-        <div className="flex items-center gap-2">
-          <ThemeToggle />
-        </div>
+        <ThemeToggle />
       </header>
 
       <div className="max-w-7xl mx-auto p-6">
@@ -247,9 +218,7 @@ const ProjectPage = () => {
           <div className="ml-auto flex items-center gap-2">
             <span className="text-xs text-muted-foreground">State:</span>
             <Select value={project.projectState} onValueChange={(v) => handleStateChange(v as ProjectState)}>
-              <SelectTrigger className="h-8 w-[140px] text-xs">
-                <SelectValue />
-              </SelectTrigger>
+              <SelectTrigger className="h-8 w-[140px] text-xs"><SelectValue /></SelectTrigger>
               <SelectContent>
                 {Object.entries(projectStateLabels).map(([key, label]) => (
                   <SelectItem key={key} value={key}>{stateLabels[key] || label}</SelectItem>
@@ -265,15 +234,12 @@ const ProjectPage = () => {
             <TabsTrigger value="activity">Activity History</TabsTrigger>
           </TabsList>
 
-          {/* Overview Tab */}
           <TabsContent value="overview" className="space-y-6">
             {/* KPI Strip */}
             <div className="grid grid-cols-4 gap-3">
               <Card className="bg-muted/30">
                 <CardContent className="p-4">
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
-                    <TrendingUp className="h-3.5 w-3.5" />{getLabel("field_arr")}
-                  </div>
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1"><TrendingUp className="h-3.5 w-3.5" />{getLabel("field_arr")}</div>
                   <p className="text-xl font-bold">{project.arr} Cr</p>
                 </CardContent>
               </Card>
@@ -281,16 +247,13 @@ const ProjectPage = () => {
                 <CardContent className="p-4">
                   <div className="text-xs text-muted-foreground mb-1">Pending With</div>
                   <div className={`flex items-center gap-1.5 font-semibold ${responsibilityDisplay.color} px-2 py-1 rounded-md w-fit`}>
-                    <responsibilityDisplay.icon className="h-4 w-4" />
-                    <span>{responsibilityDisplay.label}</span>
+                    <responsibilityDisplay.icon className="h-4 w-4" /><span>{responsibilityDisplay.label}</span>
                   </div>
                 </CardContent>
               </Card>
               <Card className="bg-muted/30">
                 <CardContent className="p-4">
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
-                    <Clock className="h-3.5 w-3.5" />Time
-                  </div>
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1"><Clock className="h-3.5 w-3.5" />Time</div>
                   <div className="flex items-center gap-1.5 text-lg font-bold">
                     <span className="text-primary">{formatDuration(timeByParty.gokwik)}</span>
                     <span className="text-muted-foreground">/</span>
@@ -300,9 +263,7 @@ const ProjectPage = () => {
               </Card>
               <Card className="bg-muted/30">
                 <CardContent className="p-4">
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
-                    <ClipboardList className="h-3.5 w-3.5" />Checklist
-                  </div>
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1"><ClipboardList className="h-3.5 w-3.5" />Checklist</div>
                   <div className="text-sm font-semibold space-y-0.5">
                     <div className="text-blue-600">{mintCompleted}/{mintChecklist.length} {teamLabels.mint}</div>
                     <div className="text-purple-600">{integrationCompleted}/{integrationChecklist.length} {teamLabels.integration}</div>
@@ -312,14 +273,9 @@ const ProjectPage = () => {
             </div>
 
             <div className="grid lg:grid-cols-2 gap-6">
-              {/* Project Details */}
               <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <MapPin className="h-4 w-4" />Project Information
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-1">
+                <CardHeader className="pb-3"><CardTitle className="text-base flex items-center gap-2"><MapPin className="h-4 w-4" />Project Information</CardTitle></CardHeader>
+                <CardContent>
                   <div className="grid grid-cols-2 gap-x-4">
                     <DetailRow icon={Globe} label={getLabel("field_platform")} value={project.platform} />
                     <DetailRow icon={Building2} label={getLabel("field_category")} value={project.category} />
@@ -334,15 +290,9 @@ const ProjectPage = () => {
                   </div>
                 </CardContent>
               </Card>
-
-              {/* Dates & Links */}
               <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <Calendar className="h-4 w-4" />Dates & Links
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-1">
+                <CardHeader className="pb-3"><CardTitle className="text-base flex items-center gap-2"><Calendar className="h-4 w-4" />Dates & Links</CardTitle></CardHeader>
+                <CardContent>
                   <div className="grid grid-cols-2 gap-x-4">
                     <DetailRow icon={Calendar} label={getLabel("field_kick_off_date")} value={project.dates.kickOffDate ? format(new Date(project.dates.kickOffDate), "dd MMM yyyy") : "—"} />
                     <DetailRow icon={Calendar} label={getLabel("field_expected_go_live_date")} value={project.dates.expectedGoLiveDate ? format(new Date(project.dates.expectedGoLiveDate), "dd MMM yyyy") : "TBD"} />
@@ -360,57 +310,26 @@ const ProjectPage = () => {
               </Card>
             </div>
 
-            {/* Custom Fields */}
             {customFields.length > 0 && (
-              <Card>
-                <CardContent className="p-6">
-                  <CustomFieldsDisplay fields={customFields} values={customValues} />
-                </CardContent>
-              </Card>
+              <Card><CardContent className="p-6"><CustomFieldsDisplay fields={customFields} values={customValues} /></CardContent></Card>
             )}
 
-            {/* Notes */}
             {(project.notes.mintNotes || project.notes.projectNotes || project.notes.currentPhaseComment || project.notes.phase2Comment) && (
               <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-base">Notes</CardTitle>
-                </CardHeader>
+                <CardHeader className="pb-3"><CardTitle className="text-base">Notes</CardTitle></CardHeader>
                 <CardContent className="space-y-3">
-                  {project.notes.mintNotes && (
-                    <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900">
-                      <p className="text-xs font-medium text-blue-700 dark:text-blue-400 mb-1">{getLabel("field_mint_notes")}</p>
-                      <p className="text-sm">{project.notes.mintNotes}</p>
-                    </div>
-                  )}
-                  {project.notes.projectNotes && (
-                    <div className="p-3 rounded-lg bg-muted/50 border">
-                      <p className="text-xs font-medium text-muted-foreground mb-1">{getLabel("field_project_notes")}</p>
-                      <p className="text-sm">{project.notes.projectNotes}</p>
-                    </div>
-                  )}
-                  {project.notes.currentPhaseComment && (
-                    <div className="p-3 rounded-lg bg-muted/50 border">
-                      <p className="text-xs font-medium text-muted-foreground mb-1">{getLabel("field_current_phase_comment")}</p>
-                      <p className="text-sm whitespace-pre-wrap">{project.notes.currentPhaseComment}</p>
-                    </div>
-                  )}
-                  {project.notes.phase2Comment && (
-                    <div className="p-3 rounded-lg bg-purple-50 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-900">
-                      <p className="text-xs font-medium text-purple-700 dark:text-purple-400 mb-1">{getLabel("field_phase2_comment")}</p>
-                      <p className="text-sm whitespace-pre-wrap">{project.notes.phase2Comment}</p>
-                    </div>
-                  )}
+                  {project.notes.mintNotes && (<div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900"><p className="text-xs font-medium text-blue-700 dark:text-blue-400 mb-1">{getLabel("field_mint_notes")}</p><p className="text-sm">{project.notes.mintNotes}</p></div>)}
+                  {project.notes.projectNotes && (<div className="p-3 rounded-lg bg-muted/50 border"><p className="text-xs font-medium text-muted-foreground mb-1">{getLabel("field_project_notes")}</p><p className="text-sm">{project.notes.projectNotes}</p></div>)}
+                  {project.notes.currentPhaseComment && (<div className="p-3 rounded-lg bg-muted/50 border"><p className="text-xs font-medium text-muted-foreground mb-1">{getLabel("field_current_phase_comment")}</p><p className="text-sm whitespace-pre-wrap">{project.notes.currentPhaseComment}</p></div>)}
+                  {project.notes.phase2Comment && (<div className="p-3 rounded-lg bg-purple-50 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-900"><p className="text-xs font-medium text-purple-700 dark:text-purple-400 mb-1">{getLabel("field_phase2_comment")}</p><p className="text-sm whitespace-pre-wrap">{project.notes.phase2Comment}</p></div>)}
                 </CardContent>
               </Card>
             )}
 
-            {/* Checklist Summary */}
             <Card>
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <ClipboardList className="h-4 w-4" />Checklist Summary ({totalCompleted}/{totalChecklist})
-                  </CardTitle>
+                  <CardTitle className="text-base flex items-center gap-2"><ClipboardList className="h-4 w-4" />Checklist Summary ({totalCompleted}/{totalChecklist})</CardTitle>
                   <Button variant="outline" size="sm" onClick={() => setChecklistOpen(true)}>Open Full Checklist</Button>
                 </div>
               </CardHeader>
@@ -418,11 +337,7 @@ const ProjectPage = () => {
                 <div className="space-y-1.5 max-h-[300px] overflow-y-auto">
                   {project.checklist.map(item => (
                     <div key={item.id} className="flex items-center gap-2 py-1 text-sm">
-                      {item.completed ? (
-                        <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />
-                      ) : (
-                        <div className="h-4 w-4 rounded-full border-2 border-muted-foreground/30 shrink-0" />
-                      )}
+                      {item.completed ? <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" /> : <div className="h-4 w-4 rounded-full border-2 border-muted-foreground/30 shrink-0" />}
                       <span className={item.completed ? "line-through text-muted-foreground" : ""}>{item.title}</span>
                       <Badge variant="outline" className="text-[10px] ml-auto">{teamLabels[item.ownerTeam]}</Badge>
                     </div>
@@ -432,14 +347,9 @@ const ProjectPage = () => {
             </Card>
           </TabsContent>
 
-          {/* Activity History Tab */}
           <TabsContent value="activity" className="space-y-4">
             <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base flex items-center gap-2">
-                  <Activity className="h-4 w-4" />Activity History
-                </CardTitle>
-              </CardHeader>
+              <CardHeader className="pb-3"><CardTitle className="text-base flex items-center gap-2"><Activity className="h-4 w-4" />Activity History</CardTitle></CardHeader>
               <CardContent>
                 {activityTimeline.length === 0 ? (
                   <p className="text-sm text-muted-foreground py-8 text-center">No activity recorded yet.</p>
@@ -453,12 +363,8 @@ const ProjectPage = () => {
                         <div>
                           <p className="text-sm">{activity.description}</p>
                           <div className="flex items-center gap-2 mt-0.5">
-                            <span className="text-xs text-muted-foreground">
-                              {format(new Date(activity.date), "dd MMM yyyy, HH:mm")}
-                            </span>
-                            {activity.by && (
-                              <Badge variant="secondary" className="text-[10px] px-1.5 py-0">{activity.by}</Badge>
-                            )}
+                            <span className="text-xs text-muted-foreground">{format(new Date(activity.date), "dd MMM yyyy, HH:mm")}</span>
+                            {activity.by && <Badge variant="secondary" className="text-[10px] px-1.5 py-0">{activity.by}</Badge>}
                           </div>
                         </div>
                       </div>
@@ -471,7 +377,6 @@ const ProjectPage = () => {
         </Tabs>
       </div>
 
-      {/* Dialogs */}
       <ProjectDetailsDialog project={project} open={detailsOpen} onOpenChange={setDetailsOpen} />
       <ChecklistDialog project={project} open={checklistOpen} onOpenChange={setChecklistOpen} />
       <EditProjectDialog project={project} open={editOpen} onOpenChange={setEditOpen} onSave={handleSaveEdit} />
@@ -480,9 +385,7 @@ const ProjectPage = () => {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Project</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete <strong>{project.merchantName}</strong>? This action cannot be undone.
-            </AlertDialogDescription>
+            <AlertDialogDescription>Are you sure you want to delete <strong>{project.merchantName}</strong>? This action cannot be undone.</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
