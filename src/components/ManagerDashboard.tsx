@@ -1118,6 +1118,9 @@ export const ManagerDashboard = () => {
                             </Select>
                           </div>
                         </div>
+                        <CollapsibleTrigger asChild>
+                          <Button size="sm" className="w-full mt-2">Done</Button>
+                        </CollapsibleTrigger>
                       </CollapsibleContent>
                     </Collapsible>
                     {/* Filters - left side */}
