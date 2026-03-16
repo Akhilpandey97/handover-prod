@@ -8,7 +8,6 @@ import { ProjectProvider } from "@/contexts/ProjectContext";
 import { LabelsProvider } from "@/contexts/LabelsContext";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import Index from "./pages/Index";
-import ProjectPage from "./pages/ProjectPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -25,7 +24,6 @@ const App = () => (
             <BrowserRouter>
               <Routes>
                 <Route path="/" element={<Index />} />
-                <Route path="/project/:id" element={<ProjectPage />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </BrowserRouter>
