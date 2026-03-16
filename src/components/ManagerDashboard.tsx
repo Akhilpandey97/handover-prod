@@ -580,6 +580,7 @@ export const ManagerDashboard = () => {
   };
 
   const handleNavToggle = async (navKey: string, enabled: boolean) => {
+    if (navKey === "settings") return; // Settings can never be hidden
     const current = getNavVisibility();
     current[navKey] = enabled;
     await updateLabels({ nav_visibility: JSON.stringify(current) });
