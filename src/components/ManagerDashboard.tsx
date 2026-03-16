@@ -87,6 +87,7 @@ import { MerchantResponsibility } from "./reports/MerchantResponsibility";
 import { TacticalLists } from "./reports/TacticalLists";
 import { ReportsBuilder } from "./reports/ReportsBuilder";
 import { ReportScheduler } from "./reports/ReportScheduler";
+import { PivotTableView } from "./PivotTableView";
 
 // Sub-tab keys for reports and settings
 const REPORTS_SUB_TABS = ["predefined", "builder", "pivot", "scheduler"];
@@ -579,6 +580,7 @@ export const ManagerDashboard = () => {
   };
 
   const handleNavToggle = async (navKey: string, enabled: boolean) => {
+    if (navKey === "settings") return; // Settings can never be hidden
     const current = getNavVisibility();
     current[navKey] = enabled;
     await updateLabels({ nav_visibility: JSON.stringify(current) });
@@ -1116,6 +1118,9 @@ export const ManagerDashboard = () => {
                             </Select>
                           </div>
                         </div>
+                        <CollapsibleTrigger asChild>
+                          <Button size="sm" className="w-full mt-2">Done</Button>
+                        </CollapsibleTrigger>
                       </CollapsibleContent>
                     </Collapsible>
                     {/* Filters - left side */}
@@ -1246,6 +1251,9 @@ export const ManagerDashboard = () => {
                             </div>
                           </div>
                         </div>
+                        <CollapsibleTrigger asChild>
+                          <Button size="sm" className="w-full mt-2">Done</Button>
+                        </CollapsibleTrigger>
                       </CollapsibleContent>
                     </Collapsible>
                     {selectedProjects.size > 0 && (
@@ -1596,7 +1604,7 @@ export const ManagerDashboard = () => {
 
                   {/* Sub-tab: Pivot Table */}
                   {reportSubTab === "pivot" && (
-                    <ReportsBuilder projects={displayProjects} customFields={customFields} customValuesMap={customValuesMap} initialPivot />
+                    <PivotTableView projects={displayProjects} customFields={customFields} customValuesMap={customValuesMap} />
                   )}
 
                   {/* Sub-tab: Scheduler */}
@@ -1627,18 +1635,23 @@ export const ManagerDashboard = () => {
                 </CardHeader>
                 <CardContent className="p-6">
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                    {ALL_NAV_ITEMS.map((navKey) => (
-                      <div key={navKey} className="flex items-center justify-between p-3 border rounded-lg">
-                        <div className="flex items-center gap-2">
-                          {TAB_CONFIG[navKey]?.icon}
-                          <span className="text-sm font-medium">{TAB_CONFIG[navKey]?.label || navKey}</span>
+                    {ALL_NAV_ITEMS.map((navKey) => {
+                      const isSettings = navKey === "settings";
+                      return (
+                        <div key={navKey} className={`flex items-center justify-between p-3 border rounded-lg ${isSettings ? "bg-muted/30 border-primary/20" : ""}`}>
+                          <div className="flex items-center gap-2">
+                            {TAB_CONFIG[navKey]?.icon}
+                            <span className="text-sm font-medium">{TAB_CONFIG[navKey]?.label || navKey}</span>
+                            {isSettings && <Badge variant="secondary" className="text-[10px] px-1.5 py-0">Always visible</Badge>}
+                          </div>
+                          <Checkbox
+                            checked={navVisibility[navKey] !== false}
+                            onCheckedChange={(checked) => handleNavToggle(navKey, !!checked)}
+                            disabled={isSettings}
+                          />
                         </div>
-                        <Checkbox
-                          checked={navVisibility[navKey] !== false}
-                          onCheckedChange={(checked) => handleNavToggle(navKey, !!checked)}
-                        />
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </CardContent>
               </Card>
