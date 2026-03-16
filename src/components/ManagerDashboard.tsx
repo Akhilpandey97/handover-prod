@@ -1604,7 +1604,7 @@ export const ManagerDashboard = () => {
 
                   {/* Sub-tab: Pivot Table */}
                   {reportSubTab === "pivot" && (
-                    <ReportsBuilder projects={displayProjects} customFields={customFields} customValuesMap={customValuesMap} initialPivot />
+                    <PivotTableView projects={displayProjects} customFields={customFields} customValuesMap={customValuesMap} />
                   )}
 
                   {/* Sub-tab: Scheduler */}
