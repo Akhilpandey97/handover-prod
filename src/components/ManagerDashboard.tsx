@@ -1635,18 +1635,23 @@ export const ManagerDashboard = () => {
                 </CardHeader>
                 <CardContent className="p-6">
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                    {ALL_NAV_ITEMS.map((navKey) => (
-                      <div key={navKey} className="flex items-center justify-between p-3 border rounded-lg">
-                        <div className="flex items-center gap-2">
-                          {TAB_CONFIG[navKey]?.icon}
-                          <span className="text-sm font-medium">{TAB_CONFIG[navKey]?.label || navKey}</span>
+                    {ALL_NAV_ITEMS.map((navKey) => {
+                      const isSettings = navKey === "settings";
+                      return (
+                        <div key={navKey} className={`flex items-center justify-between p-3 border rounded-lg ${isSettings ? "bg-muted/30 border-primary/20" : ""}`}>
+                          <div className="flex items-center gap-2">
+                            {TAB_CONFIG[navKey]?.icon}
+                            <span className="text-sm font-medium">{TAB_CONFIG[navKey]?.label || navKey}</span>
+                            {isSettings && <Badge variant="secondary" className="text-[10px] px-1.5 py-0">Always visible</Badge>}
+                          </div>
+                          <Checkbox
+                            checked={navVisibility[navKey] !== false}
+                            onCheckedChange={(checked) => handleNavToggle(navKey, !!checked)}
+                            disabled={isSettings}
+                          />
                         </div>
-                        <Checkbox
-                          checked={navVisibility[navKey] !== false}
-                          onCheckedChange={(checked) => handleNavToggle(navKey, !!checked)}
-                        />
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </CardContent>
               </Card>
