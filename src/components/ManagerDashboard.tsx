@@ -1251,6 +1251,9 @@ export const ManagerDashboard = () => {
                             </div>
                           </div>
                         </div>
+                        <CollapsibleTrigger asChild>
+                          <Button size="sm" className="w-full mt-2">Done</Button>
+                        </CollapsibleTrigger>
                       </CollapsibleContent>
                     </Collapsible>
                     {selectedProjects.size > 0 && (
