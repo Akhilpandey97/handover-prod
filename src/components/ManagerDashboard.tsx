@@ -643,7 +643,7 @@ export const ManagerDashboard = () => {
   const sidebarTabs = [...tabOrder, ...(currentUser?.team === "super_admin" && !tabOrder.includes("tenants") ? ["tenants"] : [])]
     .filter(tab => tab !== "tenants" || currentUser?.team === "super_admin")
     .filter(tab => TAB_CONFIG[tab])
-    .filter(tab => navVisibility[tab] !== false || tab === "tenants");
+    .filter(tab => navVisibility[tab] !== false || tab === "tenants" || tab === "settings");
 
   const activeTabLabel = activeTab === "settings" 
     ? `Settings — ${SETTINGS_SUB_CONFIG[settingsSubTab]?.label || "General"}`
@@ -1627,18 +1627,23 @@ export const ManagerDashboard = () => {
                 </CardHeader>
                 <CardContent className="p-6">
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                    {ALL_NAV_ITEMS.map((navKey) => (
-                      <div key={navKey} className="flex items-center justify-between p-3 border rounded-lg">
-                        <div className="flex items-center gap-2">
-                          {TAB_CONFIG[navKey]?.icon}
-                          <span className="text-sm font-medium">{TAB_CONFIG[navKey]?.label || navKey}</span>
+                    {ALL_NAV_ITEMS.map((navKey) => {
+                      const isLocked = navKey === "settings";
+                      return (
+                        <div key={navKey} className={cn("flex items-center justify-between p-3 border rounded-lg", isLocked && "bg-muted/40")}>
+                          <div className="flex items-center gap-2">
+                            {TAB_CONFIG[navKey]?.icon}
+                            <span className="text-sm font-medium">{TAB_CONFIG[navKey]?.label || navKey}</span>
+                            {isLocked && <Badge variant="outline" className="text-[10px] px-1.5 py-0">Always Visible</Badge>}
+                          </div>
+                          <Checkbox
+                            checked={isLocked ? true : navVisibility[navKey] !== false}
+                            onCheckedChange={(checked) => !isLocked && handleNavToggle(navKey, !!checked)}
+                            disabled={isLocked}
+                          />
                         </div>
-                        <Checkbox
-                          checked={navVisibility[navKey] !== false}
-                          onCheckedChange={(checked) => handleNavToggle(navKey, !!checked)}
-                        />
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </CardContent>
               </Card>
