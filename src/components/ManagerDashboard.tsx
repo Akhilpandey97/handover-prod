@@ -643,7 +643,7 @@ export const ManagerDashboard = () => {
   const sidebarTabs = [...tabOrder, ...(currentUser?.team === "super_admin" && !tabOrder.includes("tenants") ? ["tenants"] : [])]
     .filter(tab => tab !== "tenants" || currentUser?.team === "super_admin")
     .filter(tab => TAB_CONFIG[tab])
-    .filter(tab => navVisibility[tab] !== false || tab === "tenants");
+    .filter(tab => navVisibility[tab] !== false || tab === "tenants" || tab === "settings");
 
   const activeTabLabel = activeTab === "settings" 
     ? `Settings — ${SETTINGS_SUB_CONFIG[settingsSubTab]?.label || "General"}`
