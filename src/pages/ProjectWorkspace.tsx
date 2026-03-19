@@ -798,28 +798,6 @@ const ProjectWorkspace = () => {
 
               <aside className="px-5 py-5 lg:px-6">
                 <div className="space-y-4">
-                  <div className="rounded-xl border border-border/70 bg-background px-4 py-4">
-                    <div className="flex items-center justify-between gap-3">
-                      <div>
-                        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Eye on risk</p>
-                        <div className="mt-2 flex items-center gap-2">
-                          <Badge className={cn("border px-2.5 py-1 text-[11px] font-semibold", risk.tone)}>
-                            {risk.label}
-                          </Badge>
-                          <span className="text-sm font-semibold text-foreground">Score {risk.score}</span>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="mt-4 space-y-2">
-                      {risk.drivers.slice(0, 4).map((driver) => (
-                        <div key={driver.label} className="flex items-start justify-between gap-3 rounded-lg border border-border/70 px-3 py-2.5">
-                          <p className="text-xs leading-5 text-foreground">{driver.label}</p>
-                          <span className="text-xs font-semibold text-muted-foreground">{driver.points > 0 ? `+${driver.points}` : "OK"}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Recommended actions</p>
                     <p className="mt-1 text-sm text-muted-foreground">Context-aware actions similar to a Jira issue sidebar.</p>
