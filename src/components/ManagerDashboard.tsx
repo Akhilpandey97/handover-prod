@@ -1402,7 +1402,164 @@ export const ManagerDashboard = () => {
             </Card>
           </div>}
 
-          {/* ========= CALENDAR TAB ========= */}
+          {/* ========= LIST VIEW TAB ========= */}
+          {activeTab === "listview" && <div className="space-y-4">
+            {/* Column selector chips */}
+            <Card className="shadow-xl border-border/50">
+              <CardHeader className="border-b bg-muted/30 py-3">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <List className="h-5 w-5 text-primary" />
+                    List View
+                  </CardTitle>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-muted-foreground">
+                      {filteredProjects.length} project{filteredProjects.length !== 1 ? "s" : ""}
+                    </span>
+                    <Select value={String(listViewPageSize)} onValueChange={(v) => { setListViewPageSize(Number(v)); setListViewPage(1); }}>
+                      <SelectTrigger className="w-[100px] h-8 text-xs"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="10">10 / Page</SelectItem>
+                        <SelectItem value="25">25 / Page</SelectItem>
+                        <SelectItem value="50">50 / Page</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </CardHeader>
+              <div className="px-4 py-3 border-b flex flex-wrap gap-2">
+                {LIST_VIEW_COLUMNS.map(col => {
+                  const active = listViewColumns.includes(col.key);
+                  return (
+                    <button
+                      key={col.key}
+                      onClick={() => {
+                        const newCols = active
+                          ? listViewColumns.filter(c => c !== col.key)
+                          : [...listViewColumns, col.key];
+                        setListViewColumns(newCols);
+                        localStorage.setItem("listview_columns", JSON.stringify(newCols));
+                      }}
+                      className={cn(
+                        "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-colors",
+                        active
+                          ? "bg-primary text-primary-foreground border-primary"
+                          : "bg-muted/40 text-muted-foreground border-border hover:bg-muted"
+                      )}
+                    >
+                      {col.label}
+                      {active && <X className="h-3 w-3" />}
+                    </button>
+                  );
+                })}
+              </div>
+              <CardContent className="p-0">
+                <div className="overflow-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        {listViewColumns.map(colKey => {
+                          const col = LIST_VIEW_COLUMNS.find(c => c.key === colKey);
+                          return col ? <TableHead key={colKey} className="whitespace-nowrap">{col.label}</TableHead> : null;
+                        })}
+                        <TableHead className="w-20">Action</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {(() => {
+                        const totalPages = Math.ceil(filteredProjects.length / listViewPageSize);
+                        const paged = filteredProjects.slice((listViewPage - 1) * listViewPageSize, listViewPage * listViewPageSize);
+                        return paged.map(project => {
+                          const getColValue = (key: string) => {
+                            switch (key) {
+                              case "merchantName": return project.merchantName;
+                              case "mid": return project.mid;
+                              case "platform": return project.platform || "—";
+                              case "category": return project.category || "—";
+                              case "merchantState": return getProjectPhaseLabel(project);
+                              case "mintComment": return project.notes?.currentPhaseComment || project.notes?.mintNotes || "—";
+                              case "liveDate": return project.dates.goLiveDate || project.dates.expectedGoLiveDate || "—";
+                              case "recentComments": {
+                                const comments = project.checklist
+                                  .filter(c => c.comment)
+                                  .sort((a, b) => (b.commentAt || "").localeCompare(a.commentAt || ""))
+                                  .slice(0, 3)
+                                  .map(c => `${c.commentAt?.slice(0, 10) || "NA"} : ${c.comment?.slice(0, 30)}...`);
+                                return comments.length > 0 ? comments.join("\n") : "—";
+                              }
+                              case "status": return stateLabelsFromCtx[project.projectState] || projectStateLabels[project.projectState];
+                              case "arr": return `${project.arr}`;
+                              case "owner": return project.assignedOwnerName || "Unassigned";
+                              case "salesSpoc": return project.salesSpoc || "—";
+                              case "kickOffDate": return project.dates.kickOffDate;
+                              case "goLiveDate": return project.dates.goLiveDate || project.dates.expectedGoLiveDate || "—";
+                              case "integrationType": return project.integrationType || "—";
+                              case "pgOnboarding": return project.pgOnboarding || "—";
+                              case "goLivePercent": return `${project.goLivePercent || 0}%`;
+                              default: return "—";
+                            }
+                          };
+
+                          const statusColor = project.projectState === "in_progress" ? "text-amber-500" :
+                            project.projectState === "live" ? "text-emerald-500" :
+                            project.projectState === "blocked" ? "text-destructive" : "text-muted-foreground";
+
+                          return (
+                            <TableRow key={project.id}>
+                              {listViewColumns.map(colKey => (
+                                <TableCell key={colKey} className={cn("text-sm", colKey === "status" && statusColor, colKey === "recentComments" && "max-w-[200px]")}>
+                                  {colKey === "recentComments" ? (
+                                    <div className="space-y-0.5">
+                                      {getColValue(colKey).split("\n").map((line, i) => (
+                                        <div key={i} className="text-xs text-muted-foreground truncate">{line}</div>
+                                      ))}
+                                    </div>
+                                  ) : colKey === "mintComment" ? (
+                                    <span className="truncate block max-w-[180px]" title={getColValue(colKey)}>{getColValue(colKey)}</span>
+                                  ) : (
+                                    getColValue(colKey)
+                                  )}
+                                </TableCell>
+                              ))}
+                              <TableCell>
+                                <div className="flex gap-1">
+                                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { /* edit */ }}>
+                                    <Pencil className="h-3.5 w-3.5" />
+                                  </Button>
+                                  <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => deleteProject(project.id)}>
+                                    <Trash2 className="h-3.5 w-3.5" />
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          );
+                        });
+                      })()}
+                    </TableBody>
+                  </Table>
+                </div>
+                {/* Pagination */}
+                {filteredProjects.length > listViewPageSize && (
+                  <div className="flex items-center justify-between px-4 py-3 border-t">
+                    <div className="flex items-center gap-2">
+                      <Button variant="outline" size="sm" disabled={listViewPage <= 1} onClick={() => setListViewPage(p => p - 1)} className="h-8 w-8 p-0">
+                        <ChevronLeft className="h-4 w-4" />
+                      </Button>
+                      {Array.from({ length: Math.ceil(filteredProjects.length / listViewPageSize) }, (_, i) => i + 1).slice(0, 5).map(page => (
+                        <Button key={page} variant={listViewPage === page ? "default" : "outline"} size="sm" onClick={() => setListViewPage(page)} className="h-8 w-8 p-0 text-xs">
+                          {page}
+                        </Button>
+                      ))}
+                      <Button variant="outline" size="sm" disabled={listViewPage >= Math.ceil(filteredProjects.length / listViewPageSize)} onClick={() => setListViewPage(p => p + 1)} className="h-8 w-8 p-0">
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>}
+
           {activeTab === "calendar" && <div className="space-y-6">
             <ProjectCalendar />
           </div>}
