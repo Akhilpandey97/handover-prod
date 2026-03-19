@@ -32,6 +32,7 @@ import {
   ArrowLeft,
   Building2,
   ClipboardList,
+  ExternalLink,
   Layers3,
   Trash2,
   UserPlus,
