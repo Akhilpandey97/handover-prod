@@ -97,7 +97,7 @@ const SETTINGS_SUB_TABS = ["general", "workflow", "fields", "custom-fields", "ch
 const PREDEFINED_REPORT_TYPES = ["executive", "operational", "merchant", "tactical", "project", "team"];
 
 // All nav items that can be toggled
-const ALL_NAV_ITEMS = ["dashboard", "projects", "kanban", "calendar", "reports", "checklist", "users", "settings", "emails"];
+const ALL_NAV_ITEMS = ["dashboard", "projects", "listview", "kanban", "calendar", "reports", "checklist", "users", "settings", "emails"];
 
 export const ManagerDashboard = () => {
   const { currentUser, logout } = useAuth();
