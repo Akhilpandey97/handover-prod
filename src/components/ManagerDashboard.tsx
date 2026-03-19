@@ -564,6 +564,7 @@ export const ManagerDashboard = () => {
   const TAB_CONFIG: Record<string, { icon: React.ReactNode; label: string }> = {
     dashboard: { icon: <PieChart className="h-4 w-4" />, label: "Dashboard" },
     projects: { icon: <FolderKanban className="h-4 w-4" />, label: "Projects" },
+    listview: { icon: <List className="h-4 w-4" />, label: "List View" },
     calendar: { icon: <CalendarDays className="h-4 w-4" />, label: "Calendar" },
     reports: { icon: <TrendingUp className="h-4 w-4" />, label: "Reports" },
     checklist: { icon: <ListChecks className="h-4 w-4" />, label: "Checklist" },
