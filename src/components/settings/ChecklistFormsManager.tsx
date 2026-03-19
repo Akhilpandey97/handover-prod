@@ -558,6 +558,11 @@ export const ChecklistFormsManager = () => {
               })
             )}
           </div>
+          <div className="flex justify-end pt-2">
+            <Button type="button" onClick={() => setAssignDialogOpen(false)}>
+              Done
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
 
