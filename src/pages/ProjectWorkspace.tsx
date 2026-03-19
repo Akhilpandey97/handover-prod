@@ -92,10 +92,10 @@ const tabOptions: Array<{ value: WorkspaceTab; label: string }> = [
 ];
 
 const stateToneMap: Record<ProjectState, string> = {
-  not_started: "bg-[#eef4ff] text-[#5b6f95] border-[#d7e4fb]",
+  not_started: "bg-[#eff4fb] text-[#5d718f] border-[#d8e2f0]",
   on_hold: "bg-[#fff4db] text-[#9a6700] border-[#ffe3a3]",
-  in_progress: "bg-[#e8f1ff] text-[#2453a6] border-[#cfe0ff]",
-  live: "bg-[#e8f8ef] text-[#207551] border-[#c8edd6]",
+  in_progress: "bg-[#edf3ff] text-[#244b8f] border-[#d3e0f7]",
+  live: "bg-[#ecf8f1] text-[#246447] border-[#d2eadb]",
   blocked: "bg-[#fff0f0] text-[#b5474d] border-[#ffd2d5]",
 };
 
@@ -107,9 +107,9 @@ const activityToneMap: Record<ActivityKind, string> = {
 };
 
 const activityBadgeToneMap: Record<ActivityKind, string> = {
-  user: "bg-[#e8f8ef] text-[#207551] border-[#c8edd6]",
-  system: "bg-[#eef4ff] text-[#5b6f95] border-[#d7e4fb]",
-  handoff: "bg-[#e8f1ff] text-[#2453a6] border-[#cfe0ff]",
+  user: "bg-[#ecf8f1] text-[#246447] border-[#d2eadb]",
+  system: "bg-[#eff4fb] text-[#5d718f] border-[#d8e2f0]",
+  handoff: "bg-[#edf3ff] text-[#244b8f] border-[#d3e0f7]",
   milestone: "bg-[#fff4db] text-[#9a6700] border-[#ffe3a3]",
 };
 
@@ -417,31 +417,31 @@ const buildActionDrivenSummary = (
     {
       title: "Next best action",
       body: isTransferReady
-        ? "All current-team checklist items are complete. Review context and transfer ownership to the next team."
+        ? "All current-team checklist items are complete. Review delivery context and transition ownership to the next team."
         : nextPending
-          ? `Prioritize "${nextPending.title}" in ${project.currentOwnerTeam} so the project can move forward.`
-          : "No immediate checklist blocker is visible from current project data.",
-      tone: "border-primary/20 bg-primary/[0.05]",
+          ? `Prioritize "${nextPending.title}" with the ${project.currentOwnerTeam} team to maintain delivery momentum.`
+          : "No immediate execution blocker is visible in the current delivery data.",
+      tone: "border-[#d3e0f7] bg-[#f5f8fc]",
     },
     {
-      title: "Project status",
-      body: `${project.merchantName} is in ${project.currentPhase} and currently marked ${project.projectState.replaceAll("_", " ")} with ${completedChecklist}/${project.checklist.length} checklist items closed.`,
-      tone: "border-border/70 bg-background",
+      title: "Delivery status",
+      body: `${project.merchantName} is in ${project.currentPhase} and currently marked ${project.projectState.replaceAll("_", " ")} with ${completedChecklist}/${project.checklist.length} checklist items complete.`,
+      tone: "border-[#d8e2f0] bg-white",
     },
     {
-      title: "Eye on risk",
+      title: "Risk watch",
       body:
         risk.drivers[0]?.points && risk.drivers[0].points > 0
-          ? `${risk.label} (score ${risk.score}). Biggest driver: ${risk.drivers[0].label}.`
-          : `${risk.label} (score ${risk.score}). No major execution or ownership risk is currently detected.`,
-      tone: "border-border/70 bg-background",
+          ? `${risk.label} (score ${risk.score}). Primary driver: ${risk.drivers[0].label}.`
+          : `${risk.label} (score ${risk.score}). No material execution or ownership risk is currently detected.`,
+      tone: "border-[#d8e2f0] bg-white",
     },
     {
-      title: "AI insight",
+      title: "Operational insight",
       body:
         aiSignal ||
-        `${openTasksCount} checklist item${openTasksCount === 1 ? "" : "s"} remain open. Review notes, owner handoff readiness, and linked documents before the next update.`,
-      tone: "border-border/70 bg-background",
+        `${openTasksCount} checklist item${openTasksCount === 1 ? "" : "s"} remain open. Review notes, handoff readiness, and linked documentation before the next status update.`,
+      tone: "border-[#d8e2f0] bg-white",
     },
   ];
 
@@ -613,27 +613,27 @@ const ProjectWorkspace = () => {
   const actionRecommendations = [
     {
       label: "Open checklist",
-      sublabel: `${completedChecklist}/${project.checklist.length} items completed`,
+      sublabel: `${completedChecklist}/${project.checklist.length} items complete`,
       onClick: () => setActiveTab("checklists"),
     },
     !project.assignedOwnerName && currentUser?.team === "manager"
-      ? { label: "Assign owner", sublabel: "Set clear accountability", onClick: () => setAssignOpen(true) }
+      ? { label: "Assign owner", sublabel: "Establish clear ownership", onClick: () => setAssignOpen(true) }
       : null,
     project.links.jiraLink
-      ? { label: "Open JIRA", sublabel: "Review delivery tracker", href: project.links.jiraLink }
-      : { label: "Add tracker link", sublabel: "Attach JIRA or BRD", onClick: () => setEditOpen(true) },
+      ? { label: "Open delivery tracker", sublabel: "Review execution tracking", href: project.links.jiraLink }
+      : { label: "Add tracker link", sublabel: "Attach execution artifacts", onClick: () => setEditOpen(true) },
     openTasksCount > 0
       ? {
-          label: "Review open checklist",
-          sublabel: `${openTasksCount} item${openTasksCount === 1 ? "" : "s"} need attention`,
+          label: "Review pending checklist",
+          sublabel: `${openTasksCount} item${openTasksCount === 1 ? "" : "s"} require attention`,
           onClick: () => setActiveTab("checklists"),
         }
       : null,
     risk.label !== "Low risk"
-      ? { label: "Inspect activity", sublabel: "Review blockers and handoffs", onClick: () => setActiveTab("activity") }
-      : { label: "Update notes", sublabel: "Capture current context", onClick: () => setActiveTab("notes") },
+      ? { label: "Review activity", sublabel: "Inspect blockers and handoffs", onClick: () => setActiveTab("activity") }
+      : { label: "Update notes", sublabel: "Capture current delivery context", onClick: () => setActiveTab("notes") },
     canTransfer && isTransferReady
-      ? { label: "Transfer now", sublabel: "Ownership can move forward", onClick: () => setTransferOpen(true) }
+      ? { label: "Initiate transfer", sublabel: "Ownership can progress", onClick: () => setTransferOpen(true) }
       : null,
   ].filter(Boolean) as Array<
     | { label: string; sublabel: string; onClick: () => void; href?: undefined }
@@ -660,11 +660,11 @@ const ProjectWorkspace = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[linear-gradient(180deg,#f7fbff_0%,#eef5ff_100%)]">
+    <div className="min-h-screen bg-[linear-gradient(180deg,#f7fafe_0%,#eef3f9_100%)]">
       <div className="mx-auto max-w-[1580px] px-4 py-5 lg:px-6 lg:py-6">
         <div className="space-y-4">
-          <div className="flex flex-wrap items-center gap-2 text-sm text-[#6981a5]">
-            <Link to="/" className="inline-flex items-center gap-2 rounded-lg px-2 py-1 hover:bg-[#edf4ff]">
+          <div className="flex flex-wrap items-center gap-2 text-sm text-[#667891]">
+            <Link to="/" className="inline-flex items-center gap-2 rounded-lg px-2 py-1 hover:bg-[#eef3f9]">
               <ArrowLeft className="h-4 w-4" />
               Projects
             </Link>
@@ -672,20 +672,20 @@ const ProjectWorkspace = () => {
             <span>{project.merchantName}</span>
           </div>
 
-          <section className="overflow-hidden rounded-[22px] border border-[#dbe7fb] bg-white shadow-[0_18px_50px_-38px_rgba(38,78,162,0.28)]">
+          <section className="overflow-hidden rounded-[22px] border border-[#d8e2f0] bg-white shadow-[0_18px_48px_-40px_rgba(28,55,90,0.24)]">
             <div className="grid gap-0 xl:grid-cols-[minmax(0,1fr)_360px]">
-              <div className="min-w-0 border-b border-[#dbe7fb] xl:border-b-0 xl:border-r">
-                <div className="border-b border-[#dbe7fb] px-5 py-5 lg:px-6">
+              <div className="min-w-0 border-b border-[#d8e2f0] xl:border-b-0 xl:border-r">
+                <div className="border-b border-[#d8e2f0] px-5 py-5 lg:px-6">
                   <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
                     <div className="min-w-0 space-y-4">
                       <div className="flex items-start gap-3">
-                        <div className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#e7f0ff] text-sm font-bold text-primary shadow-[inset_0_0_0_1px_rgba(59,102,198,0.08)]">
+                        <div className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#edf3ff] text-sm font-bold text-[#244b8f] shadow-[inset_0_0_0_1px_rgba(36,75,143,0.08)]">
                           {project.merchantName.slice(0, 2).toUpperCase()}
                         </div>
                         <div className="min-w-0">
-                          <div className="flex flex-wrap items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-[#7a8fb1]">
-                            <span>Project issue</span>
-                            <span className="rounded-md bg-[#edf4ff] px-2 py-1 text-[10px] text-[#24416f]">MID {project.mid}</span>
+                          <div className="flex flex-wrap items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-[#7083a0]">
+                            <span>Project workspace</span>
+                            <span className="rounded-md bg-[#eff4fb] px-2 py-1 text-[10px] text-[#27415f]">MID {project.mid}</span>
                           </div>
                           <h1 className="mt-2 text-[2rem] font-semibold tracking-[-0.05em] text-[#162033]">
                             {project.merchantName}
@@ -780,7 +780,7 @@ const ProjectWorkspace = () => {
                 </div>
 
                 <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as WorkspaceTab)}>
-                  <div className="border-b border-[#dbe7fb] px-4 py-3 lg:px-6">
+                  <div className="border-b border-[#d8e2f0] px-4 py-3 lg:px-6">
                     <TabsList className="h-auto w-full justify-start gap-1 overflow-x-auto rounded-none bg-transparent p-0">
                       {tabOptions.map((tab) => (
                         <TabsTrigger
@@ -800,10 +800,10 @@ const ProjectWorkspace = () => {
                         <div className="rounded-2xl border border-[#dbe7fb] bg-[#fbfdff] p-5 shadow-[0_10px_28px_-26px_rgba(38,78,162,0.35)]">
                           <div className="mb-5 flex items-center justify-between gap-3">
                             <div>
-                              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#7a8fb1]">Project details</p>
+                          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#7083a0]">Project details</p>
                               <h2 className="mt-1 text-xl font-semibold tracking-[-0.03em] text-[#162033]">Business and execution data</h2>
                             </div>
-                            <Badge className="border border-[#dbe7fb] bg-[#edf4ff] text-[#42608f]">Jira-style issue view</Badge>
+                            <Badge className="border border-[#d8e2f0] bg-[#f2f6fb] text-[#516883]">Enterprise workspace view</Badge>
                           </div>
 
                           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
@@ -897,7 +897,7 @@ const ProjectWorkspace = () => {
                                   ))
                                 ) : (
                                   <div className="rounded-lg border border-dashed border-[#dbe7fb] px-3 py-4 text-sm text-[#6f84a8]">
-                                    No linked documents or external tools attached yet.
+                                    No linked project documentation or external systems are attached yet.
                                   </div>
                                 )}
                               </div>
@@ -912,8 +912,8 @@ const ProjectWorkspace = () => {
                         <div className="rounded-2xl border border-[#dbe7fb] bg-[#fbfdff] px-5 py-4 shadow-[0_10px_28px_-26px_rgba(38,78,162,0.35)]">
                           <div className="flex flex-wrap items-center justify-between gap-3">
                             <div>
-                              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#7a8fb1]">Activity timeline</p>
-                              <h2 className="mt-1 text-xl font-semibold tracking-[-0.03em] text-[#162033]">Project updates and delivery history</h2>
+                              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#7083a0]">Activity timeline</p>
+                              <h2 className="mt-1 text-xl font-semibold tracking-[-0.03em] text-[#162033]">Execution history and delivery updates</h2>
                             </div>
                             <div className="flex flex-wrap gap-2">
                               <Badge className="border border-slate-200 bg-slate-100 text-slate-700">{activityFeed.length} events</Badge>
@@ -978,7 +978,7 @@ const ProjectWorkspace = () => {
                         {activityFeed.length === 0 ? (
                           <div className="rounded-xl border border-dashed border-[#dbe7fb] px-4 py-8 text-center">
                             <MessageSquareText className="mx-auto h-8 w-8 text-[#7a8fb1]" />
-                            <p className="mt-3 text-sm font-semibold text-[#162033]">No activity captured yet</p>
+                            <p className="mt-3 text-sm font-semibold text-[#162033]">No activity has been recorded yet</p>
                             <p className="mt-1 text-sm text-[#6f84a8]">
                               Handoffs, checklist updates, notes, and milestones will appear here.
                             </p>
@@ -1049,8 +1049,8 @@ const ProjectWorkspace = () => {
                         {aiSummaryLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Bot className="h-4 w-4" />}
                       </div>
                       <div>
-                        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">AI Summary</p>
-                        <p className="text-sm text-[#6981a5]">Live project readout generated from delivery data</p>
+                        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">Executive summary</p>
+                        <p className="text-sm text-[#667891]">AI-generated delivery summary based on current project signals</p>
                       </div>
                     </div>
 
@@ -1077,8 +1077,8 @@ const ProjectWorkspace = () => {
                   <div className="rounded-2xl border border-[#dbe7fb] bg-white p-4 shadow-[0_12px_32px_-26px_rgba(38,78,162,0.26)]">
                     <div className="flex items-center justify-between gap-3">
                       <div>
-                        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#7a8fb1]">Recommended actions</p>
-                        <p className="mt-1 text-sm text-[#6981a5]">Context-aware actions similar to a Jira issue sidebar.</p>
+                        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#7083a0]">Recommended actions</p>
+                        <p className="mt-1 text-sm text-[#667891]">Suggested operational actions based on current project state.</p>
                       </div>
                     </div>
 
@@ -1150,7 +1150,7 @@ const ProjectWorkspace = () => {
                         ))
                       ) : (
                         <div className="rounded-lg border border-dashed border-[#dbe7fb] px-3 py-4 text-sm text-[#6f84a8]">
-                          No linked artifacts yet.
+                          No linked artifacts are available yet.
                         </div>
                       )}
                     </div>
