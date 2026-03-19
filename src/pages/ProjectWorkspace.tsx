@@ -27,31 +27,23 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   ArrowLeft,
+  ArrowUpRight,
+  BadgeCheck,
   Building2,
   ClipboardList,
   ExternalLink,
   Layers3,
+  Timer,
   Trash2,
   UserPlus,
 } from "lucide-react";
 import { toast } from "sonner";
-
-const DetailTile = ({ label, value }: { label: string; value: string }) => (
-  <div className="rounded-2xl border border-border/60 bg-muted/25 p-4">
-    <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-muted-foreground">{label}</p>
-    <p className="mt-2 text-sm font-semibold text-foreground">{value || "—"}</p>
-  </div>
-);
-
-const ChecklistRow = ({ title, done }: { title: string; done: boolean }) => (
-  <div className="flex items-center justify-between rounded-xl border border-border/60 bg-background px-4 py-3">
-    <span className="text-sm font-medium text-foreground">{title}</span>
-    <Badge variant={done ? "default" : "outline"}>{done ? "Done" : "Pending"}</Badge>
-  </div>
-);
+import { WorkspaceChecklistPanel } from "@/components/project-workspace/WorkspaceChecklistPanel";
+import { WorkspaceMetricCard } from "@/components/project-workspace/WorkspaceMetricCard";
+import { WorkspaceSection } from "@/components/project-workspace/WorkspaceSection";
 
 const ProjectWorkspace = () => {
   const { projectId } = useParams();
@@ -68,7 +60,7 @@ const ProjectWorkspace = () => {
   const project = projects.find((entry) => entry.id === projectId) ?? null;
 
   const groupedChecklist = useMemo(() => {
-    if (!project) return [] as Array<{ team: string; items: Project["checklist"] }>;
+    if (!project) return [] as Array<{ team: string; label: string; items: Project["checklist"] }>;
 
     const groups = project.checklist.reduce((acc, item) => {
       const key = item.ownerTeam;
@@ -77,8 +69,12 @@ const ProjectWorkspace = () => {
       return acc;
     }, {} as Record<string, Project["checklist"]>);
 
-    return Object.entries(groups).map(([team, items]) => ({ team, items }));
-  }, [project]);
+    return Object.entries(groups).map(([team, items]) => ({
+      team,
+      label: teamLabels[team as keyof typeof teamLabels] || team,
+      items,
+    }));
+  }, [project, teamLabels]);
 
   if (isLoading) {
     return (
@@ -117,6 +113,58 @@ const ProjectWorkspace = () => {
   const pendingOn = calculateProjectResponsibilityFromChecklist(project.checklist);
   const timeByParty = calculateTimeFromChecklist(project.checklist);
 
+  const actionButtons = [
+    project.links.brandUrl
+      ? {
+          key: "website",
+          label: "Website",
+          icon: <ExternalLink className="h-4 w-4" />,
+          onClick: undefined,
+          href: project.links.brandUrl,
+        }
+      : null,
+    { key: "details", label: "View Details", onClick: () => setDetailsOpen(true) },
+    { key: "checklist", label: "Open Checklist", onClick: () => setChecklistOpen(true) },
+    { key: "edit", label: "Edit Project", onClick: () => setEditOpen(true) },
+    ...(currentUser?.team === "manager"
+      ? [
+          { key: "assign", label: "Assign Owner", icon: <UserPlus className="h-4 w-4" />, onClick: () => setAssignOpen(true) },
+          { key: "delete", label: "Delete", icon: <Trash2 className="h-4 w-4" />, onClick: () => setDeleteConfirmOpen(true), variant: "destructive" as const },
+        ]
+      : []),
+  ].filter(Boolean) as Array<{
+    key: string;
+    label: string;
+    icon?: JSX.Element;
+    onClick?: () => void;
+    href?: string;
+    variant?: "outline" | "destructive";
+  }>;
+
+  const detailCards = [
+    { label: "Current team", value: teamLabels[project.currentOwnerTeam] || project.currentOwnerTeam, eyebrow: "Ownership", icon: <Building2 className="h-5 w-5" /> },
+    { label: "Assigned owner", value: project.assignedOwnerName || "Unassigned", eyebrow: "Ops" , icon: <BadgeCheck className="h-5 w-5" />},
+    { label: "Action pending on", value: responsibilityLabels[pendingOn] || pendingOn, eyebrow: "Execution", icon: <ClipboardList className="h-5 w-5" /> },
+    { label: "Checklist progress", value: `${completedChecklist}/${project.checklist.length} done`, eyebrow: "Completion", icon: <Layers3 className="h-5 w-5" /> },
+    { label: "Internal time", value: formatDuration(timeByParty.gokwik), eyebrow: "Delivery", icon: <Timer className="h-5 w-5" /> },
+    { label: "Merchant time", value: formatDuration(timeByParty.merchant), eyebrow: "External", icon: <Timer className="h-5 w-5" /> },
+  ];
+
+  const projectDetails = [
+    { label: getLabel("field_platform"), value: project.platform },
+    { label: getLabel("field_category"), value: project.category },
+    { label: getLabel("field_arr"), value: `${project.arr} Cr` },
+    { label: getLabel("field_txns_per_day"), value: `${project.txnsPerDay}` },
+    { label: getLabel("field_aov"), value: `₹${project.aov.toLocaleString()}` },
+    { label: getLabel("field_sales_spoc"), value: project.salesSpoc },
+    { label: getLabel("field_integration_type"), value: project.integrationType },
+    { label: getLabel("field_pg_onboarding"), value: project.pgOnboarding },
+    { label: getLabel("field_go_live_percent"), value: `${project.goLivePercent}%` },
+    { label: getLabel("field_kick_off_date"), value: project.dates.kickOffDate || "—" },
+    { label: getLabel("field_expected_go_live_date"), value: project.dates.expectedGoLiveDate || "—" },
+    { label: getLabel("field_actual_go_live_date"), value: project.dates.goLiveDate || "—" },
+  ];
+
   const handleSaveEdit = (updatedProject: typeof project) => {
     updateProject(updatedProject);
     toast.success("Project updated successfully");
@@ -130,154 +178,104 @@ const ProjectWorkspace = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="border-b border-border/60 bg-card/80 backdrop-blur-xl">
-        <div className="mx-auto flex w-full max-w-[1600px] flex-col gap-5 px-6 py-6 lg:px-10">
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <div className="space-y-3">
+      <div className="mx-auto flex w-full max-w-[1600px] flex-col gap-8 px-5 py-6 lg:px-8 xl:px-10">
+        <section className="enterprise-panel overflow-hidden rounded-[2rem] border-border/60">
+          <div className="grid gap-6 p-6 lg:grid-cols-[minmax(0,1.45fr)_minmax(320px,0.95fr)] lg:p-8">
+            <div className="space-y-6">
               <Button asChild variant="ghost" className="-ml-3 w-fit gap-2 text-muted-foreground">
                 <Link to="/">
                   <ArrowLeft className="h-4 w-4" />
                   Back to dashboard
                 </Link>
               </Button>
-              <div className="flex flex-wrap items-center gap-3">
-                <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-border/60 bg-muted/30">
-                  <Building2 className="h-6 w-6 text-primary" />
+
+              <div className="flex flex-col gap-5 xl:flex-row xl:items-start">
+                <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-[1.75rem] border border-border/60 bg-background text-primary shadow-[0_24px_60px_-36px_hsl(var(--foreground)/0.22)]">
+                  <Building2 className="h-9 w-9" />
                 </div>
-                <div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <h1 className="text-3xl font-semibold tracking-[-0.04em] text-foreground">{project.merchantName}</h1>
-                    <Badge variant="outline">MID {project.mid}</Badge>
-                    <Badge variant="secondary">{teamLabels[project.currentOwnerTeam]}</Badge>
-                    <Badge variant={project.pendingAcceptance ? "outline" : "default"}>
-                      {project.pendingAcceptance ? "Pending acceptance" : stateLabels[project.projectState] || projectStateLabels[project.projectState]}
-                    </Badge>
+
+                <div className="min-w-0 space-y-4">
+                  <div className="space-y-3">
+                    <div className="flex flex-wrap items-center gap-2.5">
+                      <h1 className="text-4xl font-semibold tracking-[-0.06em] text-foreground lg:text-5xl">{project.merchantName}</h1>
+                      <Badge variant="outline" className="px-3 py-1 text-xs">MID {project.mid}</Badge>
+                      <Badge variant="secondary" className="px-3 py-1 text-xs">{teamLabels[project.currentOwnerTeam]}</Badge>
+                      <Badge variant={project.pendingAcceptance ? "outline" : "default"} className="px-3 py-1 text-xs">
+                        {project.pendingAcceptance ? "Pending acceptance" : stateLabels[project.projectState] || projectStateLabels[project.projectState]}
+                      </Badge>
+                    </div>
+                    <p className="max-w-3xl text-base leading-7 text-muted-foreground">
+                      Dedicated project workspace with operational details, checklist progress, and execution actions.
+                    </p>
                   </div>
-                  <p className="mt-2 max-w-3xl text-sm text-muted-foreground">
-                    Dedicated project workspace with operational details, checklist progress, and execution actions.
-                  </p>
+
+                  <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                    {detailCards.map((item) => (
+                      <WorkspaceMetricCard
+                        key={item.label}
+                        label={item.label}
+                        value={item.value}
+                        eyebrow={item.eyebrow}
+                        icon={item.icon}
+                      />
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>
 
-            <div className="flex flex-wrap items-center gap-2">
-              {project.links.brandUrl && (
-                <Button asChild variant="outline" className="gap-2">
-                  <a href={project.links.brandUrl} target="_blank" rel="noreferrer">
-                    Website
-                    <ExternalLink className="h-4 w-4" />
-                  </a>
-                </Button>
-              )}
-              <Button variant="outline" className="gap-2" onClick={() => setDetailsOpen(true)}>
-                View Details
-              </Button>
-              <Button variant="outline" className="gap-2" onClick={() => setChecklistOpen(true)}>
-                Open Checklist
-              </Button>
-              <Button variant="outline" className="gap-2" onClick={() => setEditOpen(true)}>
-                Edit Project
-              </Button>
-              {currentUser?.team === "manager" && (
-                <>
-                  <Button variant="outline" className="gap-2" onClick={() => setAssignOpen(true)}>
-                    <UserPlus className="h-4 w-4" />
-                    Assign Owner
+            <div className="flex flex-col gap-3 self-start lg:pl-4">
+              {actionButtons.map((action) =>
+                action.href ? (
+                  <Button key={action.key} asChild variant="outline" className="h-14 justify-between rounded-2xl px-5 text-sm">
+                    <a href={action.href} target="_blank" rel="noreferrer">
+                      <span>{action.label}</span>
+                      {action.icon || <ArrowUpRight className="h-4 w-4" />}
+                    </a>
                   </Button>
-                  <Button variant="destructive" className="gap-2" onClick={() => setDeleteConfirmOpen(true)}>
-                    <Trash2 className="h-4 w-4" />
-                    Delete
+                ) : (
+                  <Button
+                    key={action.key}
+                    variant={action.variant || "outline"}
+                    className="h-14 justify-between rounded-2xl px-5 text-sm"
+                    onClick={action.onClick}
+                  >
+                    <span>{action.label}</span>
+                    {action.icon || <ArrowUpRight className="h-4 w-4" />}
                   </Button>
-                </>
+                ),
               )}
             </div>
           </div>
+        </section>
 
-          <div className="grid gap-3 md:grid-cols-4 xl:grid-cols-6">
-            <DetailTile label="Current team" value={teamLabels[project.currentOwnerTeam] || project.currentOwnerTeam} />
-            <DetailTile label="Assigned owner" value={project.assignedOwnerName || "Unassigned"} />
-            <DetailTile label="Action pending on" value={responsibilityLabels[pendingOn] || pendingOn} />
-            <DetailTile label="Checklist progress" value={`${completedChecklist}/${project.checklist.length} done`} />
-            <DetailTile label="Internal time" value={formatDuration(timeByParty.gokwik)} />
-            <DetailTile label="Merchant time" value={formatDuration(timeByParty.merchant)} />
-          </div>
+        <div className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
+          <WorkspaceSection
+            title="Project details"
+            description="Enterprise snapshot for leadership, delivery, and operations review."
+            icon={<Layers3 className="h-5 w-5" />}
+          >
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+              {projectDetails.map((item) => (
+                <WorkspaceMetricCard key={item.label} label={item.label} value={item.value || "—"} />
+              ))}
+            </div>
+          </WorkspaceSection>
+
+          <WorkspaceSection
+            title="Checklist"
+            description="Collapsed execution summary across teams, ready for drill-down."
+            icon={<ClipboardList className="h-5 w-5" />}
+            contentClassName="space-y-0"
+          >
+            <WorkspaceChecklistPanel
+              groupedChecklist={groupedChecklist}
+              completedChecklist={completedChecklist}
+              totalChecklist={project.checklist.length}
+              currentPhase={project.currentPhase}
+            />
+          </WorkspaceSection>
         </div>
-      </div>
-
-      <div className="mx-auto grid w-full max-w-[1600px] gap-6 px-6 py-8 lg:grid-cols-[1.1fr_0.9fr] lg:px-10">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Layers3 className="h-5 w-5 text-primary" />
-              Project details
-            </CardTitle>
-            <CardDescription>Enterprise snapshot for leadership, delivery, and operations review.</CardDescription>
-          </CardHeader>
-          <CardContent className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            <DetailTile label={getLabel("field_platform")} value={project.platform} />
-            <DetailTile label={getLabel("field_category")} value={project.category} />
-            <DetailTile label={getLabel("field_arr")} value={`${project.arr} Cr`} />
-            <DetailTile label={getLabel("field_txns_per_day")} value={`${project.txnsPerDay}`} />
-            <DetailTile label={getLabel("field_aov")} value={`₹${project.aov.toLocaleString()}`} />
-            <DetailTile label={getLabel("field_sales_spoc")} value={project.salesSpoc} />
-            <DetailTile label={getLabel("field_integration_type")} value={project.integrationType} />
-            <DetailTile label={getLabel("field_pg_onboarding")} value={project.pgOnboarding} />
-            <DetailTile label={getLabel("field_go_live_percent")} value={`${project.goLivePercent}%`} />
-            <DetailTile label={getLabel("field_kick_off_date")} value={project.dates.kickOffDate || "—"} />
-            <DetailTile label={getLabel("field_expected_go_live_date")} value={project.dates.expectedGoLiveDate || "—"} />
-            <DetailTile label={getLabel("field_actual_go_live_date")} value={project.dates.goLiveDate || "—"} />
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <ClipboardList className="h-5 w-5 text-primary" />
-              Checklist
-            </CardTitle>
-            <CardDescription>Collapsed execution summary across teams, ready for drill-down.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-5">
-            <div className="grid gap-3 md:grid-cols-3">
-              <div className="rounded-2xl border border-border/60 bg-muted/25 p-4">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-muted-foreground">Total items</p>
-                <p className="mt-2 text-2xl font-semibold text-foreground">{project.checklist.length}</p>
-              </div>
-              <div className="rounded-2xl border border-border/60 bg-muted/25 p-4">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-muted-foreground">Completed</p>
-                <p className="mt-2 text-2xl font-semibold text-foreground">{completedChecklist}</p>
-              </div>
-              <div className="rounded-2xl border border-border/60 bg-muted/25 p-4">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-muted-foreground">Last milestone</p>
-                <p className="mt-2 text-sm font-semibold text-foreground">{project.currentPhase}</p>
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              {groupedChecklist.map(({ team, items }) => {
-                const done = items.filter((item) => item.completed).length;
-
-                return (
-                  <div key={team} className="rounded-2xl border border-border/60 bg-muted/15 p-4">
-                    <div className="mb-3 flex items-center justify-between gap-3">
-                      <div>
-                        <p className="text-sm font-semibold text-foreground">{teamLabels[team as keyof typeof teamLabels] || team}</p>
-                        <p className="text-xs text-muted-foreground">{done} of {items.length} completed</p>
-                      </div>
-                      <Badge variant="outline">{done}/{items.length}</Badge>
-                    </div>
-
-                    <div className="space-y-2">
-                      {items.map((item) => (
-                        <ChecklistRow key={item.id} title={item.title} done={item.completed} />
-                      ))}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </CardContent>
-        </Card>
       </div>
 
       <ProjectDetailsDialog project={project} open={detailsOpen} onOpenChange={setDetailsOpen} />
