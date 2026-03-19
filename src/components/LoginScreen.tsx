@@ -56,7 +56,7 @@ export const LoginScreen = () => {
   };
 
   const brandName = labels.app_title || "Command Centre";
-  const orgName = labels.org_name || "Enterprise";
+  const orgName = labels.org_name?.toLowerCase().includes("gokwik") ? "Enterprise" : labels.org_name || "Enterprise";
 
   return (
     <div className="min-h-screen bg-background enterprise-grid">

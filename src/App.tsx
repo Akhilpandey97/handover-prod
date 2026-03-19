@@ -8,6 +8,7 @@ import { ProjectProvider } from "@/contexts/ProjectContext";
 import { LabelsProvider } from "@/contexts/LabelsContext";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import Index from "./pages/Index";
+import ProjectWorkspace from "./pages/ProjectWorkspace";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -18,16 +19,17 @@ const App = () => (
       <TooltipProvider>
         <AuthProvider>
           <LabelsProvider>
-          <ProjectProvider>
-            <Toaster />
-            <Sonner />
-            <BrowserRouter>
-              <Routes>
-                <Route path="/" element={<Index />} />
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </BrowserRouter>
-          </ProjectProvider>
+            <ProjectProvider>
+              <Toaster />
+              <Sonner />
+              <BrowserRouter>
+                <Routes>
+                  <Route path="/" element={<Index />} />
+                  <Route path="/projects/:projectId" element={<ProjectWorkspace />} />
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </BrowserRouter>
+            </ProjectProvider>
           </LabelsProvider>
         </AuthProvider>
       </TooltipProvider>
