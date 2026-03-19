@@ -839,25 +839,10 @@ export const ManagerDashboard = () => {
           </div>
         </nav>
 
-        {/* User card at bottom */}
-        <div className="p-4 border-t border-border">
-          <div className="flex items-center gap-3">
-            <div className={cn("rounded-xl bg-primary flex items-center justify-center text-primary-foreground font-bold text-sm shadow-md", sidebarCollapsed ? "h-8 w-8 text-xs" : "h-10 w-10")}>
-              {currentUser.name.charAt(0)}
-            </div>
-            {!sidebarCollapsed && (
-              <div className="flex-1 min-w-0">
-                <p className="font-semibold text-sm text-foreground truncate">{currentUser.name}</p>
-                <p className="text-xs text-muted-foreground">Manager</p>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Collapse/Expand arrow button */}
+        {/* Collapse/Expand arrow button - centered vertically */}
         <button
           onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-          className="absolute -right-3 bottom-20 h-6 w-6 rounded-full bg-primary text-primary-foreground shadow-md flex items-center justify-center hover:bg-primary/90 transition-colors z-10"
+          className="absolute -right-3 top-1/2 -translate-y-1/2 h-6 w-6 rounded-full bg-primary text-primary-foreground shadow-md flex items-center justify-center hover:bg-primary/90 transition-colors z-10"
         >
           {sidebarCollapsed ? <ChevronRight className="h-3.5 w-3.5" /> : <ChevronLeft className="h-3.5 w-3.5" />}
         </button>
@@ -907,6 +892,15 @@ export const ManagerDashboard = () => {
 
             <div className="flex items-center gap-2 pl-3 border-l border-border/50">
               <ThemeToggle />
+              <div className="flex items-center gap-2 pl-2 border-l border-border/50">
+                <div className="h-7 w-7 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold text-xs shadow-sm">
+                  {currentUser.name.charAt(0)}
+                </div>
+                <div className="hidden sm:block min-w-0">
+                  <p className="font-medium text-xs text-foreground truncate leading-tight">{currentUser.name}</p>
+                  <p className="text-[10px] text-muted-foreground leading-tight">Manager</p>
+                </div>
+              </div>
               <Button variant="outline" size="sm" onClick={logout} className="gap-1.5 h-8 text-xs text-destructive hover:text-destructive hover:bg-destructive/10">
                 <LogOut className="h-3.5 w-3.5" />
                 Logout
