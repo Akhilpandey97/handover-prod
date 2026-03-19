@@ -201,6 +201,8 @@ export const ManagerDashboard = () => {
   // Sort state for projects tab
   const [sortField, setSortField] = useState<string>("none");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
+  const [sortOpen, setSortOpen] = useState(false);
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
   // Fetch profiles for owner filter
   const [allProfiles, setAllProfiles] = useState<{ id: string; name: string; team: string }[]>([]);
@@ -1139,16 +1141,16 @@ export const ManagerDashboard = () => {
                       All Projects
                     </CardTitle>
                     {/* Sort Dropdown - left side */}
-                    <Collapsible>
+                    <Collapsible open={sortOpen} onOpenChange={setSortOpen}>
                       <CollapsibleTrigger asChild>
                         <Button variant="outline" size="sm" className="gap-2">
                           <ArrowUpDown className="h-4 w-4" />
                           Sort
                           {sortField !== "none" && <Badge variant="default" className="ml-1 h-5 px-1.5 text-[10px]">1</Badge>}
-                          <ChevronDown className="h-3 w-3" />
+                          <ChevronDown className={`h-3 w-3 transition-transform ${sortOpen ? "rotate-180" : ""}`} />
                         </Button>
                       </CollapsibleTrigger>
-                      <CollapsibleContent className="absolute z-20 mt-2 left-0 top-full w-[320px] bg-card border rounded-lg shadow-xl p-4 space-y-3">
+                      <CollapsibleContent className="absolute left-0 top-full z-20 mt-2 w-[320px] space-y-3 rounded-lg border bg-card p-4 shadow-xl">
                         <div className="flex items-center justify-between mb-2">
                           <p className="text-sm font-semibold">Sort By</p>
                           {sortField !== "none" && (
@@ -1180,19 +1182,22 @@ export const ManagerDashboard = () => {
                             </Select>
                           </div>
                         </div>
+                        <div className="flex justify-end border-t pt-3">
+                          <Button size="sm" onClick={() => setSortOpen(false)}>Done</Button>
+                        </div>
                       </CollapsibleContent>
                     </Collapsible>
                     {/* Filters - left side */}
-                    <Collapsible>
+                    <Collapsible open={filtersOpen} onOpenChange={setFiltersOpen}>
                       <CollapsibleTrigger asChild>
                         <Button variant="outline" size="sm" className="gap-2">
                           <Search className="h-4 w-4" />
                           Filters
-                          {hasActiveFilters && <Badge variant="default" className="ml-1 h-5 px-1.5 text-[10px]">{[teamFilter !== "all", ownerFilter !== "all", phaseFilter !== "all", stateFilter !== "all", kickOffFrom, kickOffTo, goLiveFrom, goLiveTo].filter(Boolean).length}</Badge>}
-                          <ChevronDown className="h-3 w-3" />
+                          {hasActiveFilters && <Badge variant="default" className="ml-1 h-5 px-1.5 text-[10px]">{[teamFilter !== "all", ownerFilter !== "all", phaseFilter !== "all", stateFilter !== "all", platformFilter !== "all", categoryFilter !== "all", responsibilityFilter !== "all", arrMin, arrMax, kickOffFrom, kickOffTo, goLiveFrom, goLiveTo].filter(Boolean).length}</Badge>}
+                          <ChevronDown className={`h-3 w-3 transition-transform ${filtersOpen ? "rotate-180" : ""}`} />
                         </Button>
                       </CollapsibleTrigger>
-                      <CollapsibleContent className="absolute z-20 mt-2 left-0 top-full w-[600px] bg-card border rounded-lg shadow-xl p-4 space-y-3">
+                      <CollapsibleContent className="absolute left-0 top-full z-20 mt-2 w-[600px] space-y-3 rounded-lg border bg-card p-4 shadow-xl">
                         <div className="flex items-center justify-between mb-2">
                           <p className="text-sm font-semibold">Filters</p>
                           {hasActiveFilters && (
@@ -1309,6 +1314,9 @@ export const ManagerDashboard = () => {
                               <Input type="date" value={goLiveTo} onChange={e => setGoLiveTo(e.target.value)} className="h-9 text-xs min-w-0" />
                             </div>
                           </div>
+                        </div>
+                        <div className="flex justify-end border-t pt-3">
+                          <Button size="sm" onClick={() => setFiltersOpen(false)}>Done</Button>
                         </div>
                       </CollapsibleContent>
                     </Collapsible>
