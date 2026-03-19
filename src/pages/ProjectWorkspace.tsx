@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { ReactNode, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useProjects } from "@/contexts/ProjectContext";
@@ -135,7 +135,7 @@ const ProjectWorkspace = () => {
   ].filter(Boolean) as Array<{
     key: string;
     label: string;
-    icon?: JSX.Element;
+    icon?: ReactNode;
     onClick?: () => void;
     href?: string;
     variant?: "outline" | "destructive";
