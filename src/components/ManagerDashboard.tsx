@@ -55,6 +55,7 @@ import {
   Building2,
   ChevronDown,
   ChevronRight,
+  ChevronLeft,
   Upload,
   Plus,
   Target,
@@ -71,6 +72,8 @@ import {
   CalendarDays,
   Mail,
   GripVertical,
+  List,
+  X,
 } from "lucide-react";
 import { exportProjectsToCSV } from "@/utils/exportProjects";
 import { exportProjectChecklistCSV, exportTeamOwnerCSV } from "@/utils/reportExportCSV";
