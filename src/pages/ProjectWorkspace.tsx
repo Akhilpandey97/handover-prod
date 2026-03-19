@@ -881,40 +881,15 @@ const ProjectWorkspace = () => {
 
                     <TabsContent value="activity" className="m-0">
                       <div className="space-y-5">
-                        <div className="rounded-2xl border border-border/70 bg-background">
-                          <div className="border-b border-border/70 px-5 py-4">
-                            <div className="flex items-center gap-3">
-                              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary">
-                                {currentUser?.name?.slice(0, 2).toUpperCase() || "AP"}
-                              </div>
-                              <div className="flex-1 rounded-xl border border-border/70 bg-card px-4 py-3">
-                                <p className="text-base font-medium text-muted-foreground">Add a comment...</p>
-                                <div className="mt-3 flex flex-wrap gap-2">
-                                  {["Suggest a reply", "Status update", "Thanks"].map((prompt) => (
-                                    <button
-                                      key={prompt}
-                                      type="button"
-                                      className="rounded-md border border-border bg-background px-3 py-1.5 text-sm font-medium text-foreground transition hover:bg-accent"
-                                    >
-                                      {prompt}
-                                    </button>
-                                  ))}
-                                </div>
-                              </div>
+                        <div className="rounded-2xl border border-border/70 bg-background px-5 py-4">
+                          <div className="flex flex-wrap items-center justify-between gap-3">
+                            <div>
+                              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Activity timeline</p>
+                              <h2 className="mt-1 text-xl font-semibold tracking-[-0.03em] text-foreground">Project updates and delivery history</h2>
                             </div>
-                            <p className="mt-3 text-xs text-muted-foreground">Pro tip: use notes, checklist comments, and transfers to keep the timeline current.</p>
-                          </div>
-
-                          <div className="px-5 py-4">
-                            <div className="flex flex-wrap items-center justify-between gap-3">
-                              <div>
-                                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Activity timeline</p>
-                                <h2 className="mt-1 text-xl font-semibold tracking-[-0.03em] text-foreground">Project updates and delivery history</h2>
-                              </div>
-                              <div className="flex flex-wrap gap-2">
-                                <Badge className="border border-slate-200 bg-slate-100 text-slate-700">{activityFeed.length} events</Badge>
-                                <Badge className="border border-blue-200 bg-blue-50 text-blue-700">Color-coded types</Badge>
-                              </div>
+                            <div className="flex flex-wrap gap-2">
+                              <Badge className="border border-slate-200 bg-slate-100 text-slate-700">{activityFeed.length} events</Badge>
+                              <Badge className="border border-blue-200 bg-blue-50 text-blue-700">Color-coded types</Badge>
                             </div>
                           </div>
                         </div>
@@ -1030,7 +1005,7 @@ const ProjectWorkspace = () => {
               </div>
 
               <aside className="bg-card px-5 py-5 lg:px-6">
-                <div className="sticky top-6 space-y-4">
+                <div className="sticky top-6 max-h-[calc(100vh-3rem)] space-y-4 overflow-y-auto pr-1">
                   <div className="rounded-2xl border border-primary/15 bg-primary/[0.04] p-4">
                     <div className="flex items-center gap-3">
                       <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground">
