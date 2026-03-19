@@ -912,7 +912,7 @@ export const ManagerDashboard = () => {
         </header>
 
         {/* Content Area */}
-        <ScrollArea className="flex-1">
+        <div className="flex-1 overflow-y-auto">
           <div className="p-8">
 
           {/* ========= OVERVIEW TAB ========= */}
@@ -1894,7 +1894,7 @@ export const ManagerDashboard = () => {
           {activeTab === "tenants" && currentUser?.team === "super_admin" && <TenantManagement />}
 
           </div>
-        </ScrollArea>
+        </div>
       </main>
 
       <CSVUploadDialog open={csvDialogOpen} onOpenChange={setCsvDialogOpen} />
