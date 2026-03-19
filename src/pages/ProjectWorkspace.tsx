@@ -74,6 +74,18 @@ interface ActivityEntry {
   dateLabel: string;
 }
 
+interface RiskDriver {
+  label: string;
+  points: number;
+}
+
+interface RiskAssessment {
+  score: number;
+  label: "Low risk" | "Medium risk" | "High risk";
+  tone: string;
+  drivers: RiskDriver[];
+}
+
 const tabOptions: Array<{ value: WorkspaceTab; label: string }> = [
   { value: "overview", label: "Overview" },
   { value: "activity", label: "Activity" },
@@ -252,19 +264,7 @@ const groupByDate = (items: ActivityEntry[]) =>
     {} as Record<string, ActivityEntry[]>,
   );
 
-const getRiskLevel = (project: Project) => {
-  if (project.projectState === "blocked" || project.pendingAcceptance) {
-    return { label: "High risk", tone: "bg-rose-100 text-rose-800 border-rose-200" };
-  }
-
-  if (project.projectState === "on_hold" || project.goLivePercent < 40) {
-    return { label: "Medium risk", tone: "bg-amber-100 text-amber-800 border-amber-200" };
-  }
-
-  return { label: "Low risk", tone: "bg-emerald-100 text-emerald-800 border-emerald-200" };
-};
-
-const getLastUpdated = (project: Project) => {
+const getLatestProjectTimestamp = (project: Project) => {
   const candidateDates = [
     project.dates.goLiveDate,
     project.dates.expectedGoLiveDate,
@@ -273,10 +273,114 @@ const getLastUpdated = (project: Project) => {
     ...project.checklist.flatMap((item) => [item.completedAt, item.commentAt]),
   ].filter(Boolean) as string[];
 
-  const latest = candidateDates
+  return candidateDates
     .map((value) => new Date(value).getTime())
     .filter((value) => !Number.isNaN(value))
     .sort((a, b) => b - a)[0];
+};
+
+const calculateRiskAssessment = (project: Project): RiskAssessment => {
+  const drivers: RiskDriver[] = [];
+  const now = new Date();
+  const checklistTotal = project.checklist.length;
+  const checklistDone = project.checklist.filter((item) => item.completed).length;
+  const completionRatio = checklistTotal > 0 ? checklistDone / checklistTotal : 0;
+  const latestTimestamp = getLatestProjectTimestamp(project);
+  const expectedGoLive = project.dates.expectedGoLiveDate ? new Date(project.dates.expectedGoLiveDate) : null;
+  const kickOff = project.dates.kickOffDate ? new Date(project.dates.kickOffDate) : null;
+
+  if (project.projectState === "blocked") {
+    drivers.push({ label: "Project is blocked", points: 45 });
+  }
+
+  if (project.pendingAcceptance) {
+    drivers.push({ label: "Pending acceptance from next owner", points: 20 });
+  }
+
+  if (project.projectState === "on_hold") {
+    drivers.push({ label: "Project is on hold", points: 18 });
+  }
+
+  if (!project.assignedOwnerName) {
+    drivers.push({ label: "Owner is unassigned", points: 10 });
+  }
+
+  if (project.goLivePercent < 25) {
+    drivers.push({ label: "Go-live progress is below 25%", points: 12 });
+  } else if (project.goLivePercent < 50) {
+    drivers.push({ label: "Go-live progress is below 50%", points: 6 });
+  }
+
+  if (checklistTotal > 0 && completionRatio < 0.35) {
+    drivers.push({ label: "Most checklist items are still open", points: 12 });
+  } else if (checklistTotal > 0 && completionRatio < 0.7) {
+    drivers.push({ label: "Checklist completion is still moderate", points: 6 });
+  }
+
+  if (
+    expectedGoLive &&
+    !Number.isNaN(expectedGoLive.getTime()) &&
+    expectedGoLive.getTime() < now.getTime() &&
+    project.projectState !== "live"
+  ) {
+    drivers.push({ label: "Expected go-live date has passed", points: 20 });
+  }
+
+  if (
+    kickOff &&
+    !Number.isNaN(kickOff.getTime()) &&
+    kickOff.getTime() < now.getTime() &&
+    project.projectState === "not_started"
+  ) {
+    drivers.push({ label: "Kick-off date passed but project has not started", points: 14 });
+  }
+
+  if (latestTimestamp) {
+    const inactiveDays = Math.floor((now.getTime() - latestTimestamp) / (1000 * 60 * 60 * 24));
+    if (inactiveDays >= 14) {
+      drivers.push({ label: `No meaningful update in ${inactiveDays} days`, points: 14 });
+    } else if (inactiveDays >= 7) {
+      drivers.push({ label: `No meaningful update in ${inactiveDays} days`, points: 8 });
+    }
+  }
+
+  if (project.transferHistory.length >= 3) {
+    drivers.push({ label: "Multiple ownership handoffs recorded", points: 6 });
+  }
+
+  const score = drivers.reduce((sum, driver) => sum + driver.points, 0);
+
+  if (score >= 55) {
+    return {
+      score,
+      label: "High risk",
+      tone: "bg-rose-100 text-rose-800 border-rose-200",
+      drivers: drivers.sort((a, b) => b.points - a.points),
+    };
+  }
+
+  if (score >= 28) {
+    return {
+      score,
+      label: "Medium risk",
+      tone: "bg-amber-100 text-amber-800 border-amber-200",
+      drivers: drivers.sort((a, b) => b.points - a.points),
+    };
+  }
+
+  return {
+    score,
+    label: "Low risk",
+    tone: "bg-emerald-100 text-emerald-800 border-emerald-200",
+    drivers:
+      drivers.length > 0
+        ? drivers.sort((a, b) => b.points - a.points)
+        : [{ label: "No major delivery or ownership risks detected", points: 0 }],
+  };
+};
+
+const getLastUpdated = (project: Project) => {
+  const latest = getLatestProjectTimestamp(project);
 
   if (!latest) return "No recent updates";
 
@@ -421,13 +525,13 @@ const ProjectWorkspace = () => {
     project.currentOwnerTeam !== "ms" &&
     currentUser?.team !== "manager";
   const isTransferReady = canTransfer && allCurrentTeamChecklistCompleted;
-  const risk = getRiskLevel(project);
+  const risk = calculateRiskAssessment(project);
   const openTasksCount = project.checklist.length - completedChecklist;
 
   const overviewStats = [
     { label: "Owner", value: project.assignedOwnerName || "Unassigned", icon: UserRound },
     { label: "Phase", value: phaseLabels[project.currentPhase] || project.currentPhase, icon: CheckCircle2 },
-    { label: "Risk", value: risk.label, icon: ShieldAlert },
+    { label: "Risk", value: `${risk.label} · ${risk.score}`, icon: ShieldAlert },
     { label: "Last update", value: getLastUpdated(project), icon: Clock3 },
   ];
 
@@ -457,6 +561,11 @@ const ProjectWorkspace = () => {
   ].filter(Boolean) as Array<{ label: string; href: string; icon: typeof Globe }>;
 
   const actionRecommendations = [
+    {
+      label: "Open checklist",
+      sublabel: `${completedChecklist}/${project.checklist.length} items completed`,
+      onClick: () => setActiveTab("tasks"),
+    },
     !project.assignedOwnerName && currentUser?.team === "manager"
       ? { label: "Assign owner", sublabel: "Set clear accountability", onClick: () => setAssignOpen(true) }
       : null,
@@ -628,6 +737,28 @@ const ProjectWorkspace = () => {
 
               <aside className="px-5 py-5 lg:px-6">
                 <div className="space-y-4">
+                  <div className="rounded-xl border border-border/70 bg-background px-4 py-4">
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Risk assessment</p>
+                        <div className="mt-2 flex items-center gap-2">
+                          <Badge className={cn("border px-2.5 py-1 text-[11px] font-semibold", risk.tone)}>
+                            {risk.label}
+                          </Badge>
+                          <span className="text-sm font-semibold text-foreground">Score {risk.score}</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="mt-4 space-y-2">
+                      {risk.drivers.slice(0, 4).map((driver) => (
+                        <div key={driver.label} className="flex items-start justify-between gap-3 rounded-lg border border-border/70 px-3 py-2.5">
+                          <p className="text-xs leading-5 text-foreground">{driver.label}</p>
+                          <span className="text-xs font-semibold text-muted-foreground">+{driver.points}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Recommended actions</p>
                     <p className="mt-1 text-sm text-muted-foreground">Context-aware actions similar to a Jira issue sidebar.</p>
