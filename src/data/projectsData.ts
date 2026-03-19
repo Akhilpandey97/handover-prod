@@ -46,6 +46,15 @@ export interface ChecklistResponsibilityLog {
   endedAt?: string;
 }
 
+export interface ProjectActivityLog {
+  id: string;
+  title: string;
+  description: string;
+  actor: string;
+  activityType: "project_update" | "note_update" | "status_change";
+  createdAt: string;
+}
+
 export interface ProjectChecklist {
   id: string;
   title: string;
@@ -105,6 +114,7 @@ export interface Project {
   pgOnboarding: string;
   currentResponsibility: ResponsibilityParty;
   responsibilityLog: ResponsibilityLog[];
+  activityLog?: ProjectActivityLog[];
   assignedOwner?: string; // User ID of the assigned owner
   projectState: ProjectState;
   assignedOwnerName?: string; // Display name of the assigned owner
@@ -253,6 +263,7 @@ export const createDefaultProject = (overrides?: Partial<Project>): Project => (
     phase2Comment: "",
   },
   transferHistory: [],
+  activityLog: [],
   checklist: createDefaultChecklist(),
   salesSpoc: "",
   integrationType: "Standard",

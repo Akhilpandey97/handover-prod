@@ -784,6 +784,54 @@ export type Database = {
           },
         ]
       }
+      project_activity_logs: {
+        Row: {
+          activity_type: string
+          actor: string
+          created_at: string
+          description: string
+          id: string
+          project_id: string
+          tenant_id: string | null
+          title: string
+        }
+        Insert: {
+          activity_type?: string
+          actor: string
+          created_at?: string
+          description: string
+          id?: string
+          project_id: string
+          tenant_id?: string | null
+          title: string
+        }
+        Update: {
+          activity_type?: string
+          actor?: string
+          created_at?: string
+          description?: string
+          id?: string
+          project_id?: string
+          tenant_id?: string | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_activity_logs_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_activity_logs_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       projects: {
         Row: {
           aov: number | null
