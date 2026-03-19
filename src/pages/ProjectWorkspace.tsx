@@ -34,7 +34,6 @@ import {
 import { fetchAiInsights } from "@/utils/aiInsights";
 import { cn } from "@/lib/utils";
 import {
-  AlertTriangle,
   ArrowLeft,
   ArrowRight,
   ArrowUpRight,
@@ -50,7 +49,6 @@ import {
   Loader2,
   MessageSquareText,
   ShieldAlert,
-  Sparkles,
   Trash2,
   UserRound,
 } from "lucide-react";
@@ -466,7 +464,6 @@ const ProjectWorkspace = () => {
   const [transferOpen, setTransferOpen] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [aiSummary, setAiSummary] = useState<string[]>([]);
-  const [aiSummaryRaw, setAiSummaryRaw] = useState("");
   const [aiSummaryLoading, setAiSummaryLoading] = useState(false);
   const [aiSummaryError, setAiSummaryError] = useState<string | null>(null);
 
@@ -487,12 +484,10 @@ const ProjectWorkspace = () => {
       try {
         const result = await fetchAiInsights({ project, type: "summary" });
         if (ignore) return;
-        setAiSummaryRaw(result);
         setAiSummary(parseAiBullets(result));
       } catch (error) {
         if (ignore) return;
         setAiSummaryError(error instanceof Error ? error.message : "Unable to generate AI summary.");
-        setAiSummaryRaw("");
         setAiSummary([]);
       } finally {
         if (!ignore) {
@@ -573,13 +568,6 @@ const ProjectWorkspace = () => {
     isTransferReady,
   );
 
-  const overviewStats = [
-    { label: "Owner", value: project.assignedOwnerName || "Unassigned", icon: UserRound },
-    { label: "Phase", value: phaseLabels[project.currentPhase] || project.currentPhase, icon: CheckCircle2 },
-    { label: "Risk", value: risk.label, icon: ShieldAlert },
-    { label: "Last update", value: getLastUpdated(project), icon: Clock3 },
-  ];
-
   const projectDetails = [
     ["MID", project.mid],
     ["Platform", project.platform],
@@ -593,6 +581,29 @@ const ProjectWorkspace = () => {
     ["Kick-off", project.dates.kickOffDate || "—"],
     ["Expected go-live", project.dates.expectedGoLiveDate || "—"],
     ["Responsibility", responsibilityLabels[pendingOn] || pendingOn],
+  ];
+
+  const detailRows = [
+    ["Assignee", project.assignedOwnerName || "Unassigned"],
+    ["Reporter", project.salesSpoc || currentUser?.name || "—"],
+    ["Current team", teamLabels[project.currentOwnerTeam] || project.currentOwnerTeam],
+    ["Phase", phaseLabels[project.currentPhase] || project.currentPhase],
+    ["Risk", risk.label],
+    ["Last update", getLastUpdated(project)],
+    ["Responsibility", responsibilityLabels[pendingOn] || pendingOn],
+    ["Original estimate", formatDuration(timeByParty.internal + timeByParty.merchant)],
+    ["Merchant time", formatDuration(timeByParty.merchant)],
+    ["Internal time", formatDuration(timeByParty.internal)],
+    ["ARR", `${project.arr} Cr`],
+    ["Platform", project.platform],
+    ["Expected go-live", project.dates.expectedGoLiveDate || "—"],
+  ];
+
+  const noteSections = [
+    ["Current phase", project.notes.currentPhaseComment || "No current phase note added."],
+    ["Project notes", project.notes.projectNotes || "No project notes added."],
+    ["Pre-sales notes", project.notes.mintNotes || "No pre-sales note added."],
+    ["Phase 2 notes", project.notes.phase2Comment || "No phase 2 note added."],
   ];
 
   const quickLinks = [
@@ -655,8 +666,8 @@ const ProjectWorkspace = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="mx-auto max-w-[1480px] px-4 py-5 lg:px-6 lg:py-6">
+    <div className="min-h-screen bg-[linear-gradient(180deg,hsl(var(--background))_0%,hsl(var(--secondary)/0.28)_100%)]">
+      <div className="mx-auto max-w-[1580px] px-4 py-5 lg:px-6 lg:py-6">
         <div className="space-y-4">
           <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
             <Link to="/" className="inline-flex items-center gap-2 rounded-lg px-2 py-1 hover:bg-accent">
@@ -667,381 +678,474 @@ const ProjectWorkspace = () => {
             <span>{project.merchantName}</span>
           </div>
 
-          <section className="overflow-hidden rounded-[24px] border border-border/70 bg-card shadow-[0_18px_48px_-32px_hsl(var(--foreground)/0.2)]">
-            <div className="border-b border-border/70 px-5 py-4 lg:px-6">
-              <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                <div className="min-w-0 space-y-3">
-                  <div className="flex flex-wrap items-center gap-3">
-                    <div className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-sm font-bold text-primary">
-                      {project.merchantName.slice(0, 2).toUpperCase()}
-                    </div>
-                    <div>
-                      <h1 className="text-[1.8rem] font-semibold tracking-[-0.04em] text-foreground">
-                        {project.merchantName}
-                      </h1>
-                      <div className="mt-1 flex flex-wrap items-center gap-2">
-                        <Badge className={cn("border px-2.5 py-1 text-[11px] font-semibold", stateToneMap[project.projectState])}>
-                          {stateLabels[project.projectState] || projectStateLabels[project.projectState]}
-                        </Badge>
-                        <Badge variant="outline">MID {project.mid}</Badge>
-                        <Badge variant="outline">{teamLabels[project.currentOwnerTeam] || project.currentOwnerTeam}</Badge>
-                        <Badge variant="outline">{phaseLabels[project.currentPhase] || project.currentPhase}</Badge>
-                        {project.pendingAcceptance ? (
-                          <Badge className="border border-amber-200 bg-amber-100 text-amber-800">Pending acceptance</Badge>
-                        ) : null}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-                    {overviewStats.map((stat) => (
-                      <div key={stat.label} className="rounded-xl border border-border/70 bg-background px-3 py-3">
-                        <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                          <stat.icon className="h-3.5 w-3.5" />
-                          {stat.label}
+          <section className="overflow-hidden rounded-[22px] border border-border/70 bg-card shadow-[0_24px_70px_-45px_hsl(var(--foreground)/0.28)]">
+            <div className="grid gap-0 xl:grid-cols-[minmax(0,1fr)_360px]">
+              <div className="min-w-0 border-b border-border/70 xl:border-b-0 xl:border-r">
+                <div className="border-b border-border/70 px-5 py-5 lg:px-6">
+                  <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+                    <div className="min-w-0 space-y-4">
+                      <div className="flex items-start gap-3">
+                        <div className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-sm font-bold text-primary">
+                          {project.merchantName.slice(0, 2).toUpperCase()}
                         </div>
-                        <p className="mt-2 text-sm font-semibold text-foreground">{stat.value}</p>
+                        <div className="min-w-0">
+                          <div className="flex flex-wrap items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+                            <span>Project issue</span>
+                            <span className="rounded-md bg-secondary px-2 py-1 text-[10px] text-foreground">MID {project.mid}</span>
+                          </div>
+                          <h1 className="mt-2 text-[2rem] font-semibold tracking-[-0.05em] text-foreground">
+                            {project.merchantName}
+                          </h1>
+                          <div className="mt-3 flex flex-wrap items-center gap-2">
+                            <Badge className={cn("border px-2.5 py-1 text-[11px] font-semibold", stateToneMap[project.projectState])}>
+                              {stateLabels[project.projectState] || projectStateLabels[project.projectState]}
+                            </Badge>
+                            <Badge variant="outline">{teamLabels[project.currentOwnerTeam] || project.currentOwnerTeam}</Badge>
+                            <Badge variant="outline">{phaseLabels[project.currentPhase] || project.currentPhase}</Badge>
+                            <Badge variant="outline">{risk.label}</Badge>
+                            {project.pendingAcceptance ? (
+                              <Badge className="border border-amber-200 bg-amber-100 text-amber-800">Pending acceptance</Badge>
+                            ) : null}
+                          </div>
+                        </div>
                       </div>
-                    ))}
+
+                      <div className="grid gap-3 md:grid-cols-4">
+                        {[
+                          { label: "Owner", value: project.assignedOwnerName || "Unassigned", icon: UserRound },
+                          { label: "Phase", value: phaseLabels[project.currentPhase] || project.currentPhase, icon: CheckCircle2 },
+                          { label: "Risk", value: risk.label, icon: ShieldAlert },
+                          { label: "Last update", value: getLastUpdated(project), icon: Clock3 },
+                        ].map((stat) => (
+                          <div key={stat.label} className="rounded-xl border border-border/70 bg-background px-3 py-3">
+                            <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                              <stat.icon className="h-3.5 w-3.5" />
+                              {stat.label}
+                            </div>
+                            <p className="mt-2 text-sm font-semibold text-foreground">{stat.value}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="flex flex-wrap gap-2">
+                      {currentUser?.team === "manager" ? (
+                        <Button variant="outline" className="rounded-lg" onClick={() => setAssignOpen(true)}>
+                          <UserRound className="h-4 w-4" />
+                          Assign owner
+                        </Button>
+                      ) : null}
+                      <Button variant="outline" className="rounded-lg" onClick={() => setEditOpen(true)}>
+                        Edit
+                      </Button>
+                      <Button className="rounded-lg" onClick={() => isTransferReady && setTransferOpen(true)} disabled={!isTransferReady}>
+                        <ArrowRight className="h-4 w-4" />
+                        Transfer
+                      </Button>
+                      {currentUser?.team === "manager" ? (
+                        <Button variant="destructive" className="rounded-lg" onClick={() => setDeleteConfirmOpen(true)}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      ) : null}
+                    </div>
                   </div>
                 </div>
 
-                <div className="flex flex-wrap gap-2">
-                  {currentUser?.team === "manager" ? (
-                    <Button variant="outline" className="rounded-lg" onClick={() => setAssignOpen(true)}>
-                      <UserRound className="h-4 w-4" />
-                      Assign owner
-                    </Button>
-                  ) : null}
-                  <Button variant="outline" className="rounded-lg" onClick={() => setEditOpen(true)}>
-                    Edit
-                  </Button>
-                  <Button className="rounded-lg" onClick={() => isTransferReady && setTransferOpen(true)} disabled={!isTransferReady}>
-                    <ArrowRight className="h-4 w-4" />
-                    Transfer
-                  </Button>
-                  {currentUser?.team === "manager" ? (
-                    <Button variant="destructive" className="rounded-lg" onClick={() => setDeleteConfirmOpen(true)}>
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  ) : null}
-                </div>
-              </div>
-            </div>
-
-            <div className="grid gap-0 xl:grid-cols-[minmax(0,1fr)_340px]">
-              <div className="border-b border-border/70 px-5 py-5 xl:border-b-0 xl:border-r lg:px-6">
-                <div className="rounded-[18px] border border-primary/15 bg-primary/[0.04] p-4">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground">
-                      {aiSummaryLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Bot className="h-4 w-4" />}
-                    </div>
-                    <div>
-                      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">AI Summary</p>
-                      <p className="text-sm text-muted-foreground">Action-oriented summary generated from current project data</p>
-                    </div>
+                <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as WorkspaceTab)}>
+                  <div className="border-b border-border/70 px-4 py-3 lg:px-6">
+                    <TabsList className="h-auto w-full justify-start gap-1 overflow-x-auto rounded-none bg-transparent p-0">
+                      {tabOptions.map((tab) => (
+                        <TabsTrigger
+                          key={tab.value}
+                          value={tab.value}
+                          className="rounded-lg border border-transparent px-3 py-2 text-sm font-semibold text-muted-foreground data-[state=active]:border-border data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+                        >
+                          {tab.label}
+                        </TabsTrigger>
+                      ))}
+                    </TabsList>
                   </div>
 
-                  <div className="mt-4 grid gap-3 md:grid-cols-2">
-                    {aiSummaryLoading ? (
-                      <div className="rounded-xl border border-border/70 bg-background px-4 py-4 text-sm text-muted-foreground md:col-span-2">
-                        Generating summary...
-                      </div>
-                    ) : aiSummaryError ? (
-                      <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-900 md:col-span-2">
-                        AI summary unavailable: {aiSummaryError}
-                      </div>
-                    ) : (
-                      summaryCards.map((card, index) => (
-                        <div key={card.title} className={cn("rounded-xl border px-4 py-4", card.tone, index === 0 && "md:col-span-2")}>
-                          <div className="flex items-start gap-3">
-                            <Sparkles className="mt-0.5 h-4 w-4 text-primary" />
+                  <div className="px-5 py-5 lg:px-6">
+                    <TabsContent value="overview" className="m-0">
+                      <div className="space-y-5">
+                        <div className="rounded-2xl border border-border/70 bg-background p-5">
+                          <div className="mb-5 flex items-center justify-between gap-3">
                             <div>
-                              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-primary">{card.title}</p>
-                              <p className="mt-2 text-sm leading-6 text-foreground">{card.body}</p>
+                              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Project details</p>
+                              <h2 className="mt-1 text-xl font-semibold tracking-[-0.03em] text-foreground">Business and execution data</h2>
+                            </div>
+                            <Badge variant="secondary">Jira-style issue view</Badge>
+                          </div>
+
+                          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                            {projectDetails.map(([label, value]) => (
+                              <div key={label} className="rounded-xl border border-border/70 bg-card px-4 py-3">
+                                <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">{label}</p>
+                                <p className="mt-2 text-sm font-semibold text-foreground">{value}</p>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_300px]">
+                          <div className="rounded-2xl border border-border/70 bg-background p-5">
+                            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Project narrative</p>
+                            <div className="mt-4 space-y-4">
+                              {noteSections.map(([label, value]) => (
+                                <div key={label} className="rounded-xl border border-border/70 bg-card px-4 py-4">
+                                  <p className="text-sm font-semibold text-foreground">{label}</p>
+                                  <p className="mt-2 text-sm leading-7 text-muted-foreground">{value}</p>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+
+                          <div className="space-y-5">
+                            <div className="rounded-2xl border border-border/70 bg-background p-4">
+                              <div className="flex items-center justify-between gap-3">
+                                <div>
+                                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Checklist progress</p>
+                                  <h3 className="mt-1 text-lg font-semibold text-foreground">
+                                    {completedChecklist}/{project.checklist.length} complete
+                                  </h3>
+                                </div>
+                                <CheckCircle2 className="h-5 w-5 text-primary" />
+                              </div>
+                              <Progress
+                                value={project.checklist.length ? (completedChecklist / project.checklist.length) * 100 : 0}
+                                className="mt-4 h-2.5 rounded-full bg-secondary"
+                              />
+
+                              <div className="mt-4 space-y-2">
+                                {Object.entries(
+                                  project.checklist.reduce(
+                                    (acc, item) => {
+                                      const bucket = acc[item.ownerTeam] || { done: 0, total: 0 };
+                                      bucket.total += 1;
+                                      if (item.completed) bucket.done += 1;
+                                      acc[item.ownerTeam] = bucket;
+                                      return acc;
+                                    },
+                                    {} as Record<string, { done: number; total: number }>,
+                                  ),
+                                ).map(([team, summary]) => (
+                                  <div key={team} className="flex items-center justify-between rounded-lg border border-border/70 px-3 py-3">
+                                    <div>
+                                      <p className="text-sm font-semibold text-foreground">{teamLabels[team] || team}</p>
+                                      <p className="text-xs text-muted-foreground">{summary.done} of {summary.total} closed</p>
+                                    </div>
+                                    <Badge variant="outline">{summary.done}/{summary.total}</Badge>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+
+                            <div className="rounded-2xl border border-border/70 bg-background p-4">
+                              <div className="flex items-center justify-between">
+                                <div>
+                                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Quick links</p>
+                                  <h3 className="mt-1 text-lg font-semibold text-foreground">Working context</h3>
+                                </div>
+                                <ArrowUpRight className="h-5 w-5 text-primary" />
+                              </div>
+
+                              <div className="mt-4 space-y-2">
+                                {quickLinks.length > 0 ? (
+                                  quickLinks.map((link) => (
+                                    <a
+                                      key={link.label}
+                                      href={link.href}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      className="flex items-center justify-between rounded-lg border border-border/70 px-3 py-3 text-sm font-semibold transition hover:border-primary/25 hover:bg-accent/40"
+                                    >
+                                      <div className="flex items-center gap-3">
+                                        <link.icon className="h-4 w-4" />
+                                        <span>{link.label}</span>
+                                      </div>
+                                      <ExternalLink className="h-4 w-4" />
+                                    </a>
+                                  ))
+                                ) : (
+                                  <div className="rounded-lg border border-dashed border-border px-3 py-4 text-sm text-muted-foreground">
+                                    No linked documents or external tools attached yet.
+                                  </div>
+                                )}
+                              </div>
                             </div>
                           </div>
                         </div>
-                      ))
-                    )}
-                  </div>
+                      </div>
+                    </TabsContent>
 
-                  {aiSummaryRaw ? (
-                    <p className="mt-3 text-xs text-muted-foreground">
-                      Generated from live checklist, status, ownership, and milestone data.
-                    </p>
-                  ) : null}
-                </div>
+                    <TabsContent value="activity" className="m-0">
+                      <div className="space-y-5">
+                        <div className="rounded-2xl border border-border/70 bg-background">
+                          <div className="border-b border-border/70 px-5 py-4">
+                            <div className="flex items-center gap-3">
+                              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary">
+                                {currentUser?.name?.slice(0, 2).toUpperCase() || "AP"}
+                              </div>
+                              <div className="flex-1 rounded-xl border border-border/70 bg-card px-4 py-3">
+                                <p className="text-base font-medium text-muted-foreground">Add a comment...</p>
+                                <div className="mt-3 flex flex-wrap gap-2">
+                                  {["Suggest a reply", "Status update", "Thanks"].map((prompt) => (
+                                    <button
+                                      key={prompt}
+                                      type="button"
+                                      className="rounded-md border border-border bg-background px-3 py-1.5 text-sm font-medium text-foreground transition hover:bg-accent"
+                                    >
+                                      {prompt}
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+                            </div>
+                            <p className="mt-3 text-xs text-muted-foreground">Pro tip: use notes, checklist comments, and transfers to keep the timeline current.</p>
+                          </div>
+
+                          <div className="px-5 py-4">
+                            <div className="flex flex-wrap items-center justify-between gap-3">
+                              <div>
+                                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Activity timeline</p>
+                                <h2 className="mt-1 text-xl font-semibold tracking-[-0.03em] text-foreground">Project updates and delivery history</h2>
+                              </div>
+                              <div className="flex flex-wrap gap-2">
+                                <Badge className="border border-slate-200 bg-slate-100 text-slate-700">{activityFeed.length} events</Badge>
+                                <Badge className="border border-blue-200 bg-blue-50 text-blue-700">Color-coded types</Badge>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {Object.entries(groupedActivity).map(([dateLabel, items]) => (
+                          <div key={dateLabel}>
+                            <div className="mb-3 flex items-center gap-3">
+                              <div className="h-px flex-1 bg-border/70" />
+                              <Badge variant="outline" className="px-3 py-1">
+                                {dateLabel}
+                              </Badge>
+                              <div className="h-px flex-1 bg-border/70" />
+                            </div>
+
+                            <div className="space-y-3">
+                              {items.map((item) => (
+                                <div key={item.id} className="rounded-2xl border border-border/70 bg-background p-5">
+                                  <div className="flex items-start gap-4">
+                                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-secondary text-sm font-semibold text-foreground">
+                                      {item.actor.slice(0, 2).toUpperCase()}
+                                    </div>
+                                    <div className="min-w-0 flex-1">
+                                      <div className="flex flex-wrap items-center gap-2">
+                                        <p className="text-lg font-semibold tracking-[-0.03em] text-foreground">{item.title}</p>
+                                        <span
+                                          className={cn(
+                                            "rounded-full border px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.12em]",
+                                            activityBadgeToneMap[item.kind],
+                                          )}
+                                        >
+                                          {item.kind}
+                                        </span>
+                                      </div>
+                                      <p className="mt-1 text-sm text-muted-foreground">
+                                        {item.actor} · {item.timestampLabel}
+                                      </p>
+                                      <p className="mt-4 text-sm leading-7 text-foreground">{item.description}</p>
+                                      <div className="mt-4 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+                                        <span>{item.source}</span>
+                                        <button type="button" className="font-medium text-foreground hover:text-primary">
+                                          Reply
+                                        </button>
+                                        <button type="button" className="font-medium text-foreground hover:text-primary">
+                                          Copy link
+                                        </button>
+                                      </div>
+                                    </div>
+                                    <div className="flex shrink-0 pt-1">
+                                      <span className={cn("h-3.5 w-3.5 rounded-full", activityToneMap[item.kind])} />
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        ))}
+
+                        {activityFeed.length === 0 ? (
+                          <div className="rounded-xl border border-dashed border-border px-4 py-8 text-center">
+                            <MessageSquareText className="mx-auto h-8 w-8 text-muted-foreground" />
+                            <p className="mt-3 text-sm font-semibold text-foreground">No activity captured yet</p>
+                            <p className="mt-1 text-sm text-muted-foreground">
+                              Handoffs, checklist updates, notes, and milestones will appear here.
+                            </p>
+                          </div>
+                        ) : null}
+                      </div>
+                    </TabsContent>
+
+                    <TabsContent value="checklists" className="m-0" />
+
+                    <TabsContent value="notes" className="m-0">
+                      <div className="space-y-4">
+                        {noteSections.map(([label, value]) => (
+                          <div key={label} className="rounded-2xl border border-border/70 bg-background p-5">
+                            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">{label}</p>
+                            <p className="mt-4 text-sm leading-7 text-foreground">{value}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </TabsContent>
+
+                    <TabsContent value="files" className="m-0">
+                      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                        {quickLinks.length > 0 ? (
+                          quickLinks.map((link) => (
+                            <a
+                              key={link.label}
+                              href={link.href}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="rounded-2xl border border-border/70 bg-background p-4 transition hover:border-primary/25"
+                            >
+                              <div className="flex items-center justify-between gap-3">
+                                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                                  <link.icon className="h-4 w-4" />
+                                </div>
+                                <ExternalLink className="h-4 w-4 text-muted-foreground" />
+                              </div>
+                              <p className="mt-4 text-sm font-semibold text-foreground">{link.label}</p>
+                              <p className="mt-1 text-xs text-muted-foreground">Open linked project artifact</p>
+                            </a>
+                          ))
+                        ) : (
+                          <div className="rounded-xl border border-dashed border-border px-4 py-6 text-sm text-muted-foreground">
+                            No files are linked to this project yet.
+                          </div>
+                        )}
+                      </div>
+                    </TabsContent>
+                  </div>
+                </Tabs>
               </div>
 
-              <aside className="px-5 py-5 lg:px-6">
-                <div className="space-y-4">
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Recommended actions</p>
-                    <p className="mt-1 text-sm text-muted-foreground">Context-aware actions similar to a Jira issue sidebar.</p>
+              <aside className="bg-card px-5 py-5 lg:px-6">
+                <div className="sticky top-6 space-y-4">
+                  <div className="rounded-2xl border border-primary/15 bg-primary/[0.04] p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground">
+                        {aiSummaryLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Bot className="h-4 w-4" />}
+                      </div>
+                      <div>
+                        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">AI Summary</p>
+                        <p className="text-sm text-muted-foreground">Live project readout generated from delivery data</p>
+                      </div>
+                    </div>
+
+                    <div className="mt-4 space-y-3">
+                      {aiSummaryLoading ? (
+                        <div className="rounded-xl border border-border/70 bg-background px-4 py-4 text-sm text-muted-foreground">
+                          Generating summary...
+                        </div>
+                      ) : aiSummaryError ? (
+                        <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-900">
+                          AI summary unavailable: {aiSummaryError}
+                        </div>
+                      ) : (
+                        summaryCards.map((card, index) => (
+                          <div key={card.title} className={cn("rounded-xl border px-4 py-4", card.tone, index === 0 && "border-primary/20")}>
+                            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-primary">{card.title}</p>
+                            <p className="mt-2 text-sm leading-6 text-foreground">{card.body}</p>
+                          </div>
+                        ))
+                      )}
+                    </div>
                   </div>
 
-                  <div className="space-y-2">
-                    {actionRecommendations.map((action) =>
-                      action.href ? (
-                        <a
-                          key={action.label}
-                          href={action.href}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="flex items-start justify-between rounded-xl border border-border/70 bg-background px-4 py-3 transition hover:border-primary/25 hover:bg-accent/40"
-                        >
-                          <div>
+                  <div className="rounded-2xl border border-border/70 bg-background p-4">
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Recommended actions</p>
+                        <p className="mt-1 text-sm text-muted-foreground">Context-aware actions similar to a Jira issue sidebar.</p>
+                      </div>
+                    </div>
+
+                    <div className="mt-4 space-y-2">
+                      {actionRecommendations.map((action) =>
+                        action.href ? (
+                          <a
+                            key={action.label}
+                            href={action.href}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="flex items-start justify-between rounded-xl border border-border/70 bg-card px-4 py-3 transition hover:border-primary/25 hover:bg-accent/40"
+                          >
+                            <div>
+                              <p className="text-sm font-semibold text-foreground">{action.label}</p>
+                              <p className="mt-1 text-xs text-muted-foreground">{action.sublabel}</p>
+                            </div>
+                            <ExternalLink className="mt-0.5 h-4 w-4 text-muted-foreground" />
+                          </a>
+                        ) : (
+                          <button
+                            key={action.label}
+                            type="button"
+                            onClick={action.onClick}
+                            className="w-full rounded-xl border border-border/70 bg-card px-4 py-3 text-left transition hover:border-primary/25 hover:bg-accent/40"
+                          >
                             <p className="text-sm font-semibold text-foreground">{action.label}</p>
                             <p className="mt-1 text-xs text-muted-foreground">{action.sublabel}</p>
-                          </div>
-                          <ExternalLink className="mt-0.5 h-4 w-4 text-muted-foreground" />
-                        </a>
+                          </button>
+                        ),
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="rounded-2xl border border-border/70 bg-background p-4">
+                    <div className="mb-4">
+                      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Details</p>
+                    </div>
+
+                    <div className="space-y-3">
+                      {detailRows.map(([label, value]) => (
+                        <div key={label} className="grid grid-cols-[116px_minmax(0,1fr)] gap-3 text-sm">
+                          <p className="text-muted-foreground">{label}</p>
+                          <p className="font-medium text-foreground">{value}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="rounded-2xl border border-border/70 bg-background p-4">
+                    <div className="mb-4 flex items-center gap-2">
+                      <Files className="h-4 w-4 text-muted-foreground" />
+                      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Links and artifacts</p>
+                    </div>
+
+                    <div className="space-y-2">
+                      {quickLinks.length > 0 ? (
+                        quickLinks.map((link) => (
+                          <a
+                            key={link.label}
+                            href={link.href}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="flex items-center justify-between rounded-lg border border-border/70 px-3 py-3 text-sm font-semibold transition hover:border-primary/25 hover:bg-accent/40"
+                          >
+                            <span>{link.label}</span>
+                            <ExternalLink className="h-4 w-4 text-muted-foreground" />
+                          </a>
+                        ))
                       ) : (
-                        <button
-                          key={action.label}
-                          type="button"
-                          onClick={action.onClick}
-                          className="w-full rounded-xl border border-border/70 bg-background px-4 py-3 text-left transition hover:border-primary/25 hover:bg-accent/40"
-                        >
-                          <p className="text-sm font-semibold text-foreground">{action.label}</p>
-                          <p className="mt-1 text-xs text-muted-foreground">{action.sublabel}</p>
-                        </button>
-                      ),
-                    )}
+                        <div className="rounded-lg border border-dashed border-border px-3 py-4 text-sm text-muted-foreground">
+                          No linked artifacts yet.
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               </aside>
             </div>
-          </section>
-
-          <section className="overflow-hidden rounded-[24px] border border-border/70 bg-card shadow-[0_18px_48px_-32px_hsl(var(--foreground)/0.18)]">
-            <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as WorkspaceTab)}>
-              <div className="border-b border-border/70 px-4 py-3 lg:px-6">
-                <TabsList className="h-auto w-full justify-start gap-1 overflow-x-auto rounded-lg bg-transparent p-0">
-                  {tabOptions.map((tab) => (
-                    <TabsTrigger
-                      key={tab.value}
-                      value={tab.value}
-                      className="rounded-lg border border-transparent px-3 py-2 text-sm font-semibold text-muted-foreground data-[state=active]:border-border data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
-                    >
-                      {tab.label}
-                    </TabsTrigger>
-                  ))}
-                </TabsList>
-              </div>
-
-              <div className="px-4 py-5 lg:px-6">
-                <TabsContent value="overview" className="m-0">
-                  <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_320px]">
-                    <div className="space-y-5">
-                      <div>
-                        <div className="mb-4 flex items-center justify-between gap-3">
-                          <div>
-                            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Project details</p>
-                            <h2 className="mt-1 text-xl font-semibold tracking-[-0.03em] text-foreground">Business and execution data</h2>
-                          </div>
-                          <Badge variant="secondary">Jira-style summary</Badge>
-                        </div>
-
-                        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-                          {projectDetails.map(([label, value]) => (
-                            <div key={label} className="rounded-xl border border-border/70 bg-background px-4 py-3">
-                              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">{label}</p>
-                              <p className="mt-2 text-sm font-semibold text-foreground">{value}</p>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="space-y-5">
-                      <div className="rounded-xl border border-border/70 bg-background p-4">
-                        <div className="flex items-center justify-between gap-3">
-                          <div>
-                            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Checklist progress</p>
-                            <h3 className="mt-1 text-lg font-semibold text-foreground">
-                              {completedChecklist}/{project.checklist.length} complete
-                            </h3>
-                          </div>
-                          <CheckCircle2 className="h-5 w-5 text-primary" />
-                        </div>
-                        <Progress
-                          value={project.checklist.length ? (completedChecklist / project.checklist.length) * 100 : 0}
-                          className="mt-4 h-2.5 rounded-full bg-secondary"
-                        />
-
-                        <div className="mt-4 space-y-2">
-                          {Object.entries(
-                            project.checklist.reduce(
-                              (acc, item) => {
-                                const bucket = acc[item.ownerTeam] || { done: 0, total: 0 };
-                                bucket.total += 1;
-                                if (item.completed) bucket.done += 1;
-                                acc[item.ownerTeam] = bucket;
-                                return acc;
-                              },
-                              {} as Record<string, { done: number; total: number }>,
-                            ),
-                          ).map(([team, summary]) => (
-                            <div key={team} className="flex items-center justify-between rounded-lg border border-border/70 px-3 py-3">
-                              <div>
-                                <p className="text-sm font-semibold text-foreground">{teamLabels[team] || team}</p>
-                                <p className="text-xs text-muted-foreground">{summary.done} of {summary.total} closed</p>
-                              </div>
-                              <Badge variant="outline">{summary.done}/{summary.total}</Badge>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-
-                      <div className="rounded-xl border border-border/70 bg-background p-4">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Quick links</p>
-                            <h3 className="mt-1 text-lg font-semibold text-foreground">Working context</h3>
-                          </div>
-                          <ArrowUpRight className="h-5 w-5 text-primary" />
-                        </div>
-
-                        <div className="mt-4 space-y-2">
-                          {quickLinks.length > 0 ? (
-                            quickLinks.map((link) => (
-                              <a
-                                key={link.label}
-                                href={link.href}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="flex items-center justify-between rounded-lg border border-border/70 px-3 py-3 text-sm font-semibold transition hover:border-primary/25 hover:bg-accent/40"
-                              >
-                                <div className="flex items-center gap-3">
-                                  <link.icon className="h-4 w-4" />
-                                  <span>{link.label}</span>
-                                </div>
-                                <ExternalLink className="h-4 w-4" />
-                              </a>
-                            ))
-                          ) : (
-                            <div className="rounded-lg border border-dashed border-border px-3 py-4 text-sm text-muted-foreground">
-                              No linked documents or external tools attached yet.
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </TabsContent>
-
-                <TabsContent value="activity" className="m-0">
-                  <div className="space-y-6">
-                    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/70 pb-4">
-                      <div>
-                        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Activity timeline</p>
-                        <h2 className="mt-1 text-xl font-semibold tracking-[-0.03em] text-foreground">Grouped by date</h2>
-                      </div>
-                      <div className="flex flex-wrap gap-2">
-                        <Badge className="border border-slate-200 bg-slate-100 text-slate-700">{activityFeed.length} events</Badge>
-                        <Badge className="border border-blue-200 bg-blue-50 text-blue-700">Color-coded types</Badge>
-                      </div>
-                    </div>
-
-                    {Object.entries(groupedActivity).map(([dateLabel, items]) => (
-                      <div key={dateLabel}>
-                        <div className="mb-3 flex items-center gap-3">
-                          <div className="h-px flex-1 bg-border/70" />
-                          <Badge variant="outline" className="px-3 py-1">
-                            {dateLabel}
-                          </Badge>
-                          <div className="h-px flex-1 bg-border/70" />
-                        </div>
-
-                        <div className="space-y-3">
-                          {items.map((item) => (
-                            <div key={item.id} className="grid gap-3 rounded-xl border border-border/70 bg-background p-4 md:grid-cols-[20px_minmax(0,1fr)_120px]">
-                              <div className="flex justify-center pt-1">
-                                <span className={cn("mt-1 h-3.5 w-3.5 rounded-full", activityToneMap[item.kind])} />
-                              </div>
-                              <div className="min-w-0">
-                                <div className="flex flex-wrap items-center gap-2">
-                                  <p className="text-sm font-semibold text-foreground">{item.title}</p>
-                                  <span className={cn("rounded-full border px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.12em]", activityBadgeToneMap[item.kind])}>
-                                    {item.kind}
-                                  </span>
-                                </div>
-                                <p className="mt-2 text-sm leading-6 text-muted-foreground">{item.description}</p>
-                                <p className="mt-2 text-xs font-medium text-muted-foreground">
-                                  {item.source} · {item.actor}
-                                </p>
-                              </div>
-                              <div className="text-left md:text-right">
-                                <p className="text-sm font-semibold text-foreground">{item.timestampLabel}</p>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    ))}
-
-                    {activityFeed.length === 0 ? (
-                      <div className="rounded-xl border border-dashed border-border px-4 py-8 text-center">
-                        <MessageSquareText className="mx-auto h-8 w-8 text-muted-foreground" />
-                        <p className="mt-3 text-sm font-semibold text-foreground">No activity captured yet</p>
-                        <p className="mt-1 text-sm text-muted-foreground">
-                          Handoffs, checklist updates, notes, and milestones will appear here.
-                        </p>
-                      </div>
-                    ) : null}
-                  </div>
-                </TabsContent>
-
-                <TabsContent value="checklists" className="m-0" />
-
-                <TabsContent value="notes" className="m-0">
-                  <div className="grid gap-4 md:grid-cols-2">
-                    {[
-                      ["Current Phase", project.notes.currentPhaseComment || "No current phase note added."],
-                      ["Project Notes", project.notes.projectNotes || "No project notes added."],
-                      ["Pre-sales Notes", project.notes.mintNotes || "No pre-sales note added."],
-                      ["Phase 2 Notes", project.notes.phase2Comment || "No phase 2 note added."],
-                    ].map(([label, value]) => (
-                      <div key={label} className="rounded-xl border border-border/70 bg-background p-5">
-                        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">{label}</p>
-                        <p className="mt-4 text-sm leading-7 text-foreground">{value}</p>
-                      </div>
-                    ))}
-                  </div>
-                </TabsContent>
-
-                <TabsContent value="files" className="m-0">
-                  <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-                    {quickLinks.length > 0 ? (
-                      quickLinks.map((link) => (
-                        <a
-                          key={link.label}
-                          href={link.href}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="rounded-xl border border-border/70 bg-background p-4 transition hover:border-primary/25"
-                        >
-                          <div className="flex items-center justify-between gap-3">
-                            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                              <link.icon className="h-4 w-4" />
-                            </div>
-                            <ExternalLink className="h-4 w-4 text-muted-foreground" />
-                          </div>
-                          <p className="mt-4 text-sm font-semibold text-foreground">{link.label}</p>
-                          <p className="mt-1 text-xs text-muted-foreground">Open linked project artifact</p>
-                        </a>
-                      ))
-                    ) : (
-                      <div className="rounded-xl border border-dashed border-border px-4 py-6 text-sm text-muted-foreground">
-                        No files are linked to this project yet.
-                      </div>
-                    )}
-                  </div>
-                </TabsContent>
-              </div>
-            </Tabs>
           </section>
         </div>
       </div>
