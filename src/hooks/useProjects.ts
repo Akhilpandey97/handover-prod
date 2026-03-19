@@ -447,12 +447,22 @@ export const useTransferProject = () => {
       if (projectError) throw projectError;
 
       if (assigneeId) {
-        await sendNotification({
-          userId: assigneeId,
-          title: `New project assigned: ${project.merchant_name}`,
-          message: `You have been assigned a new project in ${teamLabels[nextTeam]}.`,
-          type: "project_assignment",
-        });
+        const { data: assigneeProfile } = await supabase
+          .from("profiles")
+          .select("email, name")
+          .eq("id", assigneeId)
+          .maybeSingle();
+
+        if (assigneeProfile?.email && assigneeProfile?.name) {
+          await sendNotification({
+            type: "project_assignment",
+            recipientEmail: assigneeProfile.email,
+            recipientName: assigneeProfile.name,
+            projectName: project.merchant_name,
+            toTeam: teamLabels[nextTeam],
+            assignedBy: currentUser?.name || "Unknown",
+          });
+        }
       }
 
       return projectId;
