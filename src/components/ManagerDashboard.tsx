@@ -131,6 +131,36 @@ export const ManagerDashboard = () => {
   // Sidebar expand state for sub-menus
   const [reportsExpanded, setReportsExpanded] = useState(false);
   const [settingsExpanded, setSettingsExpanded] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+
+  // List view column selection
+  const LIST_VIEW_COLUMNS = [
+    { key: "merchantName", label: "Merchant Name" },
+    { key: "mid", label: "MID" },
+    { key: "platform", label: "Platform" },
+    { key: "category", label: "Category" },
+    { key: "merchantState", label: "Merchant State" },
+    { key: "mintComment", label: "Mint Comment" },
+    { key: "liveDate", label: "Live Date" },
+    { key: "recentComments", label: "Recent Comments" },
+    { key: "status", label: "Status" },
+    { key: "arr", label: "ARR" },
+    { key: "owner", label: "Owner" },
+    { key: "salesSpoc", label: "Sales SPOC" },
+    { key: "kickOffDate", label: "Start Date" },
+    { key: "goLiveDate", label: "Go-Live Date" },
+    { key: "integrationType", label: "Integration Type" },
+    { key: "pgOnboarding", label: "PG Onboarding" },
+    { key: "goLivePercent", label: "Go-Live %" },
+  ];
+  const [listViewColumns, setListViewColumns] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem("listview_columns");
+      return saved ? JSON.parse(saved) : ["merchantName", "platform", "category", "merchantState", "mintComment", "liveDate", "recentComments", "status"];
+    } catch { return ["merchantName", "platform", "category", "merchantState", "mintComment", "liveDate", "recentComments", "status"]; }
+  });
+  const [listViewPage, setListViewPage] = useState(1);
+  const [listViewPageSize, setListViewPageSize] = useState(10);
 
   // Nav visibility from labels
   const getNavVisibility = (): Record<string, boolean> => {
