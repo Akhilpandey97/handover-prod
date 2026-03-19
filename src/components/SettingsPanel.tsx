@@ -439,6 +439,11 @@ export const SettingsPanel = ({ activeSubTab }: SettingsPanelProps) => {
             <CardContent>{renderLabelGroups(EMAIL_GROUPS)}</CardContent>
           </Card>
         </TabsContent>
+
+        {/* Secrets Tab */}
+        <TabsContent value="secrets">
+          <SecretsManager />
+        </TabsContent>
       </Tabs>
     </div>
   );
