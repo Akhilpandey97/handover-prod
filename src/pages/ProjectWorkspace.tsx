@@ -1041,8 +1041,8 @@ const ProjectWorkspace = () => {
                 </Tabs>
               </div>
 
-              <aside className="bg-[#f9fbff] px-5 py-5 lg:px-6">
-                <div className="sticky top-6 max-h-[calc(100vh-3rem)] space-y-4 overflow-y-auto pr-1">
+              <aside className="bg-[#f9fbff] px-5 py-5 lg:px-6 xl:h-[calc(100vh-6.5rem)]">
+                <div className="sticky top-6 h-[calc(100vh-9.5rem)] space-y-4 overflow-y-auto pr-1">
                   <div className="rounded-2xl border border-[#d7e4fb] bg-[#eef4ff] p-4 shadow-[0_12px_32px_-26px_rgba(38,78,162,0.32)]">
                     <div className="flex items-center gap-3">
                       <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground">
