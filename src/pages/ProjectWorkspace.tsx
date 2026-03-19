@@ -18,6 +18,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/contexts/AuthContext";
@@ -42,6 +43,7 @@ import {
   CheckCircle2,
   ChevronRight,
   Clock3,
+  Eye,
   ExternalLink,
   FileStack,
   Files,
@@ -718,9 +720,43 @@ const ProjectWorkspace = () => {
                           { label: "Last update", value: getLastUpdated(project), icon: Clock3 },
                         ].map((stat) => (
                           <div key={stat.label} className="rounded-xl border border-border/70 bg-background px-3 py-3">
-                            <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                              <stat.icon className="h-3.5 w-3.5" />
-                              {stat.label}
+                            <div className="flex items-center justify-between gap-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                              <div className="flex items-center gap-2">
+                                <stat.icon className="h-3.5 w-3.5" />
+                                {stat.label}
+                              </div>
+                              {stat.label === "Risk" ? (
+                                <Popover>
+                                  <PopoverTrigger asChild>
+                                    <button
+                                      type="button"
+                                      className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-border/70 text-muted-foreground transition hover:border-primary/25 hover:bg-accent hover:text-foreground"
+                                      aria-label="View eye on risk"
+                                    >
+                                      <Eye className="h-3.5 w-3.5" />
+                                    </button>
+                                  </PopoverTrigger>
+                                  <PopoverContent align="end" className="w-[320px] rounded-xl border border-border/80 p-0">
+                                    <div className="border-b border-border/70 px-4 py-3">
+                                      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Eye on risk</p>
+                                      <div className="mt-2 flex items-center gap-2">
+                                        <Badge className={cn("border px-2.5 py-1 text-[11px] font-semibold", risk.tone)}>{risk.label}</Badge>
+                                        <span className="text-sm font-semibold text-foreground">Score {risk.score}</span>
+                                      </div>
+                                    </div>
+                                    <div className="space-y-2 px-4 py-3">
+                                      {risk.drivers.slice(0, 4).map((driver) => (
+                                        <div key={driver.label} className="flex items-start justify-between gap-3 rounded-lg border border-border/70 bg-background px-3 py-3">
+                                          <p className="text-sm text-foreground">{driver.label}</p>
+                                          <span className="shrink-0 text-sm font-semibold text-muted-foreground">
+                                            {driver.points > 0 ? `+${driver.points}` : "0"}
+                                          </span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </PopoverContent>
+                                </Popover>
+                              ) : null}
                             </div>
                             <p className="mt-2 text-sm font-semibold text-foreground">{stat.value}</p>
                           </div>
