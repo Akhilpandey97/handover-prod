@@ -92,11 +92,11 @@ const tabOptions: Array<{ value: WorkspaceTab; label: string }> = [
 ];
 
 const stateToneMap: Record<ProjectState, string> = {
-  not_started: "bg-slate-100 text-slate-700 border-slate-200",
-  on_hold: "bg-amber-100 text-amber-800 border-amber-200",
-  in_progress: "bg-blue-100 text-blue-800 border-blue-200",
-  live: "bg-emerald-100 text-emerald-800 border-emerald-200",
-  blocked: "bg-rose-100 text-rose-800 border-rose-200",
+  not_started: "bg-[#eef4ff] text-[#5b6f95] border-[#d7e4fb]",
+  on_hold: "bg-[#fff4db] text-[#9a6700] border-[#ffe3a3]",
+  in_progress: "bg-[#e8f1ff] text-[#2453a6] border-[#cfe0ff]",
+  live: "bg-[#e8f8ef] text-[#207551] border-[#c8edd6]",
+  blocked: "bg-[#fff0f0] text-[#b5474d] border-[#ffd2d5]",
 };
 
 const activityToneMap: Record<ActivityKind, string> = {
@@ -107,10 +107,10 @@ const activityToneMap: Record<ActivityKind, string> = {
 };
 
 const activityBadgeToneMap: Record<ActivityKind, string> = {
-  user: "bg-emerald-50 text-emerald-700 border-emerald-200",
-  system: "bg-slate-100 text-slate-700 border-slate-200",
-  handoff: "bg-blue-50 text-blue-700 border-blue-200",
-  milestone: "bg-amber-50 text-amber-700 border-amber-200",
+  user: "bg-[#e8f8ef] text-[#207551] border-[#c8edd6]",
+  system: "bg-[#eef4ff] text-[#5b6f95] border-[#d7e4fb]",
+  handoff: "bg-[#e8f1ff] text-[#2453a6] border-[#cfe0ff]",
+  milestone: "bg-[#fff4db] text-[#9a6700] border-[#ffe3a3]",
 };
 
 const formatDateTime = (value?: string) => {
@@ -660,11 +660,11 @@ const ProjectWorkspace = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[linear-gradient(180deg,hsl(var(--background))_0%,hsl(var(--secondary)/0.28)_100%)]">
+    <div className="min-h-screen bg-[linear-gradient(180deg,#f7fbff_0%,#eef5ff_100%)]">
       <div className="mx-auto max-w-[1580px] px-4 py-5 lg:px-6 lg:py-6">
         <div className="space-y-4">
-          <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-            <Link to="/" className="inline-flex items-center gap-2 rounded-lg px-2 py-1 hover:bg-accent">
+          <div className="flex flex-wrap items-center gap-2 text-sm text-[#6981a5]">
+            <Link to="/" className="inline-flex items-center gap-2 rounded-lg px-2 py-1 hover:bg-[#edf4ff]">
               <ArrowLeft className="h-4 w-4" />
               Projects
             </Link>
@@ -672,22 +672,22 @@ const ProjectWorkspace = () => {
             <span>{project.merchantName}</span>
           </div>
 
-          <section className="overflow-hidden rounded-[22px] border border-border/70 bg-card shadow-[0_24px_70px_-45px_hsl(var(--foreground)/0.28)]">
+          <section className="overflow-hidden rounded-[22px] border border-[#dbe7fb] bg-white shadow-[0_18px_50px_-38px_rgba(38,78,162,0.28)]">
             <div className="grid gap-0 xl:grid-cols-[minmax(0,1fr)_360px]">
-              <div className="min-w-0 border-b border-border/70 xl:border-b-0 xl:border-r">
-                <div className="border-b border-border/70 px-5 py-5 lg:px-6">
+              <div className="min-w-0 border-b border-[#dbe7fb] xl:border-b-0 xl:border-r">
+                <div className="border-b border-[#dbe7fb] px-5 py-5 lg:px-6">
                   <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
                     <div className="min-w-0 space-y-4">
                       <div className="flex items-start gap-3">
-                        <div className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-sm font-bold text-primary">
+                        <div className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#e7f0ff] text-sm font-bold text-primary shadow-[inset_0_0_0_1px_rgba(59,102,198,0.08)]">
                           {project.merchantName.slice(0, 2).toUpperCase()}
                         </div>
                         <div className="min-w-0">
-                          <div className="flex flex-wrap items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+                          <div className="flex flex-wrap items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-[#7a8fb1]">
                             <span>Project issue</span>
-                            <span className="rounded-md bg-secondary px-2 py-1 text-[10px] text-foreground">MID {project.mid}</span>
+                            <span className="rounded-md bg-[#edf4ff] px-2 py-1 text-[10px] text-[#24416f]">MID {project.mid}</span>
                           </div>
-                          <h1 className="mt-2 text-[2rem] font-semibold tracking-[-0.05em] text-foreground">
+                          <h1 className="mt-2 text-[2rem] font-semibold tracking-[-0.05em] text-[#162033]">
                             {project.merchantName}
                           </h1>
                           <div className="mt-3 flex flex-wrap items-center gap-2">
@@ -711,8 +711,8 @@ const ProjectWorkspace = () => {
                           { label: "Risk", value: risk.label, icon: ShieldAlert },
                           { label: "Last update", value: getLastUpdated(project), icon: Clock3 },
                         ].map((stat) => (
-                          <div key={stat.label} className="rounded-xl border border-border/70 bg-background px-3 py-3">
-                            <div className="flex items-center justify-between gap-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                          <div key={stat.label} className="rounded-xl border border-[#dbe7fb] bg-[#fbfdff] px-3 py-3 shadow-[0_10px_25px_-24px_rgba(44,85,170,0.35)]">
+                            <div className="flex items-center justify-between gap-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-[#7a8fb1]">
                               <div className="flex items-center gap-2">
                                 <stat.icon className="h-3.5 w-3.5" />
                                 {stat.label}
@@ -722,25 +722,25 @@ const ProjectWorkspace = () => {
                                   <PopoverTrigger asChild>
                                     <button
                                       type="button"
-                                      className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-border/70 text-muted-foreground transition hover:border-primary/25 hover:bg-accent hover:text-foreground"
+                                      className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-[#dbe7fb] text-[#6c82a5] transition hover:border-[#a9c6fb] hover:bg-[#edf4ff] hover:text-[#1f4ea8]"
                                       aria-label="View eye on risk"
                                     >
                                       <Eye className="h-3.5 w-3.5" />
                                     </button>
                                   </PopoverTrigger>
-                                  <PopoverContent align="end" className="w-[320px] rounded-xl border border-border/80 p-0">
-                                    <div className="border-b border-border/70 px-4 py-3">
-                                      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Eye on risk</p>
+                                  <PopoverContent align="end" className="w-[320px] rounded-xl border border-[#dbe7fb] bg-white p-0 shadow-[0_18px_40px_-26px_rgba(38,78,162,0.35)]">
+                                    <div className="border-b border-[#dbe7fb] px-4 py-3">
+                                      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#7a8fb1]">Eye on risk</p>
                                       <div className="mt-2 flex items-center gap-2">
                                         <Badge className={cn("border px-2.5 py-1 text-[11px] font-semibold", risk.tone)}>{risk.label}</Badge>
-                                        <span className="text-sm font-semibold text-foreground">Score {risk.score}</span>
+                                        <span className="text-sm font-semibold text-[#162033]">Score {risk.score}</span>
                                       </div>
                                     </div>
                                     <div className="space-y-2 px-4 py-3">
                                       {risk.drivers.slice(0, 4).map((driver) => (
-                                        <div key={driver.label} className="flex items-start justify-between gap-3 rounded-lg border border-border/70 bg-background px-3 py-3">
-                                          <p className="text-sm text-foreground">{driver.label}</p>
-                                          <span className="shrink-0 text-sm font-semibold text-muted-foreground">
+                                        <div key={driver.label} className="flex items-start justify-between gap-3 rounded-lg border border-[#dbe7fb] bg-[#fbfdff] px-3 py-3">
+                                          <p className="text-sm text-[#162033]">{driver.label}</p>
+                                          <span className="shrink-0 text-sm font-semibold text-[#6c82a5]">
                                             {driver.points > 0 ? `+${driver.points}` : "0"}
                                           </span>
                                         </div>
@@ -750,7 +750,7 @@ const ProjectWorkspace = () => {
                                 </Popover>
                               ) : null}
                             </div>
-                            <p className="mt-2 text-sm font-semibold text-foreground">{stat.value}</p>
+                            <p className="mt-2 text-sm font-semibold text-[#162033]">{stat.value}</p>
                           </div>
                         ))}
                       </div>
@@ -780,13 +780,13 @@ const ProjectWorkspace = () => {
                 </div>
 
                 <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as WorkspaceTab)}>
-                  <div className="border-b border-border/70 px-4 py-3 lg:px-6">
+                  <div className="border-b border-[#dbe7fb] px-4 py-3 lg:px-6">
                     <TabsList className="h-auto w-full justify-start gap-1 overflow-x-auto rounded-none bg-transparent p-0">
                       {tabOptions.map((tab) => (
                         <TabsTrigger
                           key={tab.value}
                           value={tab.value}
-                          className="rounded-lg border border-transparent px-3 py-2 text-sm font-semibold text-muted-foreground data-[state=active]:border-border data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+                          className="rounded-lg border border-transparent px-3 py-2 text-sm font-semibold text-[#6f84a8] data-[state=active]:border-[#cfe0ff] data-[state=active]:bg-[#edf4ff] data-[state=active]:text-[#1f4ea8] data-[state=active]:shadow-[0_10px_18px_-16px_rgba(38,78,162,0.55)]"
                         >
                           {tab.label}
                         </TabsTrigger>
@@ -797,44 +797,44 @@ const ProjectWorkspace = () => {
                   <div className="max-h-[calc(100vh-17rem)] overflow-y-auto px-5 py-5 lg:px-6">
                     <TabsContent value="overview" className="m-0">
                       <div className="space-y-5">
-                        <div className="rounded-2xl border border-border/70 bg-background p-5">
+                        <div className="rounded-2xl border border-[#dbe7fb] bg-[#fbfdff] p-5 shadow-[0_10px_28px_-26px_rgba(38,78,162,0.35)]">
                           <div className="mb-5 flex items-center justify-between gap-3">
                             <div>
-                              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Project details</p>
-                              <h2 className="mt-1 text-xl font-semibold tracking-[-0.03em] text-foreground">Business and execution data</h2>
+                              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#7a8fb1]">Project details</p>
+                              <h2 className="mt-1 text-xl font-semibold tracking-[-0.03em] text-[#162033]">Business and execution data</h2>
                             </div>
-                            <Badge variant="secondary">Jira-style issue view</Badge>
+                            <Badge className="border border-[#dbe7fb] bg-[#edf4ff] text-[#42608f]">Jira-style issue view</Badge>
                           </div>
 
                           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
                             {projectDetails.map(([label, value]) => (
-                              <div key={label} className="rounded-xl border border-border/70 bg-card px-4 py-3">
-                                <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">{label}</p>
-                                <p className="mt-2 text-sm font-semibold text-foreground">{value}</p>
+                              <div key={label} className="rounded-xl border border-[#dbe7fb] bg-white px-4 py-3">
+                                <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#7a8fb1]">{label}</p>
+                                <p className="mt-2 text-sm font-semibold text-[#162033]">{value}</p>
                               </div>
                             ))}
                           </div>
                         </div>
 
                         <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_300px]">
-                          <div className="rounded-2xl border border-border/70 bg-background p-5">
-                            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Project narrative</p>
+                          <div className="rounded-2xl border border-[#dbe7fb] bg-[#fbfdff] p-5 shadow-[0_10px_28px_-26px_rgba(38,78,162,0.35)]">
+                            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#7a8fb1]">Project narrative</p>
                             <div className="mt-4 space-y-4">
                               {noteSections.map(([label, value]) => (
-                                <div key={label} className="rounded-xl border border-border/70 bg-card px-4 py-4">
-                                  <p className="text-sm font-semibold text-foreground">{label}</p>
-                                  <p className="mt-2 text-sm leading-7 text-muted-foreground">{value}</p>
+                                <div key={label} className="rounded-xl border border-[#dbe7fb] bg-white px-4 py-4">
+                                  <p className="text-sm font-semibold text-[#162033]">{label}</p>
+                                  <p className="mt-2 text-sm leading-7 text-[#6f84a8]">{value}</p>
                                 </div>
                               ))}
                             </div>
                           </div>
 
                           <div className="space-y-5">
-                            <div className="rounded-2xl border border-border/70 bg-background p-4">
+                            <div className="rounded-2xl border border-[#dbe7fb] bg-[#fbfdff] p-4 shadow-[0_10px_28px_-26px_rgba(38,78,162,0.35)]">
                               <div className="flex items-center justify-between gap-3">
                                 <div>
-                                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Checklist progress</p>
-                                  <h3 className="mt-1 text-lg font-semibold text-foreground">
+                                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#7a8fb1]">Checklist progress</p>
+                                  <h3 className="mt-1 text-lg font-semibold text-[#162033]">
                                     {completedChecklist}/{project.checklist.length} complete
                                   </h3>
                                 </div>
@@ -858,10 +858,10 @@ const ProjectWorkspace = () => {
                                     {} as Record<string, { done: number; total: number }>,
                                   ),
                                 ).map(([team, summary]) => (
-                                  <div key={team} className="flex items-center justify-between rounded-lg border border-border/70 px-3 py-3">
+                                  <div key={team} className="flex items-center justify-between rounded-lg border border-[#dbe7fb] bg-white px-3 py-3">
                                     <div>
-                                      <p className="text-sm font-semibold text-foreground">{teamLabels[team] || team}</p>
-                                      <p className="text-xs text-muted-foreground">{summary.done} of {summary.total} closed</p>
+                                      <p className="text-sm font-semibold text-[#162033]">{teamLabels[team] || team}</p>
+                                      <p className="text-xs text-[#6f84a8]">{summary.done} of {summary.total} closed</p>
                                     </div>
                                     <Badge variant="outline">{summary.done}/{summary.total}</Badge>
                                   </div>
@@ -869,11 +869,11 @@ const ProjectWorkspace = () => {
                               </div>
                             </div>
 
-                            <div className="rounded-2xl border border-border/70 bg-background p-4">
+                            <div className="rounded-2xl border border-[#dbe7fb] bg-[#fbfdff] p-4 shadow-[0_10px_28px_-26px_rgba(38,78,162,0.35)]">
                               <div className="flex items-center justify-between">
                                 <div>
-                                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Quick links</p>
-                                  <h3 className="mt-1 text-lg font-semibold text-foreground">Working context</h3>
+                                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#7a8fb1]">Quick links</p>
+                                  <h3 className="mt-1 text-lg font-semibold text-[#162033]">Working context</h3>
                                 </div>
                                 <ArrowUpRight className="h-5 w-5 text-primary" />
                               </div>
@@ -886,7 +886,7 @@ const ProjectWorkspace = () => {
                                       href={link.href}
                                       target="_blank"
                                       rel="noreferrer"
-                                      className="flex items-center justify-between rounded-lg border border-border/70 px-3 py-3 text-sm font-semibold transition hover:border-primary/25 hover:bg-accent/40"
+                                      className="flex items-center justify-between rounded-lg border border-[#dbe7fb] bg-white px-3 py-3 text-sm font-semibold text-[#162033] transition hover:border-[#a9c6fb] hover:bg-[#edf4ff]"
                                     >
                                       <div className="flex items-center gap-3">
                                         <link.icon className="h-4 w-4" />
@@ -896,7 +896,7 @@ const ProjectWorkspace = () => {
                                     </a>
                                   ))
                                 ) : (
-                                  <div className="rounded-lg border border-dashed border-border px-3 py-4 text-sm text-muted-foreground">
+                                  <div className="rounded-lg border border-dashed border-[#dbe7fb] px-3 py-4 text-sm text-[#6f84a8]">
                                     No linked documents or external tools attached yet.
                                   </div>
                                 )}
@@ -909,11 +909,11 @@ const ProjectWorkspace = () => {
 
                     <TabsContent value="activity" className="m-0">
                       <div className="space-y-5">
-                        <div className="rounded-2xl border border-border/70 bg-background px-5 py-4">
+                        <div className="rounded-2xl border border-[#dbe7fb] bg-[#fbfdff] px-5 py-4 shadow-[0_10px_28px_-26px_rgba(38,78,162,0.35)]">
                           <div className="flex flex-wrap items-center justify-between gap-3">
                             <div>
-                              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Activity timeline</p>
-                              <h2 className="mt-1 text-xl font-semibold tracking-[-0.03em] text-foreground">Project updates and delivery history</h2>
+                              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#7a8fb1]">Activity timeline</p>
+                              <h2 className="mt-1 text-xl font-semibold tracking-[-0.03em] text-[#162033]">Project updates and delivery history</h2>
                             </div>
                             <div className="flex flex-wrap gap-2">
                               <Badge className="border border-slate-200 bg-slate-100 text-slate-700">{activityFeed.length} events</Badge>
@@ -934,14 +934,14 @@ const ProjectWorkspace = () => {
 
                             <div className="space-y-3">
                               {items.map((item) => (
-                                <div key={item.id} className="rounded-2xl border border-border/70 bg-background p-5">
+                                <div key={item.id} className="rounded-2xl border border-[#dbe7fb] bg-[#fbfdff] p-5 shadow-[0_10px_28px_-26px_rgba(38,78,162,0.35)]">
                                   <div className="flex items-start gap-4">
-                                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-secondary text-sm font-semibold text-foreground">
+                                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#edf4ff] text-sm font-semibold text-[#1f4ea8]">
                                       {item.actor.slice(0, 2).toUpperCase()}
                                     </div>
                                     <div className="min-w-0 flex-1">
                                       <div className="flex flex-wrap items-center gap-2">
-                                        <p className="text-lg font-semibold tracking-[-0.03em] text-foreground">{item.title}</p>
+                                        <p className="text-lg font-semibold tracking-[-0.03em] text-[#162033]">{item.title}</p>
                                         <span
                                           className={cn(
                                             "rounded-full border px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.12em]",
@@ -951,16 +951,16 @@ const ProjectWorkspace = () => {
                                           {item.kind}
                                         </span>
                                       </div>
-                                      <p className="mt-1 text-sm text-muted-foreground">
+                                      <p className="mt-1 text-sm text-[#6f84a8]">
                                         {item.actor} · {item.timestampLabel}
                                       </p>
-                                      <p className="mt-4 text-sm leading-7 text-foreground">{item.description}</p>
-                                      <div className="mt-4 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+                                      <p className="mt-4 text-sm leading-7 text-[#162033]">{item.description}</p>
+                                      <div className="mt-4 flex flex-wrap items-center gap-3 text-xs text-[#6f84a8]">
                                         <span>{item.source}</span>
-                                        <button type="button" className="font-medium text-foreground hover:text-primary">
+                                        <button type="button" className="font-medium text-[#24416f] hover:text-primary">
                                           Reply
                                         </button>
-                                        <button type="button" className="font-medium text-foreground hover:text-primary">
+                                        <button type="button" className="font-medium text-[#24416f] hover:text-primary">
                                           Copy link
                                         </button>
                                       </div>
@@ -976,10 +976,10 @@ const ProjectWorkspace = () => {
                         ))}
 
                         {activityFeed.length === 0 ? (
-                          <div className="rounded-xl border border-dashed border-border px-4 py-8 text-center">
-                            <MessageSquareText className="mx-auto h-8 w-8 text-muted-foreground" />
-                            <p className="mt-3 text-sm font-semibold text-foreground">No activity captured yet</p>
-                            <p className="mt-1 text-sm text-muted-foreground">
+                          <div className="rounded-xl border border-dashed border-[#dbe7fb] px-4 py-8 text-center">
+                            <MessageSquareText className="mx-auto h-8 w-8 text-[#7a8fb1]" />
+                            <p className="mt-3 text-sm font-semibold text-[#162033]">No activity captured yet</p>
+                            <p className="mt-1 text-sm text-[#6f84a8]">
                               Handoffs, checklist updates, notes, and milestones will appear here.
                             </p>
                           </div>
@@ -1001,9 +1001,9 @@ const ProjectWorkspace = () => {
                     <TabsContent value="notes" className="m-0">
                       <div className="space-y-4">
                         {noteSections.map(([label, value]) => (
-                          <div key={label} className="rounded-2xl border border-border/70 bg-background p-5">
-                            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">{label}</p>
-                            <p className="mt-4 text-sm leading-7 text-foreground">{value}</p>
+                          <div key={label} className="rounded-2xl border border-[#dbe7fb] bg-[#fbfdff] p-5 shadow-[0_10px_28px_-26px_rgba(38,78,162,0.35)]">
+                            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#7a8fb1]">{label}</p>
+                            <p className="mt-4 text-sm leading-7 text-[#162033]">{value}</p>
                           </div>
                         ))}
                       </div>
@@ -1018,20 +1018,20 @@ const ProjectWorkspace = () => {
                               href={link.href}
                               target="_blank"
                               rel="noreferrer"
-                              className="rounded-2xl border border-border/70 bg-background p-4 transition hover:border-primary/25"
+                              className="rounded-2xl border border-[#dbe7fb] bg-[#fbfdff] p-4 transition hover:border-[#a9c6fb] hover:bg-white"
                             >
                               <div className="flex items-center justify-between gap-3">
-                                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#e7f0ff] text-primary">
                                   <link.icon className="h-4 w-4" />
                                 </div>
                                 <ExternalLink className="h-4 w-4 text-muted-foreground" />
                               </div>
-                              <p className="mt-4 text-sm font-semibold text-foreground">{link.label}</p>
-                              <p className="mt-1 text-xs text-muted-foreground">Open linked project artifact</p>
+                              <p className="mt-4 text-sm font-semibold text-[#162033]">{link.label}</p>
+                              <p className="mt-1 text-xs text-[#6f84a8]">Open linked project artifact</p>
                             </a>
                           ))
                         ) : (
-                          <div className="rounded-xl border border-dashed border-border px-4 py-6 text-sm text-muted-foreground">
+                          <div className="rounded-xl border border-dashed border-[#dbe7fb] px-4 py-6 text-sm text-[#6f84a8]">
                             No files are linked to this project yet.
                           </div>
                         )}
@@ -1041,22 +1041,22 @@ const ProjectWorkspace = () => {
                 </Tabs>
               </div>
 
-              <aside className="bg-card px-5 py-5 lg:px-6">
+              <aside className="bg-[#f9fbff] px-5 py-5 lg:px-6">
                 <div className="sticky top-6 max-h-[calc(100vh-3rem)] space-y-4 overflow-y-auto pr-1">
-                  <div className="rounded-2xl border border-primary/15 bg-primary/[0.04] p-4">
+                  <div className="rounded-2xl border border-[#d7e4fb] bg-[#eef4ff] p-4 shadow-[0_12px_32px_-26px_rgba(38,78,162,0.32)]">
                     <div className="flex items-center gap-3">
                       <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground">
                         {aiSummaryLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Bot className="h-4 w-4" />}
                       </div>
                       <div>
                         <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">AI Summary</p>
-                        <p className="text-sm text-muted-foreground">Live project readout generated from delivery data</p>
+                        <p className="text-sm text-[#6981a5]">Live project readout generated from delivery data</p>
                       </div>
                     </div>
 
                     <div className="mt-4 space-y-3">
                       {aiSummaryLoading ? (
-                        <div className="rounded-xl border border-border/70 bg-background px-4 py-4 text-sm text-muted-foreground">
+                        <div className="rounded-xl border border-[#dbe7fb] bg-white px-4 py-4 text-sm text-[#6981a5]">
                           Generating summary...
                         </div>
                       ) : aiSummaryError ? (
@@ -1065,7 +1065,7 @@ const ProjectWorkspace = () => {
                         </div>
                       ) : (
                         summaryCards.map((card, index) => (
-                          <div key={card.title} className={cn("rounded-xl border px-4 py-4", card.tone, index === 0 && "border-primary/20")}>
+                          <div key={card.title} className={cn("rounded-xl border px-4 py-4 shadow-[0_10px_24px_-24px_rgba(38,78,162,0.32)]", card.tone, index === 0 && "border-primary/20")}>
                             <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-primary">{card.title}</p>
                             <p className="mt-2 text-sm leading-6 text-foreground">{card.body}</p>
                           </div>
@@ -1074,11 +1074,11 @@ const ProjectWorkspace = () => {
                     </div>
                   </div>
 
-                  <div className="rounded-2xl border border-border/70 bg-background p-4">
+                  <div className="rounded-2xl border border-[#dbe7fb] bg-white p-4 shadow-[0_12px_32px_-26px_rgba(38,78,162,0.26)]">
                     <div className="flex items-center justify-between gap-3">
                       <div>
-                        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Recommended actions</p>
-                        <p className="mt-1 text-sm text-muted-foreground">Context-aware actions similar to a Jira issue sidebar.</p>
+                        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#7a8fb1]">Recommended actions</p>
+                        <p className="mt-1 text-sm text-[#6981a5]">Context-aware actions similar to a Jira issue sidebar.</p>
                       </div>
                     </div>
 
@@ -1090,7 +1090,7 @@ const ProjectWorkspace = () => {
                             href={action.href}
                             target="_blank"
                             rel="noreferrer"
-                            className="flex items-start justify-between rounded-xl border border-border/70 bg-card px-4 py-3 transition hover:border-primary/25 hover:bg-accent/40"
+                            className="flex items-start justify-between rounded-xl border border-[#dbe7fb] bg-[#fbfdff] px-4 py-3 transition hover:border-[#a9c6fb] hover:bg-[#edf4ff]"
                           >
                             <div>
                               <p className="text-sm font-semibold text-foreground">{action.label}</p>
@@ -1103,7 +1103,7 @@ const ProjectWorkspace = () => {
                             key={action.label}
                             type="button"
                             onClick={action.onClick}
-                            className="w-full rounded-xl border border-border/70 bg-card px-4 py-3 text-left transition hover:border-primary/25 hover:bg-accent/40"
+                            className="w-full rounded-xl border border-[#dbe7fb] bg-[#fbfdff] px-4 py-3 text-left transition hover:border-[#a9c6fb] hover:bg-[#edf4ff]"
                           >
                             <p className="text-sm font-semibold text-foreground">{action.label}</p>
                             <p className="mt-1 text-xs text-muted-foreground">{action.sublabel}</p>
@@ -1113,25 +1113,25 @@ const ProjectWorkspace = () => {
                     </div>
                   </div>
 
-                  <div className="rounded-2xl border border-border/70 bg-background p-4">
+                  <div className="rounded-2xl border border-[#dbe7fb] bg-white p-4 shadow-[0_12px_32px_-26px_rgba(38,78,162,0.26)]">
                     <div className="mb-4">
-                      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Details</p>
+                      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#7a8fb1]">Details</p>
                     </div>
 
                     <div className="space-y-3">
                       {detailRows.map(([label, value]) => (
                         <div key={label} className="grid grid-cols-[116px_minmax(0,1fr)] gap-3 text-sm">
-                          <p className="text-muted-foreground">{label}</p>
-                          <p className="font-medium text-foreground">{value}</p>
+                          <p className="text-[#6f84a8]">{label}</p>
+                          <p className="font-medium text-[#162033]">{value}</p>
                         </div>
                       ))}
                     </div>
                   </div>
 
-                  <div className="rounded-2xl border border-border/70 bg-background p-4">
+                  <div className="rounded-2xl border border-[#dbe7fb] bg-white p-4 shadow-[0_12px_32px_-26px_rgba(38,78,162,0.26)]">
                     <div className="mb-4 flex items-center gap-2">
-                      <Files className="h-4 w-4 text-muted-foreground" />
-                      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Links and artifacts</p>
+                      <Files className="h-4 w-4 text-[#6f84a8]" />
+                      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#7a8fb1]">Links and artifacts</p>
                     </div>
 
                     <div className="space-y-2">
@@ -1142,14 +1142,14 @@ const ProjectWorkspace = () => {
                             href={link.href}
                             target="_blank"
                             rel="noreferrer"
-                            className="flex items-center justify-between rounded-lg border border-border/70 px-3 py-3 text-sm font-semibold transition hover:border-primary/25 hover:bg-accent/40"
+                            className="flex items-center justify-between rounded-lg border border-[#dbe7fb] px-3 py-3 text-sm font-semibold text-[#162033] transition hover:border-[#a9c6fb] hover:bg-[#edf4ff]"
                           >
                             <span>{link.label}</span>
                             <ExternalLink className="h-4 w-4 text-muted-foreground" />
                           </a>
                         ))
                       ) : (
-                        <div className="rounded-lg border border-dashed border-border px-3 py-4 text-sm text-muted-foreground">
+                        <div className="rounded-lg border border-dashed border-[#dbe7fb] px-3 py-4 text-sm text-[#6f84a8]">
                           No linked artifacts yet.
                         </div>
                       )}
