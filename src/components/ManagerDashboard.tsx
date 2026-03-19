@@ -785,50 +785,82 @@ export const ManagerDashboard = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 flex">
-      {/* Left Sidebar — dark themed */}
-      <aside className="w-72 bg-card border-r border-border flex flex-col shrink-0">
+      {/* Left Sidebar — collapsible */}
+      <aside className={cn(
+        "bg-card border-r border-border flex flex-col shrink-0 transition-all duration-300 relative",
+        sidebarCollapsed ? "w-16" : "w-72"
+      )}>
         {/* Logo & Title */}
         <div className="p-5 border-b border-border">
           <div className="flex items-center gap-3">
             {appLabels.org_logo_url ? (
-              <img src={appLabels.org_logo_url} alt="Logo" className="h-12 w-12 rounded-xl object-contain shadow-lg ring-2 ring-primary/20" />
+              <img src={appLabels.org_logo_url} alt="Logo" className={cn("rounded-xl object-contain shadow-lg ring-2 ring-primary/20", sidebarCollapsed ? "h-8 w-8" : "h-12 w-12")} />
             ) : (
-              <div className="h-12 w-12 rounded-xl bg-primary flex items-center justify-center shadow-lg ring-2 ring-primary/30">
-                <BarChart3 className="h-6 w-6 text-primary-foreground" />
+              <div className={cn("rounded-xl bg-primary flex items-center justify-center shadow-lg ring-2 ring-primary/30", sidebarCollapsed ? "h-8 w-8" : "h-12 w-12")}>
+                <BarChart3 className={cn(sidebarCollapsed ? "h-4 w-4" : "h-6 w-6", "text-primary-foreground")} />
               </div>
             )}
-            <div>
-              <h1 className="font-bold text-base text-foreground">{appLabels.app_title}</h1>
-              <p className="text-xs text-muted-foreground">{appLabels.app_subtitle}</p>
-            </div>
+            {!sidebarCollapsed && (
+              <div>
+                <h1 className="font-bold text-base text-foreground">{appLabels.app_title}</h1>
+                <p className="text-xs text-muted-foreground">{appLabels.app_subtitle}</p>
+              </div>
+            )}
           </div>
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 px-3 py-4 overflow-y-auto">
-          <p className="text-[11px] font-semibold text-muted-foreground/60 uppercase tracking-widest mb-3 px-4">
-            Navigation
-          </p>
+        <nav className="flex-1 px-2 py-4 overflow-y-auto">
+          {!sidebarCollapsed && (
+            <p className="text-[11px] font-semibold text-muted-foreground/60 uppercase tracking-widest mb-3 px-4">
+              Navigation
+            </p>
+          )}
           <div className="space-y-1">
-            {sidebarTabs.map((tab) => renderNavItem(tab))}
+            {sidebarTabs.map((tab) => sidebarCollapsed ? (
+              <button
+                key={tab}
+                onClick={() => {
+                  if (tab === "reports") { setActiveTab("reports"); }
+                  else if (tab === "settings") { setActiveTab("settings"); }
+                  else { setActiveTab(tab); }
+                }}
+                className={cn(
+                  "w-full flex items-center justify-center p-3 rounded-xl transition-all duration-200",
+                  activeTab === tab
+                    ? "bg-primary text-primary-foreground shadow-lg shadow-primary/25"
+                    : "hover:bg-muted/60 text-foreground/60 hover:text-foreground"
+                )}
+                title={TAB_CONFIG[tab]?.label}
+              >
+                {TAB_CONFIG[tab]?.icon}
+              </button>
+            ) : renderNavItem(tab))}
           </div>
         </nav>
 
         {/* User card at bottom */}
         <div className="p-4 border-t border-border">
           <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-xl bg-primary flex items-center justify-center text-primary-foreground font-bold text-sm shadow-md">
+            <div className={cn("rounded-xl bg-primary flex items-center justify-center text-primary-foreground font-bold text-sm shadow-md", sidebarCollapsed ? "h-8 w-8 text-xs" : "h-10 w-10")}>
               {currentUser.name.charAt(0)}
             </div>
-            <div className="flex-1 min-w-0">
-              <p className="font-semibold text-sm text-foreground truncate">{currentUser.name}</p>
-              <p className="text-xs text-muted-foreground">Manager</p>
-            </div>
-            <Button variant="ghost" size="icon" onClick={logout} className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10">
-              <LogOut className="h-4 w-4" />
-            </Button>
+            {!sidebarCollapsed && (
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-sm text-foreground truncate">{currentUser.name}</p>
+                <p className="text-xs text-muted-foreground">Manager</p>
+              </div>
+            )}
           </div>
         </div>
+
+        {/* Collapse/Expand arrow button */}
+        <button
+          onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+          className="absolute -right-3 bottom-20 h-6 w-6 rounded-full bg-primary text-primary-foreground shadow-md flex items-center justify-center hover:bg-primary/90 transition-colors z-10"
+        >
+          {sidebarCollapsed ? <ChevronRight className="h-3.5 w-3.5" /> : <ChevronLeft className="h-3.5 w-3.5" />}
+        </button>
       </aside>
 
       {/* Main Content */}
