@@ -42,18 +42,14 @@ import {
   CheckCheck,
   CheckCircle2,
   ChevronRight,
-  ClipboardList,
   Clock3,
   Eye,
   ExternalLink,
   FileStack,
   Files,
   Globe,
-  History,
-  LayoutDashboard,
   Loader2,
   MessageSquareText,
-  NotebookPen,
   ShieldAlert,
   Trash2,
   UserRound,
@@ -86,6 +82,14 @@ interface RiskAssessment {
   tone: string;
   drivers: RiskDriver[];
 }
+
+const tabOptions: Array<{ value: WorkspaceTab; label: string }> = [
+  { value: "overview", label: "Overview" },
+  { value: "activity", label: "Activity" },
+  { value: "checklists", label: "Checklists" },
+  { value: "notes", label: "Notes" },
+  { value: "files", label: "Files" },
+];
 
 const stateToneMap: Record<ProjectState, string> = {
   not_started: "bg-[#eef4ff] text-[#5b6f95] border-[#d7e4fb]",
@@ -636,14 +640,6 @@ const ProjectWorkspace = () => {
     | { label: string; sublabel: string; href: string; onClick?: undefined }
   >;
 
-  const tabOptions: Array<{ value: WorkspaceTab; label: string; icon: typeof LayoutDashboard; count?: number }> = [
-    { value: "overview", label: "Overview", icon: LayoutDashboard },
-    { value: "activity", label: "Activity", icon: History, count: activityFeed.length },
-    { value: "checklists", label: "Checklists", icon: ClipboardList, count: project.checklist.length },
-    { value: "notes", label: "Notes", icon: NotebookPen, count: noteSections.filter(([, value]) => !String(value).startsWith("No ")).length },
-    { value: "files", label: "Files", icon: Files, count: quickLinks.length },
-  ];
-
   const handleSaveEdit = (updatedProject: Project) => {
     updateProject(updatedProject);
     toast.success("Project updated successfully");
@@ -785,24 +781,14 @@ const ProjectWorkspace = () => {
 
                 <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as WorkspaceTab)}>
                   <div className="border-b border-[#dbe7fb] px-4 py-3 lg:px-6">
-                    <TabsList className="h-auto w-full justify-start gap-2 overflow-x-auto rounded-none bg-transparent p-0">
+                    <TabsList className="h-auto w-full justify-start gap-1 overflow-x-auto rounded-none bg-transparent p-0">
                       {tabOptions.map((tab) => (
                         <TabsTrigger
                           key={tab.value}
                           value={tab.value}
-                          className="group rounded-[20px] border border-transparent px-4 py-3 text-sm font-semibold text-[#6f84a8] data-[state=active]:border-[#2d52a4] data-[state=active]:bg-[#2d52a4] data-[state=active]:text-white data-[state=active]:shadow-[0_16px_28px_-18px_rgba(45,82,164,0.75)]"
+                          className="rounded-lg border border-transparent px-3 py-2 text-sm font-semibold text-[#6f84a8] data-[state=active]:border-[#cfe0ff] data-[state=active]:bg-[#edf4ff] data-[state=active]:text-[#1f4ea8] data-[state=active]:shadow-[0_10px_18px_-16px_rgba(38,78,162,0.55)]"
                         >
-                          <div className="flex items-center gap-3">
-                            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#edf4ff] text-[#2d52a4] transition group-data-[state=active]:bg-white/16 group-data-[state=active]:text-white">
-                              <tab.icon className="h-4.5 w-4.5" />
-                            </div>
-                            <span>{tab.label}</span>
-                            {typeof tab.count === "number" ? (
-                              <span className="inline-flex min-w-9 items-center justify-center rounded-full bg-[#edf4ff] px-2.5 py-1 text-xs font-bold text-[#2d52a4] transition group-data-[state=active]:bg-white/16 group-data-[state=active]:text-white">
-                                {tab.count}
-                              </span>
-                            ) : null}
-                          </div>
+                          {tab.label}
                         </TabsTrigger>
                       ))}
                     </TabsList>
