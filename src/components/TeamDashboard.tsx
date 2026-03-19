@@ -64,10 +64,20 @@ export const TeamDashboard = () => {
 
   const pendingProjects = getPendingProjects(currentUser.team);
   const activeProjects = getActiveProjects(currentUser.team);
+
+  const isRejectedForCurrentTeam = (project: Project) => {
+    const lastTransfer = project.transferHistory.length > 0 ? project.transferHistory[project.transferHistory.length - 1] : null;
+    return (
+      project.currentOwnerTeam === currentUser.team &&
+      !project.pendingAcceptance &&
+      !project.assignedOwner &&
+      Boolean(lastTransfer?.notes?.startsWith("REJECTED:"))
+    );
+  };
   
   // Filter projects assigned specifically to the current user
   const filterByOwner = (projectList: typeof projects) => {
-    return projectList.filter((p) => p.assignedOwner === currentUser.id);
+    return projectList.filter((p) => p.assignedOwner === currentUser.id || isRejectedForCurrentTeam(p));
   };
   
   const pendingForUser = filterByOwner(pendingProjects);

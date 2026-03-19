@@ -103,8 +103,7 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
   const isRejected =
     lastTransfer?.notes?.startsWith("REJECTED:") &&
     !project.pendingAcceptance &&
-    currentUser?.team === project.currentOwnerTeam &&
-    currentUser?.id === project.assignedOwner;
+    currentUser?.team === project.currentOwnerTeam;
 
   const isPending = project.pendingAcceptance && currentUser?.team === project.currentOwnerTeam;
   const canReject = isPending && (currentUser?.team === "integration" || currentUser?.team === "ms");
