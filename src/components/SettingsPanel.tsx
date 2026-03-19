@@ -7,11 +7,12 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Save, RotateCcw, Settings, Palette, Tags, Layers, Mail, FileText } from "lucide-react";
+import { Save, RotateCcw, Settings, Palette, Tags, Layers, Mail, FileText, KeyRound } from "lucide-react";
 import { LogoUpload } from "./LogoUpload";
 import { CustomFieldsManager } from "./settings/CustomFieldsManager";
 import { ChecklistFormsManager } from "./settings/ChecklistFormsManager";
 import { ThemePresets } from "./settings/ThemePresets";
+import { SecretsManager } from "./settings/SecretsManager";
 
 interface LabelGroup {
   title: string;
@@ -347,6 +348,9 @@ export const SettingsPanel = ({ activeSubTab }: SettingsPanelProps) => {
             <TabsTrigger value="email" className="gap-1.5">
               <Mail className="h-3.5 w-3.5" />Email
             </TabsTrigger>
+            <TabsTrigger value="secrets" className="gap-1.5">
+              <KeyRound className="h-3.5 w-3.5" />Secrets
+            </TabsTrigger>
           </TabsList>
         )}
 
@@ -434,6 +438,11 @@ export const SettingsPanel = ({ activeSubTab }: SettingsPanelProps) => {
             </CardHeader>
             <CardContent>{renderLabelGroups(EMAIL_GROUPS)}</CardContent>
           </Card>
+        </TabsContent>
+
+        {/* Secrets Tab */}
+        <TabsContent value="secrets">
+          <SecretsManager />
         </TabsContent>
       </Tabs>
     </div>
