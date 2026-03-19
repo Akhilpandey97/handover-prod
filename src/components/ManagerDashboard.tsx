@@ -786,7 +786,7 @@ export const ManagerDashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 flex">
+    <div className="h-screen overflow-hidden bg-gradient-to-br from-background via-background to-muted/20 flex">
       {/* Left Sidebar — collapsible */}
       <aside className={cn(
         "bg-card border-r border-border flex flex-col shrink-0 transition-all duration-300 relative",
@@ -851,7 +851,7 @@ export const ManagerDashboard = () => {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 flex flex-col min-w-0">
+      <main className="flex-1 flex min-h-0 flex-col min-w-0">
         {/* Header */}
         <header className="h-14 border-b bg-background/90 backdrop-blur-md flex items-center justify-between px-6 shrink-0">
           <div className="flex items-center gap-3">
@@ -912,7 +912,7 @@ export const ManagerDashboard = () => {
         </header>
 
         {/* Content Area */}
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1 min-h-0 overflow-y-auto">
           <div className="p-8">
 
           {/* ========= OVERVIEW TAB ========= */}
