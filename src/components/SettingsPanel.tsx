@@ -12,6 +12,7 @@ import { LogoUpload } from "./LogoUpload";
 import { CustomFieldsManager } from "./settings/CustomFieldsManager";
 import { ChecklistFormsManager } from "./settings/ChecklistFormsManager";
 import { ThemePresets } from "./settings/ThemePresets";
+import { SecretsManager } from "./settings/SecretsManager";
 
 interface LabelGroup {
   title: string;
