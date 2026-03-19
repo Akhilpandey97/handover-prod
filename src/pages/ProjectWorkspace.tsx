@@ -18,9 +18,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/contexts/AuthContext";
@@ -42,32 +40,32 @@ import {
   ArrowRight,
   ArrowUpRight,
   Bot,
+  BriefcaseBusiness,
   CalendarClock,
   CheckCheck,
   CheckCircle2,
   CircleDashed,
   Clock3,
+  Command,
   ExternalLink,
   FileStack,
   Files,
-  Filter,
   FolderKanban,
+  Globe,
   LayoutGrid,
-  ListFilter,
   MessageSquareText,
   NotebookPen,
   PanelLeftClose,
-  Search,
   Settings2,
   ShieldAlert,
   Sparkles,
+  TimerReset,
   Trash2,
   UserRound,
 } from "lucide-react";
 import { toast } from "sonner";
 
 type WorkspaceTab = "overview" | "activity" | "tasks" | "notes" | "files";
-type ProjectListFilter = "all" | "active" | "blocked" | "live";
 type ActivityKind = "user" | "system" | "handoff" | "milestone";
 
 interface ActivityEntry {
@@ -334,8 +332,6 @@ const ProjectWorkspace = () => {
   const { teamLabels, stateLabels, phaseLabels, responsibilityLabels } = useLabels();
 
   const [activeTab, setActiveTab] = useState<WorkspaceTab>("overview");
-  const [searchQuery, setSearchQuery] = useState("");
-  const [listFilter, setListFilter] = useState<ProjectListFilter>("all");
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
   const [taskDrafts, setTaskDrafts] = useState<Record<string, string>>({});
   const [editOpen, setEditOpen] = useState(false);
@@ -344,26 +340,6 @@ const ProjectWorkspace = () => {
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
 
   const project = projects.find((entry) => entry.id === projectId) ?? null;
-
-  const filteredProjects = useMemo(() => {
-    const query = searchQuery.trim().toLowerCase();
-
-    return projects
-      .filter((entry) => {
-        if (listFilter === "active") return entry.projectState === "in_progress" || entry.projectState === "not_started";
-        if (listFilter === "blocked") return entry.projectState === "blocked" || entry.projectState === "on_hold";
-        if (listFilter === "live") return entry.projectState === "live";
-        return true;
-      })
-      .filter((entry) => {
-        if (!query) return true;
-        return (
-          entry.merchantName.toLowerCase().includes(query) ||
-          entry.mid.toLowerCase().includes(query) ||
-          (entry.assignedOwnerName || "").toLowerCase().includes(query)
-        );
-      });
-  }, [listFilter, projects, searchQuery]);
 
   const groupedChecklist = useMemo(() => {
     if (!project) return [] as Array<{ team: string; items: ProjectChecklist[] }>;
@@ -434,6 +410,18 @@ const ProjectWorkspace = () => {
   const isTransferReady = canTransfer && allCurrentTeamChecklistCompleted;
   const risk = getRiskLevel(project);
   const nextActions = buildNextActions(project, canTransfer, isTransferReady);
+  const openTasksCount = project.checklist.length - completedChecklist;
+  const projectHealthScore = Math.max(
+    12,
+    Math.min(
+      100,
+      Math.round(
+        project.goLivePercent * 0.45 +
+          (project.checklist.length ? (completedChecklist / project.checklist.length) * 35 : 0) +
+          (risk.label === "Low risk" ? 20 : risk.label === "Medium risk" ? 10 : 0),
+      ),
+    ),
+  );
 
   const overviewStats = [
     {
@@ -474,14 +462,39 @@ const ProjectWorkspace = () => {
   ];
 
   const quickLinks = [
-    project.links.brandUrl ? { label: "Website", href: project.links.brandUrl } : null,
-    project.links.jiraLink ? { label: "JIRA", href: project.links.jiraLink } : null,
-    project.links.brdLink ? { label: "BRD", href: project.links.brdLink } : null,
-    project.links.mintChecklistLink ? { label: "MINT Checklist", href: project.links.mintChecklistLink } : null,
+    project.links.brandUrl ? { label: "Website", href: project.links.brandUrl, icon: Globe } : null,
+    project.links.jiraLink ? { label: "JIRA", href: project.links.jiraLink, icon: ArrowUpRight } : null,
+    project.links.brdLink ? { label: "BRD", href: project.links.brdLink, icon: FileStack } : null,
+    project.links.mintChecklistLink ? { label: "MINT Checklist", href: project.links.mintChecklistLink, icon: CheckCheck } : null,
     project.links.integrationChecklistLink
-      ? { label: "Integration Checklist", href: project.links.integrationChecklistLink }
+      ? { label: "Integration Checklist", href: project.links.integrationChecklistLink, icon: CheckCheck }
       : null,
-  ].filter(Boolean) as Array<{ label: string; href: string }>;
+  ].filter(Boolean) as Array<{ label: string; href: string; icon: typeof Globe }>;
+
+  const actionRecommendations = [
+    !project.assignedOwnerName && currentUser?.team === "manager"
+      ? { label: "Assign owner", sublabel: "Set clear accountability", onClick: () => setAssignOpen(true) }
+      : null,
+    project.links.jiraLink
+      ? { label: "Open JIRA", sublabel: "Review delivery tracker", href: project.links.jiraLink }
+      : { label: "Add tracker link", sublabel: "Attach JIRA or BRD", onClick: () => setEditOpen(true) },
+    openTasksCount > 0
+      ? {
+          label: "Review open tasks",
+          sublabel: `${openTasksCount} task${openTasksCount === 1 ? "" : "s"} need attention`,
+          onClick: () => setActiveTab("tasks"),
+        }
+      : null,
+    risk.label !== "Low risk"
+      ? { label: "Inspect activity", sublabel: "Review blockers and handoffs", onClick: () => setActiveTab("activity") }
+      : { label: "Update notes", sublabel: "Capture current context", onClick: () => setActiveTab("notes") },
+    canTransfer && isTransferReady
+      ? { label: "Transfer now", sublabel: "Ownership can move forward", onClick: () => setTransferOpen(true) }
+      : null,
+  ].filter(Boolean) as Array<
+    | { label: string; sublabel: string; onClick: () => void; href?: undefined }
+    | { label: string; sublabel: string; href: string; onClick?: undefined }
+  >;
 
   const handleSaveEdit = (updatedProject: Project) => {
     updateProject(updatedProject);
@@ -511,8 +524,8 @@ const ProjectWorkspace = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="mx-auto max-w-[1800px] px-4 py-4 lg:px-6 lg:py-6">
-        <div className="grid gap-4 lg:grid-cols-[84px_360px_minmax(0,1fr)]">
+      <div className="mx-auto max-w-[1660px] px-4 py-4 lg:px-6 lg:py-6">
+        <div className="grid gap-4 lg:grid-cols-[84px_minmax(0,1fr)]">
           <aside className="enterprise-panel sticky top-4 flex h-[calc(100vh-2rem)] flex-col items-center rounded-[28px] px-3 py-4">
             <Button asChild variant="ghost" size="icon" className="mb-3 rounded-2xl">
               <Link to="/" aria-label="Back to dashboard">
@@ -541,153 +554,39 @@ const ProjectWorkspace = () => {
             </nav>
 
             <div className="mt-4 rounded-2xl border border-border/70 bg-card/80 px-2 py-3 text-center">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">CRM</p>
-              <p className="mt-1 text-sm font-semibold text-foreground">{filteredProjects.length}</p>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">Risk</p>
+              <p className="mt-1 text-sm font-semibold text-foreground">{risk.label.replace(" risk", "")}</p>
             </div>
           </aside>
 
-          <section className="enterprise-panel min-h-[calc(100vh-2rem)] rounded-[32px] p-4 lg:p-5">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
-                  Project Navigator
-                </p>
-                <h2 className="mt-1 text-2xl font-semibold tracking-[-0.04em] text-foreground">Pipeline</h2>
-              </div>
-              <Badge variant="outline" className="rounded-full px-3 py-1">
-                {filteredProjects.length} records
-              </Badge>
-            </div>
-
-            <div className="mt-4 grid gap-3">
-              <div className="relative">
-                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  value={searchQuery}
-                  onChange={(event) => setSearchQuery(event.target.value)}
-                  placeholder="Search project, MID, owner"
-                  className="h-11 rounded-2xl border-border/70 bg-background/70 pl-9"
-                />
-              </div>
-
-              <div className="flex flex-wrap gap-2">
-                {([
-                  ["all", "All"],
-                  ["active", "Active"],
-                  ["blocked", "Blocked"],
-                  ["live", "Live"],
-                ] as Array<[ProjectListFilter, string]>).map(([value, label]) => (
-                  <button
-                    key={value}
-                    type="button"
-                    onClick={() => setListFilter(value)}
-                    className={cn(
-                      "inline-flex items-center gap-2 rounded-full border px-3 py-2 text-xs font-semibold transition",
-                      listFilter === value
-                        ? "border-primary bg-primary/10 text-primary"
-                        : "border-border/70 bg-card/70 text-muted-foreground hover:text-foreground",
-                    )}
-                  >
-                    <Filter className="h-3.5 w-3.5" />
-                    {label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="mt-4 flex items-center justify-between border-y border-border/60 py-3">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Smart filters</p>
-                <p className="text-sm text-foreground">Search, status tags, and owner visibility</p>
-              </div>
-              <Button variant="ghost" size="sm" className="rounded-xl">
-                <ListFilter className="h-4 w-4" />
-                Filters
-              </Button>
-            </div>
-
-            <ScrollArea className="mt-4 h-[calc(100vh-18rem)] pr-2">
-              <div className="space-y-3">
-                {filteredProjects.map((entry) => {
-                  const isSelected = entry.id === project.id;
-                  const entryCompleted = entry.checklist.filter((item) => item.completed).length;
-                  return (
-                    <Link
-                      key={entry.id}
-                      to={`/projects/${entry.id}`}
-                      className={cn(
-                        "block rounded-[24px] border p-4 transition-all",
-                        isSelected
-                          ? "border-primary/30 bg-primary/5 shadow-[0_20px_45px_-30px_hsl(var(--primary)/0.55)]"
-                          : "border-border/70 bg-card/70 hover:border-primary/20 hover:bg-card",
-                      )}
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-2">
-                            <span className="inline-flex h-9 w-9 items-center justify-center rounded-2xl bg-slate-900 text-xs font-semibold text-white">
-                              {entry.merchantName.slice(0, 2).toUpperCase()}
-                            </span>
-                            <div className="min-w-0">
-                              <p className="truncate text-sm font-semibold text-foreground">{entry.merchantName}</p>
-                              <p className="truncate text-xs text-muted-foreground">MID {entry.mid}</p>
-                            </div>
-                          </div>
-                        </div>
-
-                        <Badge
-                          className={cn(
-                            "border px-2.5 py-1 text-[10px] font-semibold",
-                            stateToneMap[entry.projectState],
-                          )}
-                        >
-                          {stateLabels[entry.projectState] || projectStateLabels[entry.projectState]}
-                        </Badge>
-                      </div>
-
-                      <div className="mt-4 flex flex-wrap gap-2">
-                        <Badge variant="outline">{teamLabels[entry.currentOwnerTeam] || entry.currentOwnerTeam}</Badge>
-                        <Badge variant="outline">{phaseLabels[entry.currentPhase] || entry.currentPhase}</Badge>
-                        <Badge variant="secondary">{entryCompleted}/{entry.checklist.length} tasks</Badge>
-                      </div>
-
-                      <div className="mt-4">
-                        <div className="mb-2 flex items-center justify-between text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                          <span>Progress</span>
-                          <span>{entry.goLivePercent}%</span>
-                        </div>
-                        <Progress value={entry.goLivePercent} className="h-2.5 rounded-full bg-secondary" />
-                      </div>
-
-                      <div className="mt-4 flex items-center justify-between text-xs text-muted-foreground">
-                        <span>{entry.assignedOwnerName || "No owner"}</span>
-                        <span>{phaseLabels[entry.currentPhase] || entry.currentPhase}</span>
-                      </div>
-                    </Link>
-                  );
-                })}
-              </div>
-            </ScrollArea>
-          </section>
-
-          <section className="enterprise-panel min-h-[calc(100vh-2rem)] rounded-[34px] p-4 lg:p-5">
-            <div className="grid gap-4">
-              <header className="rounded-[28px] border border-border/70 bg-[linear-gradient(135deg,hsl(var(--card))_0%,hsl(var(--card)/0.92)_60%,hsl(var(--primary)/0.06)_100%)] p-5 shadow-[0_24px_60px_-36px_hsl(var(--foreground)/0.35)]">
+          <section className="enterprise-panel min-h-[calc(100vh-2rem)] rounded-[34px] p-4 lg:p-6">
+            <div className="grid gap-5">
+              <header className="rounded-[30px] border border-border/70 bg-[linear-gradient(135deg,hsl(var(--card))_0%,hsl(var(--card)/0.96)_54%,hsl(var(--primary)/0.08)_100%)] p-5 shadow-[0_28px_80px_-44px_hsl(var(--foreground)/0.38)] lg:p-6">
                 <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
-                  <div className="min-w-0">
-                    <div className="flex flex-wrap items-center gap-3">
-                      <h1 className="text-[2rem] font-semibold tracking-[-0.05em] text-foreground">
-                        {project.merchantName}
-                      </h1>
-                      <Badge className={cn("border px-3 py-1.5 text-xs font-semibold", stateToneMap[project.projectState])}>
-                        {stateLabels[project.projectState] || projectStateLabels[project.projectState]}
-                      </Badge>
-                    </div>
-                    <div className="mt-2 flex flex-wrap items-center gap-2">
-                      <Badge variant="outline">MID {project.mid}</Badge>
-                      <Badge variant="outline">{teamLabels[project.currentOwnerTeam] || project.currentOwnerTeam}</Badge>
-                      <Badge variant="outline">{phaseLabels[project.currentPhase] || project.currentPhase}</Badge>
-                      {project.pendingAcceptance ? <Badge className="border border-amber-200 bg-amber-100 text-amber-800">Pending acceptance</Badge> : null}
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-start gap-4">
+                      <div className="flex h-14 w-14 items-center justify-center rounded-[22px] bg-slate-950 text-lg font-bold text-white shadow-[0_24px_45px_-28px_rgba(15,23,42,0.85)]">
+                        {project.merchantName.slice(0, 2).toUpperCase()}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-3">
+                          <h1 className="text-[2rem] font-semibold tracking-[-0.05em] text-foreground">
+                            {project.merchantName}
+                          </h1>
+                          <Badge className={cn("border px-3 py-1.5 text-xs font-semibold", stateToneMap[project.projectState])}>
+                            {stateLabels[project.projectState] || projectStateLabels[project.projectState]}
+                          </Badge>
+                        </div>
+                        <div className="mt-2 flex flex-wrap items-center gap-2">
+                          <Badge variant="outline">MID {project.mid}</Badge>
+                          <Badge variant="outline">{teamLabels[project.currentOwnerTeam] || project.currentOwnerTeam}</Badge>
+                          <Badge variant="outline">{phaseLabels[project.currentPhase] || project.currentPhase}</Badge>
+                          {project.pendingAcceptance ? <Badge className="border border-amber-200 bg-amber-100 text-amber-800">Pending acceptance</Badge> : null}
+                        </div>
+                        <p className="mt-4 max-w-3xl text-sm leading-6 text-muted-foreground">
+                          Enterprise workspace for execution, handoff readiness, stakeholder context, and operational risk tracking.
+                        </p>
+                      </div>
                     </div>
                   </div>
 
@@ -717,61 +616,138 @@ const ProjectWorkspace = () => {
                   </div>
                 </div>
 
-                <div className="mt-5 grid gap-3 xl:grid-cols-[minmax(0,1.45fr)_minmax(340px,0.95fr)]">
-                  <div className="rounded-[24px] border border-primary/15 bg-primary/[0.06] p-4">
-                    <div className="flex items-center gap-2">
-                      <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-primary text-primary-foreground">
-                        <Bot className="h-4 w-4" />
+                <div className="mt-6 grid gap-4 xl:grid-cols-[minmax(0,1.45fr)_420px]">
+                  <div className="space-y-4">
+                    <div className="rounded-[24px] border border-primary/15 bg-primary/[0.06] p-5">
+                      <div className="flex items-center gap-2">
+                        <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-primary text-primary-foreground">
+                          <Bot className="h-4 w-4" />
+                        </div>
+                        <div>
+                          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">AI Summary</p>
+                          <p className="text-sm text-muted-foreground">Operational readout for the next team move</p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">AI Summary</p>
-                        <p className="text-sm text-muted-foreground">Operational readout for the next team move</p>
+
+                      <p className="mt-4 text-sm leading-6 text-foreground">
+                        {project.merchantName} is in{" "}
+                        <span className="font-semibold">{phaseLabels[project.currentPhase] || project.currentPhase}</span>
+                        {" "}with{" "}
+                        <span className="font-semibold">{completedChecklist}/{project.checklist.length}</span>{" "}
+                        checklist items closed. Current responsibility sits with{" "}
+                        <span className="font-semibold">{responsibilityLabels[pendingOn] || pendingOn}</span>, and the project is{" "}
+                        <span className="font-semibold">{stateLabels[project.projectState] || projectStateLabels[project.projectState]}</span>.
+                      </p>
+
+                      <div className="mt-4 grid gap-2">
+                        {nextActions.length > 0 ? (
+                          nextActions.map((action) => (
+                            <div
+                              key={action}
+                              className="flex items-start gap-3 rounded-2xl border border-border/70 bg-card/85 px-3 py-3"
+                            >
+                              <Sparkles className="mt-0.5 h-4 w-4 text-primary" />
+                              <span className="text-sm leading-6 text-foreground">{action}</span>
+                            </div>
+                          ))
+                        ) : (
+                          <div className="rounded-2xl border border-border/70 bg-card/85 px-3 py-3 text-sm text-muted-foreground">
+                            No immediate action is blocking progress.
+                          </div>
+                        )}
                       </div>
                     </div>
 
-                    <p className="mt-4 text-sm leading-6 text-foreground">
-                      {project.merchantName} is in{" "}
-                      <span className="font-semibold">{phaseLabels[project.currentPhase] || project.currentPhase}</span>
-                      {" "}with{" "}
-                      <span className="font-semibold">
-                        {completedChecklist}/{project.checklist.length}
-                      </span>{" "}
-                      checklist items closed. Current responsibility sits with{" "}
-                      <span className="font-semibold">{responsibilityLabels[pendingOn] || pendingOn}</span>, and the project is{" "}
-                      <span className="font-semibold">
-                        {stateLabels[project.projectState] || projectStateLabels[project.projectState]}
-                      </span>.
-                    </p>
-
-                    <div className="mt-4 grid gap-2">
-                      {nextActions.length > 0 ? (
-                        nextActions.map((action) => (
-                          <div
-                            key={action}
-                            className="flex items-start gap-3 rounded-2xl border border-border/70 bg-card/85 px-3 py-3"
-                          >
-                            <Sparkles className="mt-0.5 h-4 w-4 text-primary" />
-                            <span className="text-sm leading-6 text-foreground">{action}</span>
-                          </div>
-                        ))
-                      ) : (
-                        <div className="rounded-2xl border border-border/70 bg-card/85 px-3 py-3 text-sm text-muted-foreground">
-                          No immediate action is blocking progress.
+                    <div className="rounded-[24px] border border-border/70 bg-card/78 p-5">
+                      <div className="flex items-center justify-between gap-3">
+                        <div>
+                          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Recommended actions</p>
+                          <h2 className="mt-1 text-lg font-semibold text-foreground">Command bar</h2>
                         </div>
-                      )}
+                        <Command className="h-5 w-5 text-primary" />
+                      </div>
+
+                      <div className="mt-4 grid gap-3 md:grid-cols-2">
+                        {actionRecommendations.map((action) =>
+                          action.href ? (
+                            <a
+                              key={action.label}
+                              href={action.href}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="group rounded-[22px] border border-border/70 bg-background/75 p-4 transition hover:border-primary/25 hover:bg-background"
+                            >
+                              <div className="flex items-start justify-between gap-3">
+                                <div>
+                                  <p className="text-sm font-semibold text-foreground">{action.label}</p>
+                                  <p className="mt-1 text-xs leading-5 text-muted-foreground">{action.sublabel}</p>
+                                </div>
+                                <ArrowUpRight className="h-4 w-4 text-muted-foreground transition group-hover:text-primary" />
+                              </div>
+                            </a>
+                          ) : (
+                            <button
+                              key={action.label}
+                              type="button"
+                              onClick={action.onClick}
+                              className="rounded-[22px] border border-border/70 bg-background/75 p-4 text-left transition hover:border-primary/25 hover:bg-background"
+                            >
+                              <p className="text-sm font-semibold text-foreground">{action.label}</p>
+                              <p className="mt-1 text-xs leading-5 text-muted-foreground">{action.sublabel}</p>
+                            </button>
+                          ),
+                        )}
+                      </div>
                     </div>
                   </div>
 
-                  <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-2">
-                    {overviewStats.map((stat) => (
-                      <div key={stat.label} className="rounded-[22px] border border-border/70 bg-card/80 px-4 py-4">
-                        <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                          <stat.icon className="h-3.5 w-3.5" />
-                          {stat.label}
+                  <div className="space-y-4">
+                    <div className="rounded-[26px] border border-border/70 bg-[linear-gradient(180deg,hsl(var(--card))_0%,hsl(var(--card)/0.86)_100%)] p-5">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Project health</p>
+                          <h2 className="mt-1 text-lg font-semibold text-foreground">{projectHealthScore}/100 readiness</h2>
                         </div>
-                        <p className="mt-3 text-sm font-semibold text-foreground">{stat.value}</p>
+                        <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                          <BriefcaseBusiness className="h-4 w-4" />
+                        </div>
                       </div>
-                    ))}
+                      <Progress value={projectHealthScore} className="mt-4 h-2.5 rounded-full bg-secondary" />
+                      <div className="mt-4 grid gap-3">
+                        {overviewStats.map((stat) => (
+                          <div key={stat.label} className="rounded-2xl border border-border/70 bg-background/70 px-4 py-3">
+                            <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                              <stat.icon className="h-3.5 w-3.5" />
+                              {stat.label}
+                            </div>
+                            <p className="mt-2 text-sm font-semibold text-foreground">{stat.value}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="rounded-[26px] border border-border/70 bg-card/80 p-5">
+                      <div className="flex items-center justify-between gap-3">
+                        <div>
+                          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Execution snapshot</p>
+                          <h2 className="mt-1 text-lg font-semibold text-foreground">Critical counters</h2>
+                        </div>
+                        <TimerReset className="h-5 w-5 text-primary" />
+                      </div>
+                      <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
+                        {[
+                          { label: "Open tasks", value: String(openTasksCount) },
+                          { label: "Handoffs", value: String(project.transferHistory.length) },
+                          { label: "Documents", value: String(quickLinks.length) },
+                          { label: "Go-live progress", value: `${project.goLivePercent}%` },
+                        ].map((item) => (
+                          <div key={item.label} className="rounded-2xl border border-border/70 bg-background/70 px-4 py-3">
+                            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">{item.label}</p>
+                            <p className="mt-2 text-lg font-semibold text-foreground">{item.value}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
                   </div>
                 </div>
               </header>
@@ -861,7 +837,10 @@ const ProjectWorkspace = () => {
                                 rel="noreferrer"
                                 className="flex items-center justify-between rounded-2xl border border-border/70 bg-background/75 px-4 py-3 text-sm font-semibold text-foreground transition hover:border-primary/25 hover:text-primary"
                               >
-                                <span>{link.label}</span>
+                                <div className="flex items-center gap-3">
+                                  <link.icon className="h-4 w-4" />
+                                  <span>{link.label}</span>
+                                </div>
                                 <ExternalLink className="h-4 w-4" />
                               </a>
                             ))
@@ -1080,7 +1059,7 @@ const ProjectWorkspace = () => {
                           >
                             <div className="flex items-center justify-between gap-3">
                               <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-                                <Files className="h-4 w-4" />
+                                <link.icon className="h-4 w-4" />
                               </div>
                               <ExternalLink className="h-4 w-4 text-muted-foreground" />
                             </div>
