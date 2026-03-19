@@ -673,8 +673,8 @@ const ProjectWorkspace = () => {
           </div>
 
           <section className="overflow-hidden rounded-[22px] border border-[#d8e2f0] bg-white shadow-[0_18px_48px_-40px_rgba(28,55,90,0.24)]">
-            <div className="grid gap-0 xl:grid-cols-[minmax(0,1fr)_360px]">
-              <div className="min-w-0 border-b border-[#d8e2f0] xl:border-b-0 xl:border-r">
+            <div className="grid gap-0 xl:grid-cols-[minmax(0,1fr)_360px] xl:min-h-0">
+              <div className="min-w-0 border-b border-[#d8e2f0] xl:min-h-0 xl:border-b-0 xl:border-r">
                 <div className="border-b border-[#d8e2f0] px-5 py-5 lg:px-6">
                   <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
                     <div className="min-w-0 space-y-4">
@@ -1041,8 +1041,10 @@ const ProjectWorkspace = () => {
                 </Tabs>
               </div>
 
-              <aside className="bg-[#f9fbff] px-5 py-5 lg:px-6 xl:h-[calc(100vh-6.5rem)]">
-                <div className="sticky top-6 h-[calc(100vh-9.5rem)] space-y-4 overflow-y-auto pr-1">
+              <aside className="bg-[#f9fbff] px-5 py-5 lg:px-6 xl:min-h-0 xl:overflow-hidden">
+                <div className="sticky top-6">
+                  <div className="h-[calc(100vh-9.5rem)] overflow-y-scroll overscroll-contain pr-1">
+                    <div className="space-y-4 pb-6">
                   <div className="rounded-2xl border border-[#d7e4fb] bg-[#eef4ff] p-4 shadow-[0_12px_32px_-26px_rgba(38,78,162,0.32)]">
                     <div className="flex items-center gap-3">
                       <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground">
@@ -1153,6 +1155,8 @@ const ProjectWorkspace = () => {
                           No linked artifacts are available yet.
                         </div>
                       )}
+                    </div>
+                  </div>
                     </div>
                   </div>
                 </div>
