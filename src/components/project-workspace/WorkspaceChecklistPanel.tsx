@@ -1,4 +1,6 @@
 import { Badge } from "@/components/ui/badge";
+import { useLabels } from "@/contexts/LabelsContext";
+import { hexToRgba } from "@/utils/colorUtils";
 import { WorkspaceMetricCard } from "./WorkspaceMetricCard";
 
 interface ChecklistItemSummary {
@@ -20,6 +22,10 @@ export const WorkspaceChecklistPanel = ({
   totalChecklist,
   currentPhase,
 }: WorkspaceChecklistPanelProps) => {
+  const { labels } = useLabels();
+  const sectionBackground = labels.color_workspace_section_bg || "#fcfdff";
+  const sectionBorder = labels.color_workspace_section_border || "#dbe5ef";
+
   return (
     <div className="space-y-6">
       <div className="grid gap-4 md:grid-cols-3">
@@ -33,8 +39,18 @@ export const WorkspaceChecklistPanel = ({
           const done = items.filter((item) => item.completed).length;
 
           return (
-            <div key={team} className="rounded-[1.75rem] border border-border/60 bg-background/80 p-5">
-              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/50 pb-4">
+            <div
+              key={team}
+              className="rounded-[1.75rem] p-5"
+              style={{
+                backgroundColor: hexToRgba(sectionBackground, 0.86),
+                border: `1px solid ${hexToRgba(sectionBorder, 0.78)}`,
+              }}
+            >
+              <div
+                className="flex flex-wrap items-center justify-between gap-3 pb-4"
+                style={{ borderBottom: `1px solid ${hexToRgba(sectionBorder, 0.42)}` }}
+              >
                 <div>
                   <p className="text-lg font-semibold tracking-[-0.03em] text-foreground">{label}</p>
                   <p className="text-sm text-muted-foreground">{done} of {items.length} actions closed</p>
@@ -48,7 +64,11 @@ export const WorkspaceChecklistPanel = ({
                 {items.map((item) => (
                   <div
                     key={item.id}
-                    className="flex items-center justify-between gap-4 rounded-2xl border border-border/60 bg-muted/12 px-4 py-3"
+                    className="flex items-center justify-between gap-4 rounded-2xl px-4 py-3"
+                    style={{
+                      backgroundColor: hexToRgba(sectionBorder, 0.08),
+                      border: `1px solid ${hexToRgba(sectionBorder, 0.5)}`,
+                    }}
                   >
                     <span className="text-sm font-medium text-foreground">{item.title}</span>
                     <Badge variant={item.completed ? "default" : "outline"}>{item.completed ? "Done" : "Pending"}</Badge>
