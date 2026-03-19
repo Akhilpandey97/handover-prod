@@ -166,6 +166,28 @@ const COLOR_GROUPS: ColorLabelGroup[] = [
     ],
   },
   {
+    title: "Project Strip Card Colours",
+    description: "Control the compact project card and its expanded detail tray",
+    keys: [
+      { key: "color_project_strip_bg", label: "Project Strip Background" },
+      { key: "color_project_strip_border", label: "Project Strip Border" },
+      { key: "color_project_expanded_bg", label: "Expanded Tray Background" },
+      { key: "color_project_expanded_border", label: "Expanded Tray Border" },
+    ],
+  },
+  {
+    title: "Workspace Card Colours",
+    description: "Control the project workspace hero, sections, and metric cards",
+    keys: [
+      { key: "color_workspace_main_bg", label: "Main Workspace Card Background" },
+      { key: "color_workspace_main_border", label: "Main Workspace Card Border" },
+      { key: "color_workspace_section_bg", label: "Section Card Background" },
+      { key: "color_workspace_section_border", label: "Section Card Border" },
+      { key: "color_workspace_metric_bg", label: "Metric Card Background" },
+      { key: "color_workspace_metric_border", label: "Metric Card Border" },
+    ],
+  },
+  {
     title: "Project State Badge Colours",
     description: "Set the colour for each project state badge",
     keys: [

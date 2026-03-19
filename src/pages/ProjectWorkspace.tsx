@@ -28,6 +28,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { hexToRgba } from "@/utils/colorUtils";
 import {
   ArrowLeft,
   ArrowUpRight,
@@ -49,7 +50,7 @@ const ProjectWorkspace = () => {
   const { projectId } = useParams();
   const { isAuthenticated, isLoading, currentUser } = useAuth();
   const { projects, updateProject, deleteProject } = useProjects();
-  const { teamLabels, responsibilityLabels, getLabel, stateLabels } = useLabels();
+  const { labels, teamLabels, responsibilityLabels, getLabel, stateLabels } = useLabels();
 
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [checklistOpen, setChecklistOpen] = useState(false);
@@ -112,6 +113,8 @@ const ProjectWorkspace = () => {
   const completedChecklist = project.checklist.filter((item) => item.completed).length;
   const pendingOn = calculateProjectResponsibilityFromChecklist(project.checklist);
   const timeByParty = calculateTimeFromChecklist(project.checklist);
+  const workspaceMainBackground = labels.color_workspace_main_bg || "#f8fbff";
+  const workspaceMainBorder = labels.color_workspace_main_border || "#d9e4f2";
 
   const actionButtons = [
     project.links.brandUrl
@@ -143,7 +146,7 @@ const ProjectWorkspace = () => {
 
   const detailCards = [
     { label: "Current team", value: teamLabels[project.currentOwnerTeam] || project.currentOwnerTeam, eyebrow: "Ownership", icon: <Building2 className="h-5 w-5" /> },
-    { label: "Assigned owner", value: project.assignedOwnerName || "Unassigned", eyebrow: "Ops" , icon: <BadgeCheck className="h-5 w-5" />},
+    { label: "Assigned owner", value: project.assignedOwnerName || "Unassigned", eyebrow: "Ops", icon: <BadgeCheck className="h-5 w-5" /> },
     { label: "Action pending on", value: responsibilityLabels[pendingOn] || pendingOn, eyebrow: "Execution", icon: <ClipboardList className="h-5 w-5" /> },
     { label: "Checklist progress", value: `${completedChecklist}/${project.checklist.length} done`, eyebrow: "Completion", icon: <Layers3 className="h-5 w-5" /> },
     { label: "Internal time", value: formatDuration(timeByParty.gokwik), eyebrow: "Delivery", icon: <Timer className="h-5 w-5" /> },
@@ -179,7 +182,13 @@ const ProjectWorkspace = () => {
   return (
     <div className="min-h-screen bg-background">
       <div className="mx-auto flex w-full max-w-[1600px] flex-col gap-8 px-5 py-6 lg:px-8 xl:px-10">
-        <section className="enterprise-panel overflow-hidden rounded-[2rem] border-border/60">
+        <section
+          className="overflow-hidden rounded-[2rem] shadow-[0_32px_90px_-48px_hsl(var(--foreground)/0.18)]"
+          style={{
+            backgroundColor: hexToRgba(workspaceMainBackground, 0.95),
+            border: `1px solid ${hexToRgba(workspaceMainBorder, 0.9)}`,
+          }}
+        >
           <div className="grid gap-6 p-6 lg:grid-cols-[minmax(0,1.45fr)_minmax(320px,0.95fr)] lg:p-8">
             <div className="space-y-6">
               <Button asChild variant="ghost" className="-ml-3 w-fit gap-2 text-muted-foreground">
@@ -190,7 +199,13 @@ const ProjectWorkspace = () => {
               </Button>
 
               <div className="flex flex-col gap-5 xl:flex-row xl:items-start">
-                <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-[1.75rem] border border-border/60 bg-background text-primary shadow-[0_24px_60px_-36px_hsl(var(--foreground)/0.22)]">
+                <div
+                  className="flex h-20 w-20 shrink-0 items-center justify-center rounded-[1.75rem] text-primary shadow-[0_24px_60px_-36px_hsl(var(--foreground)/0.18)]"
+                  style={{
+                    backgroundColor: hexToRgba(workspaceMainBorder, 0.08),
+                    border: `1px solid ${hexToRgba(workspaceMainBorder, 0.62)}`,
+                  }}
+                >
                   <Building2 className="h-9 w-9" />
                 </div>
 
@@ -224,7 +239,7 @@ const ProjectWorkspace = () => {
               </div>
             </div>
 
-            <div className="flex flex-col gap-3 self-start lg:pl-4">
+            <div className="flex flex-col justify-center gap-3 self-stretch lg:pl-4">
               {actionButtons.map((action) =>
                 action.href ? (
                   <Button key={action.key} asChild variant="outline" className="h-14 justify-between rounded-2xl px-5 text-sm">

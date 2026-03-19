@@ -30,6 +30,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { hexToRgba } from "@/utils/colorUtils";
 import { toast } from "sonner";
 import {
   ArrowRight,
@@ -49,8 +50,24 @@ interface ProjectCardNewProps {
   project: Project;
 }
 
-const MetricTile = ({ label, value, children }: { label: string; value?: string; children?: React.ReactNode }) => (
-  <div className="rounded-2xl border border-border/60 bg-muted/20 p-3">
+const MetricTile = ({
+  label,
+  value,
+  children,
+  borderColor,
+}: {
+  label: string;
+  value?: string;
+  children?: React.ReactNode;
+  borderColor: string;
+}) => (
+  <div
+    className="rounded-2xl p-3"
+    style={{
+      backgroundColor: hexToRgba(borderColor, 0.07),
+      border: `1px solid ${hexToRgba(borderColor, 0.45)}`,
+    }}
+  >
     <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">{label}</p>
     {children ?? <p className="mt-2 text-sm font-semibold text-foreground">{value || "—"}</p>}
   </div>
@@ -59,7 +76,7 @@ const MetricTile = ({ label, value, children }: { label: string; value?: string;
 export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
   const { currentUser } = useAuth();
   const { acceptProject, transferProject, updateProject, rejectProject } = useProjects();
-  const { teamLabels, responsibilityLabels, getLabel, stateLabels } = useLabels();
+  const { labels, teamLabels, responsibilityLabels, getLabel, stateLabels } = useLabels();
 
   const [isExpanded, setIsExpanded] = useState(false);
   const [transferOpen, setTransferOpen] = useState(false);
@@ -98,6 +115,11 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
     project.currentOwnerTeam !== "ms" &&
     currentUser?.team !== "manager";
   const isTransferReady = canTransfer && allCurrentTeamChecklistCompleted;
+
+  const projectStripBackground = labels.color_project_strip_bg || "#f8fbff";
+  const projectStripBorder = labels.color_project_strip_border || "#d9e4f2";
+  const projectExpandedBackground = labels.color_project_expanded_bg || "#fdfefe";
+  const projectExpandedBorder = labels.color_project_expanded_border || "#dce6ef";
 
   const handleAccept = () => {
     acceptProject(project.id);
@@ -153,16 +175,32 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
 
   return (
     <>
-      <Card className="overflow-hidden border-border/60 shadow-sm transition-shadow hover:shadow-md">
+      <Card
+        className="overflow-hidden shadow-sm transition-shadow hover:shadow-md"
+        style={{
+          backgroundColor: hexToRgba(projectStripBackground, 0.94),
+          border: `1px solid ${hexToRgba(projectStripBorder, 0.92)}`,
+        }}
+      >
         <div className="flex flex-col gap-3 p-3 sm:p-4">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
             <Link
               to={`/projects/${project.id}`}
               target="_blank"
               rel="noreferrer"
-              className="flex min-w-0 flex-1 items-center gap-3 rounded-2xl border border-border/40 bg-muted/10 px-3 py-3 transition-colors hover:bg-muted/20"
+              className="flex min-w-0 flex-1 items-center gap-3 rounded-2xl px-3 py-3 transition-colors"
+              style={{
+                backgroundColor: hexToRgba(projectStripBackground, 0.82),
+                border: `1px solid ${hexToRgba(projectStripBorder, 0.72)}`,
+              }}
             >
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-border/60 bg-background">
+              <div
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl"
+                style={{
+                  backgroundColor: hexToRgba(projectStripBorder, 0.08),
+                  border: `1px solid ${hexToRgba(projectStripBorder, 0.58)}`,
+                }}
+              >
                 <Building2 className="h-5 w-5 text-primary" />
               </div>
 
@@ -195,7 +233,7 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
               <ArrowUpRight className="h-4 w-4 shrink-0 text-muted-foreground" />
             </Link>
 
-            <div className="flex flex-wrap items-center justify-end gap-2">
+            <div className="flex flex-wrap items-center justify-end gap-2 self-center lg:min-h-[72px] lg:content-center">
               {isPending && (
                 <Button size="sm" className="gap-2" onClick={handleAccept}>
                   <CheckCircle2 className="h-4 w-4" />
@@ -230,16 +268,22 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
           </div>
 
           {isExpanded && (
-            <div className="space-y-3 rounded-2xl border border-border/60 bg-background p-3">
+            <div
+              className="space-y-3 rounded-2xl p-3"
+              style={{
+                backgroundColor: hexToRgba(projectExpandedBackground, 0.95),
+                border: `1px solid ${hexToRgba(projectExpandedBorder, 0.86)}`,
+              }}
+            >
               <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-                <MetricTile label={getLabel("field_arr")} value={`${project.arr} Cr`} />
-                <MetricTile label="Action pending on" value={responsibilityLabels[computedResponsibility] || computedResponsibility} />
-                <MetricTile label="Time split" value={`${formatDuration(timeByParty.gokwik)} / ${formatDuration(timeByParty.merchant)}`} />
-                <MetricTile label="Checklist" value={`${completedChecklist}/${project.checklist.length} complete`} />
-                <MetricTile label={getLabel("field_kick_off_date")} value={project.dates.kickOffDate || "—"} />
-                <MetricTile label={getLabel("field_go_live_date")} value={project.dates.goLiveDate || project.dates.expectedGoLiveDate || "—"} />
-                <MetricTile label="Current phase" value={projectPhaseDisplay} />
-                <MetricTile label="Project state">
+                <MetricTile borderColor={projectExpandedBorder} label={getLabel("field_arr")} value={`${project.arr} Cr`} />
+                <MetricTile borderColor={projectExpandedBorder} label="Action pending on" value={responsibilityLabels[computedResponsibility] || computedResponsibility} />
+                <MetricTile borderColor={projectExpandedBorder} label="Time split" value={`${formatDuration(timeByParty.gokwik)} / ${formatDuration(timeByParty.merchant)}`} />
+                <MetricTile borderColor={projectExpandedBorder} label="Checklist" value={`${completedChecklist}/${project.checklist.length} complete`} />
+                <MetricTile borderColor={projectExpandedBorder} label={getLabel("field_kick_off_date")} value={project.dates.kickOffDate || "—"} />
+                <MetricTile borderColor={projectExpandedBorder} label={getLabel("field_go_live_date")} value={project.dates.goLiveDate || project.dates.expectedGoLiveDate || "—"} />
+                <MetricTile borderColor={projectExpandedBorder} label="Current phase" value={projectPhaseDisplay} />
+                <MetricTile borderColor={projectExpandedBorder} label="Project state">
                   <Select value={project.projectState} onValueChange={(value) => handleStateChange(value as ProjectState)}>
                     <SelectTrigger className="mt-2 h-8 border-border/60 bg-background px-3 text-sm font-semibold text-foreground">
                       <SelectValue />
@@ -255,7 +299,10 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
                 </MetricTile>
               </div>
 
-              <div className="flex flex-wrap items-center gap-2 border-t border-border/60 pt-3">
+              <div
+                className="flex flex-wrap items-center gap-2 pt-3"
+                style={{ borderTop: `1px solid ${hexToRgba(projectExpandedBorder, 0.52)}` }}
+              >
                 <Badge variant="outline">{teamLabels.mint}: {mintChecklist.filter((item) => item.completed).length}/{mintChecklist.length}</Badge>
                 <Badge variant="outline">{teamLabels.integration}: {integrationChecklist.filter((item) => item.completed).length}/{integrationChecklist.length}</Badge>
                 <Button size="sm" variant="ghost" className="gap-2" onClick={() => handleAiAction("insights")}>
