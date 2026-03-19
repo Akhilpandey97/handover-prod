@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
-import type { Project, ProjectChecklist, ResponsibilityLog, ChecklistResponsibilityLog, TransferRecord, ResponsibilityParty, ProjectPhase, ProjectState, ProjectActivityLog } from "@/data/projectsData";
+import type { Project, ProjectChecklist, ResponsibilityLog, ChecklistResponsibilityLog, TransferRecord, ResponsibilityParty, ProjectPhase, ProjectState } from "@/data/projectsData";
 import type { TeamRole } from "@/data/teams";
 import { teamLabels } from "@/data/teams";
 import { sendNotification } from "@/utils/sendNotification";
@@ -46,7 +46,6 @@ const transformDbProject = (row: any): Project => ({
   pgOnboarding: row.pg_onboarding || "",
   currentResponsibility: (row.current_responsibility as ResponsibilityParty) || "neutral",
   responsibilityLog: row.responsibility_logs || [],
-  activityLog: row.activity_logs || [],
   assignedOwner: row.assigned_owner || undefined,
   projectState: (row.project_state as ProjectState) || "not_started",
   assignedOwnerName: row.assigned_owner_name || undefined,
@@ -132,18 +131,10 @@ export const useProjectsQuery = () => {
 
       if (transfersError) throw transfersError;
 
-      const { data: activityLogs, error: activityLogsError } = await supabase
-        .from("project_activity_logs")
-        .select("*")
-        .order("created_at", { ascending: true });
-
-      if (activityLogsError) throw activityLogsError;
-
       const checklistByProject = new Map<string, any[]>();
       const logsByProject = new Map<string, any[]>();
       const transfersByProject = new Map<string, any[]>();
       const checklistLogsByItem = new Map<string, any[]>();
-      const activityByProject = new Map<string, ProjectActivityLog[]>();
 
       checklistLogs?.forEach((log) => {
         const logs = checklistLogsByItem.get(log.checklist_item_id) || [];
@@ -192,19 +183,6 @@ export const useProjectsQuery = () => {
         transfersByProject.set(transfer.project_id, projectTransfers);
       });
 
-      activityLogs?.forEach((log) => {
-        const list = activityByProject.get(log.project_id) || [];
-        list.push({
-          id: log.id,
-          title: log.title,
-          description: log.description,
-          actor: log.actor,
-          activityType: log.activity_type as ProjectActivityLog["activityType"],
-          createdAt: log.created_at,
-        });
-        activityByProject.set(log.project_id, list);
-      });
-
       return (projects || []).map((project) => {
         const checklistForProject = checklistByProject.get(project.id) || [];
         return transformDbProject({
@@ -212,7 +190,6 @@ export const useProjectsQuery = () => {
           checklist_items: checklistForProject.map(transformDbChecklistItem),
           responsibility_logs: logsByProject.get(project.id) || [],
           transfer_history: transfersByProject.get(project.id) || [],
-          activity_logs: activityByProject.get(project.id) || [],
           assigned_owner_name: project.assigned_owner ? profileMap.get(project.assigned_owner) : undefined,
         });
       });
@@ -326,15 +303,9 @@ export const useAddProject = () => {
 // Update project mutation
 export const useUpdateProject = () => {
   const queryClient = useQueryClient();
-  const { currentUser } = useAuth();
 
   return useMutation({
     mutationFn: async (project: Project) => {
-      const cachedProjects = queryClient.getQueriesData<Project[]>({ queryKey: ["projects"] });
-      const previousProject = cachedProjects
-        .flatMap(([, data]) => data || [])
-        .find((entry) => entry.id === project.id);
-
       const { error } = await supabase
         .from("projects")
         .update({
@@ -370,65 +341,6 @@ export const useUpdateProject = () => {
         .eq("id", project.id);
 
       if (error) throw error;
-
-      if (previousProject) {
-        const activityEntries: Array<{ title: string; description: string; activity_type: "project_update" | "note_update" | "status_change" }> = [];
-        const pushIfChanged = (
-          title: string,
-          beforeValue: string | number | undefined,
-          afterValue: string | number | undefined,
-          activity_type: "project_update" | "note_update" | "status_change" = "project_update",
-        ) => {
-          const before = beforeValue ?? "—";
-          const after = afterValue ?? "—";
-          if (String(before) === String(after)) return;
-          activityEntries.push({
-            title,
-            description: `${title} changed from "${before}" to "${after}".`,
-            activity_type,
-          });
-        };
-
-        pushIfChanged("Project name updated", previousProject.merchantName, project.merchantName);
-        pushIfChanged("MID updated", previousProject.mid, project.mid);
-        pushIfChanged("Platform updated", previousProject.platform, project.platform);
-        pushIfChanged("Category updated", previousProject.category, project.category);
-        pushIfChanged("ARR updated", previousProject.arr, project.arr);
-        pushIfChanged("Transactions per day updated", previousProject.txnsPerDay, project.txnsPerDay);
-        pushIfChanged("AOV updated", previousProject.aov, project.aov);
-        pushIfChanged("Sales SPOC updated", previousProject.salesSpoc, project.salesSpoc);
-        pushIfChanged("Integration type updated", previousProject.integrationType, project.integrationType);
-        pushIfChanged("PG onboarding updated", previousProject.pgOnboarding, project.pgOnboarding);
-        pushIfChanged("Go-live progress updated", previousProject.goLivePercent, project.goLivePercent);
-        pushIfChanged("Project state changed", previousProject.projectState, project.projectState, "status_change");
-        pushIfChanged("Phase changed", previousProject.currentPhase, project.currentPhase, "status_change");
-        pushIfChanged("Kick-off date updated", previousProject.dates.kickOffDate, project.dates.kickOffDate);
-        pushIfChanged("Expected go-live updated", previousProject.dates.expectedGoLiveDate, project.dates.expectedGoLiveDate);
-        pushIfChanged("Go-live date updated", previousProject.dates.goLiveDate, project.dates.goLiveDate, "status_change");
-        pushIfChanged("Website link updated", previousProject.links.brandUrl, project.links.brandUrl);
-        pushIfChanged("JIRA link updated", previousProject.links.jiraLink, project.links.jiraLink);
-        pushIfChanged("BRD link updated", previousProject.links.brdLink, project.links.brdLink);
-        pushIfChanged("Current phase note updated", previousProject.notes.currentPhaseComment, project.notes.currentPhaseComment, "note_update");
-        pushIfChanged("Project notes updated", previousProject.notes.projectNotes, project.notes.projectNotes, "note_update");
-        pushIfChanged("Pre-sales notes updated", previousProject.notes.mintNotes, project.notes.mintNotes, "note_update");
-        pushIfChanged("Phase 2 notes updated", previousProject.notes.phase2Comment, project.notes.phase2Comment, "note_update");
-
-        if (activityEntries.length > 0) {
-          const { error: activityError } = await supabase.from("project_activity_logs").insert(
-            activityEntries.map((entry) => ({
-              project_id: project.id,
-              title: entry.title,
-              description: entry.description,
-              actor: currentUser?.name || "Unknown",
-              activity_type: entry.activity_type,
-              tenant_id: currentUser?.tenantId || null,
-            })),
-          );
-
-          if (activityError) throw activityError;
-        }
-      }
-
       return project;
     },
     onSuccess: () => {

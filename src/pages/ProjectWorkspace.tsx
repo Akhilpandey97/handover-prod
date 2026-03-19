@@ -85,7 +85,7 @@ interface RiskAssessment {
 
 const tabOptions: Array<{ value: WorkspaceTab; label: string }> = [
   { value: "overview", label: "Overview" },
-  { value: "activity", label: "Activity History" },
+  { value: "activity", label: "Activity" },
   { value: "checklists", label: "Checklists" },
   { value: "notes", label: "Notes" },
   { value: "files", label: "Files" },
@@ -244,18 +244,6 @@ const buildActivityFeed = (project: Project): ActivityEntry[] => {
       item.commentBy || "System",
       `${item.ownerTeam} checklist`,
       item.commentAt,
-    );
-  });
-
-  (project.activityLog || []).forEach((log) => {
-    pushEvent(
-      `project-activity-${log.id}`,
-      log.activityType === "status_change" ? "milestone" : log.activityType === "note_update" ? "user" : "system",
-      log.title,
-      log.description,
-      log.actor || "System",
-      "Project activity",
-      log.createdAt,
     );
   });
 
@@ -948,7 +936,7 @@ const ProjectWorkspace = () => {
                   <div className="space-y-6">
                     <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/70 pb-4">
                       <div>
-                        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Activity History</p>
+                        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Activity timeline</p>
                         <h2 className="mt-1 text-xl font-semibold tracking-[-0.03em] text-foreground">Grouped by date</h2>
                       </div>
                       <div className="flex flex-wrap gap-2">
