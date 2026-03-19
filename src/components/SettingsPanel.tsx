@@ -348,6 +348,9 @@ export const SettingsPanel = ({ activeSubTab }: SettingsPanelProps) => {
             <TabsTrigger value="email" className="gap-1.5">
               <Mail className="h-3.5 w-3.5" />Email
             </TabsTrigger>
+            <TabsTrigger value="secrets" className="gap-1.5">
+              <KeyRound className="h-3.5 w-3.5" />Secrets
+            </TabsTrigger>
           </TabsList>
         )}
 
