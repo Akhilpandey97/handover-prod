@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { LoginScreen } from "@/components/LoginScreen";
 import { AssignOwnerDialog } from "@/components/AssignOwnerDialog";
+import { ChecklistDialog } from "@/components/ChecklistDialog";
 import { EditProjectDialog } from "@/components/EditProjectDialog";
 import { TransferDialog } from "@/components/TransferDialog";
 import {
@@ -17,16 +18,13 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLabels } from "@/contexts/LabelsContext";
 import { useProjects } from "@/contexts/ProjectContext";
 import {
   Project,
-  ProjectChecklist,
   ProjectState,
   calculateProjectResponsibilityFromChecklist,
   calculateTimeFromChecklist,
@@ -51,7 +49,6 @@ import {
   Globe,
   Loader2,
   MessageSquareText,
-  NotebookPen,
   ShieldAlert,
   Sparkles,
   Trash2,
@@ -459,15 +456,12 @@ const ProjectWorkspace = () => {
     updateProject,
     deleteProject,
     transferProject,
-    updateChecklist,
-    updateChecklistComment,
   } = useProjects();
   const { teamLabels, stateLabels, phaseLabels, responsibilityLabels } = useLabels();
 
   const [activeTab, setActiveTab] = useState<WorkspaceTab>("overview");
-  const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
-  const [taskDrafts, setTaskDrafts] = useState<Record<string, string>>({});
   const [editOpen, setEditOpen] = useState(false);
+  const [checklistOpen, setChecklistOpen] = useState(false);
   const [assignOpen, setAssignOpen] = useState(false);
   const [transferOpen, setTransferOpen] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
@@ -477,22 +471,6 @@ const ProjectWorkspace = () => {
   const [aiSummaryError, setAiSummaryError] = useState<string | null>(null);
 
   const project = projects.find((entry) => entry.id === projectId) ?? null;
-
-  const groupedChecklist = useMemo(() => {
-    if (!project) return [] as Array<{ team: string; items: ProjectChecklist[] }>;
-
-    const groups = project.checklist.reduce(
-      (acc, item) => {
-        const list = acc[item.ownerTeam] || [];
-        list.push(item);
-        acc[item.ownerTeam] = list;
-        return acc;
-      },
-      {} as Record<string, ProjectChecklist[]>,
-    );
-
-    return Object.entries(groups).map(([team, items]) => ({ team, items }));
-  }, [project]);
 
   const activityFeed = useMemo(() => (project ? buildActivityFeed(project) : []), [project]);
   const groupedActivity = useMemo(() => groupByDate(activityFeed), [activityFeed]);
@@ -528,6 +506,13 @@ const ProjectWorkspace = () => {
       ignore = true;
     };
   }, [project]);
+
+  useEffect(() => {
+    if (activeTab === "checklists") {
+      setChecklistOpen(true);
+      setActiveTab("overview");
+    }
+  }, [activeTab]);
 
   if (isLoading) {
     return (
@@ -624,7 +609,7 @@ const ProjectWorkspace = () => {
     {
       label: "Open checklist",
       sublabel: `${completedChecklist}/${project.checklist.length} items completed`,
-      onClick: () => setActiveTab("checklists"),
+      onClick: () => setChecklistOpen(true),
     },
     !project.assignedOwnerName && currentUser?.team === "manager"
       ? { label: "Assign owner", sublabel: "Set clear accountability", onClick: () => setAssignOpen(true) }
@@ -636,7 +621,7 @@ const ProjectWorkspace = () => {
       ? {
           label: "Review open checklist",
           sublabel: `${openTasksCount} item${openTasksCount === 1 ? "" : "s"} need attention`,
-          onClick: () => setActiveTab("checklists"),
+          onClick: () => setChecklistOpen(true),
         }
       : null,
     risk.label !== "Low risk"
@@ -667,13 +652,6 @@ const ProjectWorkspace = () => {
     const transferNote = notes || `Transferred to ${nextTeam} team`;
     transferProject(project.id, `${transferNote} (Assigned to: ${assigneeName})`, assigneeId);
     toast.success(`Transferred ${project.merchantName} to ${assigneeName}`);
-  };
-
-  const handleTaskCommentSave = (item: ProjectChecklist) => {
-    const nextComment = taskDrafts[item.id] ?? item.comment ?? "";
-    updateChecklistComment(project.id, item.id, nextComment);
-    setEditingTaskId(null);
-    toast.success("Task note updated");
   };
 
   return (
@@ -894,18 +872,26 @@ const ProjectWorkspace = () => {
                         />
 
                         <div className="mt-4 space-y-2">
-                          {groupedChecklist.map(({ team, items }) => {
-                            const done = items.filter((item) => item.completed).length;
-                            return (
-                              <div key={team} className="flex items-center justify-between rounded-lg border border-border/70 px-3 py-3">
-                                <div>
-                                  <p className="text-sm font-semibold text-foreground">{teamLabels[team] || team}</p>
-                                  <p className="text-xs text-muted-foreground">{done} of {items.length} closed</p>
-                                </div>
-                                <Badge variant="outline">{done}/{items.length}</Badge>
+                          {Object.entries(
+                            project.checklist.reduce(
+                              (acc, item) => {
+                                const bucket = acc[item.ownerTeam] || { done: 0, total: 0 };
+                                bucket.total += 1;
+                                if (item.completed) bucket.done += 1;
+                                acc[item.ownerTeam] = bucket;
+                                return acc;
+                              },
+                              {} as Record<string, { done: number; total: number }>,
+                            ),
+                          ).map(([team, summary]) => (
+                            <div key={team} className="flex items-center justify-between rounded-lg border border-border/70 px-3 py-3">
+                              <div>
+                                <p className="text-sm font-semibold text-foreground">{teamLabels[team] || team}</p>
+                                <p className="text-xs text-muted-foreground">{summary.done} of {summary.total} closed</p>
                               </div>
-                            );
-                          })}
+                              <Badge variant="outline">{summary.done}/{summary.total}</Badge>
+                            </div>
+                          ))}
                         </div>
                       </div>
 
@@ -1008,85 +994,7 @@ const ProjectWorkspace = () => {
                   </div>
                 </TabsContent>
 
-                <TabsContent value="checklists" className="m-0">
-                  <div className="space-y-3">
-                    {project.checklist.map((item) => {
-                      const isEditing = editingTaskId === item.id;
-                      const noteValue = taskDrafts[item.id] ?? item.comment ?? "";
-
-                      return (
-                        <div key={item.id} className="rounded-xl border border-border/70 bg-background p-4">
-                          <div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
-                            <div className="flex min-w-0 gap-3">
-                              <Checkbox
-                                checked={item.completed}
-                                onCheckedChange={(checked) => updateChecklist(project.id, item.id, Boolean(checked))}
-                                className="mt-1 h-5 w-5 rounded-md border-border"
-                              />
-                              <div className="min-w-0">
-                                <div className="flex flex-wrap items-center gap-2">
-                                  <p className={cn("text-sm font-semibold text-foreground", item.completed && "text-muted-foreground line-through")}>
-                                    {item.title}
-                                  </p>
-                                  <Badge variant="outline">{teamLabels[item.ownerTeam] || item.ownerTeam}</Badge>
-                                  <Badge variant="outline">{phaseLabels[item.phase] || item.phase}</Badge>
-                                </div>
-                                <p className="mt-2 text-xs text-muted-foreground">
-                                  Responsibility: {responsibilityLabels[item.currentResponsibility] || item.currentResponsibility}
-                                </p>
-                              </div>
-                            </div>
-
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="rounded-lg"
-                              onClick={() => {
-                                setEditingTaskId(isEditing ? null : item.id);
-                                setTaskDrafts((current) => ({
-                                  ...current,
-                                  [item.id]: current[item.id] ?? item.comment ?? "",
-                                }));
-                              }}
-                            >
-                              <NotebookPen className="h-4 w-4" />
-                              {isEditing ? "Close" : "Edit note"}
-                            </Button>
-                          </div>
-
-                          {isEditing ? (
-                            <div className="mt-4 rounded-lg border border-border/70 bg-card/70 p-3">
-                              <Textarea
-                                value={noteValue}
-                                onChange={(event) =>
-                                  setTaskDrafts((current) => ({
-                                    ...current,
-                                    [item.id]: event.target.value,
-                                  }))
-                                }
-                                placeholder="Add working notes, blockers, or context for the next owner"
-                                className="min-h-[96px] rounded-lg border-border/70 bg-background/80"
-                              />
-                              <div className="mt-3 flex justify-end gap-2">
-                                <Button variant="ghost" size="sm" className="rounded-lg" onClick={() => setEditingTaskId(null)}>
-                                  Cancel
-                                </Button>
-                                <Button size="sm" className="rounded-lg" onClick={() => handleTaskCommentSave(item)}>
-                                  Save note
-                                </Button>
-                              </div>
-                            </div>
-                          ) : item.comment ? (
-                            <div className="mt-4 rounded-lg border border-border/70 bg-card/70 px-4 py-3">
-                              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Latest note</p>
-                              <p className="mt-2 text-sm leading-6 text-foreground">{item.comment}</p>
-                            </div>
-                          ) : null}
-                        </div>
-                      );
-                    })}
-                  </div>
-                </TabsContent>
+                <TabsContent value="checklists" className="m-0" />
 
                 <TabsContent value="notes" className="m-0">
                   <div className="grid gap-4 md:grid-cols-2">
@@ -1139,6 +1047,7 @@ const ProjectWorkspace = () => {
       </div>
 
       <EditProjectDialog project={project} open={editOpen} onOpenChange={setEditOpen} onSave={handleSaveEdit} />
+      <ChecklistDialog project={project} open={checklistOpen} onOpenChange={setChecklistOpen} />
       <AssignOwnerDialog project={project} open={assignOpen} onOpenChange={setAssignOpen} />
       <TransferDialog project={project} open={transferOpen} onOpenChange={setTransferOpen} onTransfer={handleTransfer} />
 
