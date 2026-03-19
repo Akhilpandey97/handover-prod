@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { LoginScreen } from "@/components/LoginScreen";
 import { AssignOwnerDialog } from "@/components/AssignOwnerDialog";
@@ -33,6 +33,7 @@ import {
   formatDuration,
   projectStateLabels,
 } from "@/data/projectsData";
+import { fetchAiInsights } from "@/utils/aiInsights";
 import { cn } from "@/lib/utils";
 import {
   AlertTriangle,
@@ -40,26 +41,19 @@ import {
   ArrowRight,
   ArrowUpRight,
   Bot,
-  BriefcaseBusiness,
-  CalendarClock,
   CheckCheck,
   CheckCircle2,
-  CircleDashed,
+  ChevronRight,
   Clock3,
-  Command,
   ExternalLink,
   FileStack,
   Files,
-  FolderKanban,
   Globe,
-  LayoutGrid,
+  Loader2,
   MessageSquareText,
   NotebookPen,
-  PanelLeftClose,
-  Settings2,
   ShieldAlert,
   Sparkles,
-  TimerReset,
   Trash2,
   UserRound,
 } from "lucide-react";
@@ -86,14 +80,6 @@ const tabOptions: Array<{ value: WorkspaceTab; label: string }> = [
   { value: "tasks", label: "Tasks" },
   { value: "notes", label: "Notes" },
   { value: "files", label: "Files" },
-];
-
-const navItems = [
-  { icon: LayoutGrid, label: "Dashboard", href: "/" },
-  { icon: FolderKanban, label: "Projects", href: "/" },
-  { icon: CheckCheck, label: "Tasks", href: "/" },
-  { icon: Files, label: "Files", href: "/" },
-  { icon: Settings2, label: "Settings", href: "/" },
 ];
 
 const stateToneMap: Record<ProjectState, string> = {
@@ -302,21 +288,12 @@ const getLastUpdated = (project: Project) => {
   }).format(new Date(latest));
 };
 
-const buildNextActions = (project: Project, canTransfer: boolean, isTransferReady: boolean) => {
-  const openChecklist = project.checklist.filter((item) => !item.completed);
-  const currentTeamOpen = openChecklist.filter((item) => item.ownerTeam === project.currentOwnerTeam).slice(0, 2);
-  const actions = [
-    currentTeamOpen.length > 0
-      ? `Close ${currentTeamOpen.map((item) => item.title).join(" and ")} for the ${project.currentOwnerTeam} team.`
-      : null,
-    !project.assignedOwnerName ? "Assign a named owner so handoffs and follow-ups have clear accountability." : null,
-    !project.links.jiraLink ? "Attach the JIRA tracker so delivery, notes, and escalation context stay in one workflow." : null,
-    canTransfer && !isTransferReady ? "Finish all current-team checklist items before transfer can be triggered." : null,
-    canTransfer && isTransferReady ? "Transfer is ready. Review summary context, then move the project to the next team." : null,
-  ].filter(Boolean) as string[];
-
-  return actions.slice(0, 4);
-};
+const parseAiBullets = (content: string) =>
+  content
+    .split("\n")
+    .map((line) => line.replace(/^[-*•]\s*/, "").trim())
+    .filter(Boolean)
+    .slice(0, 4);
 
 const ProjectWorkspace = () => {
   const { projectId } = useParams();
@@ -338,6 +315,10 @@ const ProjectWorkspace = () => {
   const [assignOpen, setAssignOpen] = useState(false);
   const [transferOpen, setTransferOpen] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [aiSummary, setAiSummary] = useState<string[]>([]);
+  const [aiSummaryRaw, setAiSummaryRaw] = useState("");
+  const [aiSummaryLoading, setAiSummaryLoading] = useState(false);
+  const [aiSummaryError, setAiSummaryError] = useState<string | null>(null);
 
   const project = projects.find((entry) => entry.id === projectId) ?? null;
 
@@ -359,6 +340,38 @@ const ProjectWorkspace = () => {
 
   const activityFeed = useMemo(() => (project ? buildActivityFeed(project) : []), [project]);
   const groupedActivity = useMemo(() => groupByDate(activityFeed), [activityFeed]);
+
+  useEffect(() => {
+    let ignore = false;
+
+    const loadSummary = async () => {
+      if (!project) return;
+
+      setAiSummaryLoading(true);
+      setAiSummaryError(null);
+
+      try {
+        const result = await fetchAiInsights({ project, type: "summary" });
+        if (ignore) return;
+        setAiSummaryRaw(result);
+        setAiSummary(parseAiBullets(result));
+      } catch (error) {
+        if (ignore) return;
+        setAiSummaryError(error instanceof Error ? error.message : "Unable to generate AI summary.");
+        setAiSummaryRaw("");
+        setAiSummary([]);
+      } finally {
+        if (!ignore) {
+          setAiSummaryLoading(false);
+        }
+      }
+    };
+
+    loadSummary();
+    return () => {
+      ignore = true;
+    };
+  }, [project]);
 
   if (isLoading) {
     return (
@@ -409,41 +422,13 @@ const ProjectWorkspace = () => {
     currentUser?.team !== "manager";
   const isTransferReady = canTransfer && allCurrentTeamChecklistCompleted;
   const risk = getRiskLevel(project);
-  const nextActions = buildNextActions(project, canTransfer, isTransferReady);
   const openTasksCount = project.checklist.length - completedChecklist;
-  const projectHealthScore = Math.max(
-    12,
-    Math.min(
-      100,
-      Math.round(
-        project.goLivePercent * 0.45 +
-          (project.checklist.length ? (completedChecklist / project.checklist.length) * 35 : 0) +
-          (risk.label === "Low risk" ? 20 : risk.label === "Medium risk" ? 10 : 0),
-      ),
-    ),
-  );
 
   const overviewStats = [
-    {
-      label: "Owner",
-      value: project.assignedOwnerName || "Unassigned",
-      icon: UserRound,
-    },
-    {
-      label: "Phase",
-      value: phaseLabels[project.currentPhase] || project.currentPhase,
-      icon: CircleDashed,
-    },
-    {
-      label: "Risk",
-      value: risk.label,
-      icon: ShieldAlert,
-    },
-    {
-      label: "Last Update",
-      value: getLastUpdated(project),
-      icon: Clock3,
-    },
+    { label: "Owner", value: project.assignedOwnerName || "Unassigned", icon: UserRound },
+    { label: "Phase", value: phaseLabels[project.currentPhase] || project.currentPhase, icon: CheckCircle2 },
+    { label: "Risk", value: risk.label, icon: ShieldAlert },
+    { label: "Last update", value: getLastUpdated(project), icon: Clock3 },
   ];
 
   const projectDetails = [
@@ -524,274 +509,212 @@ const ProjectWorkspace = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="mx-auto max-w-[1660px] px-4 py-4 lg:px-6 lg:py-6">
-        <div className="grid gap-4 lg:grid-cols-[84px_minmax(0,1fr)]">
-          <aside className="enterprise-panel sticky top-4 flex h-[calc(100vh-2rem)] flex-col items-center rounded-[28px] px-3 py-4">
-            <Button asChild variant="ghost" size="icon" className="mb-3 rounded-2xl">
-              <Link to="/" aria-label="Back to dashboard">
-                <ArrowLeft className="h-4 w-4" />
-              </Link>
-            </Button>
+      <div className="mx-auto max-w-[1480px] px-4 py-5 lg:px-6 lg:py-6">
+        <div className="space-y-4">
+          <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+            <Link to="/" className="inline-flex items-center gap-2 rounded-lg px-2 py-1 hover:bg-accent">
+              <ArrowLeft className="h-4 w-4" />
+              Projects
+            </Link>
+            <ChevronRight className="h-4 w-4" />
+            <span>{project.merchantName}</span>
+          </div>
 
-            <div className="mb-6 flex h-11 w-11 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-lg">
-              <PanelLeftClose className="h-5 w-5" />
-            </div>
-
-            <nav className="flex flex-1 flex-col items-center gap-2">
-              {navItems.map((item, index) => (
-                <Button
-                  key={item.label}
-                  asChild
-                  variant={index === 1 ? "default" : "ghost"}
-                  size="icon"
-                  className="rounded-2xl"
-                >
-                  <Link to={item.href} aria-label={item.label}>
-                    <item.icon className="h-4 w-4" />
-                  </Link>
-                </Button>
-              ))}
-            </nav>
-
-            <div className="mt-4 rounded-2xl border border-border/70 bg-card/80 px-2 py-3 text-center">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">Risk</p>
-              <p className="mt-1 text-sm font-semibold text-foreground">{risk.label.replace(" risk", "")}</p>
-            </div>
-          </aside>
-
-          <section className="enterprise-panel min-h-[calc(100vh-2rem)] rounded-[34px] p-4 lg:p-6">
-            <div className="grid gap-5">
-              <header className="rounded-[30px] border border-border/70 bg-[linear-gradient(135deg,hsl(var(--card))_0%,hsl(var(--card)/0.96)_54%,hsl(var(--primary)/0.08)_100%)] p-5 shadow-[0_28px_80px_-44px_hsl(var(--foreground)/0.38)] lg:p-6">
-                <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
-                  <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-start gap-4">
-                      <div className="flex h-14 w-14 items-center justify-center rounded-[22px] bg-slate-950 text-lg font-bold text-white shadow-[0_24px_45px_-28px_rgba(15,23,42,0.85)]">
-                        {project.merchantName.slice(0, 2).toUpperCase()}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="flex flex-wrap items-center gap-3">
-                          <h1 className="text-[2rem] font-semibold tracking-[-0.05em] text-foreground">
-                            {project.merchantName}
-                          </h1>
-                          <Badge className={cn("border px-3 py-1.5 text-xs font-semibold", stateToneMap[project.projectState])}>
-                            {stateLabels[project.projectState] || projectStateLabels[project.projectState]}
-                          </Badge>
-                        </div>
-                        <div className="mt-2 flex flex-wrap items-center gap-2">
-                          <Badge variant="outline">MID {project.mid}</Badge>
-                          <Badge variant="outline">{teamLabels[project.currentOwnerTeam] || project.currentOwnerTeam}</Badge>
-                          <Badge variant="outline">{phaseLabels[project.currentPhase] || project.currentPhase}</Badge>
-                          {project.pendingAcceptance ? <Badge className="border border-amber-200 bg-amber-100 text-amber-800">Pending acceptance</Badge> : null}
-                        </div>
-                        <p className="mt-4 max-w-3xl text-sm leading-6 text-muted-foreground">
-                          Enterprise workspace for execution, handoff readiness, stakeholder context, and operational risk tracking.
-                        </p>
+          <section className="overflow-hidden rounded-[24px] border border-border/70 bg-card shadow-[0_18px_48px_-32px_hsl(var(--foreground)/0.2)]">
+            <div className="border-b border-border/70 px-5 py-4 lg:px-6">
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                <div className="min-w-0 space-y-3">
+                  <div className="flex flex-wrap items-center gap-3">
+                    <div className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-sm font-bold text-primary">
+                      {project.merchantName.slice(0, 2).toUpperCase()}
+                    </div>
+                    <div>
+                      <h1 className="text-[1.8rem] font-semibold tracking-[-0.04em] text-foreground">
+                        {project.merchantName}
+                      </h1>
+                      <div className="mt-1 flex flex-wrap items-center gap-2">
+                        <Badge className={cn("border px-2.5 py-1 text-[11px] font-semibold", stateToneMap[project.projectState])}>
+                          {stateLabels[project.projectState] || projectStateLabels[project.projectState]}
+                        </Badge>
+                        <Badge variant="outline">MID {project.mid}</Badge>
+                        <Badge variant="outline">{teamLabels[project.currentOwnerTeam] || project.currentOwnerTeam}</Badge>
+                        <Badge variant="outline">{phaseLabels[project.currentPhase] || project.currentPhase}</Badge>
+                        {project.pendingAcceptance ? (
+                          <Badge className="border border-amber-200 bg-amber-100 text-amber-800">Pending acceptance</Badge>
+                        ) : null}
                       </div>
                     </div>
                   </div>
 
-                  <div className="flex flex-wrap gap-2">
-                    {currentUser?.team === "manager" ? (
-                      <Button variant="outline" className="rounded-2xl" onClick={() => setAssignOpen(true)}>
-                        <UserRound className="h-4 w-4" />
-                        Assign Owner
-                      </Button>
-                    ) : null}
-                    <Button variant="outline" className="rounded-2xl" onClick={() => setEditOpen(true)}>
-                      Edit
-                    </Button>
-                    <Button
-                      className="rounded-2xl"
-                      onClick={() => isTransferReady && setTransferOpen(true)}
-                      disabled={!isTransferReady}
-                    >
-                      <ArrowRight className="h-4 w-4" />
-                      Transfer
-                    </Button>
-                    {currentUser?.team === "manager" ? (
-                      <Button variant="destructive" className="rounded-2xl" onClick={() => setDeleteConfirmOpen(true)}>
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    ) : null}
+                  <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                    {overviewStats.map((stat) => (
+                      <div key={stat.label} className="rounded-xl border border-border/70 bg-background px-3 py-3">
+                        <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                          <stat.icon className="h-3.5 w-3.5" />
+                          {stat.label}
+                        </div>
+                        <p className="mt-2 text-sm font-semibold text-foreground">{stat.value}</p>
+                      </div>
+                    ))}
                   </div>
                 </div>
 
-                <div className="mt-6 grid gap-4 xl:grid-cols-[minmax(0,1.45fr)_420px]">
-                  <div className="space-y-4">
-                    <div className="rounded-[24px] border border-primary/15 bg-primary/[0.06] p-5">
-                      <div className="flex items-center gap-2">
-                        <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-primary text-primary-foreground">
-                          <Bot className="h-4 w-4" />
-                        </div>
-                        <div>
-                          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">AI Summary</p>
-                          <p className="text-sm text-muted-foreground">Operational readout for the next team move</p>
-                        </div>
-                      </div>
+                <div className="flex flex-wrap gap-2">
+                  {currentUser?.team === "manager" ? (
+                    <Button variant="outline" className="rounded-lg" onClick={() => setAssignOpen(true)}>
+                      <UserRound className="h-4 w-4" />
+                      Assign owner
+                    </Button>
+                  ) : null}
+                  <Button variant="outline" className="rounded-lg" onClick={() => setEditOpen(true)}>
+                    Edit
+                  </Button>
+                  <Button className="rounded-lg" onClick={() => isTransferReady && setTransferOpen(true)} disabled={!isTransferReady}>
+                    <ArrowRight className="h-4 w-4" />
+                    Transfer
+                  </Button>
+                  {currentUser?.team === "manager" ? (
+                    <Button variant="destructive" className="rounded-lg" onClick={() => setDeleteConfirmOpen(true)}>
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  ) : null}
+                </div>
+              </div>
+            </div>
 
-                      <p className="mt-4 text-sm leading-6 text-foreground">
-                        {project.merchantName} is in{" "}
-                        <span className="font-semibold">{phaseLabels[project.currentPhase] || project.currentPhase}</span>
-                        {" "}with{" "}
-                        <span className="font-semibold">{completedChecklist}/{project.checklist.length}</span>{" "}
-                        checklist items closed. Current responsibility sits with{" "}
-                        <span className="font-semibold">{responsibilityLabels[pendingOn] || pendingOn}</span>, and the project is{" "}
-                        <span className="font-semibold">{stateLabels[project.projectState] || projectStateLabels[project.projectState]}</span>.
-                      </p>
-
-                      <div className="mt-4 grid gap-2">
-                        {nextActions.length > 0 ? (
-                          nextActions.map((action) => (
-                            <div
-                              key={action}
-                              className="flex items-start gap-3 rounded-2xl border border-border/70 bg-card/85 px-3 py-3"
-                            >
-                              <Sparkles className="mt-0.5 h-4 w-4 text-primary" />
-                              <span className="text-sm leading-6 text-foreground">{action}</span>
-                            </div>
-                          ))
-                        ) : (
-                          <div className="rounded-2xl border border-border/70 bg-card/85 px-3 py-3 text-sm text-muted-foreground">
-                            No immediate action is blocking progress.
-                          </div>
-                        )}
-                      </div>
+            <div className="grid gap-0 xl:grid-cols-[minmax(0,1fr)_340px]">
+              <div className="border-b border-border/70 px-5 py-5 xl:border-b-0 xl:border-r lg:px-6">
+                <div className="rounded-[18px] border border-primary/15 bg-primary/[0.04] p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground">
+                      {aiSummaryLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Bot className="h-4 w-4" />}
                     </div>
-
-                    <div className="rounded-[24px] border border-border/70 bg-card/78 p-5">
-                      <div className="flex items-center justify-between gap-3">
-                        <div>
-                          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Recommended actions</p>
-                          <h2 className="mt-1 text-lg font-semibold text-foreground">Command bar</h2>
-                        </div>
-                        <Command className="h-5 w-5 text-primary" />
-                      </div>
-
-                      <div className="mt-4 grid gap-3 md:grid-cols-2">
-                        {actionRecommendations.map((action) =>
-                          action.href ? (
-                            <a
-                              key={action.label}
-                              href={action.href}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="group rounded-[22px] border border-border/70 bg-background/75 p-4 transition hover:border-primary/25 hover:bg-background"
-                            >
-                              <div className="flex items-start justify-between gap-3">
-                                <div>
-                                  <p className="text-sm font-semibold text-foreground">{action.label}</p>
-                                  <p className="mt-1 text-xs leading-5 text-muted-foreground">{action.sublabel}</p>
-                                </div>
-                                <ArrowUpRight className="h-4 w-4 text-muted-foreground transition group-hover:text-primary" />
-                              </div>
-                            </a>
-                          ) : (
-                            <button
-                              key={action.label}
-                              type="button"
-                              onClick={action.onClick}
-                              className="rounded-[22px] border border-border/70 bg-background/75 p-4 text-left transition hover:border-primary/25 hover:bg-background"
-                            >
-                              <p className="text-sm font-semibold text-foreground">{action.label}</p>
-                              <p className="mt-1 text-xs leading-5 text-muted-foreground">{action.sublabel}</p>
-                            </button>
-                          ),
-                        )}
-                      </div>
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">AI Summary</p>
+                      <p className="text-sm text-muted-foreground">Live project summary generated from current project data</p>
                     </div>
                   </div>
 
-                  <div className="space-y-4">
-                    <div className="rounded-[26px] border border-border/70 bg-[linear-gradient(180deg,hsl(var(--card))_0%,hsl(var(--card)/0.86)_100%)] p-5">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Project health</p>
-                          <h2 className="mt-1 text-lg font-semibold text-foreground">{projectHealthScore}/100 readiness</h2>
-                        </div>
-                        <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-                          <BriefcaseBusiness className="h-4 w-4" />
-                        </div>
+                  <div className="mt-4 space-y-3">
+                    {aiSummaryLoading ? (
+                      <div className="rounded-xl border border-border/70 bg-background px-4 py-4 text-sm text-muted-foreground">
+                        Generating summary...
                       </div>
-                      <Progress value={projectHealthScore} className="mt-4 h-2.5 rounded-full bg-secondary" />
-                      <div className="mt-4 grid gap-3">
-                        {overviewStats.map((stat) => (
-                          <div key={stat.label} className="rounded-2xl border border-border/70 bg-background/70 px-4 py-3">
-                            <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                              <stat.icon className="h-3.5 w-3.5" />
-                              {stat.label}
-                            </div>
-                            <p className="mt-2 text-sm font-semibold text-foreground">{stat.value}</p>
-                          </div>
-                        ))}
+                    ) : aiSummaryError ? (
+                      <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-900">
+                        AI summary unavailable: {aiSummaryError}
                       </div>
-                    </div>
+                    ) : aiSummary.length > 0 ? (
+                      aiSummary.map((line) => (
+                        <div key={line} className="flex items-start gap-3 rounded-xl border border-border/70 bg-background px-4 py-3">
+                          <Sparkles className="mt-0.5 h-4 w-4 text-primary" />
+                          <p className="text-sm leading-6 text-foreground">{line}</p>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="rounded-xl border border-border/70 bg-background px-4 py-4 text-sm text-muted-foreground">
+                        No AI summary available yet.
+                      </div>
+                    )}
+                  </div>
 
-                    <div className="rounded-[26px] border border-border/70 bg-card/80 p-5">
-                      <div className="flex items-center justify-between gap-3">
-                        <div>
-                          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Execution snapshot</p>
-                          <h2 className="mt-1 text-lg font-semibold text-foreground">Critical counters</h2>
-                        </div>
-                        <TimerReset className="h-5 w-5 text-primary" />
-                      </div>
-                      <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
-                        {[
-                          { label: "Open tasks", value: String(openTasksCount) },
-                          { label: "Handoffs", value: String(project.transferHistory.length) },
-                          { label: "Documents", value: String(quickLinks.length) },
-                          { label: "Go-live progress", value: `${project.goLivePercent}%` },
-                        ].map((item) => (
-                          <div key={item.label} className="rounded-2xl border border-border/70 bg-background/70 px-4 py-3">
-                            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">{item.label}</p>
-                            <p className="mt-2 text-lg font-semibold text-foreground">{item.value}</p>
+                  {aiSummaryRaw ? (
+                    <p className="mt-3 text-xs text-muted-foreground">
+                      Generated from live checklist, status, ownership, and milestone data.
+                    </p>
+                  ) : null}
+                </div>
+              </div>
+
+              <aside className="px-5 py-5 lg:px-6">
+                <div className="space-y-4">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Recommended actions</p>
+                    <p className="mt-1 text-sm text-muted-foreground">Context-aware actions similar to a Jira issue sidebar.</p>
+                  </div>
+
+                  <div className="space-y-2">
+                    {actionRecommendations.map((action) =>
+                      action.href ? (
+                        <a
+                          key={action.label}
+                          href={action.href}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="flex items-start justify-between rounded-xl border border-border/70 bg-background px-4 py-3 transition hover:border-primary/25 hover:bg-accent/40"
+                        >
+                          <div>
+                            <p className="text-sm font-semibold text-foreground">{action.label}</p>
+                            <p className="mt-1 text-xs text-muted-foreground">{action.sublabel}</p>
                           </div>
-                        ))}
-                      </div>
-                    </div>
+                          <ExternalLink className="mt-0.5 h-4 w-4 text-muted-foreground" />
+                        </a>
+                      ) : (
+                        <button
+                          key={action.label}
+                          type="button"
+                          onClick={action.onClick}
+                          className="w-full rounded-xl border border-border/70 bg-background px-4 py-3 text-left transition hover:border-primary/25 hover:bg-accent/40"
+                        >
+                          <p className="text-sm font-semibold text-foreground">{action.label}</p>
+                          <p className="mt-1 text-xs text-muted-foreground">{action.sublabel}</p>
+                        </button>
+                      ),
+                    )}
                   </div>
                 </div>
-              </header>
+              </aside>
+            </div>
+          </section>
 
-              <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as WorkspaceTab)}>
-                <TabsList className="h-auto w-full justify-start gap-1 overflow-x-auto rounded-[22px] border border-border/70 bg-card/70 p-1">
+          <section className="overflow-hidden rounded-[24px] border border-border/70 bg-card shadow-[0_18px_48px_-32px_hsl(var(--foreground)/0.18)]">
+            <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as WorkspaceTab)}>
+              <div className="border-b border-border/70 px-4 py-3 lg:px-6">
+                <TabsList className="h-auto w-full justify-start gap-1 overflow-x-auto rounded-lg bg-transparent p-0">
                   {tabOptions.map((tab) => (
                     <TabsTrigger
                       key={tab.value}
                       value={tab.value}
-                      className="rounded-2xl px-4 py-2.5 text-sm font-semibold data-[state=active]:bg-background data-[state=active]:shadow-sm"
+                      className="rounded-lg border border-transparent px-3 py-2 text-sm font-semibold text-muted-foreground data-[state=active]:border-border data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
                     >
                       {tab.label}
                     </TabsTrigger>
                   ))}
                 </TabsList>
+              </div>
 
-                <TabsContent value="overview" className="mt-4 space-y-4">
-                  <div className="grid gap-4 xl:grid-cols-[minmax(0,1.2fr)_360px]">
-                    <div className="rounded-[28px] border border-border/70 bg-card/80 p-5">
-                      <div className="flex items-center justify-between gap-3">
-                        <div>
-                          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">Project details</p>
-                          <h3 className="mt-1 text-xl font-semibold tracking-[-0.03em] text-foreground">Core operating data</h3>
-                        </div>
-                        <Badge variant="secondary">Data-dense overview</Badge>
-                      </div>
-
-                      <div className="mt-5 grid gap-x-6 gap-y-4 md:grid-cols-2 xl:grid-cols-3">
-                        {projectDetails.map(([label, value]) => (
-                          <div key={label} className="rounded-2xl border border-border/70 bg-background/75 px-4 py-3">
-                            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">{label}</p>
-                            <p className="mt-2 text-sm font-semibold text-foreground">{value}</p>
+              <div className="px-4 py-5 lg:px-6">
+                <TabsContent value="overview" className="m-0">
+                  <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_320px]">
+                    <div className="space-y-5">
+                      <div>
+                        <div className="mb-4 flex items-center justify-between gap-3">
+                          <div>
+                            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Project details</p>
+                            <h2 className="mt-1 text-xl font-semibold tracking-[-0.03em] text-foreground">Business and execution data</h2>
                           </div>
-                        ))}
+                          <Badge variant="secondary">Jira-style summary</Badge>
+                        </div>
+
+                        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                          {projectDetails.map(([label, value]) => (
+                            <div key={label} className="rounded-xl border border-border/70 bg-background px-4 py-3">
+                              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">{label}</p>
+                              <p className="mt-2 text-sm font-semibold text-foreground">{value}</p>
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     </div>
 
-                    <div className="space-y-4">
-                      <div className="rounded-[28px] border border-border/70 bg-card/80 p-5">
-                        <div className="flex items-center justify-between">
+                    <div className="space-y-5">
+                      <div className="rounded-xl border border-border/70 bg-background p-4">
+                        <div className="flex items-center justify-between gap-3">
                           <div>
-                            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">Checklist progress</p>
-                            <h3 className="mt-1 text-lg font-semibold text-foreground">{completedChecklist}/{project.checklist.length} complete</h3>
+                            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Checklist progress</p>
+                            <h3 className="mt-1 text-lg font-semibold text-foreground">
+                              {completedChecklist}/{project.checklist.length} complete
+                            </h3>
                           </div>
                           <CheckCircle2 className="h-5 w-5 text-primary" />
                         </div>
@@ -800,34 +723,32 @@ const ProjectWorkspace = () => {
                           className="mt-4 h-2.5 rounded-full bg-secondary"
                         />
 
-                        <div className="mt-4 space-y-3">
+                        <div className="mt-4 space-y-2">
                           {groupedChecklist.map(({ team, items }) => {
                             const done = items.filter((item) => item.completed).length;
                             return (
-                              <div key={team} className="rounded-2xl border border-border/70 bg-background/75 px-4 py-3">
-                                <div className="flex items-center justify-between gap-3">
-                                  <div>
-                                    <p className="text-sm font-semibold text-foreground">{teamLabels[team] || team}</p>
-                                    <p className="text-xs text-muted-foreground">{done} of {items.length} closed</p>
-                                  </div>
-                                  <Badge variant="outline">{done}/{items.length}</Badge>
+                              <div key={team} className="flex items-center justify-between rounded-lg border border-border/70 px-3 py-3">
+                                <div>
+                                  <p className="text-sm font-semibold text-foreground">{teamLabels[team] || team}</p>
+                                  <p className="text-xs text-muted-foreground">{done} of {items.length} closed</p>
                                 </div>
+                                <Badge variant="outline">{done}/{items.length}</Badge>
                               </div>
                             );
                           })}
                         </div>
                       </div>
 
-                      <div className="rounded-[28px] border border-border/70 bg-card/80 p-5">
+                      <div className="rounded-xl border border-border/70 bg-background p-4">
                         <div className="flex items-center justify-between">
                           <div>
-                            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">Quick links</p>
-                            <h3 className="mt-1 text-lg font-semibold text-foreground">Jump to working context</h3>
+                            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Quick links</p>
+                            <h3 className="mt-1 text-lg font-semibold text-foreground">Working context</h3>
                           </div>
                           <ArrowUpRight className="h-5 w-5 text-primary" />
                         </div>
 
-                        <div className="mt-4 space-y-3">
+                        <div className="mt-4 space-y-2">
                           {quickLinks.length > 0 ? (
                             quickLinks.map((link) => (
                               <a
@@ -835,7 +756,7 @@ const ProjectWorkspace = () => {
                                 href={link.href}
                                 target="_blank"
                                 rel="noreferrer"
-                                className="flex items-center justify-between rounded-2xl border border-border/70 bg-background/75 px-4 py-3 text-sm font-semibold text-foreground transition hover:border-primary/25 hover:text-primary"
+                                className="flex items-center justify-between rounded-lg border border-border/70 px-3 py-3 text-sm font-semibold transition hover:border-primary/25 hover:bg-accent/40"
                               >
                                 <div className="flex items-center gap-3">
                                   <link.icon className="h-4 w-4" />
@@ -845,7 +766,7 @@ const ProjectWorkspace = () => {
                               </a>
                             ))
                           ) : (
-                            <div className="rounded-2xl border border-dashed border-border bg-background/60 px-4 py-4 text-sm text-muted-foreground">
+                            <div className="rounded-lg border border-dashed border-border px-3 py-4 text-sm text-muted-foreground">
                               No linked documents or external tools attached yet.
                             </div>
                           )}
@@ -855,12 +776,12 @@ const ProjectWorkspace = () => {
                   </div>
                 </TabsContent>
 
-                <TabsContent value="activity" className="mt-4">
-                  <div className="rounded-[28px] border border-border/70 bg-card/80 p-5">
-                    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/60 pb-4">
+                <TabsContent value="activity" className="m-0">
+                  <div className="space-y-6">
+                    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/70 pb-4">
                       <div>
-                        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">Activity timeline</p>
-                        <h3 className="mt-1 text-xl font-semibold tracking-[-0.03em] text-foreground">Grouped by date</h3>
+                        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Activity timeline</p>
+                        <h2 className="mt-1 text-xl font-semibold tracking-[-0.03em] text-foreground">Grouped by date</h2>
                       </div>
                       <div className="flex flex-wrap gap-2">
                         <Badge className="border border-slate-200 bg-slate-100 text-slate-700">{activityFeed.length} events</Badge>
@@ -868,160 +789,136 @@ const ProjectWorkspace = () => {
                       </div>
                     </div>
 
-                    <div className="mt-5 space-y-6">
-                      {Object.entries(groupedActivity).map(([dateLabel, items]) => (
-                        <div key={dateLabel}>
-                          <div className="mb-3 flex items-center gap-3">
-                            <div className="h-px flex-1 bg-border/70" />
-                            <Badge variant="outline" className="px-3 py-1">
-                              {dateLabel}
-                            </Badge>
-                            <div className="h-px flex-1 bg-border/70" />
-                          </div>
+                    {Object.entries(groupedActivity).map(([dateLabel, items]) => (
+                      <div key={dateLabel}>
+                        <div className="mb-3 flex items-center gap-3">
+                          <div className="h-px flex-1 bg-border/70" />
+                          <Badge variant="outline" className="px-3 py-1">
+                            {dateLabel}
+                          </Badge>
+                          <div className="h-px flex-1 bg-border/70" />
+                        </div>
 
-                          <div className="space-y-3">
-                            {items.map((item) => (
-                              <div key={item.id} className="grid gap-3 rounded-[24px] border border-border/70 bg-background/75 p-4 md:grid-cols-[20px_minmax(0,1fr)_140px] md:items-start">
-                                <div className="flex justify-center pt-1">
-                                  <span className={cn("mt-1 h-3.5 w-3.5 rounded-full", activityToneMap[item.kind])} />
-                                </div>
-                                <div className="min-w-0">
-                                  <div className="flex flex-wrap items-center gap-2">
-                                    <p className="text-sm font-semibold text-foreground">{item.title}</p>
-                                    <span className={cn("rounded-full border px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.12em]", activityBadgeToneMap[item.kind])}>
-                                      {item.kind}
-                                    </span>
-                                  </div>
-                                  <p className="mt-2 text-sm leading-6 text-muted-foreground">{item.description}</p>
-                                  <p className="mt-2 text-xs font-medium text-muted-foreground">
-                                    {item.source} · {item.actor}
-                                  </p>
-                                </div>
-                                <div className="text-left md:text-right">
-                                  <p className="text-sm font-semibold text-foreground">{item.timestampLabel}</p>
-                                </div>
+                        <div className="space-y-3">
+                          {items.map((item) => (
+                            <div key={item.id} className="grid gap-3 rounded-xl border border-border/70 bg-background p-4 md:grid-cols-[20px_minmax(0,1fr)_120px]">
+                              <div className="flex justify-center pt-1">
+                                <span className={cn("mt-1 h-3.5 w-3.5 rounded-full", activityToneMap[item.kind])} />
                               </div>
-                            ))}
-                          </div>
+                              <div className="min-w-0">
+                                <div className="flex flex-wrap items-center gap-2">
+                                  <p className="text-sm font-semibold text-foreground">{item.title}</p>
+                                  <span className={cn("rounded-full border px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.12em]", activityBadgeToneMap[item.kind])}>
+                                    {item.kind}
+                                  </span>
+                                </div>
+                                <p className="mt-2 text-sm leading-6 text-muted-foreground">{item.description}</p>
+                                <p className="mt-2 text-xs font-medium text-muted-foreground">
+                                  {item.source} · {item.actor}
+                                </p>
+                              </div>
+                              <div className="text-left md:text-right">
+                                <p className="text-sm font-semibold text-foreground">{item.timestampLabel}</p>
+                              </div>
+                            </div>
+                          ))}
                         </div>
-                      ))}
+                      </div>
+                    ))}
 
-                      {activityFeed.length === 0 ? (
-                        <div className="rounded-[24px] border border-dashed border-border bg-background/60 px-4 py-8 text-center">
-                          <MessageSquareText className="mx-auto h-8 w-8 text-muted-foreground" />
-                          <p className="mt-3 text-sm font-semibold text-foreground">No activity captured yet</p>
-                          <p className="mt-1 text-sm text-muted-foreground">
-                            Handoffs, checklist updates, notes, and milestones will appear here.
-                          </p>
-                        </div>
-                      ) : null}
-                    </div>
+                    {activityFeed.length === 0 ? (
+                      <div className="rounded-xl border border-dashed border-border px-4 py-8 text-center">
+                        <MessageSquareText className="mx-auto h-8 w-8 text-muted-foreground" />
+                        <p className="mt-3 text-sm font-semibold text-foreground">No activity captured yet</p>
+                        <p className="mt-1 text-sm text-muted-foreground">
+                          Handoffs, checklist updates, notes, and milestones will appear here.
+                        </p>
+                      </div>
+                    ) : null}
                   </div>
                 </TabsContent>
 
-                <TabsContent value="tasks" className="mt-4">
-                  <div className="rounded-[28px] border border-border/70 bg-card/80 p-5">
-                    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/60 pb-4">
-                      <div>
-                        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">Tasks</p>
-                        <h3 className="mt-1 text-xl font-semibold tracking-[-0.03em] text-foreground">Checklist with inline editing</h3>
-                      </div>
-                      <Badge variant="secondary">{completedChecklist}/{project.checklist.length} complete</Badge>
-                    </div>
+                <TabsContent value="tasks" className="m-0">
+                  <div className="space-y-3">
+                    {project.checklist.map((item) => {
+                      const isEditing = editingTaskId === item.id;
+                      const noteValue = taskDrafts[item.id] ?? item.comment ?? "";
 
-                    <div className="mt-5 space-y-3">
-                      {project.checklist.map((item) => {
-                        const isEditing = editingTaskId === item.id;
-                        const noteValue = taskDrafts[item.id] ?? item.comment ?? "";
-
-                        return (
-                          <div key={item.id} className="rounded-[24px] border border-border/70 bg-background/75 p-4">
-                            <div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
-                              <div className="flex min-w-0 gap-3">
-                                <Checkbox
-                                  checked={item.completed}
-                                  onCheckedChange={(checked) => updateChecklist(project.id, item.id, Boolean(checked))}
-                                  className="mt-1 h-5 w-5 rounded-md border-border"
-                                />
-                                <div className="min-w-0">
-                                  <div className="flex flex-wrap items-center gap-2">
-                                    <p className={cn("text-sm font-semibold text-foreground", item.completed && "text-muted-foreground line-through")}>
-                                      {item.title}
-                                    </p>
-                                    <Badge variant="outline">{teamLabels[item.ownerTeam] || item.ownerTeam}</Badge>
-                                    <Badge variant="outline">{phaseLabels[item.phase] || item.phase}</Badge>
-                                    <Badge
-                                      className={cn(
-                                        "border px-2.5 py-1 text-[10px] font-semibold",
-                                        item.completed
-                                          ? "border-emerald-200 bg-emerald-100 text-emerald-800"
-                                          : "border-slate-200 bg-slate-100 text-slate-700",
-                                      )}
-                                    >
-                                      {item.completed ? "Done" : "Open"}
-                                    </Badge>
-                                  </div>
-                                  <p className="mt-2 text-xs text-muted-foreground">
-                                    Responsibility: {responsibilityLabels[item.currentResponsibility] || item.currentResponsibility}
+                      return (
+                        <div key={item.id} className="rounded-xl border border-border/70 bg-background p-4">
+                          <div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
+                            <div className="flex min-w-0 gap-3">
+                              <Checkbox
+                                checked={item.completed}
+                                onCheckedChange={(checked) => updateChecklist(project.id, item.id, Boolean(checked))}
+                                className="mt-1 h-5 w-5 rounded-md border-border"
+                              />
+                              <div className="min-w-0">
+                                <div className="flex flex-wrap items-center gap-2">
+                                  <p className={cn("text-sm font-semibold text-foreground", item.completed && "text-muted-foreground line-through")}>
+                                    {item.title}
                                   </p>
+                                  <Badge variant="outline">{teamLabels[item.ownerTeam] || item.ownerTeam}</Badge>
+                                  <Badge variant="outline">{phaseLabels[item.phase] || item.phase}</Badge>
                                 </div>
-                              </div>
-
-                              <div className="flex items-center gap-2">
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  className="rounded-xl"
-                                  onClick={() => {
-                                    setEditingTaskId(isEditing ? null : item.id);
-                                    setTaskDrafts((current) => ({
-                                      ...current,
-                                      [item.id]: current[item.id] ?? item.comment ?? "",
-                                    }));
-                                  }}
-                                >
-                                  <NotebookPen className="h-4 w-4" />
-                                  {isEditing ? "Close" : "Edit note"}
-                                </Button>
+                                <p className="mt-2 text-xs text-muted-foreground">
+                                  Responsibility: {responsibilityLabels[item.currentResponsibility] || item.currentResponsibility}
+                                </p>
                               </div>
                             </div>
 
-                            {isEditing ? (
-                              <div className="mt-4 rounded-2xl border border-border/70 bg-card/70 p-3">
-                                <Textarea
-                                  value={noteValue}
-                                  onChange={(event) =>
-                                    setTaskDrafts((current) => ({
-                                      ...current,
-                                      [item.id]: event.target.value,
-                                    }))
-                                  }
-                                  placeholder="Add working notes, blockers, or context for the next owner"
-                                  className="min-h-[96px] rounded-2xl border-border/70 bg-background/80"
-                                />
-                                <div className="mt-3 flex justify-end gap-2">
-                                  <Button variant="ghost" size="sm" className="rounded-xl" onClick={() => setEditingTaskId(null)}>
-                                    Cancel
-                                  </Button>
-                                  <Button size="sm" className="rounded-xl" onClick={() => handleTaskCommentSave(item)}>
-                                    Save note
-                                  </Button>
-                                </div>
-                              </div>
-                            ) : item.comment ? (
-                              <div className="mt-4 rounded-2xl border border-border/70 bg-card/70 px-4 py-3">
-                                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Latest note</p>
-                                <p className="mt-2 text-sm leading-6 text-foreground">{item.comment}</p>
-                              </div>
-                            ) : null}
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="rounded-lg"
+                              onClick={() => {
+                                setEditingTaskId(isEditing ? null : item.id);
+                                setTaskDrafts((current) => ({
+                                  ...current,
+                                  [item.id]: current[item.id] ?? item.comment ?? "",
+                                }));
+                              }}
+                            >
+                              <NotebookPen className="h-4 w-4" />
+                              {isEditing ? "Close" : "Edit note"}
+                            </Button>
                           </div>
-                        );
-                      })}
-                    </div>
+
+                          {isEditing ? (
+                            <div className="mt-4 rounded-lg border border-border/70 bg-card/70 p-3">
+                              <Textarea
+                                value={noteValue}
+                                onChange={(event) =>
+                                  setTaskDrafts((current) => ({
+                                    ...current,
+                                    [item.id]: event.target.value,
+                                  }))
+                                }
+                                placeholder="Add working notes, blockers, or context for the next owner"
+                                className="min-h-[96px] rounded-lg border-border/70 bg-background/80"
+                              />
+                              <div className="mt-3 flex justify-end gap-2">
+                                <Button variant="ghost" size="sm" className="rounded-lg" onClick={() => setEditingTaskId(null)}>
+                                  Cancel
+                                </Button>
+                                <Button size="sm" className="rounded-lg" onClick={() => handleTaskCommentSave(item)}>
+                                  Save note
+                                </Button>
+                              </div>
+                            </div>
+                          ) : item.comment ? (
+                            <div className="mt-4 rounded-lg border border-border/70 bg-card/70 px-4 py-3">
+                              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Latest note</p>
+                              <p className="mt-2 text-sm leading-6 text-foreground">{item.comment}</p>
+                            </div>
+                          ) : null}
+                        </div>
+                      );
+                    })}
                   </div>
                 </TabsContent>
 
-                <TabsContent value="notes" className="mt-4">
+                <TabsContent value="notes" className="m-0">
                   <div className="grid gap-4 md:grid-cols-2">
                     {[
                       ["Current Phase", project.notes.currentPhaseComment || "No current phase note added."],
@@ -1029,83 +926,51 @@ const ProjectWorkspace = () => {
                       ["Pre-sales Notes", project.notes.mintNotes || "No pre-sales note added."],
                       ["Phase 2 Notes", project.notes.phase2Comment || "No phase 2 note added."],
                     ].map(([label, value]) => (
-                      <div key={label} className="rounded-[28px] border border-border/70 bg-card/80 p-5">
-                        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">{label}</p>
+                      <div key={label} className="rounded-xl border border-border/70 bg-background p-5">
+                        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">{label}</p>
                         <p className="mt-4 text-sm leading-7 text-foreground">{value}</p>
                       </div>
                     ))}
                   </div>
                 </TabsContent>
 
-                <TabsContent value="files" className="mt-4">
-                  <div className="rounded-[28px] border border-border/70 bg-card/80 p-5">
-                    <div className="flex items-center justify-between gap-3 border-b border-border/60 pb-4">
-                      <div>
-                        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">Files</p>
-                        <h3 className="mt-1 text-xl font-semibold tracking-[-0.03em] text-foreground">Attached workspace assets</h3>
-                      </div>
-                      <FileStack className="h-5 w-5 text-primary" />
-                    </div>
-
-                    <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-                      {quickLinks.length > 0 ? (
-                        quickLinks.map((link) => (
-                          <a
-                            key={link.label}
-                            href={link.href}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="rounded-[24px] border border-border/70 bg-background/75 p-4 transition hover:border-primary/25"
-                          >
-                            <div className="flex items-center justify-between gap-3">
-                              <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-                                <link.icon className="h-4 w-4" />
-                              </div>
-                              <ExternalLink className="h-4 w-4 text-muted-foreground" />
+                <TabsContent value="files" className="m-0">
+                  <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                    {quickLinks.length > 0 ? (
+                      quickLinks.map((link) => (
+                        <a
+                          key={link.label}
+                          href={link.href}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="rounded-xl border border-border/70 bg-background p-4 transition hover:border-primary/25"
+                        >
+                          <div className="flex items-center justify-between gap-3">
+                            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                              <link.icon className="h-4 w-4" />
                             </div>
-                            <p className="mt-4 text-sm font-semibold text-foreground">{link.label}</p>
-                            <p className="mt-1 text-xs text-muted-foreground">Open linked project artifact</p>
-                          </a>
-                        ))
-                      ) : (
-                        <div className="rounded-[24px] border border-dashed border-border bg-background/60 px-4 py-6 text-sm text-muted-foreground">
-                          No files are linked to this project yet.
-                        </div>
-                      )}
-                    </div>
+                            <ExternalLink className="h-4 w-4 text-muted-foreground" />
+                          </div>
+                          <p className="mt-4 text-sm font-semibold text-foreground">{link.label}</p>
+                          <p className="mt-1 text-xs text-muted-foreground">Open linked project artifact</p>
+                        </a>
+                      ))
+                    ) : (
+                      <div className="rounded-xl border border-dashed border-border px-4 py-6 text-sm text-muted-foreground">
+                        No files are linked to this project yet.
+                      </div>
+                    )}
                   </div>
                 </TabsContent>
-              </Tabs>
-
-              <div className="grid gap-4 xl:grid-cols-4">
-                {[
-                  { label: "Checklist", value: `${completedChecklist}/${project.checklist.length}`, icon: CheckCheck },
-                  { label: "Internal Time", value: formatDuration(timeByParty.gokwik), icon: CalendarClock },
-                  { label: "Merchant Time", value: formatDuration(timeByParty.merchant), icon: Clock3 },
-                  { label: "Risk", value: risk.label, icon: AlertTriangle },
-                ].map((item) => (
-                  <div key={item.label} className="rounded-[24px] border border-border/70 bg-card/80 px-4 py-4">
-                    <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                      <item.icon className="h-3.5 w-3.5" />
-                      {item.label}
-                    </div>
-                    <p className="mt-3 text-lg font-semibold text-foreground">{item.value}</p>
-                  </div>
-                ))}
               </div>
-            </div>
+            </Tabs>
           </section>
         </div>
       </div>
 
       <EditProjectDialog project={project} open={editOpen} onOpenChange={setEditOpen} onSave={handleSaveEdit} />
       <AssignOwnerDialog project={project} open={assignOpen} onOpenChange={setAssignOpen} />
-      <TransferDialog
-        project={project}
-        open={transferOpen}
-        onOpenChange={setTransferOpen}
-        onTransfer={handleTransfer}
-      />
+      <TransferDialog project={project} open={transferOpen} onOpenChange={setTransferOpen} onTransfer={handleTransfer} />
 
       <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
         <AlertDialogContent>
