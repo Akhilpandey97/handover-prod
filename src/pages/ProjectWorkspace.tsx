@@ -766,7 +766,7 @@ const ProjectWorkspace = () => {
                     </TabsList>
                   </div>
 
-                  <div className="px-5 py-5 lg:px-6">
+                  <div className="max-h-[calc(100vh-17rem)] overflow-y-auto px-5 py-5 lg:px-6">
                     <TabsContent value="overview" className="m-0">
                       <div className="space-y-5">
                         <div className="rounded-2xl border border-border/70 bg-background p-5">
