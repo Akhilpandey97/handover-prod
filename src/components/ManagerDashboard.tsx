@@ -173,7 +173,7 @@ export const ManagerDashboard = () => {
   const navVisibility = getNavVisibility();
 
   // Draggable tab order
-  const DEFAULT_TAB_ORDER = ["dashboard", "projects", "calendar", "reports", "checklist", "users", "settings", "kanban", "emails"];
+  const DEFAULT_TAB_ORDER = ["dashboard", "projects", "listview", "calendar", "reports", "checklist", "users", "settings", "kanban", "emails"];
   const [tabOrder, setTabOrder] = useState<string[]>(() => {
     try {
       const saved = localStorage.getItem("manager_tab_order");
