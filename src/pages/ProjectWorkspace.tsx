@@ -59,7 +59,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
-type WorkspaceTab = "overview" | "activity" | "tasks" | "notes" | "files";
+type WorkspaceTab = "overview" | "activity" | "checklists" | "notes" | "files";
 type ActivityKind = "user" | "system" | "handoff" | "milestone";
 
 interface ActivityEntry {
@@ -89,7 +89,7 @@ interface RiskAssessment {
 const tabOptions: Array<{ value: WorkspaceTab; label: string }> = [
   { value: "overview", label: "Overview" },
   { value: "activity", label: "Activity" },
-  { value: "tasks", label: "Tasks" },
+  { value: "checklists", label: "Checklists" },
   { value: "notes", label: "Notes" },
   { value: "files", label: "Files" },
 ];
@@ -395,9 +395,61 @@ const getLastUpdated = (project: Project) => {
 const parseAiBullets = (content: string) =>
   content
     .split("\n")
-    .map((line) => line.replace(/^[-*•]\s*/, "").trim())
+    .map((line) =>
+      line
+        .replace(/^[-*•]\s*/, "")
+        .replace(/\*\*/g, "")
+        .replace(/^Here is the project summary for.*?:/i, "")
+        .trim(),
+    )
     .filter(Boolean)
     .slice(0, 4);
+
+const buildActionDrivenSummary = (
+  project: Project,
+  aiBullets: string[],
+  risk: RiskAssessment,
+  openTasksCount: number,
+  completedChecklist: number,
+  isTransferReady: boolean,
+): Array<{ title: string; body: string; tone: string }> => {
+  const nextPending = project.checklist.find((item) => !item.completed);
+  const aiSignal = aiBullets[0];
+
+  const cards = [
+    {
+      title: "Next best action",
+      body: isTransferReady
+        ? "All current-team checklist items are complete. Review context and transfer ownership to the next team."
+        : nextPending
+          ? `Prioritize "${nextPending.title}" in ${project.currentOwnerTeam} so the project can move forward.`
+          : "No immediate checklist blocker is visible from current project data.",
+      tone: "border-primary/20 bg-primary/[0.05]",
+    },
+    {
+      title: "Project status",
+      body: `${project.merchantName} is in ${project.currentPhase} and currently marked ${project.projectState.replaceAll("_", " ")} with ${completedChecklist}/${project.checklist.length} checklist items closed.`,
+      tone: "border-border/70 bg-background",
+    },
+    {
+      title: "Eye on risk",
+      body:
+        risk.drivers[0]?.points && risk.drivers[0].points > 0
+          ? `${risk.label} (score ${risk.score}). Biggest driver: ${risk.drivers[0].label}.`
+          : `${risk.label} (score ${risk.score}). No major execution or ownership risk is currently detected.`,
+      tone: "border-border/70 bg-background",
+    },
+    {
+      title: "AI insight",
+      body:
+        aiSignal ||
+        `${openTasksCount} checklist item${openTasksCount === 1 ? "" : "s"} remain open. Review notes, owner handoff readiness, and linked documents before the next update.`,
+      tone: "border-border/70 bg-background",
+    },
+  ];
+
+  return cards;
+};
 
 const ProjectWorkspace = () => {
   const { projectId } = useParams();
@@ -527,11 +579,19 @@ const ProjectWorkspace = () => {
   const isTransferReady = canTransfer && allCurrentTeamChecklistCompleted;
   const risk = calculateRiskAssessment(project);
   const openTasksCount = project.checklist.length - completedChecklist;
+  const summaryCards = buildActionDrivenSummary(
+    project,
+    aiSummary,
+    risk,
+    openTasksCount,
+    completedChecklist,
+    isTransferReady,
+  );
 
   const overviewStats = [
     { label: "Owner", value: project.assignedOwnerName || "Unassigned", icon: UserRound },
     { label: "Phase", value: phaseLabels[project.currentPhase] || project.currentPhase, icon: CheckCircle2 },
-    { label: "Risk", value: `${risk.label} · ${risk.score}`, icon: ShieldAlert },
+    { label: "Risk", value: risk.label, icon: ShieldAlert },
     { label: "Last update", value: getLastUpdated(project), icon: Clock3 },
   ];
 
@@ -564,7 +624,7 @@ const ProjectWorkspace = () => {
     {
       label: "Open checklist",
       sublabel: `${completedChecklist}/${project.checklist.length} items completed`,
-      onClick: () => setActiveTab("tasks"),
+      onClick: () => setActiveTab("checklists"),
     },
     !project.assignedOwnerName && currentUser?.team === "manager"
       ? { label: "Assign owner", sublabel: "Set clear accountability", onClick: () => setAssignOpen(true) }
@@ -574,9 +634,9 @@ const ProjectWorkspace = () => {
       : { label: "Add tracker link", sublabel: "Attach JIRA or BRD", onClick: () => setEditOpen(true) },
     openTasksCount > 0
       ? {
-          label: "Review open tasks",
-          sublabel: `${openTasksCount} task${openTasksCount === 1 ? "" : "s"} need attention`,
-          onClick: () => setActiveTab("tasks"),
+          label: "Review open checklist",
+          sublabel: `${openTasksCount} item${openTasksCount === 1 ? "" : "s"} need attention`,
+          onClick: () => setActiveTab("checklists"),
         }
       : null,
     risk.label !== "Low risk"
@@ -700,30 +760,31 @@ const ProjectWorkspace = () => {
                     </div>
                     <div>
                       <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">AI Summary</p>
-                      <p className="text-sm text-muted-foreground">Live project summary generated from current project data</p>
+                      <p className="text-sm text-muted-foreground">Action-oriented summary generated from current project data</p>
                     </div>
                   </div>
 
-                  <div className="mt-4 space-y-3">
+                  <div className="mt-4 grid gap-3 md:grid-cols-2">
                     {aiSummaryLoading ? (
-                      <div className="rounded-xl border border-border/70 bg-background px-4 py-4 text-sm text-muted-foreground">
+                      <div className="rounded-xl border border-border/70 bg-background px-4 py-4 text-sm text-muted-foreground md:col-span-2">
                         Generating summary...
                       </div>
                     ) : aiSummaryError ? (
-                      <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-900">
+                      <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-900 md:col-span-2">
                         AI summary unavailable: {aiSummaryError}
                       </div>
-                    ) : aiSummary.length > 0 ? (
-                      aiSummary.map((line) => (
-                        <div key={line} className="flex items-start gap-3 rounded-xl border border-border/70 bg-background px-4 py-3">
-                          <Sparkles className="mt-0.5 h-4 w-4 text-primary" />
-                          <p className="text-sm leading-6 text-foreground">{line}</p>
+                    ) : (
+                      summaryCards.map((card, index) => (
+                        <div key={card.title} className={cn("rounded-xl border px-4 py-4", card.tone, index === 0 && "md:col-span-2")}>
+                          <div className="flex items-start gap-3">
+                            <Sparkles className="mt-0.5 h-4 w-4 text-primary" />
+                            <div>
+                              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-primary">{card.title}</p>
+                              <p className="mt-2 text-sm leading-6 text-foreground">{card.body}</p>
+                            </div>
+                          </div>
                         </div>
                       ))
-                    ) : (
-                      <div className="rounded-xl border border-border/70 bg-background px-4 py-4 text-sm text-muted-foreground">
-                        No AI summary available yet.
-                      </div>
                     )}
                   </div>
 
@@ -740,7 +801,7 @@ const ProjectWorkspace = () => {
                   <div className="rounded-xl border border-border/70 bg-background px-4 py-4">
                     <div className="flex items-center justify-between gap-3">
                       <div>
-                        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Risk assessment</p>
+                        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Eye on risk</p>
                         <div className="mt-2 flex items-center gap-2">
                           <Badge className={cn("border px-2.5 py-1 text-[11px] font-semibold", risk.tone)}>
                             {risk.label}
@@ -753,7 +814,7 @@ const ProjectWorkspace = () => {
                       {risk.drivers.slice(0, 4).map((driver) => (
                         <div key={driver.label} className="flex items-start justify-between gap-3 rounded-lg border border-border/70 px-3 py-2.5">
                           <p className="text-xs leading-5 text-foreground">{driver.label}</p>
-                          <span className="text-xs font-semibold text-muted-foreground">+{driver.points}</span>
+                          <span className="text-xs font-semibold text-muted-foreground">{driver.points > 0 ? `+${driver.points}` : "OK"}</span>
                         </div>
                       ))}
                     </div>
@@ -969,7 +1030,7 @@ const ProjectWorkspace = () => {
                   </div>
                 </TabsContent>
 
-                <TabsContent value="tasks" className="m-0">
+                <TabsContent value="checklists" className="m-0">
                   <div className="space-y-3">
                     {project.checklist.map((item) => {
                       const isEditing = editingTaskId === item.id;
