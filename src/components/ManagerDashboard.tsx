@@ -225,7 +225,7 @@ export const ManagerDashboard = () => {
       }
     }
   }, []);
-  const TAB_CONFIG_KEYS = ["dashboard", "projects", "calendar", "reports", "checklist", "users", "settings", "kanban", "emails", "tenants"];
+  const TAB_CONFIG_KEYS = ["dashboard", "projects", "listview", "calendar", "reports", "checklist", "users", "settings", "kanban", "emails", "tenants"];
 
   // Calculate project time stats helper - FIXED: uses checklist-level time
   const calculateProjectStats = (project: Project) => {
