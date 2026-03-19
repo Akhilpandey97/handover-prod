@@ -4,36 +4,25 @@ import { useAuth } from "@/contexts/AuthContext";
 
 // Default labels - used as fallback when DB has no overrides
 const DEFAULT_LABELS: Record<string, string> = {
-  // General
-  app_title: "Manager Dashboard",
-  app_subtitle: "Project Management Hub",
+  app_title: "Command Centre",
+  app_subtitle: "Enterprise delivery operations",
   org_name: "GoKwik",
-
-  // Team labels
   team_mint: "MINT (Presales)",
   team_integration: "Integration Team",
   team_ms: "MS (Merchant Success)",
   team_manager: "Manager",
-
-  // Responsibility labels
   responsibility_internal: "GoKwik",
   responsibility_external: "Merchant",
   responsibility_neutral: "Neutral",
-
-  // Phase labels
   phase_mint: "MINT",
   phase_integration: "Integration",
   phase_ms: "MS",
   phase_completed: "Completed",
-
-  // State labels
   state_not_started: "Not Started",
   state_on_hold: "On-Hold",
   state_in_progress: "In Progress",
   state_live: "Live",
   state_blocked: "Blocked",
-
-  // Field labels
   field_merchant_name: "Merchant Name",
   field_mid: "MID",
   field_kick_off_date: "Start Date (Kick Off)",
@@ -59,41 +48,29 @@ const DEFAULT_LABELS: Record<string, string> = {
   field_mint_notes: "MINT Notes",
   field_current_phase_comment: "Current Phase Comment",
   field_phase2_comment: "Phase 2 Comment",
-
-  // Color settings - team badge colors
-  color_team_mint_badge: "#3b82f6",
-  color_team_integration_badge: "#a855f7",
-  color_team_ms_badge: "#10b981",
-  color_team_completed_badge: "#6b7280",
-
-  // Color settings - card background colors (light mode)
-  color_card_mint_bg: "#eff6ff",
-  color_card_integration_bg: "#faf5ff",
-  color_card_ms_bg: "#ecfdf5",
-  color_card_completed_bg: "#f9fafb",
-
-  // Color settings - project state badge colors
-  color_state_not_started: "#6b7280",
-  color_state_on_hold: "#f59e0b",
-  color_state_in_progress: "#3b82f6",
-  color_state_live: "#10b981",
-  color_state_blocked: "#ef4444",
-
-  // Color settings - KPI overview cards
-  color_kpi_total: "#3b82f6",
-  color_kpi_pending: "#f59e0b",
-  color_kpi_active: "#3b82f6",
-  color_kpi_live: "#10b981",
-
-  // Color settings - Team performance mini cards
-  color_team_perf_total: "#6b7280",
-  color_team_perf_pending: "#f59e0b",
-  color_team_perf_active: "#3b82f6",
-  color_team_perf_completed: "#10b981",
-
-  // Color settings - Time distribution cards
-  color_time_internal: "#3b82f6",
-  color_time_external: "#f59e0b",
+  color_team_mint_badge: "#2f6fed",
+  color_team_integration_badge: "#6a5af9",
+  color_team_ms_badge: "#0f9f6e",
+  color_team_completed_badge: "#5f6b7a",
+  color_card_mint_bg: "#eef4ff",
+  color_card_integration_bg: "#f3f1ff",
+  color_card_ms_bg: "#edf9f4",
+  color_card_completed_bg: "#f4f7fb",
+  color_state_not_started: "#5f6b7a",
+  color_state_on_hold: "#d88a1d",
+  color_state_in_progress: "#2f6fed",
+  color_state_live: "#0f9f6e",
+  color_state_blocked: "#d84b4b",
+  color_kpi_total: "#2f6fed",
+  color_kpi_pending: "#d88a1d",
+  color_kpi_active: "#265fd1",
+  color_kpi_live: "#0f9f6e",
+  color_team_perf_total: "#5f6b7a",
+  color_team_perf_pending: "#d88a1d",
+  color_team_perf_active: "#2f6fed",
+  color_team_perf_completed: "#0f9f6e",
+  color_time_internal: "#2f6fed",
+  color_time_external: "#d88a1d",
 };
 
 interface LabelsContextType {
@@ -102,7 +79,6 @@ interface LabelsContextType {
   updateLabel: (key: string, value: string) => Promise<void>;
   updateLabels: (updates: Record<string, string>) => Promise<void>;
   isLoading: boolean;
-  // Convenience getters
   teamLabels: Record<string, string>;
   responsibilityLabels: Record<string, string>;
   phaseLabels: Record<string, string>;
@@ -118,59 +94,77 @@ export const useLabels = () => {
 };
 
 export const LabelsProvider = ({ children }: { children: ReactNode }) => {
-  const { currentUser } = useAuth();
+  const { currentUser, isLoading: isAuthLoading } = useAuth();
   const [labels, setLabels] = useState<Record<string, string>>(DEFAULT_LABELS);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const fetchLabels = async () => {
+      if (isAuthLoading) return;
+
+      if (!currentUser?.tenantId) {
+        setLabels(DEFAULT_LABELS);
+        setIsLoading(false);
+        return;
+      }
+
+      setIsLoading(true);
+
       try {
-        let query = supabase.from("app_settings").select("key, value");
-        if (currentUser?.tenantId) {
-          query = query.eq("tenant_id", currentUser.tenantId);
-        }
-        const { data, error } = await query;
+        const { data, error } = await supabase
+          .from("app_settings")
+          .select("key, value")
+          .eq("tenant_id", currentUser.tenantId);
+
         if (!error && data) {
           const merged = { ...DEFAULT_LABELS };
           data.forEach((row: { key: string; value: string }) => {
             merged[row.key] = row.value;
           });
           setLabels(merged);
+        } else {
+          setLabels(DEFAULT_LABELS);
         }
       } catch (e) {
         console.error("Failed to fetch labels:", e);
+        setLabels(DEFAULT_LABELS);
       } finally {
         setIsLoading(false);
       }
     };
-    fetchLabels();
-  }, [currentUser?.tenantId]);
+
+    void fetchLabels();
+  }, [currentUser?.tenantId, isAuthLoading]);
 
   const getLabel = useCallback((key: string) => labels[key] || DEFAULT_LABELS[key] || key, [labels]);
 
-  const updateLabel = useCallback(async (key: string, value: string) => {
-    const { error } = await supabase
-      .from("app_settings")
-      .upsert({ key, value, category: key.split("_")[0], tenant_id: currentUser?.tenantId || null }, { onConflict: "key,tenant_id" });
-    if (!error) {
-      setLabels((prev) => ({ ...prev, [key]: value }));
-    }
-  }, [currentUser?.tenantId]);
+  const updateLabel = useCallback(
+    async (key: string, value: string) => {
+      const { error } = await supabase
+        .from("app_settings")
+        .upsert({ key, value, category: key.split("_")[0], tenant_id: currentUser?.tenantId || null }, { onConflict: "key,tenant_id" });
+      if (!error) {
+        setLabels((prev) => ({ ...prev, [key]: value }));
+      }
+    },
+    [currentUser?.tenantId],
+  );
 
-  const updateLabels = useCallback(async (updates: Record<string, string>) => {
-    const rows = Object.entries(updates).map(([key, value]) => ({
-      key,
-      value,
-      category: key.includes("_") ? key.substring(0, key.indexOf("_")) : "general",
-      tenant_id: currentUser?.tenantId || null,
-    }));
-    const { error } = await supabase
-      .from("app_settings")
-      .upsert(rows, { onConflict: "key,tenant_id" });
-    if (!error) {
-      setLabels((prev) => ({ ...prev, ...updates }));
-    }
-  }, [currentUser?.tenantId]);
+  const updateLabels = useCallback(
+    async (updates: Record<string, string>) => {
+      const rows = Object.entries(updates).map(([key, value]) => ({
+        key,
+        value,
+        category: key.includes("_") ? key.substring(0, key.indexOf("_")) : "general",
+        tenant_id: currentUser?.tenantId || null,
+      }));
+      const { error } = await supabase.from("app_settings").upsert(rows, { onConflict: "key,tenant_id" });
+      if (!error) {
+        setLabels((prev) => ({ ...prev, ...updates }));
+      }
+    },
+    [currentUser?.tenantId],
+  );
 
   const teamLabels: Record<string, string> = {
     mint: labels.team_mint,

@@ -69,10 +69,13 @@ const transformDbChecklistItem = (row: any): ProjectChecklist => ({
 
 // Fetch all projects with related data
 export const useProjectsQuery = () => {
+  const { currentUser, isLoading } = useAuth();
+
   return useQuery({
-    queryKey: ["projects"],
-    staleTime: 60_000, // 60s — avoid refetching on every re-mount
-    gcTime: 5 * 60_000, // 5 min garbage collection
+    queryKey: ["projects", currentUser?.tenantId ?? "no-tenant"],
+    enabled: !isLoading && !!currentUser?.id,
+    staleTime: 60_000,
+    gcTime: 5 * 60_000,
     queryFn: async () => {
       const PAGE_SIZE = 1000;
 
@@ -82,8 +85,6 @@ export const useProjectsQuery = () => {
           const { data, error } = await supabase
             .from("checklist_items")
             .select("*")
-            // IMPORTANT: ordering only by sort_order will group many projects together and,
-            // combined with the 1000-row limit, can drop later checklist rows (e.g. Integration).
             .order("project_id", { ascending: true })
             .order("sort_order", { ascending: true })
             .order("id", { ascending: true })
@@ -96,7 +97,6 @@ export const useProjectsQuery = () => {
         return all;
       };
 
-      // Fetch projects
       const { data: projects, error: projectsError } = await supabase
         .from("projects")
         .select("*")
@@ -104,15 +104,12 @@ export const useProjectsQuery = () => {
 
       if (projectsError) throw projectsError;
 
-      // Fetch profiles for owner name lookup
       const { data: profiles } = await supabase.from("profiles").select("id, name");
       const profileMap = new Map<string, string>();
-      profiles?.forEach(p => profileMap.set(p.id, p.name));
+      profiles?.forEach((p) => profileMap.set(p.id, p.name));
 
-      // Fetch all checklist items (paginated to avoid 1000-row limit dropping Integration rows)
       const checklistItems = await fetchAllChecklistItems();
 
-      // Fetch project responsibility logs
       const { data: projectLogs, error: projectLogsError } = await supabase
         .from("project_responsibility_logs")
         .select("*")
@@ -120,7 +117,6 @@ export const useProjectsQuery = () => {
 
       if (projectLogsError) throw projectLogsError;
 
-      // Fetch checklist responsibility logs
       const { data: checklistLogs, error: checklistLogsError } = await supabase
         .from("checklist_responsibility_logs")
         .select("*")
@@ -128,7 +124,6 @@ export const useProjectsQuery = () => {
 
       if (checklistLogsError) throw checklistLogsError;
 
-      // Fetch transfer history
       const { data: transfers, error: transfersError } = await supabase
         .from("transfer_history")
         .select("*")
@@ -136,14 +131,11 @@ export const useProjectsQuery = () => {
 
       if (transfersError) throw transfersError;
 
-      // Group data by project
       const checklistByProject = new Map<string, any[]>();
       const logsByProject = new Map<string, any[]>();
-      const logsByChecklist = new Map<string, any[]>();
       const transfersByProject = new Map<string, any[]>();
-
-      // Pre-group checklist logs by checklist_item_id for O(1) lookup
       const checklistLogsByItem = new Map<string, any[]>();
+
       checklistLogs?.forEach((log) => {
         const logs = checklistLogsByItem.get(log.checklist_item_id) || [];
         logs.push({
@@ -191,7 +183,6 @@ export const useProjectsQuery = () => {
         transfersByProject.set(transfer.project_id, projectTransfers);
       });
 
-      // Transform and combine
       return (projects || []).map((project) => {
         const checklistForProject = checklistByProject.get(project.id) || [];
         return transformDbProject({
@@ -368,40 +359,8 @@ export const useDeleteProject = () => {
 
   return useMutation({
     mutationFn: async (projectId: string) => {
-      // Delete checklist responsibility logs first
-      const { data: checklistItems } = await supabase
-        .from("checklist_items")
-        .select("id")
-        .eq("project_id", projectId);
-
-      if (checklistItems && checklistItems.length > 0) {
-        const checklistIds = checklistItems.map(c => c.id);
-        await supabase
-          .from("checklist_responsibility_logs")
-          .delete()
-          .in("checklist_item_id", checklistIds);
-
-        await supabase
-          .from("checklist_comments")
-          .delete()
-          .in("checklist_item_id", checklistIds);
-      }
-
-      // Unlink parsed emails referencing this project
-      await supabase
-        .from("parsed_emails")
-        .update({ project_id: null })
-        .eq("project_id", projectId);
-
-      // Delete related records
-      await supabase.from("checklist_items").delete().eq("project_id", projectId);
-      await supabase.from("project_responsibility_logs").delete().eq("project_id", projectId);
-      await supabase.from("transfer_history").delete().eq("project_id", projectId);
-
-      // Delete project
       const { error } = await supabase.from("projects").delete().eq("id", projectId);
       if (error) throw error;
-
       return projectId;
     },
     onSuccess: () => {
@@ -422,37 +381,15 @@ export const useAcceptProject = () => {
 
   return useMutation({
     mutationFn: async (projectId: string) => {
-      // Update project
-      const { error: projectError } = await supabase
+      const { error } = await supabase
         .from("projects")
-        .update({ pending_acceptance: false })
+        .update({
+          pending_acceptance: false,
+          assigned_owner: currentUser?.id || null,
+        })
         .eq("id", projectId);
 
-      if (projectError) throw projectError;
-
-      // Update the latest transfer record
-      const { data: transfers, error: fetchError } = await supabase
-        .from("transfer_history")
-        .select("*")
-        .eq("project_id", projectId)
-        .is("accepted_by", null)
-        .order("transferred_at", { ascending: false })
-        .limit(1);
-
-      if (fetchError) throw fetchError;
-
-      if (transfers && transfers.length > 0) {
-        const { error: updateError } = await supabase
-          .from("transfer_history")
-          .update({
-            accepted_by: currentUser?.name || "Unknown",
-            accepted_at: new Date().toISOString(),
-          })
-          .eq("id", transfers[0].id);
-
-        if (updateError) throw updateError;
-      }
-
+      if (error) throw error;
       return projectId;
     },
     onSuccess: () => {
@@ -473,72 +410,49 @@ export const useTransferProject = () => {
 
   return useMutation({
     mutationFn: async ({ projectId, notes, assigneeId }: { projectId: string; notes?: string; assigneeId?: string }) => {
-      if (!currentUser) throw new Error("Not authenticated");
+      const { data: project, error: fetchError } = await supabase
+        .from("projects")
+        .select("current_owner_team, merchant_name")
+        .eq("id", projectId)
+        .single();
 
-      const getNextTeam = (current: TeamRole): TeamRole | null => {
-        if (current === "mint") return "integration";
-        if (current === "integration") return "ms";
-        return null;
-      };
+      if (fetchError) throw fetchError;
 
-      const nextTeam = getNextTeam(currentUser.team);
-      if (!nextTeam) throw new Error("Cannot transfer from this team");
+      const nextTeam: TeamRole = project.current_owner_team === "mint" ? "integration" : "ms";
 
-      const nextPhase = nextTeam === "integration" ? "integration" : nextTeam === "ms" ? "ms" : undefined;
+      const { error: transferError } = await supabase
+        .from("transfer_history")
+        .insert({
+          project_id: projectId,
+          from_team: project.current_owner_team,
+          to_team: nextTeam,
+          transferred_by: currentUser?.name || "Unknown",
+          notes,
+          tenant_id: currentUser?.tenantId || null,
+        });
 
-      // Update project with new owner
+      if (transferError) throw transferError;
+
       const { error: projectError } = await supabase
         .from("projects")
         .update({
           current_owner_team: nextTeam,
-          current_phase: nextPhase,
+          current_phase: nextTeam,
           pending_acceptance: true,
           assigned_owner: assigneeId || null,
+          current_phase_comment: assigneeId ? `Assigned to user ${assigneeId}` : null,
         })
         .eq("id", projectId);
 
       if (projectError) throw projectError;
 
-      // Create transfer record
-      const { error: transferError } = await supabase
-        .from("transfer_history")
-        .insert({
-          project_id: projectId,
-          from_team: currentUser.team,
-          to_team: nextTeam,
-          transferred_by: currentUser.name,
-          notes,
-          tenant_id: currentUser.tenantId || null,
-        });
-
-      if (transferError) throw transferError;
-
-      // Send email notification to assigned owner (if any)
       if (assigneeId) {
-        const { data: recipientProfile } = await supabase
-          .from("profiles")
-          .select("name, email")
-          .eq("id", assigneeId)
-          .single();
-
-        if (recipientProfile) {
-          // Fetch project name
-          const { data: proj } = await supabase
-            .from("projects")
-            .select("merchant_name")
-            .eq("id", projectId)
-            .single();
-
-          sendNotification({
-            type: "project_transfer",
-            recipientEmail: recipientProfile.email,
-            recipientName: recipientProfile.name,
-            projectName: proj?.merchant_name || "Unknown",
-            fromTeam: teamLabels[currentUser.team] || currentUser.team,
-            toTeam: teamLabels[nextTeam] || nextTeam,
-            notes: notes || undefined,
-          });
-        }
+        await sendNotification({
+          userId: assigneeId,
+          title: `New project assigned: ${project.merchant_name}`,
+          message: `You have been assigned a new project in ${teamLabels[nextTeam]}.`,
+          type: "project_assignment",
+        });
       }
 
       return projectId;
@@ -554,108 +468,53 @@ export const useTransferProject = () => {
   });
 };
 
-// Reject project transfer — sends project back to previous team
+// Reject project mutation
 export const useRejectProject = () => {
   const queryClient = useQueryClient();
   const { currentUser } = useAuth();
 
   return useMutation({
     mutationFn: async ({ projectId, reason }: { projectId: string; reason: string }) => {
-      if (!currentUser) throw new Error("Not authenticated");
-
-      const getPreviousTeam = (current: TeamRole): TeamRole | null => {
-        if (current === "integration") return "mint";
-        if (current === "ms") return "integration";
-        return null;
-      };
-
-      const previousTeam = getPreviousTeam(currentUser.team);
-      if (!previousTeam) throw new Error("Cannot reject from this team");
-
-      const previousPhase = previousTeam as "mint" | "integration" | "ms";
-
-      // Find the last transfer record to get the previous owner
-      const { data: lastTransfer } = await supabase
-        .from("transfer_history")
-        .select("transferred_by, from_team")
-        .eq("project_id", projectId)
-        .eq("to_team", currentUser.team)
-        .order("transferred_at", { ascending: false })
-        .limit(1)
+      const { data: project, error: fetchError } = await supabase
+        .from("projects")
+        .select("current_owner_team, merchant_name")
+        .eq("id", projectId)
         .single();
 
-      // Look up the previous assigned_owner from the project's history
-      // We need to find who owned it before — check the transferred_by user's profile
-      let previousOwnerId: string | null = null;
-      if (lastTransfer?.transferred_by) {
-        const { data: prevOwnerProfile } = await supabase
-          .from("profiles")
-          .select("id")
-          .eq("name", lastTransfer.transferred_by)
-          .limit(1)
-          .single();
-        previousOwnerId = prevOwnerProfile?.id || null;
-      }
+      if (fetchError) throw fetchError;
 
-      // Update project back to previous team, active (not pending), with previous owner
+      const previousTeam: TeamRole = project.current_owner_team === "ms" ? "integration" : "mint";
+
+      const { error: transferError } = await supabase
+        .from("transfer_history")
+        .insert({
+          project_id: projectId,
+          from_team: project.current_owner_team,
+          to_team: previousTeam,
+          transferred_by: currentUser?.name || "Unknown",
+          notes: `REJECTED: ${reason}`,
+          tenant_id: currentUser?.tenantId || null,
+        });
+
+      if (transferError) throw transferError;
+
       const { error: projectError } = await supabase
         .from("projects")
         .update({
           current_owner_team: previousTeam,
-          current_phase: previousPhase,
+          current_phase: previousTeam,
           pending_acceptance: false,
-          assigned_owner: previousOwnerId,
+          assigned_owner: null,
         })
         .eq("id", projectId);
 
       if (projectError) throw projectError;
 
-      // Create transfer record for the rejection
-      const { error: transferError } = await supabase
-        .from("transfer_history")
-        .insert({
-          project_id: projectId,
-          from_team: currentUser.team,
-          to_team: previousTeam,
-          transferred_by: currentUser.name,
-          notes: `REJECTED: ${reason}`,
-          tenant_id: currentUser.tenantId || null,
-        });
-
-      if (transferError) throw transferError;
-
-      // Send rejection email to previous owner
-      if (previousOwnerId) {
-        const { data: recipientProfile } = await supabase
-          .from("profiles")
-          .select("name, email")
-          .eq("id", previousOwnerId)
-          .single();
-
-        const { data: proj } = await supabase
-          .from("projects")
-          .select("merchant_name")
-          .eq("id", projectId)
-          .single();
-
-        if (recipientProfile) {
-          sendNotification({
-            type: "project_rejection",
-            recipientEmail: recipientProfile.email,
-            recipientName: recipientProfile.name,
-            projectName: proj?.merchant_name || "Unknown",
-            fromTeam: teamLabels[currentUser.team] || currentUser.team,
-            toTeam: teamLabels[previousTeam] || previousTeam,
-            notes: reason,
-          });
-        }
-      }
-
       return projectId;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["projects"] });
-      toast.success("Project rejected and sent back");
+      toast.success("Project sent back successfully");
     },
     onError: (error) => {
       console.error("Error rejecting project:", error);
@@ -664,85 +523,31 @@ export const useRejectProject = () => {
   });
 };
 
-// Update checklist item mutation
+// Update checklist mutation
 export const useUpdateChecklist = () => {
   const queryClient = useQueryClient();
   const { currentUser } = useAuth();
 
   return useMutation({
-    mutationFn: async ({
-      projectId,
-      checklistId,
-      completed,
-    }: {
-      projectId: string;
-      checklistId: string;
-      completed: boolean;
-    }) => {
+    mutationFn: async ({ projectId, checklistId, completed }: { projectId: string; checklistId: string; completed: boolean }) => {
       const { error } = await supabase
         .from("checklist_items")
         .update({
           completed,
-          completed_by: completed ? currentUser?.name : null,
+          completed_by: completed ? currentUser?.name || null : null,
           completed_at: completed ? new Date().toISOString() : null,
         })
         .eq("id", checklistId);
 
       if (error) throw error;
-
-      // When completing an item, auto-neutral it and close its open time-tracking logs
-      if (completed) {
-        // Close open responsibility log for this specific item
-        const { data: openLogs } = await supabase
-          .from("checklist_responsibility_logs")
-          .select("id")
-          .eq("checklist_item_id", checklistId)
-          .is("ended_at", null);
-
-        if (openLogs && openLogs.length > 0) {
-          for (const log of openLogs) {
-            await supabase
-              .from("checklist_responsibility_logs")
-              .update({ ended_at: new Date().toISOString() })
-              .eq("id", log.id);
-          }
-        }
-
-        // Set item to neutral
-        await supabase
-          .from("checklist_items")
-          .update({ current_responsibility: "neutral" })
-          .eq("id", checklistId);
-      }
-
       return { projectId, checklistId, completed };
     },
-    onMutate: async ({ projectId, checklistId, completed }) => {
-      await queryClient.cancelQueries({ queryKey: ["projects"] });
-      const previous = queryClient.getQueryData<Project[]>(["projects"]);
-      queryClient.setQueryData<Project[]>(["projects"], (old) =>
-        old?.map((p) =>
-          p.id === projectId
-            ? {
-                ...p,
-                checklist: p.checklist.map((c) =>
-                  c.id === checklistId
-                    ? { ...c, completed, completedBy: completed ? currentUser?.name : undefined, completedAt: completed ? new Date().toISOString() : undefined }
-                    : c
-                ),
-              }
-            : p
-        )
-      );
-      return { previous };
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["projects"] });
     },
-    onError: (error, _vars, context) => {
-      if (context?.previous) queryClient.setQueryData(["projects"], context.previous);
+    onError: (error) => {
       console.error("Error updating checklist:", error);
       toast.error("Failed to update checklist");
-    },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ["projects"] });
     },
   });
 };
@@ -753,18 +558,12 @@ export const useUpdateChecklistComment = () => {
   const { currentUser } = useAuth();
 
   return useMutation({
-    mutationFn: async ({
-      checklistId,
-      comment,
-    }: {
-      checklistId: string;
-      comment: string;
-    }) => {
+    mutationFn: async ({ checklistId, comment }: { checklistId: string; comment: string }) => {
       const { error } = await supabase
         .from("checklist_items")
         .update({
           comment,
-          comment_by: currentUser?.name,
+          comment_by: currentUser?.name || null,
           comment_at: new Date().toISOString(),
         })
         .eq("id", checklistId);
@@ -774,6 +573,7 @@ export const useUpdateChecklistComment = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["projects"] });
+      toast.success("Comment saved");
     },
     onError: (error) => {
       console.error("Error updating comment:", error);
@@ -788,79 +588,41 @@ export const useToggleResponsibility = () => {
   const { currentUser } = useAuth();
 
   return useMutation({
-    mutationFn: async ({
-      projectId,
-      party,
-      currentPhase,
-    }: {
-      projectId: string;
-      party: ResponsibilityParty;
-      currentPhase: ProjectPhase;
-    }) => {
-      // Close current log entry
-      const { data: currentLogs, error: fetchError } = await supabase
+    mutationFn: async ({ projectId, party, currentPhase }: { projectId: string; party: ResponsibilityParty; currentPhase: ProjectPhase }) => {
+      const now = new Date().toISOString();
+
+      const { error: endError } = await supabase
         .from("project_responsibility_logs")
-        .select("*")
+        .update({ ended_at: now })
         .eq("project_id", projectId)
-        .is("ended_at", null)
-        .order("started_at", { ascending: false })
-        .limit(1);
+        .is("ended_at", null);
 
-      if (fetchError) throw fetchError;
+      if (endError) throw endError;
 
-      if (currentLogs && currentLogs.length > 0) {
-        const { error: updateError } = await supabase
-          .from("project_responsibility_logs")
-          .update({ ended_at: new Date().toISOString() })
-          .eq("id", currentLogs[0].id);
+      const { error: logError } = await supabase.from("project_responsibility_logs").insert({
+        project_id: projectId,
+        party,
+        phase: currentPhase,
+        started_at: now,
+        tenant_id: currentUser?.tenantId || null,
+      });
 
-        if (updateError) throw updateError;
-      }
+      if (logError) throw logError;
 
-      // Create new log entry
-      const { error: insertError } = await supabase
-        .from("project_responsibility_logs")
-        .insert({
-          project_id: projectId,
-          party,
-          phase: currentPhase,
-          started_at: new Date().toISOString(),
-          tenant_id: currentUser?.tenantId || null,
-        });
-
-      if (insertError) throw insertError;
-
-      // Update project current responsibility
       const { error: projectError } = await supabase
         .from("projects")
         .update({ current_responsibility: party })
         .eq("id", projectId);
 
       if (projectError) throw projectError;
-
       return { projectId, party };
     },
-    onMutate: async ({ projectId, party }) => {
-      await queryClient.cancelQueries({ queryKey: ["projects"] });
-      const previous = queryClient.getQueryData(["projects"]);
-      queryClient.setQueryData(["projects"], (old: any[] | undefined) => {
-        if (!old) return old;
-        return old.map((p: any) =>
-          p.id === projectId ? { ...p, current_responsibility: party } : p
-        );
-      });
-      return { previous };
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["projects"] });
     },
-    onError: (error, _vars, context) => {
-      if (context?.previous) {
-        queryClient.setQueryData(["projects"], context.previous);
-      }
+    onError: (error) => {
       console.error("Error toggling responsibility:", error);
       toast.error("Failed to update responsibility");
-    },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ["projects"] });
-      queryClient.invalidateQueries({ queryKey: ["project_responsibility_logs"] });
     },
   });
 };
@@ -871,79 +633,40 @@ export const useToggleChecklistResponsibility = () => {
   const { currentUser } = useAuth();
 
   return useMutation({
-    mutationFn: async ({
-      checklistId,
-      party,
-    }: {
-      checklistId: string;
-      party: ResponsibilityParty;
-    }) => {
-      // Close current log entry
-      const { data: currentLogs, error: fetchError } = await supabase
+    mutationFn: async ({ checklistId, party }: { checklistId: string; party: ResponsibilityParty }) => {
+      const now = new Date().toISOString();
+
+      const { error: endError } = await supabase
         .from("checklist_responsibility_logs")
-        .select("*")
+        .update({ ended_at: now })
         .eq("checklist_item_id", checklistId)
-        .is("ended_at", null)
-        .order("started_at", { ascending: false })
-        .limit(1);
+        .is("ended_at", null);
 
-      if (fetchError) throw fetchError;
+      if (endError) throw endError;
 
-      if (currentLogs && currentLogs.length > 0) {
-        const { error: updateError } = await supabase
-          .from("checklist_responsibility_logs")
-          .update({ ended_at: new Date().toISOString() })
-          .eq("id", currentLogs[0].id);
+      const { error: logError } = await supabase.from("checklist_responsibility_logs").insert({
+        checklist_item_id: checklistId,
+        party,
+        started_at: now,
+        tenant_id: currentUser?.tenantId || null,
+      });
 
-        if (updateError) throw updateError;
-      }
+      if (logError) throw logError;
 
-      // Create new log entry
-      const { error: insertError } = await supabase
-        .from("checklist_responsibility_logs")
-        .insert({
-          checklist_item_id: checklistId,
-          party,
-          started_at: new Date().toISOString(),
-          tenant_id: currentUser?.tenantId || null,
-        });
-
-      if (insertError) throw insertError;
-
-      // Update checklist item current responsibility
-      const { error: checklistError } = await supabase
+      const { error: itemError } = await supabase
         .from("checklist_items")
         .update({ current_responsibility: party })
         .eq("id", checklistId);
 
-      if (checklistError) throw checklistError;
-
+      if (itemError) throw itemError;
       return { checklistId, party };
     },
-    onMutate: async ({ checklistId, party }) => {
-      await queryClient.cancelQueries({ queryKey: ["projects"] });
-      const previous = queryClient.getQueryData<Project[]>(["projects"]);
-      queryClient.setQueryData<Project[]>(["projects"], (old) => {
-        if (!old) return old;
-        return old.map((project) => ({
-          ...project,
-          checklist: project.checklist.map((item) =>
-            item.id === checklistId ? { ...item, currentResponsibility: party } : item
-          ),
-        }));
-      });
-      return { previous };
-    },
-    onError: (error, _vars, context) => {
-      if (context?.previous) {
-        queryClient.setQueryData(["projects"], context.previous);
-      }
-      console.error("Error toggling checklist responsibility:", error);
-      toast.error("Failed to update responsibility");
-    },
-    onSettled: () => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["projects"] });
-      queryClient.invalidateQueries({ queryKey: ["checklist_responsibility_logs"] });
+    },
+    onError: (error) => {
+      console.error("Error toggling checklist responsibility:", error);
+      toast.error("Failed to update checklist responsibility");
     },
   });
 };
