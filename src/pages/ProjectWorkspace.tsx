@@ -663,13 +663,13 @@ const ProjectWorkspace = () => {
     <div className="min-h-screen bg-[linear-gradient(180deg,#f7fafe_0%,#eef3f9_100%)]">
       <div className="mx-auto max-w-[1580px] px-4 py-5 lg:px-6 lg:py-6">
         <div className="space-y-4">
-          <div className="flex flex-wrap items-center gap-2 text-sm text-[#667891]">
-            <Link to="/" className="inline-flex items-center gap-2 rounded-lg px-2 py-1 hover:bg-[#eef3f9]">
+          <div className="flex flex-wrap items-center gap-2 text-sm font-semibold text-[#111827]">
+            <Link to="/" className="inline-flex items-center gap-2 rounded-lg px-2 py-1 text-[#111827] hover:bg-[#eef3f9]">
               <ArrowLeft className="h-4 w-4" />
               Projects
             </Link>
-            <ChevronRight className="h-4 w-4" />
-            <span>{project.merchantName}</span>
+            <ChevronRight className="h-4 w-4 text-[#111827]" />
+            <span className="font-semibold text-[#111827]">{project.merchantName}</span>
           </div>
 
           <section className="overflow-hidden rounded-[22px] border border-[#d8e2f0] bg-white shadow-[0_18px_48px_-40px_rgba(28,55,90,0.24)]">
