@@ -27,6 +27,7 @@ interface ChecklistDialogProps {
   project: Project | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  variant?: "dialog" | "inline";
 }
 
 // Removed hardcoded ownerTeamLabels - now uses dynamic labels from LabelsContext
@@ -42,6 +43,7 @@ export const ChecklistDialog = ({
   project,
   open,
   onOpenChange,
+  variant = "dialog",
 }: ChecklistDialogProps) => {
   const { updateChecklist, toggleChecklistResponsibility } = useProjects();
   const { currentUser } = useAuth();
@@ -183,94 +185,76 @@ export const ChecklistDialog = ({
     }
   };
 
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[95vw] max-w-[95vw] h-[95vh] max-h-[95vh] flex flex-col overflow-hidden">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-3">
-            <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-lg">
-              <ClipboardList className="h-6 w-6 text-white" />
-            </div>
-            <div>
-              <span className="text-xl">Project Checklist</span>
-              <p className="text-sm font-normal text-muted-foreground mt-0.5">
-                {project.merchantName}
-              </p>
-            </div>
-          </DialogTitle>
-        </DialogHeader>
-
-        {/* Compact Progress Section */}
-        <div className="bg-muted/30 rounded-lg p-3 space-y-2">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <span className="text-sm font-medium text-muted-foreground">Progress</span>
-              <span className="font-bold text-sm">{completedCount}/{totalCount}</span>
-            </div>
-            <div className="flex gap-1.5 flex-wrap">
-              {orderedTeams.map((team) => {
-                const count = teamCounts[team];
-                const isComplete = count?.completed === count?.total;
-                return (
-                  <Badge 
-                    key={team}
-                    variant={team === userTeam ? "default" : "outline"}
-                    className={`px-2 py-0.5 text-xs ${team === userTeam ? "" : "opacity-70"} ${isComplete ? "bg-emerald-500 text-white border-emerald-500" : ""}`}
-                  >
-                    {ownerTeamLabelsFromCtx[team] || team}: {count?.completed || 0}/{count?.total || 0}
-                    {isComplete && <CheckCircle2 className="h-3 w-3 ml-1" />}
-                  </Badge>
-                );
-              })}
-            </div>
+  const checklistBody = (
+    <>
+      <div className="bg-muted/30 rounded-lg p-3 space-y-2">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <span className="text-sm font-medium text-muted-foreground">Progress</span>
+            <span className="font-bold text-sm">{completedCount}/{totalCount}</span>
           </div>
-          <Progress value={progress} className="h-2" />
-          <div className="flex items-center gap-4 text-xs text-muted-foreground">
-            <div className="flex items-center gap-1.5 bg-amber-500/10 rounded px-2 py-1">
-              <AlertCircle className="h-3 w-3 text-amber-500" />
-              <span>Tasks must be completed in order</span>
-            </div>
-            <div className="flex items-center gap-1.5 bg-indigo-500/10 rounded px-2 py-1">
-              <Lock className="h-3 w-3 text-indigo-500" />
-              <span>Complete all team items to unlock <strong>Transfer</strong></span>
-            </div>
+          <div className="flex gap-1.5 flex-wrap">
+            {orderedTeams.map((team) => {
+              const count = teamCounts[team];
+              const isComplete = count?.completed === count?.total;
+              return (
+                <Badge
+                  key={team}
+                  variant={team === userTeam ? "default" : "outline"}
+                  className={`px-2 py-0.5 text-xs ${team === userTeam ? "" : "opacity-70"} ${isComplete ? "bg-emerald-500 text-white border-emerald-500" : ""}`}
+                >
+                  {ownerTeamLabelsFromCtx[team] || team}: {count?.completed || 0}/{count?.total || 0}
+                  {isComplete && <CheckCircle2 className="h-3 w-3 ml-1" />}
+                </Badge>
+              );
+            })}
           </div>
         </div>
+        <Progress value={progress} className="h-2" />
+        <div className="flex items-center gap-4 text-xs text-muted-foreground">
+          <div className="flex items-center gap-1.5 bg-amber-500/10 rounded px-2 py-1">
+            <AlertCircle className="h-3 w-3 text-amber-500" />
+            <span>Tasks must be completed in order</span>
+          </div>
+          <div className="flex items-center gap-1.5 bg-indigo-500/10 rounded px-2 py-1">
+            <Lock className="h-3 w-3 text-indigo-500" />
+            <span>Complete all team items to unlock <strong>Transfer</strong></span>
+          </div>
+        </div>
+      </div>
 
-        <ScrollArea className="flex-1 min-h-0 pr-4">
-          <div className="space-y-8">
-            {orderedTeams.map((team) => {
-              const items = groupedByTeam[team];
-              const isUserTeam = team === userTeam || userTeam === "manager";
-              const teamCount = teamCounts[team];
-              const teamProgress = teamCount ? Math.round((teamCount.completed / teamCount.total) * 100) : 0;
-              
-              return (
-                <div key={team} className={!isUserTeam ? "opacity-60" : ""}>
-                  {/* Team Header */}
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-3">
-                      <div className={`h-8 w-8 rounded-lg ${teamColors[team as keyof typeof teamColors]} flex items-center justify-center text-white font-bold text-sm`}>
-                        {(ownerTeamLabelsFromCtx[team] || team).charAt(0)}
-                      </div>
-                      <div>
-                        <h3 className="font-semibold">{ownerTeamLabelsFromCtx[team] || team}</h3>
-                        <p className="text-xs text-muted-foreground">{teamCount?.completed}/{teamCount?.total} tasks</p>
-                      </div>
+      <ScrollArea className="flex-1 min-h-0 pr-4">
+        <div className="space-y-8">
+          {orderedTeams.map((team) => {
+            const items = groupedByTeam[team];
+            const isUserTeam = team === userTeam || userTeam === "manager";
+            const teamCount = teamCounts[team];
+            const teamProgress = teamCount ? Math.round((teamCount.completed / teamCount.total) * 100) : 0;
+
+            return (
+              <div key={team} className={!isUserTeam ? "opacity-60" : ""}>
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className={`h-8 w-8 rounded-lg ${teamColors[team as keyof typeof teamColors]} flex items-center justify-center text-white font-bold text-sm`}>
+                      {(ownerTeamLabelsFromCtx[team] || team).charAt(0)}
                     </div>
-                    <div className="flex items-center gap-2">
-                      {isUserTeam && (
-                        <Badge variant="default" className="text-xs">Your Tasks</Badge>
-                      )}
-                      <div className="w-24">
-                        <Progress value={teamProgress} className="h-2" />
-                      </div>
+                    <div>
+                      <h3 className="font-semibold">{ownerTeamLabelsFromCtx[team] || team}</h3>
+                      <p className="text-xs text-muted-foreground">{teamCount?.completed}/{teamCount?.total} tasks</p>
                     </div>
                   </div>
+                  <div className="flex items-center gap-2">
+                    {isUserTeam && (
+                      <Badge variant="default" className="text-xs">Your Tasks</Badge>
+                    )}
+                    <div className="w-24">
+                      <Progress value={teamProgress} className="h-2" />
+                    </div>
+                  </div>
+                </div>
 
-                  {/* Checklist Items */}
-                  <div className="space-y-3 pl-2 border-l-2 border-border ml-4">
-                    {items.map((item, index) => {
+                <div className="space-y-3 pl-2 border-l-2 border-border ml-4">
+                  {items.map((item, index) => {
                       const timeStats = calculateTimeByParty(item.responsibilityLog);
                       const itemTeam = (item.ownerTeam || "").toLowerCase();
                       const canEdit = canEditChecklistItem(itemTeam);
@@ -433,13 +417,68 @@ export const ChecklistDialog = ({
                           </div>
                         </div>
                       );
-                    })}
-                  </div>
+                  })}
                 </div>
-              );
-            })}
+              </div>
+            );
+          })}
+        </div>
+      </ScrollArea>
+    </>
+  );
+
+  if (variant === "inline") {
+    return (
+      <>
+        <div className="flex h-full min-h-0 flex-col rounded-2xl border border-border/70 bg-background p-5">
+          <div className="mb-5 flex items-center gap-3">
+            <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-lg">
+              <ClipboardList className="h-6 w-6 text-white" />
+            </div>
+            <div>
+              <h2 className="text-xl font-semibold">Project Checklist</h2>
+              <p className="text-sm text-muted-foreground mt-0.5">{project.merchantName}</p>
+            </div>
           </div>
-        </ScrollArea>
+          {checklistBody}
+        </div>
+
+        {formDialogState && project && (
+          <ChecklistFormDialog
+            open={formDialogState.open}
+            onOpenChange={(open) => {
+              if (!open) setFormDialogState(null);
+            }}
+            projectId={project.id}
+            projectName={project.merchantName}
+            checklistItemId={formDialogState.checklistItemId}
+            checklistItemTitle={formDialogState.checklistItemTitle}
+            formTemplateId={formDialogState.formTemplateId}
+            formTemplateName={formDialogState.formTemplateName}
+          />
+        )}
+      </>
+    );
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="w-[95vw] max-w-[95vw] h-[95vh] max-h-[95vh] flex flex-col overflow-hidden">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-3">
+            <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-lg">
+              <ClipboardList className="h-6 w-6 text-white" />
+            </div>
+            <div>
+              <span className="text-xl">Project Checklist</span>
+              <p className="text-sm font-normal text-muted-foreground mt-0.5">
+                {project.merchantName}
+              </p>
+            </div>
+          </DialogTitle>
+        </DialogHeader>
+
+        {checklistBody}
 
         {/* Checklist Form Dialog */}
         {formDialogState && project && (

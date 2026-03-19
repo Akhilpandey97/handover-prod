@@ -461,7 +461,6 @@ const ProjectWorkspace = () => {
 
   const [activeTab, setActiveTab] = useState<WorkspaceTab>("activity");
   const [editOpen, setEditOpen] = useState(false);
-  const [checklistOpen, setChecklistOpen] = useState(false);
   const [assignOpen, setAssignOpen] = useState(false);
   const [transferOpen, setTransferOpen] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
@@ -503,13 +502,6 @@ const ProjectWorkspace = () => {
       ignore = true;
     };
   }, [project]);
-
-  useEffect(() => {
-    if (activeTab === "checklists") {
-      setChecklistOpen(true);
-      setActiveTab("overview");
-    }
-  }, [activeTab]);
 
   if (isLoading) {
     return (
@@ -622,7 +614,7 @@ const ProjectWorkspace = () => {
     {
       label: "Open checklist",
       sublabel: `${completedChecklist}/${project.checklist.length} items completed`,
-      onClick: () => setChecklistOpen(true),
+      onClick: () => setActiveTab("checklists"),
     },
     !project.assignedOwnerName && currentUser?.team === "manager"
       ? { label: "Assign owner", sublabel: "Set clear accountability", onClick: () => setAssignOpen(true) }
@@ -634,7 +626,7 @@ const ProjectWorkspace = () => {
       ? {
           label: "Review open checklist",
           sublabel: `${openTasksCount} item${openTasksCount === 1 ? "" : "s"} need attention`,
-          onClick: () => setChecklistOpen(true),
+          onClick: () => setActiveTab("checklists"),
         }
       : null,
     risk.label !== "Low risk"
@@ -995,7 +987,16 @@ const ProjectWorkspace = () => {
                       </div>
                     </TabsContent>
 
-                    <TabsContent value="checklists" className="m-0" />
+                    <TabsContent value="checklists" className="m-0 h-full">
+                      <div className="h-full min-h-[640px]">
+                        <ChecklistDialog
+                          project={project}
+                          open={true}
+                          onOpenChange={() => undefined}
+                          variant="inline"
+                        />
+                      </div>
+                    </TabsContent>
 
                     <TabsContent value="notes" className="m-0">
                       <div className="space-y-4">
@@ -1162,7 +1163,6 @@ const ProjectWorkspace = () => {
       </div>
 
       <EditProjectDialog project={project} open={editOpen} onOpenChange={setEditOpen} onSave={handleSaveEdit} />
-      <ChecklistDialog project={project} open={checklistOpen} onOpenChange={setChecklistOpen} />
       <AssignOwnerDialog project={project} open={assignOpen} onOpenChange={setAssignOpen} />
       <TransferDialog project={project} open={transferOpen} onOpenChange={setTransferOpen} onTransfer={handleTransfer} />
 
