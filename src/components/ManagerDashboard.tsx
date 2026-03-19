@@ -907,6 +907,10 @@ export const ManagerDashboard = () => {
 
             <div className="flex items-center gap-2 pl-3 border-l border-border/50">
               <ThemeToggle />
+              <Button variant="outline" size="sm" onClick={logout} className="gap-1.5 h-8 text-xs text-destructive hover:text-destructive hover:bg-destructive/10">
+                <LogOut className="h-3.5 w-3.5" />
+                Logout
+              </Button>
             </div>
           </div>
         </header>
