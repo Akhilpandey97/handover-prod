@@ -1,19 +1,8 @@
 import { useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { useAuth } from "@/contexts/AuthContext";
-import { useProjects } from "@/contexts/ProjectContext";
-import { useLabels } from "@/contexts/LabelsContext";
-import {
-  Project,
-  ProjectState,
-  calculateProjectResponsibilityFromChecklist,
-  calculateTimeFromChecklist,
-  formatDuration,
-  projectStateLabels,
-} from "@/data/projectsData";
 import { LoginScreen } from "@/components/LoginScreen";
-import { EditProjectDialog } from "@/components/EditProjectDialog";
 import { AssignOwnerDialog } from "@/components/AssignOwnerDialog";
+import { EditProjectDialog } from "@/components/EditProjectDialog";
 import { TransferDialog } from "@/components/TransferDialog";
 import {
   AlertDialog,
@@ -28,40 +17,327 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import { Progress } from "@/components/ui/progress";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { hexToRgba } from "@/utils/colorUtils";
+import { Textarea } from "@/components/ui/textarea";
+import { useAuth } from "@/contexts/AuthContext";
+import { useLabels } from "@/contexts/LabelsContext";
+import { useProjects } from "@/contexts/ProjectContext";
 import {
-  Activity,
+  Project,
+  ProjectChecklist,
+  ProjectState,
+  calculateProjectResponsibilityFromChecklist,
+  calculateTimeFromChecklist,
+  formatDuration,
+  projectStateLabels,
+} from "@/data/projectsData";
+import { cn } from "@/lib/utils";
+import {
+  AlertTriangle,
   ArrowLeft,
   ArrowRight,
   ArrowUpRight,
-  BadgeCheck,
-  Building2,
-  CalendarDays,
-  ClipboardList,
+  Bot,
+  CalendarClock,
+  CheckCheck,
+  CheckCircle2,
+  CircleDashed,
+  Clock3,
   ExternalLink,
-  FileText,
-  Globe,
-  Layers3,
+  FileStack,
+  Files,
+  Filter,
+  FolderKanban,
+  LayoutGrid,
+  ListFilter,
+  MessageSquareText,
   NotebookPen,
-  Target,
-  Timer,
+  PanelLeftClose,
+  Search,
+  Settings2,
+  ShieldAlert,
+  Sparkles,
   Trash2,
-  UserPlus,
+  UserRound,
 } from "lucide-react";
 import { toast } from "sonner";
-import { WorkspaceChecklistPanel } from "@/components/project-workspace/WorkspaceChecklistPanel";
-import { WorkspaceMetricCard } from "@/components/project-workspace/WorkspaceMetricCard";
-import { WorkspaceSection } from "@/components/project-workspace/WorkspaceSection";
-import { WorkspaceActivityTimeline } from "@/components/project-workspace/WorkspaceActivityTimeline";
+
+type WorkspaceTab = "overview" | "activity" | "tasks" | "notes" | "files";
+type ProjectListFilter = "all" | "active" | "blocked" | "live";
+type ActivityKind = "user" | "system" | "handoff" | "milestone";
+
+interface ActivityEntry {
+  id: string;
+  kind: ActivityKind;
+  title: string;
+  description: string;
+  actor: string;
+  source: string;
+  timestamp: number;
+  timestampLabel: string;
+  dateLabel: string;
+}
+
+const tabOptions: Array<{ value: WorkspaceTab; label: string }> = [
+  { value: "overview", label: "Overview" },
+  { value: "activity", label: "Activity" },
+  { value: "tasks", label: "Tasks" },
+  { value: "notes", label: "Notes" },
+  { value: "files", label: "Files" },
+];
+
+const navItems = [
+  { icon: LayoutGrid, label: "Dashboard", href: "/" },
+  { icon: FolderKanban, label: "Projects", href: "/" },
+  { icon: CheckCheck, label: "Tasks", href: "/" },
+  { icon: Files, label: "Files", href: "/" },
+  { icon: Settings2, label: "Settings", href: "/" },
+];
+
+const stateToneMap: Record<ProjectState, string> = {
+  not_started: "bg-slate-100 text-slate-700 border-slate-200",
+  on_hold: "bg-amber-100 text-amber-800 border-amber-200",
+  in_progress: "bg-blue-100 text-blue-800 border-blue-200",
+  live: "bg-emerald-100 text-emerald-800 border-emerald-200",
+  blocked: "bg-rose-100 text-rose-800 border-rose-200",
+};
+
+const activityToneMap: Record<ActivityKind, string> = {
+  user: "bg-emerald-500",
+  system: "bg-slate-500",
+  handoff: "bg-blue-500",
+  milestone: "bg-amber-500",
+};
+
+const activityBadgeToneMap: Record<ActivityKind, string> = {
+  user: "bg-emerald-50 text-emerald-700 border-emerald-200",
+  system: "bg-slate-100 text-slate-700 border-slate-200",
+  handoff: "bg-blue-50 text-blue-700 border-blue-200",
+  milestone: "bg-amber-50 text-amber-700 border-amber-200",
+};
+
+const formatDateTime = (value?: string) => {
+  if (!value) return null;
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+
+  return {
+    timestamp: date.getTime(),
+    timestampLabel: new Intl.DateTimeFormat("en-IN", {
+      hour: "numeric",
+      minute: "2-digit",
+    }).format(date),
+    dateLabel: new Intl.DateTimeFormat("en-IN", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    }).format(date),
+  };
+};
+
+const buildActivityFeed = (project: Project): ActivityEntry[] => {
+  const items: ActivityEntry[] = [];
+
+  const pushEvent = (
+    id: string,
+    kind: ActivityKind,
+    title: string,
+    description: string,
+    actor: string,
+    source: string,
+    date?: string,
+  ) => {
+    const parsed = formatDateTime(date);
+    if (!parsed) return;
+
+    items.push({
+      id,
+      kind,
+      title,
+      description,
+      actor,
+      source,
+      timestamp: parsed.timestamp,
+      timestampLabel: parsed.timestampLabel,
+      dateLabel: parsed.dateLabel,
+    });
+  };
+
+  pushEvent(
+    `${project.id}-kickoff`,
+    "milestone",
+    "Kickoff scheduled",
+    `Project workspace opened for ${project.merchantName}.`,
+    "System",
+    "Project milestone",
+    project.dates.kickOffDate,
+  );
+
+  pushEvent(
+    `${project.id}-target`,
+    "milestone",
+    "Target go-live date updated",
+    `Expected go-live is ${project.dates.expectedGoLiveDate || "not set yet"}.`,
+    "System",
+    "Project milestone",
+    project.dates.expectedGoLiveDate,
+  );
+
+  pushEvent(
+    `${project.id}-live`,
+    "milestone",
+    "Project marked live",
+    "Merchant went live successfully.",
+    "System",
+    "Lifecycle milestone",
+    project.dates.goLiveDate,
+  );
+
+  project.transferHistory.forEach((transfer) => {
+    pushEvent(
+      `transfer-${transfer.id}`,
+      "handoff",
+      `Transferred from ${transfer.fromTeam} to ${transfer.toTeam}`,
+      transfer.notes || "Project ownership moved to the next team.",
+      transfer.transferredBy || "System",
+      "Team handoff",
+      transfer.transferredAt,
+    );
+
+    pushEvent(
+      `accept-${transfer.id}`,
+      "user",
+      `Transfer accepted by ${transfer.acceptedBy || transfer.toTeam}`,
+      `Project is now active with ${transfer.toTeam}.`,
+      transfer.acceptedBy || "System",
+      "Team handoff",
+      transfer.acceptedAt,
+    );
+  });
+
+  project.responsibilityLog.forEach((entry) => {
+    pushEvent(
+      `project-responsibility-${entry.id}`,
+      "system",
+      `${entry.party} responsibility started`,
+      `Execution moved into the ${entry.phase} phase.`,
+      "System",
+      "Responsibility",
+      entry.startedAt,
+    );
+  });
+
+  project.checklist.forEach((item) => {
+    pushEvent(
+      `checklist-done-${item.id}`,
+      "user",
+      `${item.title} completed`,
+      `Responsibility at completion: ${item.currentResponsibility}.`,
+      item.completedBy || "User",
+      `${item.ownerTeam} checklist`,
+      item.completedAt,
+    );
+
+    pushEvent(
+      `checklist-comment-${item.id}`,
+      "system",
+      `Note added on ${item.title}`,
+      item.comment || "Inline task note captured.",
+      item.commentBy || "System",
+      `${item.ownerTeam} checklist`,
+      item.commentAt,
+    );
+  });
+
+  return items.sort((a, b) => b.timestamp - a.timestamp);
+};
+
+const groupByDate = (items: ActivityEntry[]) =>
+  items.reduce(
+    (acc, item) => {
+      const list = acc[item.dateLabel] || [];
+      list.push(item);
+      acc[item.dateLabel] = list;
+      return acc;
+    },
+    {} as Record<string, ActivityEntry[]>,
+  );
+
+const getRiskLevel = (project: Project) => {
+  if (project.projectState === "blocked" || project.pendingAcceptance) {
+    return { label: "High risk", tone: "bg-rose-100 text-rose-800 border-rose-200" };
+  }
+
+  if (project.projectState === "on_hold" || project.goLivePercent < 40) {
+    return { label: "Medium risk", tone: "bg-amber-100 text-amber-800 border-amber-200" };
+  }
+
+  return { label: "Low risk", tone: "bg-emerald-100 text-emerald-800 border-emerald-200" };
+};
+
+const getLastUpdated = (project: Project) => {
+  const candidateDates = [
+    project.dates.goLiveDate,
+    project.dates.expectedGoLiveDate,
+    ...project.transferHistory.map((entry) => entry.acceptedAt || entry.transferredAt),
+    ...project.responsibilityLog.map((entry) => entry.startedAt),
+    ...project.checklist.flatMap((item) => [item.completedAt, item.commentAt]),
+  ].filter(Boolean) as string[];
+
+  const latest = candidateDates
+    .map((value) => new Date(value).getTime())
+    .filter((value) => !Number.isNaN(value))
+    .sort((a, b) => b - a)[0];
+
+  if (!latest) return "No recent updates";
+
+  return new Intl.DateTimeFormat("en-IN", {
+    day: "numeric",
+    month: "short",
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(new Date(latest));
+};
+
+const buildNextActions = (project: Project, canTransfer: boolean, isTransferReady: boolean) => {
+  const openChecklist = project.checklist.filter((item) => !item.completed);
+  const currentTeamOpen = openChecklist.filter((item) => item.ownerTeam === project.currentOwnerTeam).slice(0, 2);
+  const actions = [
+    currentTeamOpen.length > 0
+      ? `Close ${currentTeamOpen.map((item) => item.title).join(" and ")} for the ${project.currentOwnerTeam} team.`
+      : null,
+    !project.assignedOwnerName ? "Assign a named owner so handoffs and follow-ups have clear accountability." : null,
+    !project.links.jiraLink ? "Attach the JIRA tracker so delivery, notes, and escalation context stay in one workflow." : null,
+    canTransfer && !isTransferReady ? "Finish all current-team checklist items before transfer can be triggered." : null,
+    canTransfer && isTransferReady ? "Transfer is ready. Review summary context, then move the project to the next team." : null,
+  ].filter(Boolean) as string[];
+
+  return actions.slice(0, 4);
+};
 
 const ProjectWorkspace = () => {
   const { projectId } = useParams();
   const { isAuthenticated, isLoading, currentUser } = useAuth();
-  const { projects, updateProject, deleteProject, transferProject } = useProjects();
-  const { labels, teamLabels, responsibilityLabels, getLabel, stateLabels, phaseLabels } = useLabels();
+  const {
+    projects,
+    updateProject,
+    deleteProject,
+    transferProject,
+    updateChecklist,
+    updateChecklistComment,
+  } = useProjects();
+  const { teamLabels, stateLabels, phaseLabels, responsibilityLabels } = useLabels();
 
-  const [activeTab, setActiveTab] = useState("activity");
+  const [activeTab, setActiveTab] = useState<WorkspaceTab>("overview");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [listFilter, setListFilter] = useState<ProjectListFilter>("all");
+  const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
+  const [taskDrafts, setTaskDrafts] = useState<Record<string, string>>({});
   const [editOpen, setEditOpen] = useState(false);
   const [assignOpen, setAssignOpen] = useState(false);
   const [transferOpen, setTransferOpen] = useState(false);
@@ -69,22 +345,44 @@ const ProjectWorkspace = () => {
 
   const project = projects.find((entry) => entry.id === projectId) ?? null;
 
+  const filteredProjects = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+
+    return projects
+      .filter((entry) => {
+        if (listFilter === "active") return entry.projectState === "in_progress" || entry.projectState === "not_started";
+        if (listFilter === "blocked") return entry.projectState === "blocked" || entry.projectState === "on_hold";
+        if (listFilter === "live") return entry.projectState === "live";
+        return true;
+      })
+      .filter((entry) => {
+        if (!query) return true;
+        return (
+          entry.merchantName.toLowerCase().includes(query) ||
+          entry.mid.toLowerCase().includes(query) ||
+          (entry.assignedOwnerName || "").toLowerCase().includes(query)
+        );
+      });
+  }, [listFilter, projects, searchQuery]);
+
   const groupedChecklist = useMemo(() => {
-    if (!project) return [] as Array<{ team: string; label: string; items: Project["checklist"] }>;
+    if (!project) return [] as Array<{ team: string; items: ProjectChecklist[] }>;
 
-    const groups = project.checklist.reduce((acc, item) => {
-      const key = item.ownerTeam;
-      if (!acc[key]) acc[key] = [];
-      acc[key].push(item);
-      return acc;
-    }, {} as Record<string, Project["checklist"]>);
+    const groups = project.checklist.reduce(
+      (acc, item) => {
+        const list = acc[item.ownerTeam] || [];
+        list.push(item);
+        acc[item.ownerTeam] = list;
+        return acc;
+      },
+      {} as Record<string, ProjectChecklist[]>,
+    );
 
-    return Object.entries(groups).map(([team, items]) => ({
-      team,
-      label: teamLabels[team as keyof typeof teamLabels] || team,
-      items,
-    }));
-  }, [project, teamLabels]);
+    return Object.entries(groups).map(([team, items]) => ({ team, items }));
+  }, [project]);
+
+  const activityFeed = useMemo(() => (project ? buildActivityFeed(project) : []), [project]);
+  const groupedActivity = useMemo(() => groupByDate(activityFeed), [activityFeed]);
 
   if (isLoading) {
     return (
@@ -124,14 +422,9 @@ const ProjectWorkspace = () => {
   const completedChecklist = project.checklist.filter((item) => item.completed).length;
   const pendingOn = calculateProjectResponsibilityFromChecklist(project.checklist);
   const timeByParty = calculateTimeFromChecklist(project.checklist);
-  const workspaceMainBackground = labels.color_workspace_main_bg || "#f8fbff";
-  const workspaceMainBorder = labels.color_workspace_main_border || "#d9e4f2";
-  const workspaceMetricBackground = labels.color_workspace_metric_bg || "#ffffff";
-  const workspaceMetricBorder = labels.color_workspace_metric_border || "#dce4ee";
-  const sectionBorder = labels.color_workspace_section_border || "#dbe5ef";
-
   const currentTeamChecklist = project.checklist.filter((item) => item.ownerTeam === project.currentOwnerTeam);
-  const allCurrentTeamChecklistCompleted = currentTeamChecklist.length > 0 && currentTeamChecklist.every((item) => item.completed);
+  const allCurrentTeamChecklistCompleted =
+    currentTeamChecklist.length > 0 && currentTeamChecklist.every((item) => item.completed);
   const canTransfer =
     currentUser?.team === project.currentOwnerTeam &&
     !project.pendingAcceptance &&
@@ -139,51 +432,58 @@ const ProjectWorkspace = () => {
     project.currentOwnerTeam !== "ms" &&
     currentUser?.team !== "manager";
   const isTransferReady = canTransfer && allCurrentTeamChecklistCompleted;
+  const risk = getRiskLevel(project);
+  const nextActions = buildNextActions(project, canTransfer, isTransferReady);
+
+  const overviewStats = [
+    {
+      label: "Owner",
+      value: project.assignedOwnerName || "Unassigned",
+      icon: UserRound,
+    },
+    {
+      label: "Phase",
+      value: phaseLabels[project.currentPhase] || project.currentPhase,
+      icon: CircleDashed,
+    },
+    {
+      label: "Risk",
+      value: risk.label,
+      icon: ShieldAlert,
+    },
+    {
+      label: "Last Update",
+      value: getLastUpdated(project),
+      icon: Clock3,
+    },
+  ];
 
   const projectDetails = [
-    { label: getLabel("field_platform"), value: project.platform },
-    { label: getLabel("field_category"), value: project.category },
-    { label: getLabel("field_arr"), value: `${project.arr} Cr` },
-    { label: getLabel("field_txns_per_day"), value: `${project.txnsPerDay}` },
-    { label: getLabel("field_aov"), value: `₹${project.aov.toLocaleString()}` },
-    { label: getLabel("field_sales_spoc"), value: project.salesSpoc },
-    { label: getLabel("field_integration_type"), value: project.integrationType },
-    { label: getLabel("field_pg_onboarding"), value: project.pgOnboarding },
-    { label: getLabel("field_go_live_percent"), value: `${project.goLivePercent}%` },
-    { label: getLabel("field_kick_off_date"), value: project.dates.kickOffDate || "—" },
-    { label: getLabel("field_expected_go_live_date"), value: project.dates.expectedGoLiveDate || "—" },
-    { label: getLabel("field_actual_go_live_date"), value: project.dates.goLiveDate || "—" },
+    ["MID", project.mid],
+    ["Platform", project.platform],
+    ["Category", project.category || "—"],
+    ["ARR", `${project.arr} Cr`],
+    ["Txn / day", `${project.txnsPerDay}`],
+    ["AOV", `₹${project.aov.toLocaleString()}`],
+    ["Sales SPOC", project.salesSpoc || "—"],
+    ["Integration", project.integrationType || "—"],
+    ["PG onboarding", project.pgOnboarding || "—"],
+    ["Kick-off", project.dates.kickOffDate || "—"],
+    ["Expected go-live", project.dates.expectedGoLiveDate || "—"],
+    ["Responsibility", responsibilityLabels[pendingOn] || pendingOn],
   ];
 
-  const summaryDetails = [
-    { label: "Assigned owner", value: project.assignedOwnerName || "Unassigned", icon: <BadgeCheck className="h-4 w-4" /> },
-    { label: "Current team", value: teamLabels[project.currentOwnerTeam] || project.currentOwnerTeam, icon: <Building2 className="h-4 w-4" /> },
-    { label: "Current phase", value: phaseLabels[project.currentPhase] || project.currentPhase, icon: <Layers3 className="h-4 w-4" /> },
-    { label: "Action pending on", value: responsibilityLabels[pendingOn] || pendingOn, icon: <Target className="h-4 w-4" /> },
-    { label: "Kick-off", value: project.dates.kickOffDate || "—", icon: <CalendarDays className="h-4 w-4" /> },
-    { label: "Expected go-live", value: project.dates.expectedGoLiveDate || "—", icon: <CalendarDays className="h-4 w-4" /> },
-  ];
-
-  const actionTabs = [
-    { value: "activity", label: "Activity", icon: <Activity className="h-4 w-4" /> },
-    { value: "details", label: "Project Details", icon: <FileText className="h-4 w-4" /> },
-    { value: "checklist", label: "Checklist", icon: <ClipboardList className="h-4 w-4" /> },
-    { value: "notes", label: "Notes", icon: <NotebookPen className="h-4 w-4" /> },
-  ];
-
-  const externalActions = [
-    project.links.brandUrl
-      ? { key: "website", label: "Website", href: project.links.brandUrl, icon: <Globe className="h-4 w-4" /> }
+  const quickLinks = [
+    project.links.brandUrl ? { label: "Website", href: project.links.brandUrl } : null,
+    project.links.jiraLink ? { label: "JIRA", href: project.links.jiraLink } : null,
+    project.links.brdLink ? { label: "BRD", href: project.links.brdLink } : null,
+    project.links.mintChecklistLink ? { label: "MINT Checklist", href: project.links.mintChecklistLink } : null,
+    project.links.integrationChecklistLink
+      ? { label: "Integration Checklist", href: project.links.integrationChecklistLink }
       : null,
-    project.links.jiraLink
-      ? { key: "jira", label: "JIRA", href: project.links.jiraLink, icon: <ExternalLink className="h-4 w-4" /> }
-      : null,
-    project.links.brdLink
-      ? { key: "brd", label: "BRD", href: project.links.brdLink, icon: <ExternalLink className="h-4 w-4" /> }
-      : null,
-  ].filter(Boolean) as Array<{ key: string; label: string; href: string; icon: JSX.Element }>;
+  ].filter(Boolean) as Array<{ label: string; href: string }>;
 
-  const handleSaveEdit = (updatedProject: typeof project) => {
+  const handleSaveEdit = (updatedProject: Project) => {
     updateProject(updatedProject);
     toast.success("Project updated successfully");
   };
@@ -202,324 +502,619 @@ const ProjectWorkspace = () => {
     toast.success(`Transferred ${project.merchantName} to ${assigneeName}`);
   };
 
-  const handleStateChange = (newState: ProjectState) => {
-    updateProject({ ...project, projectState: newState });
+  const handleTaskCommentSave = (item: ProjectChecklist) => {
+    const nextComment = taskDrafts[item.id] ?? item.comment ?? "";
+    updateChecklistComment(project.id, item.id, nextComment);
+    setEditingTaskId(null);
+    toast.success("Task note updated");
   };
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="mx-auto flex w-full max-w-[1680px] flex-col gap-5 px-4 py-5 lg:px-8 lg:py-6">
-        <Button asChild variant="ghost" className="-ml-3 w-fit gap-2 text-muted-foreground">
-          <Link to="/">
-            <ArrowLeft className="h-4 w-4" />
-            Back to dashboard
-          </Link>
-        </Button>
+      <div className="mx-auto max-w-[1800px] px-4 py-4 lg:px-6 lg:py-6">
+        <div className="grid gap-4 lg:grid-cols-[84px_360px_minmax(0,1fr)]">
+          <aside className="enterprise-panel sticky top-4 flex h-[calc(100vh-2rem)] flex-col items-center rounded-[28px] px-3 py-4">
+            <Button asChild variant="ghost" size="icon" className="mb-3 rounded-2xl">
+              <Link to="/" aria-label="Back to dashboard">
+                <ArrowLeft className="h-4 w-4" />
+              </Link>
+            </Button>
 
-        <div className="grid gap-5 xl:grid-cols-[320px_minmax(0,1fr)]">
-          <aside className="space-y-4 xl:sticky xl:top-6 xl:self-start">
-            <section
-              className="overflow-hidden rounded-[1.75rem] shadow-[0_24px_70px_-40px_hsl(var(--foreground)/0.18)]"
-              style={{
-                backgroundColor: hexToRgba(workspaceMainBackground, 0.97),
-                border: `1px solid ${hexToRgba(workspaceMainBorder, 0.9)}`,
-              }}
-            >
-              <div className="p-5">
-                <div className="flex items-start gap-4">
-                  <div
-                    className="flex h-14 w-14 shrink-0 items-center justify-center rounded-[1.25rem]"
-                    style={{
-                      backgroundColor: hexToRgba(workspaceMetricBorder, 0.12),
-                      border: `1px solid ${hexToRgba(workspaceMetricBorder, 0.58)}`,
-                    }}
-                  >
-                    <Building2 className="h-6 w-6 text-primary" />
-                  </div>
+            <div className="mb-6 flex h-11 w-11 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-lg">
+              <PanelLeftClose className="h-5 w-5" />
+            </div>
 
-                  <div className="min-w-0 flex-1">
-                    <h1 className="truncate text-[1.75rem] font-semibold tracking-[-0.05em] text-foreground">
-                      {project.merchantName}
-                    </h1>
-                    <p className="mt-1 text-sm font-medium text-muted-foreground">MID {project.mid}</p>
-                    <div className="mt-3 flex flex-wrap gap-2">
-                      <Badge variant="secondary">{teamLabels[project.currentOwnerTeam] || project.currentOwnerTeam}</Badge>
-                      <Badge variant="outline">{phaseLabels[project.currentPhase] || project.currentPhase}</Badge>
-                      <Badge variant={project.pendingAcceptance ? "outline" : "default"}>
-                        {project.pendingAcceptance
-                          ? "Pending acceptance"
-                          : stateLabels[project.projectState] || projectStateLabels[project.projectState]}
-                      </Badge>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div
-                className="grid grid-cols-3"
-                style={{ borderTop: `1px solid ${hexToRgba(workspaceMainBorder, 0.62)}` }}
-              >
-                {[
-                  { label: "Checklist", value: `${completedChecklist}/${project.checklist.length}` },
-                  { label: "Internal", value: formatDuration(timeByParty.gokwik) },
-                  { label: "Merchant", value: formatDuration(timeByParty.merchant) },
-                ].map((item, index) => (
-                  <div
-                    key={item.label}
-                    className="px-3 py-4 text-center"
-                    style={{
-                      borderLeft: index === 0 ? "none" : `1px solid ${hexToRgba(workspaceMainBorder, 0.58)}`,
-                    }}
-                  >
-                    <p className="text-xl font-semibold tracking-[-0.04em] text-foreground">{item.value}</p>
-                    <p className="mt-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                      {item.label}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            </section>
-
-            <WorkspaceSection
-              title="Project properties"
-              description="Operational owner, timing, and execution metadata."
-              icon={<Layers3 className="h-5 w-5" />}
-            >
-              <div className="space-y-3">
-                {summaryDetails.map((item) => (
-                  <div
-                    key={item.label}
-                    className="flex items-start justify-between gap-4 rounded-2xl px-4 py-3"
-                    style={{
-                      backgroundColor: hexToRgba(workspaceMetricBackground, 0.88),
-                      border: `1px solid ${hexToRgba(workspaceMetricBorder, 0.72)}`,
-                    }}
-                  >
-                    <div className="flex min-w-0 items-center gap-2 text-sm text-muted-foreground">
-                      <span className="text-primary">{item.icon}</span>
-                      <span>{item.label}</span>
-                    </div>
-                    <span className="text-right text-sm font-semibold text-foreground">{item.value}</span>
-                  </div>
-                ))}
-              </div>
-            </WorkspaceSection>
-
-            <WorkspaceSection
-              title="Quick links"
-              description="Context links and execution readiness."
-              icon={<ArrowUpRight className="h-5 w-5" />}
-            >
-              <div className="space-y-3">
-                {externalActions.length > 0 ? (
-                  externalActions.map((action) => (
-                    <Button key={action.key} asChild variant="outline" className="h-11 w-full justify-between rounded-2xl px-4">
-                      <a href={action.href} target="_blank" rel="noreferrer">
-                        <span>{action.label}</span>
-                        {action.icon}
-                      </a>
-                    </Button>
-                  ))
-                ) : (
-                  <div
-                    className="rounded-2xl px-4 py-3 text-sm text-muted-foreground"
-                    style={{
-                      backgroundColor: hexToRgba(workspaceMetricBackground, 0.88),
-                      border: `1px solid ${hexToRgba(workspaceMetricBorder, 0.72)}`,
-                    }}
-                  >
-                    No external project links available yet.
-                  </div>
-                )}
-
-                <div
-                  className="rounded-2xl px-4 py-3 text-sm"
-                  style={{
-                    backgroundColor: hexToRgba(workspaceMetricBackground, 0.88),
-                    border: `1px solid ${hexToRgba(workspaceMetricBorder, 0.72)}`,
-                  }}
+            <nav className="flex flex-1 flex-col items-center gap-2">
+              {navItems.map((item, index) => (
+                <Button
+                  key={item.label}
+                  asChild
+                  variant={index === 1 ? "default" : "ghost"}
+                  size="icon"
+                  className="rounded-2xl"
                 >
-                  <p className="font-semibold text-foreground">Transfer readiness</p>
-                  <p className="mt-1 leading-6 text-muted-foreground">
-                    {canTransfer
-                      ? isTransferReady
-                        ? "This project is ready to be transferred to the next team."
-                        : "Complete all checklist items for the current team to unlock transfer."
-                      : "Transfer becomes available only for the active owning team during eligible phases."}
-                  </p>
-                </div>
-              </div>
-            </WorkspaceSection>
+                  <Link to={item.href} aria-label={item.label}>
+                    <item.icon className="h-4 w-4" />
+                  </Link>
+                </Button>
+              ))}
+            </nav>
+
+            <div className="mt-4 rounded-2xl border border-border/70 bg-card/80 px-2 py-3 text-center">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">CRM</p>
+              <p className="mt-1 text-sm font-semibold text-foreground">{filteredProjects.length}</p>
+            </div>
           </aside>
 
-          <section
-            className="overflow-hidden rounded-[1.9rem] shadow-[0_28px_90px_-52px_hsl(var(--foreground)/0.2)]"
-            style={{
-              backgroundColor: hexToRgba(workspaceMainBackground, 0.97),
-              border: `1px solid ${hexToRgba(workspaceMainBorder, 0.9)}`,
-            }}
-          >
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col">
-              <div className="flex flex-col gap-4 p-5 lg:p-6">
-                <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-                  <div className="flex flex-wrap gap-2">
-                    {actionTabs.map((tab) => (
-                      <Button
-                        key={tab.value}
-                        type="button"
-                        variant={activeTab === tab.value ? "default" : "outline"}
-                        className="h-11 rounded-2xl px-4"
-                        onClick={() => setActiveTab(tab.value)}
-                      >
-                        {tab.icon}
-                        {tab.label}
-                      </Button>
-                    ))}
+          <section className="enterprise-panel min-h-[calc(100vh-2rem)] rounded-[32px] p-4 lg:p-5">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
+                  Project Navigator
+                </p>
+                <h2 className="mt-1 text-2xl font-semibold tracking-[-0.04em] text-foreground">Pipeline</h2>
+              </div>
+              <Badge variant="outline" className="rounded-full px-3 py-1">
+                {filteredProjects.length} records
+              </Badge>
+            </div>
+
+            <div className="mt-4 grid gap-3">
+              <div className="relative">
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  value={searchQuery}
+                  onChange={(event) => setSearchQuery(event.target.value)}
+                  placeholder="Search project, MID, owner"
+                  className="h-11 rounded-2xl border-border/70 bg-background/70 pl-9"
+                />
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+                {([
+                  ["all", "All"],
+                  ["active", "Active"],
+                  ["blocked", "Blocked"],
+                  ["live", "Live"],
+                ] as Array<[ProjectListFilter, string]>).map(([value, label]) => (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => setListFilter(value)}
+                    className={cn(
+                      "inline-flex items-center gap-2 rounded-full border px-3 py-2 text-xs font-semibold transition",
+                      listFilter === value
+                        ? "border-primary bg-primary/10 text-primary"
+                        : "border-border/70 bg-card/70 text-muted-foreground hover:text-foreground",
+                    )}
+                  >
+                    <Filter className="h-3.5 w-3.5" />
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="mt-4 flex items-center justify-between border-y border-border/60 py-3">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Smart filters</p>
+                <p className="text-sm text-foreground">Search, status tags, and owner visibility</p>
+              </div>
+              <Button variant="ghost" size="sm" className="rounded-xl">
+                <ListFilter className="h-4 w-4" />
+                Filters
+              </Button>
+            </div>
+
+            <ScrollArea className="mt-4 h-[calc(100vh-18rem)] pr-2">
+              <div className="space-y-3">
+                {filteredProjects.map((entry) => {
+                  const isSelected = entry.id === project.id;
+                  const entryCompleted = entry.checklist.filter((item) => item.completed).length;
+                  return (
+                    <Link
+                      key={entry.id}
+                      to={`/projects/${entry.id}`}
+                      className={cn(
+                        "block rounded-[24px] border p-4 transition-all",
+                        isSelected
+                          ? "border-primary/30 bg-primary/5 shadow-[0_20px_45px_-30px_hsl(var(--primary)/0.55)]"
+                          : "border-border/70 bg-card/70 hover:border-primary/20 hover:bg-card",
+                      )}
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="inline-flex h-9 w-9 items-center justify-center rounded-2xl bg-slate-900 text-xs font-semibold text-white">
+                              {entry.merchantName.slice(0, 2).toUpperCase()}
+                            </span>
+                            <div className="min-w-0">
+                              <p className="truncate text-sm font-semibold text-foreground">{entry.merchantName}</p>
+                              <p className="truncate text-xs text-muted-foreground">MID {entry.mid}</p>
+                            </div>
+                          </div>
+                        </div>
+
+                        <Badge
+                          className={cn(
+                            "border px-2.5 py-1 text-[10px] font-semibold",
+                            stateToneMap[entry.projectState],
+                          )}
+                        >
+                          {stateLabels[entry.projectState] || projectStateLabels[entry.projectState]}
+                        </Badge>
+                      </div>
+
+                      <div className="mt-4 flex flex-wrap gap-2">
+                        <Badge variant="outline">{teamLabels[entry.currentOwnerTeam] || entry.currentOwnerTeam}</Badge>
+                        <Badge variant="outline">{phaseLabels[entry.currentPhase] || entry.currentPhase}</Badge>
+                        <Badge variant="secondary">{entryCompleted}/{entry.checklist.length} tasks</Badge>
+                      </div>
+
+                      <div className="mt-4">
+                        <div className="mb-2 flex items-center justify-between text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                          <span>Progress</span>
+                          <span>{entry.goLivePercent}%</span>
+                        </div>
+                        <Progress value={entry.goLivePercent} className="h-2.5 rounded-full bg-secondary" />
+                      </div>
+
+                      <div className="mt-4 flex items-center justify-between text-xs text-muted-foreground">
+                        <span>{entry.assignedOwnerName || "No owner"}</span>
+                        <span>{phaseLabels[entry.currentPhase] || entry.currentPhase}</span>
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
+            </ScrollArea>
+          </section>
+
+          <section className="enterprise-panel min-h-[calc(100vh-2rem)] rounded-[34px] p-4 lg:p-5">
+            <div className="grid gap-4">
+              <header className="rounded-[28px] border border-border/70 bg-[linear-gradient(135deg,hsl(var(--card))_0%,hsl(var(--card)/0.92)_60%,hsl(var(--primary)/0.06)_100%)] p-5 shadow-[0_24px_60px_-36px_hsl(var(--foreground)/0.35)]">
+                <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-3">
+                      <h1 className="text-[2rem] font-semibold tracking-[-0.05em] text-foreground">
+                        {project.merchantName}
+                      </h1>
+                      <Badge className={cn("border px-3 py-1.5 text-xs font-semibold", stateToneMap[project.projectState])}>
+                        {stateLabels[project.projectState] || projectStateLabels[project.projectState]}
+                      </Badge>
+                    </div>
+                    <div className="mt-2 flex flex-wrap items-center gap-2">
+                      <Badge variant="outline">MID {project.mid}</Badge>
+                      <Badge variant="outline">{teamLabels[project.currentOwnerTeam] || project.currentOwnerTeam}</Badge>
+                      <Badge variant="outline">{phaseLabels[project.currentPhase] || project.currentPhase}</Badge>
+                      {project.pendingAcceptance ? <Badge className="border border-amber-200 bg-amber-100 text-amber-800">Pending acceptance</Badge> : null}
+                    </div>
                   </div>
 
-                  <div className="flex flex-wrap justify-start gap-2 xl:justify-end">
-                    <Button variant="outline" className="h-11 rounded-2xl px-4" onClick={() => setEditOpen(true)}>
-                      <FileText className="h-4 w-4" />
-                      Edit Project
-                    </Button>
+                  <div className="flex flex-wrap gap-2">
                     {currentUser?.team === "manager" ? (
-                      <Button variant="outline" className="h-11 rounded-2xl px-4" onClick={() => setAssignOpen(true)}>
-                        <UserPlus className="h-4 w-4" />
+                      <Button variant="outline" className="rounded-2xl" onClick={() => setAssignOpen(true)}>
+                        <UserRound className="h-4 w-4" />
                         Assign Owner
                       </Button>
                     ) : null}
-                    {canTransfer ? (
-                      <Button
-                        variant={isTransferReady ? "default" : "outline"}
-                        className="h-11 rounded-2xl px-4"
-                        onClick={() => isTransferReady && setTransferOpen(true)}
-                        disabled={!isTransferReady}
-                      >
-                        <ArrowRight className="h-4 w-4" />
-                        Transfer Project
-                      </Button>
-                    ) : null}
+                    <Button variant="outline" className="rounded-2xl" onClick={() => setEditOpen(true)}>
+                      Edit
+                    </Button>
+                    <Button
+                      className="rounded-2xl"
+                      onClick={() => isTransferReady && setTransferOpen(true)}
+                      disabled={!isTransferReady}
+                    >
+                      <ArrowRight className="h-4 w-4" />
+                      Transfer
+                    </Button>
                     {currentUser?.team === "manager" ? (
-                      <Button variant="destructive" className="h-11 rounded-2xl px-4" onClick={() => setDeleteConfirmOpen(true)}>
+                      <Button variant="destructive" className="rounded-2xl" onClick={() => setDeleteConfirmOpen(true)}>
                         <Trash2 className="h-4 w-4" />
-                        Delete
                       </Button>
                     ) : null}
                   </div>
                 </div>
 
-                <div
-                  className="flex flex-wrap items-center gap-3 rounded-[1.35rem] px-4 py-3"
-                  style={{
-                    backgroundColor: hexToRgba(workspaceMetricBackground, 0.88),
-                    border: `1px solid ${hexToRgba(workspaceMetricBorder, 0.72)}`,
-                  }}
-                >
-                  <Badge variant="outline" className="px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em]">
-                    Activity type: All
-                  </Badge>
-                  <Badge variant="outline" className="px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em]">
-                    Time: All time
-                  </Badge>
-                  <Badge variant="secondary" className="px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em]">
-                    {project.transferHistory.length} handoffs tracked
-                  </Badge>
-                </div>
+                <div className="mt-5 grid gap-3 xl:grid-cols-[minmax(0,1.45fr)_minmax(340px,0.95fr)]">
+                  <div className="rounded-[24px] border border-primary/15 bg-primary/[0.06] p-4">
+                    <div className="flex items-center gap-2">
+                      <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-primary text-primary-foreground">
+                        <Bot className="h-4 w-4" />
+                      </div>
+                      <div>
+                        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">AI Summary</p>
+                        <p className="text-sm text-muted-foreground">Operational readout for the next team move</p>
+                      </div>
+                    </div>
 
-                <TabsList
-                  className="h-auto w-full justify-start gap-1 overflow-x-auto rounded-[1.3rem] p-1"
-                  style={{
-                    backgroundColor: hexToRgba(workspaceMetricBorder, 0.12),
-                    border: `1px solid ${hexToRgba(sectionBorder, 0.6)}`,
-                  }}
-                >
-                  {actionTabs.map((tab) => (
+                    <p className="mt-4 text-sm leading-6 text-foreground">
+                      {project.merchantName} is in{" "}
+                      <span className="font-semibold">{phaseLabels[project.currentPhase] || project.currentPhase}</span>
+                      {" "}with{" "}
+                      <span className="font-semibold">
+                        {completedChecklist}/{project.checklist.length}
+                      </span>{" "}
+                      checklist items closed. Current responsibility sits with{" "}
+                      <span className="font-semibold">{responsibilityLabels[pendingOn] || pendingOn}</span>, and the project is{" "}
+                      <span className="font-semibold">
+                        {stateLabels[project.projectState] || projectStateLabels[project.projectState]}
+                      </span>.
+                    </p>
+
+                    <div className="mt-4 grid gap-2">
+                      {nextActions.length > 0 ? (
+                        nextActions.map((action) => (
+                          <div
+                            key={action}
+                            className="flex items-start gap-3 rounded-2xl border border-border/70 bg-card/85 px-3 py-3"
+                          >
+                            <Sparkles className="mt-0.5 h-4 w-4 text-primary" />
+                            <span className="text-sm leading-6 text-foreground">{action}</span>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="rounded-2xl border border-border/70 bg-card/85 px-3 py-3 text-sm text-muted-foreground">
+                          No immediate action is blocking progress.
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-2">
+                    {overviewStats.map((stat) => (
+                      <div key={stat.label} className="rounded-[22px] border border-border/70 bg-card/80 px-4 py-4">
+                        <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                          <stat.icon className="h-3.5 w-3.5" />
+                          {stat.label}
+                        </div>
+                        <p className="mt-3 text-sm font-semibold text-foreground">{stat.value}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </header>
+
+              <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as WorkspaceTab)}>
+                <TabsList className="h-auto w-full justify-start gap-1 overflow-x-auto rounded-[22px] border border-border/70 bg-card/70 p-1">
+                  {tabOptions.map((tab) => (
                     <TabsTrigger
                       key={tab.value}
                       value={tab.value}
-                      className="min-w-max rounded-[1rem] px-4 py-2.5 text-sm font-semibold data-[state=active]:shadow-none"
+                      className="rounded-2xl px-4 py-2.5 text-sm font-semibold data-[state=active]:bg-background data-[state=active]:shadow-sm"
                     >
                       {tab.label}
                     </TabsTrigger>
                   ))}
                 </TabsList>
-              </div>
 
-              <div className="px-5 pb-5 lg:px-6 lg:pb-6">
-                <TabsContent value="activity" className="m-0">
-                  <WorkspaceSection
-                    title="Activity history"
-                    description="Complete audit trail of user actions, system updates, ownership changes, and project milestones."
-                    icon={<Activity className="h-5 w-5" />}
-                    contentClassName="p-0"
-                    className="min-h-[760px]"
-                  >
-                    <WorkspaceActivityTimeline project={project} />
-                  </WorkspaceSection>
+                <TabsContent value="overview" className="mt-4 space-y-4">
+                  <div className="grid gap-4 xl:grid-cols-[minmax(0,1.2fr)_360px]">
+                    <div className="rounded-[28px] border border-border/70 bg-card/80 p-5">
+                      <div className="flex items-center justify-between gap-3">
+                        <div>
+                          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">Project details</p>
+                          <h3 className="mt-1 text-xl font-semibold tracking-[-0.03em] text-foreground">Core operating data</h3>
+                        </div>
+                        <Badge variant="secondary">Data-dense overview</Badge>
+                      </div>
+
+                      <div className="mt-5 grid gap-x-6 gap-y-4 md:grid-cols-2 xl:grid-cols-3">
+                        {projectDetails.map(([label, value]) => (
+                          <div key={label} className="rounded-2xl border border-border/70 bg-background/75 px-4 py-3">
+                            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">{label}</p>
+                            <p className="mt-2 text-sm font-semibold text-foreground">{value}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="space-y-4">
+                      <div className="rounded-[28px] border border-border/70 bg-card/80 p-5">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">Checklist progress</p>
+                            <h3 className="mt-1 text-lg font-semibold text-foreground">{completedChecklist}/{project.checklist.length} complete</h3>
+                          </div>
+                          <CheckCircle2 className="h-5 w-5 text-primary" />
+                        </div>
+                        <Progress
+                          value={project.checklist.length ? (completedChecklist / project.checklist.length) * 100 : 0}
+                          className="mt-4 h-2.5 rounded-full bg-secondary"
+                        />
+
+                        <div className="mt-4 space-y-3">
+                          {groupedChecklist.map(({ team, items }) => {
+                            const done = items.filter((item) => item.completed).length;
+                            return (
+                              <div key={team} className="rounded-2xl border border-border/70 bg-background/75 px-4 py-3">
+                                <div className="flex items-center justify-between gap-3">
+                                  <div>
+                                    <p className="text-sm font-semibold text-foreground">{teamLabels[team] || team}</p>
+                                    <p className="text-xs text-muted-foreground">{done} of {items.length} closed</p>
+                                  </div>
+                                  <Badge variant="outline">{done}/{items.length}</Badge>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      <div className="rounded-[28px] border border-border/70 bg-card/80 p-5">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">Quick links</p>
+                            <h3 className="mt-1 text-lg font-semibold text-foreground">Jump to working context</h3>
+                          </div>
+                          <ArrowUpRight className="h-5 w-5 text-primary" />
+                        </div>
+
+                        <div className="mt-4 space-y-3">
+                          {quickLinks.length > 0 ? (
+                            quickLinks.map((link) => (
+                              <a
+                                key={link.label}
+                                href={link.href}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="flex items-center justify-between rounded-2xl border border-border/70 bg-background/75 px-4 py-3 text-sm font-semibold text-foreground transition hover:border-primary/25 hover:text-primary"
+                              >
+                                <span>{link.label}</span>
+                                <ExternalLink className="h-4 w-4" />
+                              </a>
+                            ))
+                          ) : (
+                            <div className="rounded-2xl border border-dashed border-border bg-background/60 px-4 py-4 text-sm text-muted-foreground">
+                              No linked documents or external tools attached yet.
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </TabsContent>
 
-                <TabsContent value="details" className="m-0">
-                  <WorkspaceSection
-                    title="Project details"
-                    description="Enterprise snapshot for leadership, delivery, and operations review."
-                    icon={<Layers3 className="h-5 w-5" />}
-                  >
-                    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                      {projectDetails.map((item) => (
-                        <WorkspaceMetricCard key={item.label} label={item.label} value={item.value || "—"} />
+                <TabsContent value="activity" className="mt-4">
+                  <div className="rounded-[28px] border border-border/70 bg-card/80 p-5">
+                    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/60 pb-4">
+                      <div>
+                        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">Activity timeline</p>
+                        <h3 className="mt-1 text-xl font-semibold tracking-[-0.03em] text-foreground">Grouped by date</h3>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        <Badge className="border border-slate-200 bg-slate-100 text-slate-700">{activityFeed.length} events</Badge>
+                        <Badge className="border border-blue-200 bg-blue-50 text-blue-700">Color-coded types</Badge>
+                      </div>
+                    </div>
+
+                    <div className="mt-5 space-y-6">
+                      {Object.entries(groupedActivity).map(([dateLabel, items]) => (
+                        <div key={dateLabel}>
+                          <div className="mb-3 flex items-center gap-3">
+                            <div className="h-px flex-1 bg-border/70" />
+                            <Badge variant="outline" className="px-3 py-1">
+                              {dateLabel}
+                            </Badge>
+                            <div className="h-px flex-1 bg-border/70" />
+                          </div>
+
+                          <div className="space-y-3">
+                            {items.map((item) => (
+                              <div key={item.id} className="grid gap-3 rounded-[24px] border border-border/70 bg-background/75 p-4 md:grid-cols-[20px_minmax(0,1fr)_140px] md:items-start">
+                                <div className="flex justify-center pt-1">
+                                  <span className={cn("mt-1 h-3.5 w-3.5 rounded-full", activityToneMap[item.kind])} />
+                                </div>
+                                <div className="min-w-0">
+                                  <div className="flex flex-wrap items-center gap-2">
+                                    <p className="text-sm font-semibold text-foreground">{item.title}</p>
+                                    <span className={cn("rounded-full border px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.12em]", activityBadgeToneMap[item.kind])}>
+                                      {item.kind}
+                                    </span>
+                                  </div>
+                                  <p className="mt-2 text-sm leading-6 text-muted-foreground">{item.description}</p>
+                                  <p className="mt-2 text-xs font-medium text-muted-foreground">
+                                    {item.source} · {item.actor}
+                                  </p>
+                                </div>
+                                <div className="text-left md:text-right">
+                                  <p className="text-sm font-semibold text-foreground">{item.timestampLabel}</p>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
                       ))}
+
+                      {activityFeed.length === 0 ? (
+                        <div className="rounded-[24px] border border-dashed border-border bg-background/60 px-4 py-8 text-center">
+                          <MessageSquareText className="mx-auto h-8 w-8 text-muted-foreground" />
+                          <p className="mt-3 text-sm font-semibold text-foreground">No activity captured yet</p>
+                          <p className="mt-1 text-sm text-muted-foreground">
+                            Handoffs, checklist updates, notes, and milestones will appear here.
+                          </p>
+                        </div>
+                      ) : null}
                     </div>
-                  </WorkspaceSection>
+                  </div>
                 </TabsContent>
 
-                <TabsContent value="checklist" className="m-0">
-                  <WorkspaceSection
-                    title="Checklist"
-                    description="Execution summary across teams, with completion and milestone visibility."
-                    icon={<ClipboardList className="h-5 w-5" />}
-                    contentClassName="space-y-0"
-                  >
-                    <WorkspaceChecklistPanel
-                      groupedChecklist={groupedChecklist}
-                      completedChecklist={completedChecklist}
-                      totalChecklist={project.checklist.length}
-                      currentPhase={phaseLabels[project.currentPhase] || project.currentPhase}
-                    />
-                  </WorkspaceSection>
+                <TabsContent value="tasks" className="mt-4">
+                  <div className="rounded-[28px] border border-border/70 bg-card/80 p-5">
+                    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/60 pb-4">
+                      <div>
+                        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">Tasks</p>
+                        <h3 className="mt-1 text-xl font-semibold tracking-[-0.03em] text-foreground">Checklist with inline editing</h3>
+                      </div>
+                      <Badge variant="secondary">{completedChecklist}/{project.checklist.length} complete</Badge>
+                    </div>
+
+                    <div className="mt-5 space-y-3">
+                      {project.checklist.map((item) => {
+                        const isEditing = editingTaskId === item.id;
+                        const noteValue = taskDrafts[item.id] ?? item.comment ?? "";
+
+                        return (
+                          <div key={item.id} className="rounded-[24px] border border-border/70 bg-background/75 p-4">
+                            <div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
+                              <div className="flex min-w-0 gap-3">
+                                <Checkbox
+                                  checked={item.completed}
+                                  onCheckedChange={(checked) => updateChecklist(project.id, item.id, Boolean(checked))}
+                                  className="mt-1 h-5 w-5 rounded-md border-border"
+                                />
+                                <div className="min-w-0">
+                                  <div className="flex flex-wrap items-center gap-2">
+                                    <p className={cn("text-sm font-semibold text-foreground", item.completed && "text-muted-foreground line-through")}>
+                                      {item.title}
+                                    </p>
+                                    <Badge variant="outline">{teamLabels[item.ownerTeam] || item.ownerTeam}</Badge>
+                                    <Badge variant="outline">{phaseLabels[item.phase] || item.phase}</Badge>
+                                    <Badge
+                                      className={cn(
+                                        "border px-2.5 py-1 text-[10px] font-semibold",
+                                        item.completed
+                                          ? "border-emerald-200 bg-emerald-100 text-emerald-800"
+                                          : "border-slate-200 bg-slate-100 text-slate-700",
+                                      )}
+                                    >
+                                      {item.completed ? "Done" : "Open"}
+                                    </Badge>
+                                  </div>
+                                  <p className="mt-2 text-xs text-muted-foreground">
+                                    Responsibility: {responsibilityLabels[item.currentResponsibility] || item.currentResponsibility}
+                                  </p>
+                                </div>
+                              </div>
+
+                              <div className="flex items-center gap-2">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="rounded-xl"
+                                  onClick={() => {
+                                    setEditingTaskId(isEditing ? null : item.id);
+                                    setTaskDrafts((current) => ({
+                                      ...current,
+                                      [item.id]: current[item.id] ?? item.comment ?? "",
+                                    }));
+                                  }}
+                                >
+                                  <NotebookPen className="h-4 w-4" />
+                                  {isEditing ? "Close" : "Edit note"}
+                                </Button>
+                              </div>
+                            </div>
+
+                            {isEditing ? (
+                              <div className="mt-4 rounded-2xl border border-border/70 bg-card/70 p-3">
+                                <Textarea
+                                  value={noteValue}
+                                  onChange={(event) =>
+                                    setTaskDrafts((current) => ({
+                                      ...current,
+                                      [item.id]: event.target.value,
+                                    }))
+                                  }
+                                  placeholder="Add working notes, blockers, or context for the next owner"
+                                  className="min-h-[96px] rounded-2xl border-border/70 bg-background/80"
+                                />
+                                <div className="mt-3 flex justify-end gap-2">
+                                  <Button variant="ghost" size="sm" className="rounded-xl" onClick={() => setEditingTaskId(null)}>
+                                    Cancel
+                                  </Button>
+                                  <Button size="sm" className="rounded-xl" onClick={() => handleTaskCommentSave(item)}>
+                                    Save note
+                                  </Button>
+                                </div>
+                              </div>
+                            ) : item.comment ? (
+                              <div className="mt-4 rounded-2xl border border-border/70 bg-card/70 px-4 py-3">
+                                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Latest note</p>
+                                <p className="mt-2 text-sm leading-6 text-foreground">{item.comment}</p>
+                              </div>
+                            ) : null}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
                 </TabsContent>
 
-                <TabsContent value="notes" className="m-0">
-                  <WorkspaceSection
-                    title="Operational notes"
-                    description="High-signal narrative context captured during execution."
-                    icon={<NotebookPen className="h-5 w-5" />}
-                  >
-                    <div className="grid gap-4 md:grid-cols-2">
-                      <WorkspaceMetricCard
-                        label="Current phase comment"
-                        value={project.notes.currentPhaseComment || "No current phase comment added."}
-                        eyebrow="Active"
-                      />
-                      <WorkspaceMetricCard
-                        label="Project notes"
-                        value={project.notes.projectNotes || "No project notes added."}
-                        eyebrow="Context"
-                      />
-                      <WorkspaceMetricCard
-                        label="MINT notes"
-                        value={project.notes.mintNotes || "No MINT notes added."}
-                        eyebrow="Presales"
-                      />
-                      <WorkspaceMetricCard
-                        label="Phase 2 comment"
-                        value={project.notes.phase2Comment || "No phase 2 comment added."}
-                        eyebrow="Future"
-                      />
-                    </div>
-                  </WorkspaceSection>
+                <TabsContent value="notes" className="mt-4">
+                  <div className="grid gap-4 md:grid-cols-2">
+                    {[
+                      ["Current Phase", project.notes.currentPhaseComment || "No current phase note added."],
+                      ["Project Notes", project.notes.projectNotes || "No project notes added."],
+                      ["Pre-sales Notes", project.notes.mintNotes || "No pre-sales note added."],
+                      ["Phase 2 Notes", project.notes.phase2Comment || "No phase 2 note added."],
+                    ].map(([label, value]) => (
+                      <div key={label} className="rounded-[28px] border border-border/70 bg-card/80 p-5">
+                        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">{label}</p>
+                        <p className="mt-4 text-sm leading-7 text-foreground">{value}</p>
+                      </div>
+                    ))}
+                  </div>
                 </TabsContent>
+
+                <TabsContent value="files" className="mt-4">
+                  <div className="rounded-[28px] border border-border/70 bg-card/80 p-5">
+                    <div className="flex items-center justify-between gap-3 border-b border-border/60 pb-4">
+                      <div>
+                        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">Files</p>
+                        <h3 className="mt-1 text-xl font-semibold tracking-[-0.03em] text-foreground">Attached workspace assets</h3>
+                      </div>
+                      <FileStack className="h-5 w-5 text-primary" />
+                    </div>
+
+                    <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                      {quickLinks.length > 0 ? (
+                        quickLinks.map((link) => (
+                          <a
+                            key={link.label}
+                            href={link.href}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="rounded-[24px] border border-border/70 bg-background/75 p-4 transition hover:border-primary/25"
+                          >
+                            <div className="flex items-center justify-between gap-3">
+                              <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                                <Files className="h-4 w-4" />
+                              </div>
+                              <ExternalLink className="h-4 w-4 text-muted-foreground" />
+                            </div>
+                            <p className="mt-4 text-sm font-semibold text-foreground">{link.label}</p>
+                            <p className="mt-1 text-xs text-muted-foreground">Open linked project artifact</p>
+                          </a>
+                        ))
+                      ) : (
+                        <div className="rounded-[24px] border border-dashed border-border bg-background/60 px-4 py-6 text-sm text-muted-foreground">
+                          No files are linked to this project yet.
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </TabsContent>
+              </Tabs>
+
+              <div className="grid gap-4 xl:grid-cols-4">
+                {[
+                  { label: "Checklist", value: `${completedChecklist}/${project.checklist.length}`, icon: CheckCheck },
+                  { label: "Internal Time", value: formatDuration(timeByParty.gokwik), icon: CalendarClock },
+                  { label: "Merchant Time", value: formatDuration(timeByParty.merchant), icon: Clock3 },
+                  { label: "Risk", value: risk.label, icon: AlertTriangle },
+                ].map((item) => (
+                  <div key={item.label} className="rounded-[24px] border border-border/70 bg-card/80 px-4 py-4">
+                    <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                      <item.icon className="h-3.5 w-3.5" />
+                      {item.label}
+                    </div>
+                    <p className="mt-3 text-lg font-semibold text-foreground">{item.value}</p>
+                  </div>
+                ))}
               </div>
-            </Tabs>
+            </div>
           </section>
         </div>
       </div>
