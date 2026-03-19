@@ -459,7 +459,7 @@ const ProjectWorkspace = () => {
   } = useProjects();
   const { teamLabels, stateLabels, phaseLabels, responsibilityLabels } = useLabels();
 
-  const [activeTab, setActiveTab] = useState<WorkspaceTab>("overview");
+  const [activeTab, setActiveTab] = useState<WorkspaceTab>("activity");
   const [editOpen, setEditOpen] = useState(false);
   const [checklistOpen, setChecklistOpen] = useState(false);
   const [assignOpen, setAssignOpen] = useState(false);
