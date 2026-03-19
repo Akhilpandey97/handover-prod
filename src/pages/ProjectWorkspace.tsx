@@ -1,20 +1,20 @@
-import { ReactNode, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useProjects } from "@/contexts/ProjectContext";
 import { useLabels } from "@/contexts/LabelsContext";
 import {
   Project,
+  ProjectState,
   calculateProjectResponsibilityFromChecklist,
   calculateTimeFromChecklist,
   formatDuration,
   projectStateLabels,
 } from "@/data/projectsData";
 import { LoginScreen } from "@/components/LoginScreen";
-import { ProjectDetailsDialog } from "@/components/ProjectDetailsDialog";
-import { ChecklistDialog } from "@/components/ChecklistDialog";
 import { EditProjectDialog } from "@/components/EditProjectDialog";
 import { AssignOwnerDialog } from "@/components/AssignOwnerDialog";
+import { TransferDialog } from "@/components/TransferDialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -27,17 +27,23 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { hexToRgba } from "@/utils/colorUtils";
 import {
   Activity,
   ArrowLeft,
+  ArrowRight,
   ArrowUpRight,
   BadgeCheck,
   Building2,
+  CalendarDays,
   ClipboardList,
   ExternalLink,
+  FileText,
+  Globe,
   Layers3,
+  NotebookPen,
   Target,
   Timer,
   Trash2,
@@ -52,13 +58,13 @@ import { WorkspaceActivityTimeline } from "@/components/project-workspace/Worksp
 const ProjectWorkspace = () => {
   const { projectId } = useParams();
   const { isAuthenticated, isLoading, currentUser } = useAuth();
-  const { projects, updateProject, deleteProject } = useProjects();
+  const { projects, updateProject, deleteProject, transferProject } = useProjects();
   const { labels, teamLabels, responsibilityLabels, getLabel, stateLabels, phaseLabels } = useLabels();
 
-  const [detailsOpen, setDetailsOpen] = useState(false);
-  const [checklistOpen, setChecklistOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState("activity");
   const [editOpen, setEditOpen] = useState(false);
   const [assignOpen, setAssignOpen] = useState(false);
+  const [transferOpen, setTransferOpen] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
 
   const project = projects.find((entry) => entry.id === projectId) ?? null;
@@ -101,9 +107,11 @@ const ProjectWorkspace = () => {
         <Card className="w-full max-w-xl">
           <CardHeader>
             <CardTitle>Project not found</CardTitle>
-            <CardDescription>This project could not be found in your current workspace.</CardDescription>
           </CardHeader>
           <CardContent>
+            <p className="mb-4 text-sm text-muted-foreground">
+              This project could not be found in your current workspace.
+            </p>
             <Button asChild>
               <Link to="/">Back to dashboard</Link>
             </Button>
@@ -118,63 +126,19 @@ const ProjectWorkspace = () => {
   const timeByParty = calculateTimeFromChecklist(project.checklist);
   const workspaceMainBackground = labels.color_workspace_main_bg || "#f8fbff";
   const workspaceMainBorder = labels.color_workspace_main_border || "#d9e4f2";
+  const workspaceMetricBackground = labels.color_workspace_metric_bg || "#ffffff";
   const workspaceMetricBorder = labels.color_workspace_metric_border || "#dce4ee";
-  const nextActions = project.checklist.filter((item) => !item.completed).slice(0, 3);
+  const sectionBorder = labels.color_workspace_section_border || "#dbe5ef";
 
-  const actionButtons = [
-    project.links.brandUrl
-      ? {
-          key: "website",
-          label: "Website",
-          icon: <ExternalLink className="h-4 w-4" />,
-          onClick: undefined,
-          href: project.links.brandUrl,
-        }
-      : null,
-    project.links.jiraLink
-      ? {
-          key: "jira",
-          label: "JIRA",
-          icon: <ExternalLink className="h-4 w-4" />,
-          onClick: undefined,
-          href: project.links.jiraLink,
-        }
-      : null,
-    project.links.brdLink
-      ? {
-          key: "brd",
-          label: "BRD",
-          icon: <ExternalLink className="h-4 w-4" />,
-          onClick: undefined,
-          href: project.links.brdLink,
-        }
-      : null,
-    { key: "details", label: "View Details", onClick: () => setDetailsOpen(true) },
-    { key: "checklist", label: "Open Checklist", onClick: () => setChecklistOpen(true) },
-    { key: "edit", label: "Edit Project", onClick: () => setEditOpen(true) },
-    ...(currentUser?.team === "manager"
-      ? [
-          { key: "assign", label: "Assign Owner", icon: <UserPlus className="h-4 w-4" />, onClick: () => setAssignOpen(true) },
-          { key: "delete", label: "Delete", icon: <Trash2 className="h-4 w-4" />, onClick: () => setDeleteConfirmOpen(true), variant: "destructive" as const },
-        ]
-      : []),
-  ].filter(Boolean) as Array<{
-    key: string;
-    label: string;
-    icon?: ReactNode;
-    onClick?: () => void;
-    href?: string;
-    variant?: "outline" | "destructive";
-  }>;
-
-  const detailCards = [
-    { label: "Current team", value: teamLabels[project.currentOwnerTeam] || project.currentOwnerTeam, eyebrow: "Ownership", icon: <Building2 className="h-5 w-5" /> },
-    { label: "Assigned owner", value: project.assignedOwnerName || "Unassigned", eyebrow: "Ops", icon: <BadgeCheck className="h-5 w-5" /> },
-    { label: "Action pending on", value: responsibilityLabels[pendingOn] || pendingOn, eyebrow: "Execution", icon: <ClipboardList className="h-5 w-5" /> },
-    { label: "Checklist progress", value: `${completedChecklist}/${project.checklist.length} done`, eyebrow: "Completion", icon: <Layers3 className="h-5 w-5" /> },
-    { label: "Internal time", value: formatDuration(timeByParty.gokwik), eyebrow: "Delivery", icon: <Timer className="h-5 w-5" /> },
-    { label: "Merchant time", value: formatDuration(timeByParty.merchant), eyebrow: "External", icon: <Timer className="h-5 w-5" /> },
-  ];
+  const currentTeamChecklist = project.checklist.filter((item) => item.ownerTeam === project.currentOwnerTeam);
+  const allCurrentTeamChecklistCompleted = currentTeamChecklist.length > 0 && currentTeamChecklist.every((item) => item.completed);
+  const canTransfer =
+    currentUser?.team === project.currentOwnerTeam &&
+    !project.pendingAcceptance &&
+    project.currentPhase !== "completed" &&
+    project.currentOwnerTeam !== "ms" &&
+    currentUser?.team !== "manager";
+  const isTransferReady = canTransfer && allCurrentTeamChecklistCompleted;
 
   const projectDetails = [
     { label: getLabel("field_platform"), value: project.platform },
@@ -191,6 +155,34 @@ const ProjectWorkspace = () => {
     { label: getLabel("field_actual_go_live_date"), value: project.dates.goLiveDate || "—" },
   ];
 
+  const summaryDetails = [
+    { label: "Assigned owner", value: project.assignedOwnerName || "Unassigned", icon: <BadgeCheck className="h-4 w-4" /> },
+    { label: "Current team", value: teamLabels[project.currentOwnerTeam] || project.currentOwnerTeam, icon: <Building2 className="h-4 w-4" /> },
+    { label: "Current phase", value: phaseLabels[project.currentPhase] || project.currentPhase, icon: <Layers3 className="h-4 w-4" /> },
+    { label: "Action pending on", value: responsibilityLabels[pendingOn] || pendingOn, icon: <Target className="h-4 w-4" /> },
+    { label: "Kick-off", value: project.dates.kickOffDate || "—", icon: <CalendarDays className="h-4 w-4" /> },
+    { label: "Expected go-live", value: project.dates.expectedGoLiveDate || "—", icon: <CalendarDays className="h-4 w-4" /> },
+  ];
+
+  const actionTabs = [
+    { value: "activity", label: "Activity", icon: <Activity className="h-4 w-4" /> },
+    { value: "details", label: "Project Details", icon: <FileText className="h-4 w-4" /> },
+    { value: "checklist", label: "Checklist", icon: <ClipboardList className="h-4 w-4" /> },
+    { value: "notes", label: "Notes", icon: <NotebookPen className="h-4 w-4" /> },
+  ];
+
+  const externalActions = [
+    project.links.brandUrl
+      ? { key: "website", label: "Website", href: project.links.brandUrl, icon: <Globe className="h-4 w-4" /> }
+      : null,
+    project.links.jiraLink
+      ? { key: "jira", label: "JIRA", href: project.links.jiraLink, icon: <ExternalLink className="h-4 w-4" /> }
+      : null,
+    project.links.brdLink
+      ? { key: "brd", label: "BRD", href: project.links.brdLink, icon: <ExternalLink className="h-4 w-4" /> }
+      : null,
+  ].filter(Boolean) as Array<{ key: string; label: string; href: string; icon: JSX.Element }>;
+
   const handleSaveEdit = (updatedProject: typeof project) => {
     updateProject(updatedProject);
     toast.success("Project updated successfully");
@@ -202,206 +194,344 @@ const ProjectWorkspace = () => {
     toast.success("Project deleted");
   };
 
+  const handleTransfer = (assigneeId: string, assigneeName: string, notes: string) => {
+    const nextTeamKey = project.currentOwnerTeam === "mint" ? "integration" : "ms";
+    const nextTeam = teamLabels[nextTeamKey] || nextTeamKey;
+    const transferNote = notes || `Transferred to ${nextTeam} team`;
+    transferProject(project.id, `${transferNote} (Assigned to: ${assigneeName})`, assigneeId);
+    toast.success(`Transferred ${project.merchantName} to ${assigneeName}`);
+  };
+
+  const handleStateChange = (newState: ProjectState) => {
+    updateProject({ ...project, projectState: newState });
+  };
+
   return (
     <div className="min-h-screen bg-background">
-      <div className="mx-auto flex w-full max-w-[1680px] flex-col gap-6 px-5 py-6 lg:px-8 xl:px-10">
-        <section
-          className="overflow-hidden rounded-[2rem] shadow-[0_32px_90px_-48px_hsl(var(--foreground)/0.18)]"
-          style={{
-            backgroundColor: hexToRgba(workspaceMainBackground, 0.95),
-            border: `1px solid ${hexToRgba(workspaceMainBorder, 0.9)}`,
-          }}
-        >
-          <div className="grid gap-6 p-6 xl:grid-cols-[minmax(0,1.55fr)_360px] xl:p-8">
-            <div className="space-y-6">
-              <Button asChild variant="ghost" className="-ml-3 w-fit gap-2 text-muted-foreground">
-                <Link to="/">
-                  <ArrowLeft className="h-4 w-4" />
-                  Back to dashboard
-                </Link>
-              </Button>
+      <div className="mx-auto flex w-full max-w-[1680px] flex-col gap-5 px-4 py-5 lg:px-8 lg:py-6">
+        <Button asChild variant="ghost" className="-ml-3 w-fit gap-2 text-muted-foreground">
+          <Link to="/">
+            <ArrowLeft className="h-4 w-4" />
+            Back to dashboard
+          </Link>
+        </Button>
 
-              <div className="flex flex-col gap-5 xl:flex-row xl:items-start">
-                <div
-                  className="flex h-20 w-20 shrink-0 items-center justify-center rounded-[1.75rem] text-primary shadow-[0_24px_60px_-36px_hsl(var(--foreground)/0.18)]"
-                  style={{
-                    backgroundColor: hexToRgba(workspaceMainBorder, 0.08),
-                    border: `1px solid ${hexToRgba(workspaceMainBorder, 0.62)}`,
-                  }}
-                >
-                  <Building2 className="h-9 w-9" />
-                </div>
-
-                <div className="min-w-0 flex-1 space-y-4">
-                  <div className="space-y-3">
-                    <div className="flex flex-wrap items-center gap-2.5">
-                      <h1 className="text-4xl font-semibold tracking-[-0.06em] text-foreground lg:text-5xl">{project.merchantName}</h1>
-                      <Badge variant="outline" className="px-3 py-1 text-xs">MID {project.mid}</Badge>
-                      <Badge variant="secondary" className="px-3 py-1 text-xs">{teamLabels[project.currentOwnerTeam]}</Badge>
-                      <Badge variant="outline" className="px-3 py-1 text-xs">{phaseLabels[project.currentPhase] || project.currentPhase}</Badge>
-                      <Badge variant={project.pendingAcceptance ? "outline" : "default"} className="px-3 py-1 text-xs">
-                        {project.pendingAcceptance ? "Pending acceptance" : stateLabels[project.projectState] || projectStateLabels[project.projectState]}
-                      </Badge>
-                    </div>
-                    <p className="max-w-4xl text-base leading-7 text-muted-foreground">
-                      Executive project workspace with auditable activity history, operational controls, and delivery visibility for enterprise handovers.
-                    </p>
-                  </div>
-
-                  <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                    {detailCards.map((item) => (
-                      <WorkspaceMetricCard
-                        key={item.label}
-                        label={item.label}
-                        value={item.value}
-                        eyebrow={item.eyebrow}
-                        icon={item.icon}
-                      />
-                    ))}
-                  </div>
-
+        <div className="grid gap-5 xl:grid-cols-[320px_minmax(0,1fr)]">
+          <aside className="space-y-4 xl:sticky xl:top-6 xl:self-start">
+            <section
+              className="overflow-hidden rounded-[1.75rem] shadow-[0_24px_70px_-40px_hsl(var(--foreground)/0.18)]"
+              style={{
+                backgroundColor: hexToRgba(workspaceMainBackground, 0.97),
+                border: `1px solid ${hexToRgba(workspaceMainBorder, 0.9)}`,
+              }}
+            >
+              <div className="p-5">
+                <div className="flex items-start gap-4">
                   <div
-                    className="rounded-[1.75rem] p-5"
+                    className="flex h-14 w-14 shrink-0 items-center justify-center rounded-[1.25rem]"
                     style={{
-                      backgroundColor: hexToRgba(workspaceMainBorder, 0.08),
-                      border: `1px solid ${hexToRgba(workspaceMetricBorder, 0.72)}`,
+                      backgroundColor: hexToRgba(workspaceMetricBorder, 0.12),
+                      border: `1px solid ${hexToRgba(workspaceMetricBorder, 0.58)}`,
                     }}
                   >
-                    <div className="flex flex-wrap items-center justify-between gap-3">
-                      <div>
-                        <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-primary">Current focus</p>
-                        <h2 className="mt-2 text-xl font-semibold tracking-[-0.03em] text-foreground">Immediate execution queue</h2>
-                      </div>
-                      <Badge variant="outline" className="px-3 py-1 text-xs font-semibold">
-                        {nextActions.length > 0 ? `${nextActions.length} open actions` : "All actions closed"}
-                      </Badge>
-                    </div>
+                    <Building2 className="h-6 w-6 text-primary" />
+                  </div>
 
-                    <div className="mt-4 grid gap-3 md:grid-cols-3">
-                      {nextActions.length > 0 ? (
-                        nextActions.map((item) => (
-                          <div
-                            key={item.id}
-                            className="rounded-2xl px-4 py-3"
-                            style={{
-                              backgroundColor: hexToRgba(workspaceMainBackground, 0.92),
-                              border: `1px solid ${hexToRgba(workspaceMetricBorder, 0.62)}`,
-                            }}
-                          >
-                            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-                              {teamLabels[item.ownerTeam] || item.ownerTeam}
-                            </p>
-                            <p className="mt-2 text-sm font-semibold leading-6 text-foreground">{item.title}</p>
-                          </div>
-                        ))
-                      ) : (
-                        <div
-                          className="rounded-2xl px-4 py-4 md:col-span-3"
-                          style={{
-                            backgroundColor: hexToRgba(workspaceMainBackground, 0.92),
-                            border: `1px solid ${hexToRgba(workspaceMetricBorder, 0.62)}`,
-                          }}
-                        >
-                          <p className="text-sm font-semibold text-foreground">All checklist items are completed.</p>
-                          <p className="mt-1 text-sm text-muted-foreground">This workspace is ready for final review or closure.</p>
-                        </div>
-                      )}
+                  <div className="min-w-0 flex-1">
+                    <h1 className="truncate text-[1.75rem] font-semibold tracking-[-0.05em] text-foreground">
+                      {project.merchantName}
+                    </h1>
+                    <p className="mt-1 text-sm font-medium text-muted-foreground">MID {project.mid}</p>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <Badge variant="secondary">{teamLabels[project.currentOwnerTeam] || project.currentOwnerTeam}</Badge>
+                      <Badge variant="outline">{phaseLabels[project.currentPhase] || project.currentPhase}</Badge>
+                      <Badge variant={project.pendingAcceptance ? "outline" : "default"}>
+                        {project.pendingAcceptance
+                          ? "Pending acceptance"
+                          : stateLabels[project.projectState] || projectStateLabels[project.projectState]}
+                      </Badge>
                     </div>
                   </div>
                 </div>
               </div>
-            </div>
 
-            <div className="flex h-full flex-col justify-center gap-3 self-stretch xl:pl-2">
-              {actionButtons.map((action) =>
-                action.href ? (
-                  <Button key={action.key} asChild variant="outline" className="h-14 justify-between rounded-2xl px-5 text-sm">
-                    <a href={action.href} target="_blank" rel="noreferrer">
-                      <span>{action.label}</span>
-                      {action.icon || <ArrowUpRight className="h-4 w-4" />}
-                    </a>
-                  </Button>
-                ) : (
-                  <Button
-                    key={action.key}
-                    variant={action.variant || "outline"}
-                    className="h-14 justify-between rounded-2xl px-5 text-sm"
-                    onClick={action.onClick}
+              <div
+                className="grid grid-cols-3"
+                style={{ borderTop: `1px solid ${hexToRgba(workspaceMainBorder, 0.62)}` }}
+              >
+                {[
+                  { label: "Checklist", value: `${completedChecklist}/${project.checklist.length}` },
+                  { label: "Internal", value: formatDuration(timeByParty.gokwik) },
+                  { label: "Merchant", value: formatDuration(timeByParty.merchant) },
+                ].map((item, index) => (
+                  <div
+                    key={item.label}
+                    className="px-3 py-4 text-center"
+                    style={{
+                      borderLeft: index === 0 ? "none" : `1px solid ${hexToRgba(workspaceMainBorder, 0.58)}`,
+                    }}
                   >
-                    <span>{action.label}</span>
-                    {action.icon || <ArrowUpRight className="h-4 w-4" />}
-                  </Button>
-                ),
-              )}
-            </div>
-          </div>
-        </section>
+                    <p className="text-xl font-semibold tracking-[-0.04em] text-foreground">{item.value}</p>
+                    <p className="mt-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                      {item.label}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </section>
 
-        <div className="grid gap-6 2xl:grid-cols-[minmax(0,1.25fr)_minmax(0,0.85fr)]">
-          <WorkspaceSection
-            title="Activity history"
-            description="Complete audit trail of user actions, system updates, ownership changes, and project milestones."
-            icon={<Activity className="h-5 w-5" />}
-            contentClassName="p-0"
-            className="min-h-[760px]"
-          >
-            <WorkspaceActivityTimeline project={project} />
-          </WorkspaceSection>
-
-          <div className="grid gap-6">
             <WorkspaceSection
-              title="Project details"
-              description="Enterprise snapshot for leadership, delivery, and operations review."
+              title="Project properties"
+              description="Operational owner, timing, and execution metadata."
               icon={<Layers3 className="h-5 w-5" />}
             >
-              <div className="grid gap-4 md:grid-cols-2">
-                {projectDetails.map((item) => (
-                  <WorkspaceMetricCard key={item.label} label={item.label} value={item.value || "—"} />
+              <div className="space-y-3">
+                {summaryDetails.map((item) => (
+                  <div
+                    key={item.label}
+                    className="flex items-start justify-between gap-4 rounded-2xl px-4 py-3"
+                    style={{
+                      backgroundColor: hexToRgba(workspaceMetricBackground, 0.88),
+                      border: `1px solid ${hexToRgba(workspaceMetricBorder, 0.72)}`,
+                    }}
+                  >
+                    <div className="flex min-w-0 items-center gap-2 text-sm text-muted-foreground">
+                      <span className="text-primary">{item.icon}</span>
+                      <span>{item.label}</span>
+                    </div>
+                    <span className="text-right text-sm font-semibold text-foreground">{item.value}</span>
+                  </div>
                 ))}
               </div>
             </WorkspaceSection>
 
             <WorkspaceSection
-              title="Checklist"
-              description="Execution summary across teams, with completion and milestone visibility."
-              icon={<ClipboardList className="h-5 w-5" />}
-              contentClassName="space-y-0"
+              title="Quick links"
+              description="Context links and execution readiness."
+              icon={<ArrowUpRight className="h-5 w-5" />}
             >
-              <WorkspaceChecklistPanel
-                groupedChecklist={groupedChecklist}
-                completedChecklist={completedChecklist}
-                totalChecklist={project.checklist.length}
-                currentPhase={phaseLabels[project.currentPhase] || project.currentPhase}
-              />
-            </WorkspaceSection>
+              <div className="space-y-3">
+                {externalActions.length > 0 ? (
+                  externalActions.map((action) => (
+                    <Button key={action.key} asChild variant="outline" className="h-11 w-full justify-between rounded-2xl px-4">
+                      <a href={action.href} target="_blank" rel="noreferrer">
+                        <span>{action.label}</span>
+                        {action.icon}
+                      </a>
+                    </Button>
+                  ))
+                ) : (
+                  <div
+                    className="rounded-2xl px-4 py-3 text-sm text-muted-foreground"
+                    style={{
+                      backgroundColor: hexToRgba(workspaceMetricBackground, 0.88),
+                      border: `1px solid ${hexToRgba(workspaceMetricBorder, 0.72)}`,
+                    }}
+                  >
+                    No external project links available yet.
+                  </div>
+                )}
 
-            {(project.notes.currentPhaseComment || project.notes.projectNotes || project.notes.mintNotes) && (
-              <WorkspaceSection
-                title="Operational notes"
-                description="High-signal narrative context captured during execution."
-                icon={<Target className="h-5 w-5" />}
-              >
-                <div className="grid gap-4">
-                  {project.notes.currentPhaseComment ? (
-                    <WorkspaceMetricCard label="Current phase comment" value={project.notes.currentPhaseComment} eyebrow="Active" />
-                  ) : null}
-                  {project.notes.projectNotes ? (
-                    <WorkspaceMetricCard label="Project notes" value={project.notes.projectNotes} eyebrow="Context" />
-                  ) : null}
-                  {project.notes.mintNotes ? (
-                    <WorkspaceMetricCard label="MINT notes" value={project.notes.mintNotes} eyebrow="Presales" />
-                  ) : null}
+                <div
+                  className="rounded-2xl px-4 py-3 text-sm"
+                  style={{
+                    backgroundColor: hexToRgba(workspaceMetricBackground, 0.88),
+                    border: `1px solid ${hexToRgba(workspaceMetricBorder, 0.72)}`,
+                  }}
+                >
+                  <p className="font-semibold text-foreground">Transfer readiness</p>
+                  <p className="mt-1 leading-6 text-muted-foreground">
+                    {canTransfer
+                      ? isTransferReady
+                        ? "This project is ready to be transferred to the next team."
+                        : "Complete all checklist items for the current team to unlock transfer."
+                      : "Transfer becomes available only for the active owning team during eligible phases."}
+                  </p>
                 </div>
-              </WorkspaceSection>
-            )}
-          </div>
+              </div>
+            </WorkspaceSection>
+          </aside>
+
+          <section
+            className="overflow-hidden rounded-[1.9rem] shadow-[0_28px_90px_-52px_hsl(var(--foreground)/0.2)]"
+            style={{
+              backgroundColor: hexToRgba(workspaceMainBackground, 0.97),
+              border: `1px solid ${hexToRgba(workspaceMainBorder, 0.9)}`,
+            }}
+          >
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col">
+              <div className="flex flex-col gap-4 p-5 lg:p-6">
+                <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+                  <div className="flex flex-wrap gap-2">
+                    {actionTabs.map((tab) => (
+                      <Button
+                        key={tab.value}
+                        type="button"
+                        variant={activeTab === tab.value ? "default" : "outline"}
+                        className="h-11 rounded-2xl px-4"
+                        onClick={() => setActiveTab(tab.value)}
+                      >
+                        {tab.icon}
+                        {tab.label}
+                      </Button>
+                    ))}
+                  </div>
+
+                  <div className="flex flex-wrap justify-start gap-2 xl:justify-end">
+                    <Button variant="outline" className="h-11 rounded-2xl px-4" onClick={() => setEditOpen(true)}>
+                      <FileText className="h-4 w-4" />
+                      Edit Project
+                    </Button>
+                    {currentUser?.team === "manager" ? (
+                      <Button variant="outline" className="h-11 rounded-2xl px-4" onClick={() => setAssignOpen(true)}>
+                        <UserPlus className="h-4 w-4" />
+                        Assign Owner
+                      </Button>
+                    ) : null}
+                    {canTransfer ? (
+                      <Button
+                        variant={isTransferReady ? "default" : "outline"}
+                        className="h-11 rounded-2xl px-4"
+                        onClick={() => isTransferReady && setTransferOpen(true)}
+                        disabled={!isTransferReady}
+                      >
+                        <ArrowRight className="h-4 w-4" />
+                        Transfer Project
+                      </Button>
+                    ) : null}
+                    {currentUser?.team === "manager" ? (
+                      <Button variant="destructive" className="h-11 rounded-2xl px-4" onClick={() => setDeleteConfirmOpen(true)}>
+                        <Trash2 className="h-4 w-4" />
+                        Delete
+                      </Button>
+                    ) : null}
+                  </div>
+                </div>
+
+                <div
+                  className="flex flex-wrap items-center gap-3 rounded-[1.35rem] px-4 py-3"
+                  style={{
+                    backgroundColor: hexToRgba(workspaceMetricBackground, 0.88),
+                    border: `1px solid ${hexToRgba(workspaceMetricBorder, 0.72)}`,
+                  }}
+                >
+                  <Badge variant="outline" className="px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em]">
+                    Activity type: All
+                  </Badge>
+                  <Badge variant="outline" className="px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em]">
+                    Time: All time
+                  </Badge>
+                  <Badge variant="secondary" className="px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em]">
+                    {project.transferHistory.length} handoffs tracked
+                  </Badge>
+                </div>
+
+                <TabsList
+                  className="h-auto w-full justify-start gap-1 overflow-x-auto rounded-[1.3rem] p-1"
+                  style={{
+                    backgroundColor: hexToRgba(workspaceMetricBorder, 0.12),
+                    border: `1px solid ${hexToRgba(sectionBorder, 0.6)}`,
+                  }}
+                >
+                  {actionTabs.map((tab) => (
+                    <TabsTrigger
+                      key={tab.value}
+                      value={tab.value}
+                      className="min-w-max rounded-[1rem] px-4 py-2.5 text-sm font-semibold data-[state=active]:shadow-none"
+                    >
+                      {tab.label}
+                    </TabsTrigger>
+                  ))}
+                </TabsList>
+              </div>
+
+              <div className="px-5 pb-5 lg:px-6 lg:pb-6">
+                <TabsContent value="activity" className="m-0">
+                  <WorkspaceSection
+                    title="Activity history"
+                    description="Complete audit trail of user actions, system updates, ownership changes, and project milestones."
+                    icon={<Activity className="h-5 w-5" />}
+                    contentClassName="p-0"
+                    className="min-h-[760px]"
+                  >
+                    <WorkspaceActivityTimeline project={project} />
+                  </WorkspaceSection>
+                </TabsContent>
+
+                <TabsContent value="details" className="m-0">
+                  <WorkspaceSection
+                    title="Project details"
+                    description="Enterprise snapshot for leadership, delivery, and operations review."
+                    icon={<Layers3 className="h-5 w-5" />}
+                  >
+                    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                      {projectDetails.map((item) => (
+                        <WorkspaceMetricCard key={item.label} label={item.label} value={item.value || "—"} />
+                      ))}
+                    </div>
+                  </WorkspaceSection>
+                </TabsContent>
+
+                <TabsContent value="checklist" className="m-0">
+                  <WorkspaceSection
+                    title="Checklist"
+                    description="Execution summary across teams, with completion and milestone visibility."
+                    icon={<ClipboardList className="h-5 w-5" />}
+                    contentClassName="space-y-0"
+                  >
+                    <WorkspaceChecklistPanel
+                      groupedChecklist={groupedChecklist}
+                      completedChecklist={completedChecklist}
+                      totalChecklist={project.checklist.length}
+                      currentPhase={phaseLabels[project.currentPhase] || project.currentPhase}
+                    />
+                  </WorkspaceSection>
+                </TabsContent>
+
+                <TabsContent value="notes" className="m-0">
+                  <WorkspaceSection
+                    title="Operational notes"
+                    description="High-signal narrative context captured during execution."
+                    icon={<NotebookPen className="h-5 w-5" />}
+                  >
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <WorkspaceMetricCard
+                        label="Current phase comment"
+                        value={project.notes.currentPhaseComment || "No current phase comment added."}
+                        eyebrow="Active"
+                      />
+                      <WorkspaceMetricCard
+                        label="Project notes"
+                        value={project.notes.projectNotes || "No project notes added."}
+                        eyebrow="Context"
+                      />
+                      <WorkspaceMetricCard
+                        label="MINT notes"
+                        value={project.notes.mintNotes || "No MINT notes added."}
+                        eyebrow="Presales"
+                      />
+                      <WorkspaceMetricCard
+                        label="Phase 2 comment"
+                        value={project.notes.phase2Comment || "No phase 2 comment added."}
+                        eyebrow="Future"
+                      />
+                    </div>
+                  </WorkspaceSection>
+                </TabsContent>
+              </div>
+            </Tabs>
+          </section>
         </div>
       </div>
 
-      <ProjectDetailsDialog project={project} open={detailsOpen} onOpenChange={setDetailsOpen} />
-      <ChecklistDialog project={project} open={checklistOpen} onOpenChange={setChecklistOpen} />
       <EditProjectDialog project={project} open={editOpen} onOpenChange={setEditOpen} onSave={handleSaveEdit} />
       <AssignOwnerDialog project={project} open={assignOpen} onOpenChange={setAssignOpen} />
+      <TransferDialog
+        project={project}
+        open={transferOpen}
+        onOpenChange={setTransferOpen}
+        onTransfer={handleTransfer}
+      />
 
       <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
         <AlertDialogContent>
