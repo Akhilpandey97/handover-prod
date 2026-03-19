@@ -55,6 +55,7 @@ import {
   Building2,
   ChevronDown,
   ChevronRight,
+  ChevronLeft,
   Upload,
   Plus,
   Target,
@@ -71,6 +72,8 @@ import {
   CalendarDays,
   Mail,
   GripVertical,
+  List,
+  X,
 } from "lucide-react";
 import { exportProjectsToCSV } from "@/utils/exportProjects";
 import { exportProjectChecklistCSV, exportTeamOwnerCSV } from "@/utils/reportExportCSV";
@@ -94,7 +97,7 @@ const SETTINGS_SUB_TABS = ["general", "workflow", "fields", "custom-fields", "ch
 const PREDEFINED_REPORT_TYPES = ["executive", "operational", "merchant", "tactical", "project", "team"];
 
 // All nav items that can be toggled
-const ALL_NAV_ITEMS = ["dashboard", "projects", "kanban", "calendar", "reports", "checklist", "users", "settings", "emails"];
+const ALL_NAV_ITEMS = ["dashboard", "projects", "listview", "kanban", "calendar", "reports", "checklist", "users", "settings", "emails"];
 
 export const ManagerDashboard = () => {
   const { currentUser, logout } = useAuth();
@@ -128,6 +131,36 @@ export const ManagerDashboard = () => {
   // Sidebar expand state for sub-menus
   const [reportsExpanded, setReportsExpanded] = useState(false);
   const [settingsExpanded, setSettingsExpanded] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+
+  // List view column selection
+  const LIST_VIEW_COLUMNS = [
+    { key: "merchantName", label: "Merchant Name" },
+    { key: "mid", label: "MID" },
+    { key: "platform", label: "Platform" },
+    { key: "category", label: "Category" },
+    { key: "merchantState", label: "Merchant State" },
+    { key: "mintComment", label: "Mint Comment" },
+    { key: "liveDate", label: "Live Date" },
+    { key: "recentComments", label: "Recent Comments" },
+    { key: "status", label: "Status" },
+    { key: "arr", label: "ARR" },
+    { key: "owner", label: "Owner" },
+    { key: "salesSpoc", label: "Sales SPOC" },
+    { key: "kickOffDate", label: "Start Date" },
+    { key: "goLiveDate", label: "Go-Live Date" },
+    { key: "integrationType", label: "Integration Type" },
+    { key: "pgOnboarding", label: "PG Onboarding" },
+    { key: "goLivePercent", label: "Go-Live %" },
+  ];
+  const [listViewColumns, setListViewColumns] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem("listview_columns");
+      return saved ? JSON.parse(saved) : ["merchantName", "platform", "category", "merchantState", "mintComment", "liveDate", "recentComments", "status"];
+    } catch { return ["merchantName", "platform", "category", "merchantState", "mintComment", "liveDate", "recentComments", "status"]; }
+  });
+  const [listViewPage, setListViewPage] = useState(1);
+  const [listViewPageSize, setListViewPageSize] = useState(10);
 
   // Nav visibility from labels
   const getNavVisibility = (): Record<string, boolean> => {
@@ -140,7 +173,7 @@ export const ManagerDashboard = () => {
   const navVisibility = getNavVisibility();
 
   // Draggable tab order
-  const DEFAULT_TAB_ORDER = ["dashboard", "projects", "calendar", "reports", "checklist", "users", "settings", "kanban", "emails"];
+  const DEFAULT_TAB_ORDER = ["dashboard", "projects", "listview", "calendar", "reports", "checklist", "users", "settings", "kanban", "emails"];
   const [tabOrder, setTabOrder] = useState<string[]>(() => {
     try {
       const saved = localStorage.getItem("manager_tab_order");
@@ -192,7 +225,7 @@ export const ManagerDashboard = () => {
       }
     }
   }, []);
-  const TAB_CONFIG_KEYS = ["dashboard", "projects", "calendar", "reports", "checklist", "users", "settings", "kanban", "emails", "tenants"];
+  const TAB_CONFIG_KEYS = ["dashboard", "projects", "listview", "calendar", "reports", "checklist", "users", "settings", "kanban", "emails", "tenants"];
 
   // Calculate project time stats helper - FIXED: uses checklist-level time
   const calculateProjectStats = (project: Project) => {
@@ -531,6 +564,7 @@ export const ManagerDashboard = () => {
   const TAB_CONFIG: Record<string, { icon: React.ReactNode; label: string }> = {
     dashboard: { icon: <PieChart className="h-4 w-4" />, label: "Dashboard" },
     projects: { icon: <FolderKanban className="h-4 w-4" />, label: "Projects" },
+    listview: { icon: <List className="h-4 w-4" />, label: "List View" },
     calendar: { icon: <CalendarDays className="h-4 w-4" />, label: "Calendar" },
     reports: { icon: <TrendingUp className="h-4 w-4" />, label: "Reports" },
     checklist: { icon: <ListChecks className="h-4 w-4" />, label: "Checklist" },
@@ -751,50 +785,82 @@ export const ManagerDashboard = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 flex">
-      {/* Left Sidebar — dark themed */}
-      <aside className="w-72 bg-card border-r border-border flex flex-col shrink-0">
+      {/* Left Sidebar — collapsible */}
+      <aside className={cn(
+        "bg-card border-r border-border flex flex-col shrink-0 transition-all duration-300 relative",
+        sidebarCollapsed ? "w-16" : "w-72"
+      )}>
         {/* Logo & Title */}
         <div className="p-5 border-b border-border">
           <div className="flex items-center gap-3">
             {appLabels.org_logo_url ? (
-              <img src={appLabels.org_logo_url} alt="Logo" className="h-12 w-12 rounded-xl object-contain shadow-lg ring-2 ring-primary/20" />
+              <img src={appLabels.org_logo_url} alt="Logo" className={cn("rounded-xl object-contain shadow-lg ring-2 ring-primary/20", sidebarCollapsed ? "h-8 w-8" : "h-12 w-12")} />
             ) : (
-              <div className="h-12 w-12 rounded-xl bg-primary flex items-center justify-center shadow-lg ring-2 ring-primary/30">
-                <BarChart3 className="h-6 w-6 text-primary-foreground" />
+              <div className={cn("rounded-xl bg-primary flex items-center justify-center shadow-lg ring-2 ring-primary/30", sidebarCollapsed ? "h-8 w-8" : "h-12 w-12")}>
+                <BarChart3 className={cn(sidebarCollapsed ? "h-4 w-4" : "h-6 w-6", "text-primary-foreground")} />
               </div>
             )}
-            <div>
-              <h1 className="font-bold text-base text-foreground">{appLabels.app_title}</h1>
-              <p className="text-xs text-muted-foreground">{appLabels.app_subtitle}</p>
-            </div>
+            {!sidebarCollapsed && (
+              <div>
+                <h1 className="font-bold text-base text-foreground">{appLabels.app_title}</h1>
+                <p className="text-xs text-muted-foreground">{appLabels.app_subtitle}</p>
+              </div>
+            )}
           </div>
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 px-3 py-4 overflow-y-auto">
-          <p className="text-[11px] font-semibold text-muted-foreground/60 uppercase tracking-widest mb-3 px-4">
-            Navigation
-          </p>
+        <nav className="flex-1 px-2 py-4 overflow-y-auto">
+          {!sidebarCollapsed && (
+            <p className="text-[11px] font-semibold text-muted-foreground/60 uppercase tracking-widest mb-3 px-4">
+              Navigation
+            </p>
+          )}
           <div className="space-y-1">
-            {sidebarTabs.map((tab) => renderNavItem(tab))}
+            {sidebarTabs.map((tab) => sidebarCollapsed ? (
+              <button
+                key={tab}
+                onClick={() => {
+                  if (tab === "reports") { setActiveTab("reports"); }
+                  else if (tab === "settings") { setActiveTab("settings"); }
+                  else { setActiveTab(tab); }
+                }}
+                className={cn(
+                  "w-full flex items-center justify-center p-3 rounded-xl transition-all duration-200",
+                  activeTab === tab
+                    ? "bg-primary text-primary-foreground shadow-lg shadow-primary/25"
+                    : "hover:bg-muted/60 text-foreground/60 hover:text-foreground"
+                )}
+                title={TAB_CONFIG[tab]?.label}
+              >
+                {TAB_CONFIG[tab]?.icon}
+              </button>
+            ) : renderNavItem(tab))}
           </div>
         </nav>
 
         {/* User card at bottom */}
         <div className="p-4 border-t border-border">
           <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-xl bg-primary flex items-center justify-center text-primary-foreground font-bold text-sm shadow-md">
+            <div className={cn("rounded-xl bg-primary flex items-center justify-center text-primary-foreground font-bold text-sm shadow-md", sidebarCollapsed ? "h-8 w-8 text-xs" : "h-10 w-10")}>
               {currentUser.name.charAt(0)}
             </div>
-            <div className="flex-1 min-w-0">
-              <p className="font-semibold text-sm text-foreground truncate">{currentUser.name}</p>
-              <p className="text-xs text-muted-foreground">Manager</p>
-            </div>
-            <Button variant="ghost" size="icon" onClick={logout} className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10">
-              <LogOut className="h-4 w-4" />
-            </Button>
+            {!sidebarCollapsed && (
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-sm text-foreground truncate">{currentUser.name}</p>
+                <p className="text-xs text-muted-foreground">Manager</p>
+              </div>
+            )}
           </div>
         </div>
+
+        {/* Collapse/Expand arrow button */}
+        <button
+          onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+          className="absolute -right-3 bottom-20 h-6 w-6 rounded-full bg-primary text-primary-foreground shadow-md flex items-center justify-center hover:bg-primary/90 transition-colors z-10"
+        >
+          {sidebarCollapsed ? <ChevronRight className="h-3.5 w-3.5" /> : <ChevronLeft className="h-3.5 w-3.5" />}
+        </button>
       </aside>
 
       {/* Main Content */}
@@ -841,6 +907,10 @@ export const ManagerDashboard = () => {
 
             <div className="flex items-center gap-2 pl-3 border-l border-border/50">
               <ThemeToggle />
+              <Button variant="outline" size="sm" onClick={logout} className="gap-1.5 h-8 text-xs text-destructive hover:text-destructive hover:bg-destructive/10">
+                <LogOut className="h-3.5 w-3.5" />
+                Logout
+              </Button>
             </div>
           </div>
         </header>
@@ -1332,7 +1402,164 @@ export const ManagerDashboard = () => {
             </Card>
           </div>}
 
-          {/* ========= CALENDAR TAB ========= */}
+          {/* ========= LIST VIEW TAB ========= */}
+          {activeTab === "listview" && <div className="space-y-4">
+            {/* Column selector chips */}
+            <Card className="shadow-xl border-border/50">
+              <CardHeader className="border-b bg-muted/30 py-3">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <List className="h-5 w-5 text-primary" />
+                    List View
+                  </CardTitle>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-muted-foreground">
+                      {filteredProjects.length} project{filteredProjects.length !== 1 ? "s" : ""}
+                    </span>
+                    <Select value={String(listViewPageSize)} onValueChange={(v) => { setListViewPageSize(Number(v)); setListViewPage(1); }}>
+                      <SelectTrigger className="w-[100px] h-8 text-xs"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="10">10 / Page</SelectItem>
+                        <SelectItem value="25">25 / Page</SelectItem>
+                        <SelectItem value="50">50 / Page</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </CardHeader>
+              <div className="px-4 py-3 border-b flex flex-wrap gap-2">
+                {LIST_VIEW_COLUMNS.map(col => {
+                  const active = listViewColumns.includes(col.key);
+                  return (
+                    <button
+                      key={col.key}
+                      onClick={() => {
+                        const newCols = active
+                          ? listViewColumns.filter(c => c !== col.key)
+                          : [...listViewColumns, col.key];
+                        setListViewColumns(newCols);
+                        localStorage.setItem("listview_columns", JSON.stringify(newCols));
+                      }}
+                      className={cn(
+                        "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-colors",
+                        active
+                          ? "bg-primary text-primary-foreground border-primary"
+                          : "bg-muted/40 text-muted-foreground border-border hover:bg-muted"
+                      )}
+                    >
+                      {col.label}
+                      {active && <X className="h-3 w-3" />}
+                    </button>
+                  );
+                })}
+              </div>
+              <CardContent className="p-0">
+                <div className="overflow-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        {listViewColumns.map(colKey => {
+                          const col = LIST_VIEW_COLUMNS.find(c => c.key === colKey);
+                          return col ? <TableHead key={colKey} className="whitespace-nowrap">{col.label}</TableHead> : null;
+                        })}
+                        <TableHead className="w-20">Action</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {(() => {
+                        const totalPages = Math.ceil(filteredProjects.length / listViewPageSize);
+                        const paged = filteredProjects.slice((listViewPage - 1) * listViewPageSize, listViewPage * listViewPageSize);
+                        return paged.map(project => {
+                          const getColValue = (key: string) => {
+                            switch (key) {
+                              case "merchantName": return project.merchantName;
+                              case "mid": return project.mid;
+                              case "platform": return project.platform || "—";
+                              case "category": return project.category || "—";
+                              case "merchantState": return getProjectPhaseLabel(project);
+                              case "mintComment": return project.notes?.currentPhaseComment || project.notes?.mintNotes || "—";
+                              case "liveDate": return project.dates.goLiveDate || project.dates.expectedGoLiveDate || "—";
+                              case "recentComments": {
+                                const comments = project.checklist
+                                  .filter(c => c.comment)
+                                  .sort((a, b) => (b.commentAt || "").localeCompare(a.commentAt || ""))
+                                  .slice(0, 3)
+                                  .map(c => `${c.commentAt?.slice(0, 10) || "NA"} : ${c.comment?.slice(0, 30)}...`);
+                                return comments.length > 0 ? comments.join("\n") : "—";
+                              }
+                              case "status": return stateLabelsFromCtx[project.projectState] || projectStateLabels[project.projectState];
+                              case "arr": return `${project.arr}`;
+                              case "owner": return project.assignedOwnerName || "Unassigned";
+                              case "salesSpoc": return project.salesSpoc || "—";
+                              case "kickOffDate": return project.dates.kickOffDate;
+                              case "goLiveDate": return project.dates.goLiveDate || project.dates.expectedGoLiveDate || "—";
+                              case "integrationType": return project.integrationType || "—";
+                              case "pgOnboarding": return project.pgOnboarding || "—";
+                              case "goLivePercent": return `${project.goLivePercent || 0}%`;
+                              default: return "—";
+                            }
+                          };
+
+                          const statusColor = project.projectState === "in_progress" ? "text-amber-500" :
+                            project.projectState === "live" ? "text-emerald-500" :
+                            project.projectState === "blocked" ? "text-destructive" : "text-muted-foreground";
+
+                          return (
+                            <TableRow key={project.id}>
+                              {listViewColumns.map(colKey => (
+                                <TableCell key={colKey} className={cn("text-sm", colKey === "status" && statusColor, colKey === "recentComments" && "max-w-[200px]")}>
+                                  {colKey === "recentComments" ? (
+                                    <div className="space-y-0.5">
+                                      {getColValue(colKey).split("\n").map((line, i) => (
+                                        <div key={i} className="text-xs text-muted-foreground truncate">{line}</div>
+                                      ))}
+                                    </div>
+                                  ) : colKey === "mintComment" ? (
+                                    <span className="truncate block max-w-[180px]" title={getColValue(colKey)}>{getColValue(colKey)}</span>
+                                  ) : (
+                                    getColValue(colKey)
+                                  )}
+                                </TableCell>
+                              ))}
+                              <TableCell>
+                                <div className="flex gap-1">
+                                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { /* edit */ }}>
+                                    <Pencil className="h-3.5 w-3.5" />
+                                  </Button>
+                                  <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => deleteProject(project.id)}>
+                                    <Trash2 className="h-3.5 w-3.5" />
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          );
+                        });
+                      })()}
+                    </TableBody>
+                  </Table>
+                </div>
+                {/* Pagination */}
+                {filteredProjects.length > listViewPageSize && (
+                  <div className="flex items-center justify-between px-4 py-3 border-t">
+                    <div className="flex items-center gap-2">
+                      <Button variant="outline" size="sm" disabled={listViewPage <= 1} onClick={() => setListViewPage(p => p - 1)} className="h-8 w-8 p-0">
+                        <ChevronLeft className="h-4 w-4" />
+                      </Button>
+                      {Array.from({ length: Math.ceil(filteredProjects.length / listViewPageSize) }, (_, i) => i + 1).slice(0, 5).map(page => (
+                        <Button key={page} variant={listViewPage === page ? "default" : "outline"} size="sm" onClick={() => setListViewPage(page)} className="h-8 w-8 p-0 text-xs">
+                          {page}
+                        </Button>
+                      ))}
+                      <Button variant="outline" size="sm" disabled={listViewPage >= Math.ceil(filteredProjects.length / listViewPageSize)} onClick={() => setListViewPage(p => p + 1)} className="h-8 w-8 p-0">
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>}
+
           {activeTab === "calendar" && <div className="space-y-6">
             <ProjectCalendar />
           </div>}
