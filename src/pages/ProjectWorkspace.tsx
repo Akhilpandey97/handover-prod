@@ -429,7 +429,7 @@ const buildActionDrivenSummary = (
     },
     {
       title: "Delivery status",
-      body: `${project.merchantName} is in ${project.currentPhase} and currently marked ${project.projectState.replaceAll("_", " ")} with ${completedChecklist}/${project.checklist.length} checklist items complete.`,
+      body: `${project.merchantName} is in ${project.currentPhase} and currently marked ${project.projectState.replace(/_/g, " ")} with ${completedChecklist}/${project.checklist.length} checklist items complete.`,
       tone: "border-[#d8e2f0] bg-white",
     },
     {
