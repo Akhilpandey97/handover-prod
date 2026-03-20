@@ -1,0 +1,296 @@
+import { Project, calculateTimeFromChecklist, calculateProjectResponsibilityFromChecklist, formatDuration } from "@/data/projectsData";
+import { useLabels } from "@/contexts/LabelsContext";
+import { useCustomFields, useCustomFieldValues } from "@/hooks/useCustomFields";
+import { CustomFieldsDisplay } from "./CustomFieldsRenderer";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  Building2,
+  Calendar,
+  Clock,
+  DollarSign,
+  ExternalLink,
+  Globe,
+  Link2,
+  MapPin,
+  Minus,
+  TrendingUp,
+  User,
+  Users,
+} from "lucide-react";
+import { format } from "date-fns";
+
+interface ProjectDetailsDialogProps {
+  project: Project | null;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}
+
+export const ProjectDetailsDialog = ({
+  project,
+  open,
+  onOpenChange,
+}: ProjectDetailsDialogProps) => {
+  const { getLabel, teamLabels, responsibilityLabels } = useLabels();
+  const { fields: customFields } = useCustomFields();
+  const { values: customValues } = useCustomFieldValues(project?.id);
+
+  if (!project) return null;
+
+  const computedResponsibility = calculateProjectResponsibilityFromChecklist(project.checklist);
+  const timeByParty = calculateTimeFromChecklist(project.checklist);
+
+  const DetailRow = ({ icon: Icon, label, value, isLink }: { icon: any; label: string; value?: string; isLink?: boolean }) => (
+    <div className="flex items-start gap-3 py-2">
+      <Icon className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+      <div className="flex-1 min-w-0">
+        <p className="text-xs text-muted-foreground">{label}</p>
+        {isLink && value ? (
+          <a href={value} target="_blank" rel="noopener noreferrer" className="text-sm text-primary hover:underline flex items-center gap-1">
+            Open Link <ExternalLink className="h-3 w-3" />
+          </a>
+        ) : (
+          <p className="text-sm font-medium truncate">{value || "Not specified"}</p>
+        )}
+      </div>
+    </div>
+  );
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-2xl max-h-[85vh]">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+              <Building2 className="h-5 w-5 text-primary" />
+            </div>
+            <div>
+              <span>{project.merchantName}</span>
+              <p className="text-sm font-normal text-muted-foreground mt-0.5">
+                {getLabel("field_mid")}: {project.mid}
+              </p>
+            </div>
+          </DialogTitle>
+        </DialogHeader>
+
+        <ScrollArea className="max-h-[60vh] pr-4">
+          <div className="space-y-6">
+            {/* Computed Responsibility Display */}
+            <div className="p-4 rounded-lg border bg-card space-y-3">
+              <div className="flex items-center justify-between">
+                <h4 className="text-sm font-semibold flex items-center gap-2">
+                  <Clock className="h-4 w-4" />
+                  Action Pending On
+                </h4>
+                <Badge
+                  variant="secondary"
+                  className={
+                    computedResponsibility === "gokwik"
+                      ? "bg-primary/10 text-primary"
+                      : computedResponsibility === "merchant"
+                      ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
+                      : "bg-muted text-muted-foreground"
+                  }
+                >
+                  {computedResponsibility === "gokwik" && <Building2 className="h-3 w-3 mr-1" />}
+                  {computedResponsibility === "merchant" && <Users className="h-3 w-3 mr-1" />}
+                  {computedResponsibility === "neutral" && <Minus className="h-3 w-3 mr-1" />}
+                  {responsibilityLabels[computedResponsibility] || computedResponsibility}
+                </Badge>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Auto-calculated based on checklist item assignments
+              </p>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="p-3 rounded-lg bg-primary/5 border border-primary/20">
+                <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
+                  <Clock className="h-3 w-3" />
+                  {responsibilityLabels.gokwik} Time
+                </div>
+                <p className="text-lg font-bold text-primary">{formatDuration(timeByParty.gokwik)}</p>
+              </div>
+              <div className="p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
+                <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
+                  <Clock className="h-3 w-3" />
+                  {responsibilityLabels.merchant} Time
+                </div>
+                <p className="text-lg font-bold text-amber-600 dark:text-amber-400">{formatDuration(timeByParty.merchant)}</p>
+              </div>
+            </div>
+
+            <Separator />
+
+            {/* Business Metrics */}
+            <div>
+              <h4 className="text-sm font-semibold mb-3 flex items-center gap-2">
+                <DollarSign className="h-4 w-4" />
+                Business Metrics
+              </h4>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="p-3 rounded-lg bg-muted/50">
+                  <p className="text-xs text-muted-foreground">{getLabel("field_arr")}</p>
+                  <p className="text-lg font-bold">{project.arr} cr</p>
+                </div>
+                <div className="p-3 rounded-lg bg-muted/50">
+                  <p className="text-xs text-muted-foreground">{getLabel("field_txns_per_day")}</p>
+                  <p className="text-lg font-bold">{project.txnsPerDay}</p>
+                </div>
+                <div className="p-3 rounded-lg bg-muted/50">
+                  <p className="text-xs text-muted-foreground">{getLabel("field_aov")}</p>
+                  <p className="text-lg font-bold">₹{project.aov.toLocaleString()}</p>
+                </div>
+                <div className="p-3 rounded-lg bg-muted/50">
+                  <p className="text-xs text-muted-foreground">{getLabel("field_go_live_percent")}</p>
+                  <p className="text-lg font-bold">{project.goLivePercent}%</p>
+                </div>
+              </div>
+            </div>
+
+            <Separator />
+
+            {/* Project Info */}
+            <div>
+              <h4 className="text-sm font-semibold mb-3 flex items-center gap-2">
+                <MapPin className="h-4 w-4" />
+                Project Information
+              </h4>
+              <div className="grid grid-cols-2 gap-x-4">
+                <DetailRow icon={Globe} label={getLabel("field_platform")} value={project.platform} />
+                <DetailRow icon={Building2} label={getLabel("field_category")} value={project.category} />
+                <DetailRow icon={User} label={getLabel("field_sales_spoc")} value={project.salesSpoc} />
+                <DetailRow icon={TrendingUp} label={getLabel("field_integration_type")} value={project.integrationType} />
+                <DetailRow icon={Building2} label={getLabel("field_pg_onboarding")} value={project.pgOnboarding} />
+                <DetailRow icon={User} label="Current Owner" value={teamLabels[project.currentOwnerTeam]} />
+              </div>
+            </div>
+
+            <Separator />
+
+            {/* Dates */}
+            <div>
+              <h4 className="text-sm font-semibold mb-3 flex items-center gap-2">
+                <Calendar className="h-4 w-4" />
+                Important Dates
+              </h4>
+              <div className="grid grid-cols-2 gap-x-4">
+                <DetailRow
+                  icon={Calendar}
+                  label={getLabel("field_kick_off_date")}
+                  value={format(new Date(project.dates.kickOffDate), "dd MMM yyyy")}
+                />
+                <DetailRow
+                  icon={Calendar}
+                  label={getLabel("field_expected_go_live_date")}
+                  value={project.dates.expectedGoLiveDate ? format(new Date(project.dates.expectedGoLiveDate), "dd MMM yyyy") : "TBD"}
+                />
+                <DetailRow
+                  icon={Calendar}
+                  label={getLabel("field_actual_go_live_date")}
+                  value={project.dates.goLiveDate ? format(new Date(project.dates.goLiveDate), "dd MMM yyyy") : "TBD"}
+                />
+              </div>
+            </div>
+
+            <Separator />
+
+            {/* Links */}
+            <div>
+              <h4 className="text-sm font-semibold mb-3 flex items-center gap-2">
+                <Link2 className="h-4 w-4" />
+                Links
+              </h4>
+              <div className="grid grid-cols-2 gap-x-4">
+                <DetailRow icon={Globe} label={getLabel("field_brand_url")} value={project.links.brandUrl} isLink />
+                <DetailRow icon={Link2} label={getLabel("field_jira_link")} value={project.links.jiraLink} isLink />
+                <DetailRow icon={Link2} label={getLabel("field_brd_link")} value={project.links.brdLink} isLink />
+                <DetailRow icon={Link2} label={getLabel("field_mint_checklist_link")} value={project.links.mintChecklistLink} isLink />
+                <DetailRow icon={Link2} label={getLabel("field_integration_checklist_link")} value={project.links.integrationChecklistLink} isLink />
+              </div>
+            </div>
+
+            <Separator />
+
+            {/* Custom Fields */}
+            <CustomFieldsDisplay fields={customFields} values={customValues} />
+
+            <Separator />
+
+            {/* Notes */}
+            <div>
+              <h4 className="text-sm font-semibold mb-3">Notes</h4>
+              <div className="space-y-3">
+                {project.notes.mintNotes && (
+                  <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900">
+                    <p className="text-xs font-medium text-blue-700 dark:text-blue-400 mb-1">{getLabel("field_mint_notes")}</p>
+                    <p className="text-sm">{project.notes.mintNotes}</p>
+                  </div>
+                )}
+                {project.notes.projectNotes && (
+                  <div className="p-3 rounded-lg bg-muted/50 border">
+                    <p className="text-xs font-medium text-muted-foreground mb-1">{getLabel("field_project_notes")}</p>
+                    <p className="text-sm">{project.notes.projectNotes}</p>
+                  </div>
+                )}
+                {project.notes.currentPhaseComment && (
+                  <div className="p-3 rounded-lg bg-muted/50 border">
+                    <p className="text-xs font-medium text-muted-foreground mb-1">{getLabel("field_current_phase_comment")}</p>
+                    <p className="text-sm whitespace-pre-wrap">{project.notes.currentPhaseComment}</p>
+                  </div>
+                )}
+                {project.notes.phase2Comment && (
+                  <div className="p-3 rounded-lg bg-purple-50 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-900">
+                    <p className="text-xs font-medium text-purple-700 dark:text-purple-400 mb-1">{getLabel("field_phase2_comment")}</p>
+                    <p className="text-sm whitespace-pre-wrap">{project.notes.phase2Comment}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Transfer History */}
+            {project.transferHistory.length > 0 && (
+              <>
+                <Separator />
+                <div>
+                  <h4 className="text-sm font-semibold mb-3">Transfer History</h4>
+                  <div className="space-y-3">
+                    {project.transferHistory.map((transfer, idx) => (
+                      <div key={transfer.id} className="relative pl-6 pb-3 border-l-2 border-muted last:border-transparent">
+                        <div className="absolute left-[-5px] top-0 h-2 w-2 rounded-full bg-primary" />
+                        <div className="space-y-1">
+                          <p className="text-sm font-medium">
+                            {teamLabels[transfer.fromTeam]} → {teamLabels[transfer.toTeam]}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            Transferred by {transfer.transferredBy} on{" "}
+                            {format(new Date(transfer.transferredAt), "dd MMM yyyy, HH:mm")}
+                          </p>
+                          {transfer.acceptedBy && (
+                            <p className="text-xs text-green-600">
+                              Accepted by {transfer.acceptedBy} on{" "}
+                              {format(new Date(transfer.acceptedAt!), "dd MMM yyyy, HH:mm")}
+                            </p>
+                          )}
+                          {transfer.notes && (
+                            <p className="text-xs text-muted-foreground italic">"{transfer.notes}"</p>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        </ScrollArea>
+      </DialogContent>
+    </Dialog>
+  );
+};

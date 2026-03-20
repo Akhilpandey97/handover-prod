@@ -1,0 +1,1291 @@
+export type Json =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: Json | undefined }
+  | Json[]
+
+export type Database = {
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: "14.4"
+  }
+  public: {
+    Tables: {
+      app_settings: {
+        Row: {
+          category: string
+          created_at: string
+          id: string
+          key: string
+          tenant_id: string | null
+          updated_at: string
+          value: string
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          id?: string
+          key: string
+          tenant_id?: string | null
+          updated_at?: string
+          value: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          id?: string
+          key?: string
+          tenant_id?: string | null
+          updated_at?: string
+          value?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "app_settings_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chat_messages: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          role: string
+          tenant_id: string | null
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          role: string
+          tenant_id?: string | null
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          role?: string
+          tenant_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_messages_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      checklist_comments: {
+        Row: {
+          attachment_name: string | null
+          attachment_url: string | null
+          checklist_item_id: string
+          comment: string
+          created_at: string
+          id: string
+          tenant_id: string | null
+          user_id: string | null
+          user_name: string
+        }
+        Insert: {
+          attachment_name?: string | null
+          attachment_url?: string | null
+          checklist_item_id: string
+          comment: string
+          created_at?: string
+          id?: string
+          tenant_id?: string | null
+          user_id?: string | null
+          user_name: string
+        }
+        Update: {
+          attachment_name?: string | null
+          attachment_url?: string | null
+          checklist_item_id?: string
+          comment?: string
+          created_at?: string
+          id?: string
+          tenant_id?: string | null
+          user_id?: string | null
+          user_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "checklist_comments_checklist_item_id_fkey"
+            columns: ["checklist_item_id"]
+            isOneToOne: false
+            referencedRelation: "checklist_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "checklist_comments_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      checklist_form_assignments: {
+        Row: {
+          checklist_template_id: string
+          created_at: string
+          form_template_id: string
+          id: string
+          tenant_id: string | null
+        }
+        Insert: {
+          checklist_template_id: string
+          created_at?: string
+          form_template_id: string
+          id?: string
+          tenant_id?: string | null
+        }
+        Update: {
+          checklist_template_id?: string
+          created_at?: string
+          form_template_id?: string
+          id?: string
+          tenant_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "checklist_form_assignments_checklist_template_id_fkey"
+            columns: ["checklist_template_id"]
+            isOneToOne: false
+            referencedRelation: "checklist_templates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "checklist_form_assignments_form_template_id_fkey"
+            columns: ["form_template_id"]
+            isOneToOne: false
+            referencedRelation: "checklist_form_templates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "checklist_form_assignments_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      checklist_form_fields: {
+        Row: {
+          category: string
+          created_at: string
+          field_type: string
+          id: string
+          is_required: boolean
+          options: Json | null
+          question: string
+          sort_order: number
+          template_id: string
+          tenant_id: string | null
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          field_type?: string
+          id?: string
+          is_required?: boolean
+          options?: Json | null
+          question: string
+          sort_order?: number
+          template_id: string
+          tenant_id?: string | null
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          field_type?: string
+          id?: string
+          is_required?: boolean
+          options?: Json | null
+          question?: string
+          sort_order?: number
+          template_id?: string
+          tenant_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "checklist_form_fields_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "checklist_form_templates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "checklist_form_fields_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      checklist_form_responses: {
+        Row: {
+          checklist_item_id: string
+          created_at: string
+          field_id: string
+          form_template_id: string
+          id: string
+          project_id: string
+          tenant_id: string | null
+          updated_at: string
+          value: string | null
+        }
+        Insert: {
+          checklist_item_id: string
+          created_at?: string
+          field_id: string
+          form_template_id: string
+          id?: string
+          project_id: string
+          tenant_id?: string | null
+          updated_at?: string
+          value?: string | null
+        }
+        Update: {
+          checklist_item_id?: string
+          created_at?: string
+          field_id?: string
+          form_template_id?: string
+          id?: string
+          project_id?: string
+          tenant_id?: string | null
+          updated_at?: string
+          value?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "checklist_form_responses_checklist_item_id_fkey"
+            columns: ["checklist_item_id"]
+            isOneToOne: false
+            referencedRelation: "checklist_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "checklist_form_responses_field_id_fkey"
+            columns: ["field_id"]
+            isOneToOne: false
+            referencedRelation: "checklist_form_fields"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "checklist_form_responses_form_template_id_fkey"
+            columns: ["form_template_id"]
+            isOneToOne: false
+            referencedRelation: "checklist_form_templates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "checklist_form_responses_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "checklist_form_responses_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      checklist_form_templates: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          tenant_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          tenant_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          tenant_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "checklist_form_templates_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      checklist_items: {
+        Row: {
+          comment: string | null
+          comment_at: string | null
+          comment_by: string | null
+          completed: boolean | null
+          completed_at: string | null
+          completed_by: string | null
+          created_at: string | null
+          current_responsibility:
+            | Database["public"]["Enums"]["responsibility_party"]
+            | null
+          id: string
+          owner_team: Database["public"]["Enums"]["team_role"]
+          phase: Database["public"]["Enums"]["project_phase"]
+          project_id: string
+          sort_order: number | null
+          tenant_id: string | null
+          title: string
+        }
+        Insert: {
+          comment?: string | null
+          comment_at?: string | null
+          comment_by?: string | null
+          completed?: boolean | null
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string | null
+          current_responsibility?:
+            | Database["public"]["Enums"]["responsibility_party"]
+            | null
+          id?: string
+          owner_team: Database["public"]["Enums"]["team_role"]
+          phase: Database["public"]["Enums"]["project_phase"]
+          project_id: string
+          sort_order?: number | null
+          tenant_id?: string | null
+          title: string
+        }
+        Update: {
+          comment?: string | null
+          comment_at?: string | null
+          comment_by?: string | null
+          completed?: boolean | null
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string | null
+          current_responsibility?:
+            | Database["public"]["Enums"]["responsibility_party"]
+            | null
+          id?: string
+          owner_team?: Database["public"]["Enums"]["team_role"]
+          phase?: Database["public"]["Enums"]["project_phase"]
+          project_id?: string
+          sort_order?: number | null
+          tenant_id?: string | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "checklist_items_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "checklist_items_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      checklist_responsibility_logs: {
+        Row: {
+          checklist_item_id: string
+          created_at: string | null
+          ended_at: string | null
+          id: string
+          party: Database["public"]["Enums"]["responsibility_party"]
+          started_at: string
+          tenant_id: string | null
+        }
+        Insert: {
+          checklist_item_id: string
+          created_at?: string | null
+          ended_at?: string | null
+          id?: string
+          party: Database["public"]["Enums"]["responsibility_party"]
+          started_at?: string
+          tenant_id?: string | null
+        }
+        Update: {
+          checklist_item_id?: string
+          created_at?: string | null
+          ended_at?: string | null
+          id?: string
+          party?: Database["public"]["Enums"]["responsibility_party"]
+          started_at?: string
+          tenant_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "checklist_responsibility_logs_checklist_item_id_fkey"
+            columns: ["checklist_item_id"]
+            isOneToOne: false
+            referencedRelation: "checklist_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "checklist_responsibility_logs_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      checklist_templates: {
+        Row: {
+          created_at: string
+          id: string
+          owner_team: Database["public"]["Enums"]["team_role"]
+          phase: Database["public"]["Enums"]["project_phase"]
+          sort_order: number
+          tenant_id: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          owner_team: Database["public"]["Enums"]["team_role"]
+          phase: Database["public"]["Enums"]["project_phase"]
+          sort_order?: number
+          tenant_id?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          owner_team?: Database["public"]["Enums"]["team_role"]
+          phase?: Database["public"]["Enums"]["project_phase"]
+          sort_order?: number
+          tenant_id?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "checklist_templates_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      custom_field_values: {
+        Row: {
+          created_at: string
+          field_id: string
+          id: string
+          project_id: string
+          tenant_id: string | null
+          updated_at: string
+          value: string | null
+        }
+        Insert: {
+          created_at?: string
+          field_id: string
+          id?: string
+          project_id: string
+          tenant_id?: string | null
+          updated_at?: string
+          value?: string | null
+        }
+        Update: {
+          created_at?: string
+          field_id?: string
+          id?: string
+          project_id?: string
+          tenant_id?: string | null
+          updated_at?: string
+          value?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "custom_field_values_field_id_fkey"
+            columns: ["field_id"]
+            isOneToOne: false
+            referencedRelation: "custom_fields"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "custom_field_values_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "custom_field_values_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      custom_fields: {
+        Row: {
+          created_at: string
+          field_key: string
+          field_label: string
+          field_type: string
+          id: string
+          is_active: boolean
+          options: Json | null
+          sort_order: number
+          tenant_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          field_key: string
+          field_label: string
+          field_type?: string
+          id?: string
+          is_active?: boolean
+          options?: Json | null
+          sort_order?: number
+          tenant_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          field_key?: string
+          field_label?: string
+          field_type?: string
+          id?: string
+          is_active?: boolean
+          options?: Json | null
+          sort_order?: number
+          tenant_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "custom_fields_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      parsed_emails: {
+        Row: {
+          aov: number | null
+          arr: number | null
+          brand_name: string | null
+          brand_url: string | null
+          category: string | null
+          city: string | null
+          created_at: string
+          gmail_message_id: string
+          id: string
+          merchant_size: string | null
+          parsed_fields: Json | null
+          platform: string | null
+          project_id: string | null
+          raw_html: string | null
+          received_at: string
+          sales_notes: string | null
+          sender: string
+          status: string
+          sub_platform: string | null
+          subject: string
+          tenant_id: string | null
+          txns_per_day: number | null
+          updated_at: string
+        }
+        Insert: {
+          aov?: number | null
+          arr?: number | null
+          brand_name?: string | null
+          brand_url?: string | null
+          category?: string | null
+          city?: string | null
+          created_at?: string
+          gmail_message_id: string
+          id?: string
+          merchant_size?: string | null
+          parsed_fields?: Json | null
+          platform?: string | null
+          project_id?: string | null
+          raw_html?: string | null
+          received_at: string
+          sales_notes?: string | null
+          sender: string
+          status?: string
+          sub_platform?: string | null
+          subject: string
+          tenant_id?: string | null
+          txns_per_day?: number | null
+          updated_at?: string
+        }
+        Update: {
+          aov?: number | null
+          arr?: number | null
+          brand_name?: string | null
+          brand_url?: string | null
+          category?: string | null
+          city?: string | null
+          created_at?: string
+          gmail_message_id?: string
+          id?: string
+          merchant_size?: string | null
+          parsed_fields?: Json | null
+          platform?: string | null
+          project_id?: string | null
+          raw_html?: string | null
+          received_at?: string
+          sales_notes?: string | null
+          sender?: string
+          status?: string
+          sub_platform?: string | null
+          subject?: string
+          tenant_id?: string | null
+          txns_per_day?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "parsed_emails_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "parsed_emails_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          created_at: string | null
+          email: string
+          id: string
+          name: string
+          team: Database["public"]["Enums"]["team_role"]
+          tenant_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email: string
+          id: string
+          name: string
+          team: Database["public"]["Enums"]["team_role"]
+          tenant_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string
+          id?: string
+          name?: string
+          team?: Database["public"]["Enums"]["team_role"]
+          tenant_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profiles_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_responsibility_logs: {
+        Row: {
+          created_at: string | null
+          ended_at: string | null
+          id: string
+          party: Database["public"]["Enums"]["responsibility_party"]
+          phase: Database["public"]["Enums"]["project_phase"]
+          project_id: string
+          started_at: string
+          tenant_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          ended_at?: string | null
+          id?: string
+          party: Database["public"]["Enums"]["responsibility_party"]
+          phase: Database["public"]["Enums"]["project_phase"]
+          project_id: string
+          started_at?: string
+          tenant_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          ended_at?: string | null
+          id?: string
+          party?: Database["public"]["Enums"]["responsibility_party"]
+          phase?: Database["public"]["Enums"]["project_phase"]
+          project_id?: string
+          started_at?: string
+          tenant_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_responsibility_logs_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_responsibility_logs_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      projects: {
+        Row: {
+          aov: number | null
+          arr: number | null
+          assigned_owner: string | null
+          brand_url: string | null
+          brd_link: string | null
+          category: string | null
+          created_at: string | null
+          created_by: string | null
+          current_owner_team: Database["public"]["Enums"]["team_role"] | null
+          current_phase: Database["public"]["Enums"]["project_phase"] | null
+          current_phase_comment: string | null
+          current_responsibility:
+            | Database["public"]["Enums"]["responsibility_party"]
+            | null
+          expected_go_live_date: string | null
+          go_live_date: string | null
+          go_live_percent: number | null
+          id: string
+          integration_checklist_link: string | null
+          integration_type: string | null
+          jira_link: string | null
+          kick_off_date: string
+          merchant_name: string
+          mid: string
+          mint_checklist_link: string | null
+          mint_notes: string | null
+          pending_acceptance: boolean | null
+          pg_onboarding: string | null
+          phase2_comment: string | null
+          platform: string | null
+          project_notes: string | null
+          project_state: Database["public"]["Enums"]["project_state"] | null
+          sales_spoc: string | null
+          tenant_id: string | null
+          txns_per_day: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          aov?: number | null
+          arr?: number | null
+          assigned_owner?: string | null
+          brand_url?: string | null
+          brd_link?: string | null
+          category?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          current_owner_team?: Database["public"]["Enums"]["team_role"] | null
+          current_phase?: Database["public"]["Enums"]["project_phase"] | null
+          current_phase_comment?: string | null
+          current_responsibility?:
+            | Database["public"]["Enums"]["responsibility_party"]
+            | null
+          expected_go_live_date?: string | null
+          go_live_date?: string | null
+          go_live_percent?: number | null
+          id?: string
+          integration_checklist_link?: string | null
+          integration_type?: string | null
+          jira_link?: string | null
+          kick_off_date: string
+          merchant_name: string
+          mid: string
+          mint_checklist_link?: string | null
+          mint_notes?: string | null
+          pending_acceptance?: boolean | null
+          pg_onboarding?: string | null
+          phase2_comment?: string | null
+          platform?: string | null
+          project_notes?: string | null
+          project_state?: Database["public"]["Enums"]["project_state"] | null
+          sales_spoc?: string | null
+          tenant_id?: string | null
+          txns_per_day?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          aov?: number | null
+          arr?: number | null
+          assigned_owner?: string | null
+          brand_url?: string | null
+          brd_link?: string | null
+          category?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          current_owner_team?: Database["public"]["Enums"]["team_role"] | null
+          current_phase?: Database["public"]["Enums"]["project_phase"] | null
+          current_phase_comment?: string | null
+          current_responsibility?:
+            | Database["public"]["Enums"]["responsibility_party"]
+            | null
+          expected_go_live_date?: string | null
+          go_live_date?: string | null
+          go_live_percent?: number | null
+          id?: string
+          integration_checklist_link?: string | null
+          integration_type?: string | null
+          jira_link?: string | null
+          kick_off_date?: string
+          merchant_name?: string
+          mid?: string
+          mint_checklist_link?: string | null
+          mint_notes?: string | null
+          pending_acceptance?: boolean | null
+          pg_onboarding?: string | null
+          phase2_comment?: string | null
+          platform?: string | null
+          project_notes?: string | null
+          project_state?: Database["public"]["Enums"]["project_state"] | null
+          sales_spoc?: string | null
+          tenant_id?: string | null
+          txns_per_day?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "projects_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      report_executions: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          email_count: number | null
+          error_message: string | null
+          id: string
+          recipients: string[] | null
+          report_id: string
+          status: string
+          tenant_id: string | null
+          triggered_at: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          email_count?: number | null
+          error_message?: string | null
+          id?: string
+          recipients?: string[] | null
+          report_id: string
+          status?: string
+          tenant_id?: string | null
+          triggered_at?: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          email_count?: number | null
+          error_message?: string | null
+          id?: string
+          recipients?: string[] | null
+          report_id?: string
+          status?: string
+          tenant_id?: string | null
+          triggered_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "report_executions_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "saved_reports"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "report_executions_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      saved_reports: {
+        Row: {
+          columns: string[]
+          created_at: string
+          created_by: string | null
+          id: string
+          name: string
+          recipients: string[] | null
+          schedule: string | null
+          tenant_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          columns?: string[]
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name: string
+          recipients?: string[] | null
+          schedule?: string | null
+          tenant_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          columns?: string[]
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name?: string
+          recipients?: string[] | null
+          schedule?: string | null
+          tenant_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "saved_reports_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tenants: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          logo_url: string | null
+          name: string
+          slug: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          logo_url?: string | null
+          name: string
+          slug: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          logo_url?: string | null
+          name?: string
+          slug?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      transfer_history: {
+        Row: {
+          accepted_at: string | null
+          accepted_by: string | null
+          created_at: string | null
+          from_team: Database["public"]["Enums"]["team_role"]
+          id: string
+          notes: string | null
+          project_id: string
+          tenant_id: string | null
+          to_team: Database["public"]["Enums"]["team_role"]
+          transferred_at: string
+          transferred_by: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          accepted_by?: string | null
+          created_at?: string | null
+          from_team: Database["public"]["Enums"]["team_role"]
+          id?: string
+          notes?: string | null
+          project_id: string
+          tenant_id?: string | null
+          to_team: Database["public"]["Enums"]["team_role"]
+          transferred_at?: string
+          transferred_by: string
+        }
+        Update: {
+          accepted_at?: string | null
+          accepted_by?: string | null
+          created_at?: string | null
+          from_team?: Database["public"]["Enums"]["team_role"]
+          id?: string
+          notes?: string | null
+          project_id?: string
+          tenant_id?: string | null
+          to_team?: Database["public"]["Enums"]["team_role"]
+          transferred_at?: string
+          transferred_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transfer_history_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transfer_history_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_roles: {
+        Row: {
+          created_at: string | null
+          id: string
+          role: Database["public"]["Enums"]["team_role"]
+          tenant_id: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          role: Database["public"]["Enums"]["team_role"]
+          tenant_id?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["team_role"]
+          tenant_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_roles_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      get_user_role: {
+        Args: { _user_id: string }
+        Returns: Database["public"]["Enums"]["team_role"]
+      }
+      get_user_tenant_id: { Args: { _user_id: string }; Returns: string }
+      is_manager: { Args: { _user_id: string }; Returns: boolean }
+      is_super_admin: { Args: { _user_id: string }; Returns: boolean }
+    }
+    Enums: {
+      project_phase: "mint" | "integration" | "ms" | "completed"
+      project_state:
+        | "not_started"
+        | "on_hold"
+        | "in_progress"
+        | "live"
+        | "blocked"
+      responsibility_party: "gokwik" | "merchant" | "neutral"
+      team_role: "mint" | "integration" | "ms" | "manager" | "super_admin"
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
+}
+
+type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
+
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
+
+export type Tables<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+      Row: infer R
+    }
+    ? R
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])
+    ? (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
+        Row: infer R
+      }
+      ? R
+      : never
+    : never
+
+export type TablesInsert<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Insert: infer I
+    }
+    ? I
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Insert: infer I
+      }
+      ? I
+      : never
+    : never
+
+export type TablesUpdate<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Update: infer U
+    }
+    ? U
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Update: infer U
+      }
+      ? U
+      : never
+    : never
+
+export type Enums<
+  DefaultSchemaEnumNameOrOptions extends
+    | keyof DefaultSchema["Enums"]
+    | { schema: keyof DatabaseWithoutInternals },
+  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+    : never = never,
+> = DefaultSchemaEnumNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
+  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
+    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
+    : never
+
+export type CompositeTypes<
+  PublicCompositeTypeNameOrOptions extends
+    | keyof DefaultSchema["CompositeTypes"]
+    | { schema: keyof DatabaseWithoutInternals },
+  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    : never = never,
+> = PublicCompositeTypeNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
+  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
+    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
+    : never
+
+export const Constants = {
+  public: {
+    Enums: {
+      project_phase: ["mint", "integration", "ms", "completed"],
+      project_state: [
+        "not_started",
+        "on_hold",
+        "in_progress",
+        "live",
+        "blocked",
+      ],
+      responsibility_party: ["gokwik", "merchant", "neutral"],
+      team_role: ["mint", "integration", "ms", "manager", "super_admin"],
+    },
+  },
+} as const
