@@ -132,15 +132,15 @@ export const EmailToProjectDialog = ({ email, open, onOpenChange, onProjectCreat
         .map(f => `${f.key}: "${f.label}"`)
         .join("\n");
 
-      const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-      const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
+      const { session } = useAuth();
+      if (!session?.access_token) throw new Error("Not authenticated");
+      const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
       const res = await fetch(`${SUPABASE_URL}/functions/v1/ai-project-insights`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${SUPABASE_KEY}`,
-          apikey: SUPABASE_KEY,
+          Authorization: `Bearer ${session.access_token}`,
         },
         body: JSON.stringify({
           type: "map_email_fields",

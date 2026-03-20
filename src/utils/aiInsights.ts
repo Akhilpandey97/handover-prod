@@ -1,13 +1,14 @@
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+import { supabase } from "@/integrations/supabase/client";
 
-export const fetchAiInsights = async (body: Record<string, unknown>): Promise<string> => {
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+
+// Pass the accessToken as an argument (from AuthContext)
+export const fetchAiInsights = async (body: Record<string, unknown>, accessToken: string): Promise<string> => {
   const res = await fetch(`${SUPABASE_URL}/functions/v1/ai-project-insights`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${SUPABASE_KEY}`,
-      apikey: SUPABASE_KEY,
+      Authorization: `Bearer ${accessToken}`,
     },
     body: JSON.stringify(body),
   });

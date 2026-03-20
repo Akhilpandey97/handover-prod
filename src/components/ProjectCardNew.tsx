@@ -142,6 +142,7 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
     updateProject({ ...project, projectState: newState });
   };
 
+  const { session } = useAuth();
   const handleAiAction = async (type: "insights" | "summary") => {
     setAiDialogType(type);
     setAiDialogOpen(true);
@@ -149,11 +150,12 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
     setAiResult("");
 
     try {
+      if (!session?.access_token) throw new Error("Not authenticated");
       const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-project-insights`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          Authorization: `Bearer ${session.access_token}`,
         },
         body: JSON.stringify({ project, type }),
       });

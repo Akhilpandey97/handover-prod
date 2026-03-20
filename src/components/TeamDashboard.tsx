@@ -127,13 +127,14 @@ export const TeamDashboard = () => {
     }
     setAiAlertsLoading(true);
     try {
+      if (!currentUser || !session?.access_token) throw new Error("Not authenticated");
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-project-insights`,
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+            Authorization: `Bearer ${session.access_token}`,
           },
           body: JSON.stringify({ projects: allUserProjects, type: "next_actions" }),
         }
