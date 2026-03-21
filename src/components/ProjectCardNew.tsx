@@ -11,7 +11,7 @@ import {
 import { useAuth } from "@/contexts/AuthContext";
 import { useProjects } from "@/contexts/ProjectContext";
 import { useLabels } from "@/contexts/LabelsContext";
-import { supabase } from "@/integrations/supabase/client";
+import { fetchAiInsights } from "@/utils/aiInsights";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -151,24 +151,8 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
     setAiResult("");
 
     try {
-      const { data: { session: freshSession } } = await supabase.auth.getSession();
-      if (!freshSession?.access_token) throw new Error("Not authenticated");
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-project-insights`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${freshSession.access_token}`,
-        },
-        body: JSON.stringify({ project, type }),
-      });
-
-      if (!response.ok) {
-        const errData = await response.json().catch(() => ({}));
-        throw new Error(errData.error || `Request failed with status ${response.status}`);
-      }
-
-      const data = await response.json();
-      setAiResult(data.result || "No insights generated.");
+      const result = await fetchAiInsights({ project, type });
+      setAiResult(result || "No insights generated.");
     } catch (error: any) {
       setAiResult(`Failed to generate AI output. ${error.message || "Please try again."}`);
     } finally {

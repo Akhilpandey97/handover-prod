@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { ArrowRight, Mail, Sparkles, Loader2 } from "lucide-react";
 import { Project, createDefaultChecklist } from "@/data/projectsData";
 import { useProjects } from "@/contexts/ProjectContext";
-import { useAuth } from "@/contexts/AuthContext";
+import { fetchAiInsights } from "@/utils/aiInsights";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -133,30 +133,14 @@ export const EmailToProjectDialog = ({ email, open, onOpenChange, onProjectCreat
         .join("\n");
 
 
-      const { data: { session: freshSession } } = await supabase.auth.getSession();
-      if (!freshSession?.access_token) throw new Error("Not authenticated");
-      const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-      const res = await fetch(`${SUPABASE_URL}/functions/v1/ai-project-insights`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${freshSession.access_token}`,
-        },
-        body: JSON.stringify({
-          type: "map_email_fields",
-          emailFields: emailFieldsText,
-          projectFields: projectFieldsText,
-        }),
+      const result = await fetchAiInsights({
+        type: "map_email_fields",
+        emailFields: emailFieldsText,
+        projectFields: projectFieldsText,
       });
 
-      if (!res.ok) {
-        const errData = await res.json().catch(() => ({}));
-        throw new Error(errData.error || `AI request failed: ${res.status}`);
-      }
-      const data = await res.json();
-
-      const result = data?.result;
-      if (result && typeof result === "object") {
+      const mappedResult = result && typeof result === "object" ? result : JSON.parse(result || "{}");
+      if (mappedResult && typeof mappedResult === "object") {
         const newMapping: Record<string, string> = {};
         
         // Build a lookup from field_N -> originalKey
@@ -164,7 +148,7 @@ export const EmailToProjectDialog = ({ email, open, onOpenChange, onProjectCreat
         const labelToKey = new Map(emailFieldEntries.map(e => [e.label.toLowerCase(), e.originalKey]));
         const origToKey = new Map(emailFieldEntries.map(e => [e.originalKey, e.originalKey]));
 
-        for (const [returnedKey, projectKey] of Object.entries(result)) {
+        for (const [returnedKey, projectKey] of Object.entries(mappedResult)) {
           if (typeof projectKey !== "string" || projectKey === "skip" || projectKey === "none") continue;
           if (!PROJECT_FIELDS.some(pf => pf.key === projectKey)) continue;
 
