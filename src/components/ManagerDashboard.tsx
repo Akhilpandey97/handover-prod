@@ -1136,9 +1136,13 @@ export const ManagerDashboard = () => {
               <CardHeader className="border-b bg-muted/30">
                 <div className="flex items-center justify-between flex-wrap gap-3">
                   <div className="flex items-center gap-3 relative">
-                    <CardTitle className="text-lg flex items-center gap-2">
-                      <Target className="h-5 w-5 text-primary" />
-                      All Projects
+                    <CardTitle className="text-lg flex items-center gap-3">
+                      <Checkbox
+                        checked={allFilteredSelected}
+                        onCheckedChange={() => toggleSelectAll(filteredProjectIds)}
+                        className="h-5 w-5"
+                      />
+                      <span className="text-base font-medium">All Projects</span>
                     </CardTitle>
                     {/* Sort Dropdown - left side */}
                     <Collapsible open={sortOpen} onOpenChange={setSortOpen}>
