@@ -165,7 +165,7 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
       <Card
         className="overflow-hidden shadow-sm transition-shadow hover:shadow-md"
         style={{
-          width: "50%",
+          width: "100%",
           background: "linear-gradient(90deg, #bfdbfe, #93c5fd)",
           border: "1px solid #60a5fa",
           boxShadow: "0 2px 10px rgba(59,130,246,0.12)",
