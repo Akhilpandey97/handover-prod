@@ -165,9 +165,8 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
   return (
     <>
       <Card
-        className="overflow-hidden shadow-sm transition-shadow hover:shadow-md"
+        className="overflow-hidden shadow-sm transition-shadow hover:shadow-md w-full"
         style={{
-          maxWidth: "540px",
           backgroundColor: projectStripOuterBackground,
           border: `1px solid ${projectStripOuterBorder}`,
         }}
