@@ -4,6 +4,7 @@ import { useProjects } from "@/contexts/ProjectContext";
 import { teamColors } from "@/data/teams";
 import { useLabels } from "@/contexts/LabelsContext";
 import { Project, calculateTimeFromChecklist, formatDuration } from "@/data/projectsData";
+import { supabase } from "@/integrations/supabase/client";
 import { ProjectCardNew } from "./ProjectCardNew";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -127,14 +128,15 @@ export const TeamDashboard = () => {
     }
     setAiAlertsLoading(true);
     try {
-      if (!currentUser || !session?.access_token) throw new Error("Not authenticated");
+      const { data: { session: freshSession } } = await supabase.auth.getSession();
+      if (!currentUser || !freshSession?.access_token) throw new Error("Not authenticated");
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-project-insights`,
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${session.access_token}`,
+            Authorization: `Bearer ${freshSession.access_token}`,
           },
           body: JSON.stringify({ projects: allUserProjects, type: "next_actions" }),
         }

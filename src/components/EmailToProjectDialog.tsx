@@ -133,14 +133,14 @@ export const EmailToProjectDialog = ({ email, open, onOpenChange, onProjectCreat
         .join("\n");
 
 
-      const { session } = useAuth();
-      if (!session?.access_token) throw new Error("Not authenticated");
+      const { data: { session: freshSession } } = await supabase.auth.getSession();
+      if (!freshSession?.access_token) throw new Error("Not authenticated");
       const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
       const res = await fetch(`${SUPABASE_URL}/functions/v1/ai-project-insights`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${session.access_token}`,
+          Authorization: `Bearer ${freshSession.access_token}`,
         },
         body: JSON.stringify({
           type: "map_email_fields",
