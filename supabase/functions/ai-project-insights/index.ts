@@ -1,6 +1,10 @@
 // AI Project Insights Edge Function
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
+export const config = {
+  verify_jwt: true,
+};
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
