@@ -63,14 +63,14 @@ const MetricTile = ({
   borderColor: string;
 }) => (
   <div
-    className="rounded-2xl p-3"
+    className="rounded-lg px-2.5 py-1.5"
     style={{
-      backgroundColor: hexToRgba(borderColor, 0.07),
-      border: `1px solid ${hexToRgba(borderColor, 0.45)}`,
+      backgroundColor: hexToRgba(borderColor, 0.06),
+      border: `1px solid ${hexToRgba(borderColor, 0.35)}`,
     }}
   >
-    <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">{label}</p>
-    {children ?? <p className="mt-2 text-sm font-semibold text-foreground">{value || "—"}</p>}
+    <p className="text-[10px] font-medium uppercase tracking-[0.18em] text-muted-foreground">{label}</p>
+    {children ?? <p className="mt-0.5 text-xs font-semibold text-foreground">{value || "—"}</p>}
   </div>
 );
 
