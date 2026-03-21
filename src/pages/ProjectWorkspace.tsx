@@ -670,59 +670,47 @@ const ProjectWorkspace = () => {
 
   return (
     <div className="flex h-screen flex-col overflow-hidden bg-background">
-      {/* Breadcrumb */}
-      <div className="shrink-0 border-b border-border/60 bg-card/80 px-4 py-2.5">
-        <div className="mx-auto flex max-w-[1680px] flex-wrap items-center gap-1.5 text-sm font-semibold text-foreground">
-          <Link to="/" className="inline-flex items-center gap-1.5 rounded-md px-1.5 py-1 hover:bg-accent/60">
-            <ArrowLeft className="h-3.5 w-3.5" />
-            Projects
-          </Link>
-          <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
-          <span>{project.merchantName}</span>
-        </div>
-      </div>
-
-      {/* Header bar */}
-      <div className="shrink-0 border-b border-border/60 bg-card/80 px-4 py-3">
-        <div className="mx-auto flex max-w-[1680px] items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-sm font-bold text-primary">
-              {project.merchantName.slice(0, 2).toUpperCase()}
+      {/* Unified header */}
+      <div className="shrink-0 border-b border-border/60 bg-card/80 px-4 py-2">
+        <div className="mx-auto flex max-w-[1680px] items-center justify-between gap-3">
+          <div className="flex items-center gap-3 min-w-0">
+            <Link to="/" className="inline-flex items-center gap-1 rounded-md px-1.5 py-1 text-xs font-medium text-muted-foreground hover:bg-accent/60 hover:text-foreground shrink-0">
+              <ArrowLeft className="h-3.5 w-3.5" />
+              Projects
+            </Link>
+            <ChevronRight className="h-3 w-3 text-muted-foreground shrink-0" />
+            <div className="flex items-center gap-2 min-w-0">
+              <h1 className="text-sm font-semibold tracking-tight text-foreground truncate">{project.merchantName}</h1>
+              <Badge variant="outline" className="text-[10px] shrink-0">MID {project.mid}</Badge>
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-lg font-semibold tracking-tight text-foreground">{project.merchantName}</h1>
-                <Badge variant="outline" className="text-[10px]">MID {project.mid}</Badge>
-              </div>
-              <div className="mt-1 flex flex-wrap items-center gap-1.5">
-                <Badge className={cn("border px-2 py-0.5 text-[10px] font-semibold", stateToneMap[project.projectState])}>
-                  {stateLabels[project.projectState] || projectStateLabels[project.projectState]}
-                </Badge>
-                <Badge variant="outline" className="text-[10px]">{teamLabels[project.currentOwnerTeam] || project.currentOwnerTeam}</Badge>
-                <Badge variant="outline" className="text-[10px]">{phaseLabels[project.currentPhase] || project.currentPhase}</Badge>
-                <Badge variant="outline" className="text-[10px]">{risk.label}</Badge>
-                {project.pendingAcceptance ? (
-                  <Badge className="border border-warning/30 bg-warning/10 text-warning text-[10px]">Pending acceptance</Badge>
-                ) : null}
-              </div>
+            <div className="flex flex-wrap items-center gap-1 shrink-0">
+              <Badge className={cn("border px-1.5 py-0 text-[10px] font-semibold", stateToneMap[project.projectState])}>
+                {stateLabels[project.projectState] || projectStateLabels[project.projectState]}
+              </Badge>
+              <Badge variant="outline" className="text-[10px] px-1.5 py-0">{teamLabels[project.currentOwnerTeam] || project.currentOwnerTeam}</Badge>
+              <Badge variant="outline" className="text-[10px] px-1.5 py-0">{phaseLabels[project.currentPhase] || project.currentPhase}</Badge>
+              <Badge variant="outline" className="text-[10px] px-1.5 py-0">{risk.label}</Badge>
+              {project.pendingAcceptance ? (
+                <Badge className="border border-warning/30 bg-warning/10 text-warning text-[10px] px-1.5 py-0">Pending</Badge>
+              ) : null}
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 shrink-0">
             {currentUser?.team === "manager" ? (
-              <Button variant="outline" size="sm" onClick={() => setAssignOpen(true)}>
-                <UserRound className="h-3.5 w-3.5" />
+              <Button variant="outline" size="sm" className="h-7 text-xs px-2" onClick={() => setAssignOpen(true)}>
+                <UserRound className="h-3 w-3 mr-1" />
                 Assign
               </Button>
             ) : null}
-            <Button variant="outline" size="sm" onClick={() => setEditOpen(true)}>Edit</Button>
-            <Button size="sm" onClick={() => isTransferReady && setTransferOpen(true)} disabled={!isTransferReady}>
-              <ArrowRight className="h-3.5 w-3.5" />
+            <Button variant="outline" size="sm" className="h-7 text-xs px-2" onClick={() => setEditOpen(true)}>Edit</Button>
+            <Button size="sm" className="h-7 text-xs px-2" onClick={() => isTransferReady && setTransferOpen(true)} disabled={!isTransferReady}>
+              <ArrowRight className="h-3 w-3 mr-1" />
               Transfer
             </Button>
             {currentUser?.team === "manager" ? (
-              <Button variant="destructive" size="sm" onClick={() => setDeleteConfirmOpen(true)}>
-                <Trash2 className="h-3.5 w-3.5" />
+              <Button variant="destructive" size="sm" className="h-7 w-7 p-0" onClick={() => setDeleteConfirmOpen(true)}>
+                <Trash2 className="h-3 w-3" />
               </Button>
             ) : null}
           </div>
