@@ -63,14 +63,14 @@ const MetricTile = ({
   borderColor: string;
 }) => (
   <div
-    className="rounded-2xl p-3"
+    className="rounded-lg px-2.5 py-1.5"
     style={{
-      backgroundColor: hexToRgba(borderColor, 0.07),
-      border: `1px solid ${hexToRgba(borderColor, 0.45)}`,
+      backgroundColor: hexToRgba(borderColor, 0.06),
+      border: `1px solid ${hexToRgba(borderColor, 0.35)}`,
     }}
   >
-    <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">{label}</p>
-    {children ?? <p className="mt-2 text-sm font-semibold text-foreground">{value || "—"}</p>}
+    <p className="text-[10px] font-medium uppercase tracking-[0.18em] text-muted-foreground">{label}</p>
+    {children ?? <p className="mt-0.5 text-xs font-semibold text-foreground">{value || "—"}</p>}
   </div>
 );
 
@@ -167,129 +167,110 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
       <Card
         className="overflow-hidden shadow-sm transition-shadow hover:shadow-md"
         style={{
-          width: "100%",
+          maxWidth: "540px",
           backgroundColor: projectStripOuterBackground,
           border: `1px solid ${projectStripOuterBorder}`,
-          boxShadow: "0 2px 10px rgba(59,130,246,0.12)",
         }}
       >
-        <div className="flex flex-col gap-3 p-3 sm:p-4">
-          <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+        <div className="flex flex-col gap-1.5 p-2">
+          <div className="flex items-center gap-2">
             <Link
               to={`/projects/${project.id}`}
               target="_blank"
               rel="noreferrer"
-              className="flex min-w-0 w-full items-center gap-3 rounded-2xl px-3 py-3 transition-colors"
+              className="flex min-w-0 flex-1 items-center gap-2 rounded-lg px-2 py-2 transition-colors"
               style={{
                 backgroundColor: projectStripBackground,
                 border: `1px solid ${projectStripBorder}`,
-                width: "100%",
               }}
             >
-              <div
-                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl"
-                style={{
-                  backgroundColor: "#eff6ff",
-                  border: "1px solid #60a5fa",
-                }}
-              >
-                <Building2 className="h-5 w-5 text-blue-600" />
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 border border-primary/30">
+                <Building2 className="h-3.5 w-3.5 text-primary" />
               </div>
 
               <div className="min-w-0 flex-1">
-                <div className="flex flex-wrap items-center gap-2">
-                  <h3 className="truncate text-base font-semibold tracking-[-0.02em] text-foreground">{project.merchantName}</h3>
-                  <Badge variant="outline">MID {project.mid}</Badge>
-                  <Badge variant="secondary">{teamLabels[project.currentOwnerTeam] || project.currentOwnerTeam}</Badge>
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <h3 className="truncate text-sm font-semibold tracking-tight text-foreground">{project.merchantName}</h3>
+                  <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5">MID {project.mid}</Badge>
+                  <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-5">{teamLabels[project.currentOwnerTeam] || project.currentOwnerTeam}</Badge>
                   {project.assignedOwnerName && (
-                    <Badge variant="outline" className="gap-1">
-                      <User className="h-3 w-3" />
+                    <Badge variant="outline" className="gap-0.5 text-[10px] px-1.5 py-0 h-5">
+                      <User className="h-2.5 w-2.5" />
                       {project.assignedOwnerName}
                     </Badge>
                   )}
-                  {isPending && <Badge>Pending</Badge>}
-                  {isRejected && <Badge variant="destructive">Action needed</Badge>}
+                  {isPending && <Badge className="text-[10px] px-1.5 py-0 h-5">Pending</Badge>}
+                  {isRejected && <Badge variant="destructive" className="text-[10px] px-1.5 py-0 h-5">Action needed</Badge>}
                 </div>
-
-                <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                <div className="mt-0.5 flex flex-wrap items-center gap-x-2 text-[10px] text-muted-foreground">
                   <span>{project.platform || "Platform not set"}</span>
                   <span>•</span>
-                  <span>{project.category || "Category not set"}</span>
-                  <span>•</span>
-                  <span>{completedChecklist}/{project.checklist.length} checklist done</span>
+                  <span>{completedChecklist}/{project.checklist.length} done</span>
                   <span>•</span>
                   <span>{stateLabels[project.projectState] || projectStateLabels[project.projectState]}</span>
                 </div>
               </div>
 
-              <div className="rounded-full p-1.5" style={{ backgroundColor: "#2A4698" }}>
-                <ArrowUpRight className="h-4 w-4 text-white" />
+              <div className="rounded-full p-1 bg-primary">
+                <ArrowUpRight className="h-3 w-3 text-primary-foreground" />
               </div>
             </Link>
 
-            <div className="flex flex-wrap items-center justify-end gap-2 self-center lg:min-h-[72px] lg:content-center">
+            <div className="flex items-center gap-1 shrink-0">
               {isPending && (
-                <Button size="sm" className="gap-2" onClick={handleAccept}>
-                  <CheckCircle2 className="h-4 w-4" />
+                <Button size="sm" className="gap-1 h-7 text-xs px-2" onClick={handleAccept}>
+                  <CheckCircle2 className="h-3 w-3" />
                   Accept
                 </Button>
               )}
-
               {canReject && (
-                <Button size="sm" variant="destructive" className="gap-2" onClick={() => setRejectOpen(true)}>
-                  <XCircle className="h-4 w-4" />
+                <Button size="sm" variant="destructive" className="gap-1 h-7 text-xs px-2" onClick={() => setRejectOpen(true)}>
+                  <XCircle className="h-3 w-3" />
                   Reject
                 </Button>
               )}
-
               {canTransfer && (
                 <Button
                   size="sm"
                   variant={isTransferReady ? "default" : "outline"}
-                  className="gap-2"
+                  className="gap-1 h-7 text-xs px-2"
                   onClick={() => isTransferReady && setTransferOpen(true)}
                   disabled={!isTransferReady}
                 >
-                  <ArrowRight className="h-4 w-4" />
+                  <ArrowRight className="h-3 w-3" />
                   Transfer
                 </Button>
               )}
-
               <Button
                 size="icon"
-                className="text-white border-none shadow-md"
-                style={{ backgroundColor: "#2A4698" }}
-                onClick={() => setIsExpanded((value) => !value)}
+                className="h-7 w-7 bg-primary text-primary-foreground border-none shadow-sm"
+                onClick={() => setIsExpanded((v) => !v)}
                 aria-label="Toggle project details"
               >
-                {isExpanded ? (
-                  <ChevronUp className="h-4 w-4" />
-                ) : (
-                  <ChevronDown className="h-4 w-4" />
-                )}
+                {isExpanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
               </Button>
             </div>
           </div>
 
           {isExpanded && (
             <div
-              className="space-y-3 rounded-2xl p-3"
+              className="space-y-2 rounded-lg p-2"
               style={{
                 backgroundColor: hexToRgba(projectExpandedBackground, 0.95),
                 border: `1px solid ${hexToRgba(projectExpandedBorder, 0.86)}`,
               }}
             >
-              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+              <div className="grid gap-1.5 grid-cols-2 sm:grid-cols-4">
                 <MetricTile borderColor={projectExpandedBorder} label={getLabel("field_arr")} value={`${project.arr} Cr`} />
-                <MetricTile borderColor={projectExpandedBorder} label="Action pending on" value={responsibilityLabels[computedResponsibility] || computedResponsibility} />
+                <MetricTile borderColor={projectExpandedBorder} label="Pending on" value={responsibilityLabels[computedResponsibility] || computedResponsibility} />
                 <MetricTile borderColor={projectExpandedBorder} label="Time split" value={`${formatDuration(timeByParty.gokwik)} / ${formatDuration(timeByParty.merchant)}`} />
-                <MetricTile borderColor={projectExpandedBorder} label="Checklist" value={`${completedChecklist}/${project.checklist.length} complete`} />
+                <MetricTile borderColor={projectExpandedBorder} label="Checklist" value={`${completedChecklist}/${project.checklist.length}`} />
                 <MetricTile borderColor={projectExpandedBorder} label={getLabel("field_kick_off_date")} value={project.dates.kickOffDate || "—"} />
                 <MetricTile borderColor={projectExpandedBorder} label={getLabel("field_go_live_date")} value={project.dates.goLiveDate || project.dates.expectedGoLiveDate || "—"} />
-                <MetricTile borderColor={projectExpandedBorder} label="Current phase" value={projectPhaseDisplay} />
-                <MetricTile borderColor={projectExpandedBorder} label="Project state">
+                <MetricTile borderColor={projectExpandedBorder} label="Phase" value={projectPhaseDisplay} />
+                <MetricTile borderColor={projectExpandedBorder} label="State">
                   <Select value={project.projectState} onValueChange={(value) => handleStateChange(value as ProjectState)}>
-                    <SelectTrigger className="mt-2 h-8 border-border/60 bg-background px-3 text-sm font-semibold text-foreground">
+                    <SelectTrigger className="mt-0.5 h-6 border-border/60 bg-background px-2 text-xs font-semibold text-foreground">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -304,18 +285,18 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
               </div>
 
               <div
-                className="flex flex-wrap items-center gap-2 pt-3"
+                className="flex flex-wrap items-center gap-1.5 pt-1.5"
                 style={{ borderTop: `1px solid ${hexToRgba(projectExpandedBorder, 0.52)}` }}
               >
-                <Badge variant="outline">{teamLabels.mint}: {mintChecklist.filter((item) => item.completed).length}/{mintChecklist.length}</Badge>
-                <Badge variant="outline">{teamLabels.integration}: {integrationChecklist.filter((item) => item.completed).length}/{integrationChecklist.length}</Badge>
-                <Button size="sm" variant="ghost" className="gap-2" onClick={() => handleAiAction("insights")}>
-                  <Brain className="h-4 w-4" />
-                  AI Insights
+                <Badge variant="outline" className="text-[10px]">{teamLabels.mint}: {mintChecklist.filter((i) => i.completed).length}/{mintChecklist.length}</Badge>
+                <Badge variant="outline" className="text-[10px]">{teamLabels.integration}: {integrationChecklist.filter((i) => i.completed).length}/{integrationChecklist.length}</Badge>
+                <Button size="sm" variant="ghost" className="gap-1 h-6 text-[11px] px-2" onClick={() => handleAiAction("insights")}>
+                  <Brain className="h-3 w-3" />
+                  Insights
                 </Button>
-                <Button size="sm" variant="ghost" className="gap-2" onClick={() => handleAiAction("summary")}>
-                  <ListChecks className="h-4 w-4" />
-                  AI Task Summary
+                <Button size="sm" variant="ghost" className="gap-1 h-6 text-[11px] px-2" onClick={() => handleAiAction("summary")}>
+                  <ListChecks className="h-3 w-3" />
+                  Summary
                 </Button>
               </div>
             </div>
