@@ -131,7 +131,13 @@ export const TeamDashboard = () => {
       if (!currentUser) throw new Error("Not authenticated");
       const result = await fetchAiInsights({ projects: allUserProjects, type: "next_actions" });
       if (typeof result === "string") {
-        const parsed = result.split("\n").filter(Boolean).map((line, i) => ({ id: String(i), message: line.replace(/^\s*[*-]\s*/, ""), severity: "info" as const }));
+        const lines = result.split("\n").filter(Boolean);
+        const parsed: AiAlert[] = lines.map((line) => ({
+          project: "",
+          action: line.replace(/^\s*[*-]\s*/, ""),
+          priority: "medium" as const,
+          alert: "",
+        }));
         setAiAlerts(parsed);
       } else {
         setAiAlerts(result || []);
