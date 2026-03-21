@@ -175,10 +175,11 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
               to={`/projects/${project.id}`}
               target="_blank"
               rel="noreferrer"
-              className="flex min-w-0 flex-1 items-center gap-3 rounded-2xl px-3 py-3 transition-colors"
+              className="flex min-w-0 w-1/2 items-center gap-3 rounded-2xl px-3 py-3 transition-colors"
               style={{
-                backgroundColor: hexToRgba(projectStripBackground, 0.82),
-                border: `1px solid ${hexToRgba(projectStripBorder, 0.72)}`,
+                backgroundColor: projectStripBackground,
+                border: `1px solid ${projectStripBorder}`,
+                width: "50%",
               }}
             >
               <div
@@ -248,7 +249,12 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
                 </Button>
               )}
 
-              <Button size="icon" variant="ghost" onClick={() => setIsExpanded((value) => !value)} aria-label="Toggle project details">
+              <Button
+                size="icon"
+                className="bg-blue-600 text-white hover:bg-blue-700"
+                onClick={() => setIsExpanded((value) => !value)}
+                aria-label="Toggle project details"
+              >
                 {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
               </Button>
             </div>
