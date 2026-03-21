@@ -58,6 +58,8 @@ const DEFAULT_LABELS: Record<string, string> = {
   color_card_completed_bg: "#f4f7fb",
   color_project_strip_bg: "#f8fbff",
   color_project_strip_border: "#d9e4f2",
+  color_project_strip_outer_bg: "#bfdbfe",
+  color_project_strip_outer_border: "#60a5fa",
   color_project_expanded_bg: "#fdfefe",
   color_project_expanded_border: "#dce6ef",
   color_workspace_main_bg: "#f8fbff",

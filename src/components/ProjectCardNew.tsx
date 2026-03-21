@@ -118,6 +118,8 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
 
   const projectStripBackground = labels.color_project_strip_bg || "#f8fbff";
   const projectStripBorder = labels.color_project_strip_border || "#d9e4f2";
+  const projectStripOuterBackground = labels.color_project_strip_outer_bg || "#bfdbfe";
+  const projectStripOuterBorder = labels.color_project_strip_outer_border || "#60a5fa";
   const projectExpandedBackground = labels.color_project_expanded_bg || "#fdfefe";
   const projectExpandedBorder = labels.color_project_expanded_border || "#dce6ef";
 
@@ -166,8 +168,8 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
         className="overflow-hidden shadow-sm transition-shadow hover:shadow-md"
         style={{
           width: "100%",
-          background: "linear-gradient(90deg, #bfdbfe, #93c5fd)",
-          border: "1px solid #60a5fa",
+          backgroundColor: projectStripOuterBackground,
+          border: `1px solid ${projectStripOuterBorder}`,
           boxShadow: "0 2px 10px rgba(59,130,246,0.12)",
         }}
       >

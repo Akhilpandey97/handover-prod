@@ -171,6 +171,8 @@ const COLOR_GROUPS: ColorLabelGroup[] = [
     keys: [
       { key: "color_project_strip_bg", label: "Project Strip Background" },
       { key: "color_project_strip_border", label: "Project Strip Border" },
+      { key: "color_project_strip_outer_bg", label: "Outer Strip Card Background" },
+      { key: "color_project_strip_outer_border", label: "Outer Strip Card Border" },
       { key: "color_project_expanded_bg", label: "Expanded Tray Background" },
       { key: "color_project_expanded_border", label: "Expanded Tray Border" },
     ],
