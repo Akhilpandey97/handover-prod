@@ -339,7 +339,7 @@ export const TeamDashboard = () => {
 
         {/* Projects List */}
         <ScrollArea className="flex-1">
-          <div className="p-8">
+          <div className="p-6 md:p-8 mx-auto w-full max-w-[1300px]">
             {displayProjects.length === 0 ? (
               <div className="text-center py-20">
                 <div className="h-20 w-20 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
