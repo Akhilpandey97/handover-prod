@@ -165,8 +165,10 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
       <Card
         className="overflow-hidden shadow-sm transition-shadow hover:shadow-md"
         style={{
-          backgroundColor: hexToRgba(projectStripBackground, 0.94),
-          border: `1px solid ${hexToRgba(projectStripBorder, 0.92)}`,
+          width: "50%",
+          background: "linear-gradient(90deg, #bfdbfe, #93c5fd)",
+          border: "1px solid #60a5fa",
+          boxShadow: "0 2px 10px rgba(59,130,246,0.12)",
         }}
       >
         <div className="flex flex-col gap-3 p-3 sm:p-4">
@@ -177,19 +179,19 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
               rel="noreferrer"
               className="flex min-w-0 w-1/2 items-center gap-3 rounded-2xl px-3 py-3 transition-colors"
               style={{
-                backgroundColor: projectStripBackground,
-                border: `1px solid ${projectStripBorder}`,
+                background: "linear-gradient(90deg, #dbeafe, #bfdbfe)",
+                border: "1px solid #3b82f6",
                 width: "50%",
               }}
             >
               <div
                 className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl"
                 style={{
-                  backgroundColor: hexToRgba(projectStripBorder, 0.08),
-                  border: `1px solid ${hexToRgba(projectStripBorder, 0.58)}`,
+                  backgroundColor: "#eff6ff",
+                  border: "1px solid #60a5fa",
                 }}
               >
-                <Building2 className="h-5 w-5 text-primary" />
+                <Building2 className="h-5 w-5 text-blue-600" />
               </div>
 
               <div className="min-w-0 flex-1">
@@ -218,7 +220,9 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
                 </div>
               </div>
 
-              <ArrowUpRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+              <div className="rounded-full bg-blue-600 p-1.5">
+                <ArrowUpRight className="h-4 w-4 text-white" />
+              </div>
             </Link>
 
             <div className="flex flex-wrap items-center justify-end gap-2 self-center lg:min-h-[72px] lg:content-center">
@@ -251,11 +255,15 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
 
               <Button
                 size="icon"
-                className="bg-blue-600 text-white hover:bg-blue-700"
+                className="bg-blue-600 text-white hover:bg-blue-700 border-none shadow-md"
                 onClick={() => setIsExpanded((value) => !value)}
                 aria-label="Toggle project details"
               >
-                {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                {isExpanded ? (
+                  <ChevronUp className="h-4 w-4" />
+                ) : (
+                  <ChevronDown className="h-4 w-4" />
+                )}
               </Button>
             </div>
           </div>
