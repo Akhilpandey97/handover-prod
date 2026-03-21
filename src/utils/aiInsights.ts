@@ -18,7 +18,8 @@ export const fetchAiInsights = async (body: Record<string, unknown>, accessToken
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
+      "Authorization": `Bearer ${token}`,
+      "apikey": import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
     },
     body: JSON.stringify(body),
   });
