@@ -165,7 +165,7 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
       <Card
         className="overflow-hidden shadow-sm transition-shadow hover:shadow-md"
         style={{
-          width: "100%",
+          width: "50%",
           background: "linear-gradient(90deg, #bfdbfe, #93c5fd)",
           border: "1px solid #60a5fa",
           boxShadow: "0 2px 10px rgba(59,130,246,0.12)",
@@ -177,11 +177,11 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
               to={`/projects/${project.id}`}
               target="_blank"
               rel="noreferrer"
-              className="flex min-w-0 w-1/2 items-center gap-3 rounded-2xl px-3 py-3 transition-colors"
+              className="flex min-w-0 w-full items-center gap-3 rounded-2xl px-3 py-3 transition-colors"
               style={{
                 background: "linear-gradient(90deg, #dbeafe, #bfdbfe)",
                 border: "1px solid #3b82f6",
-                width: "50%",
+                width: "100%",
               }}
             >
               <div
