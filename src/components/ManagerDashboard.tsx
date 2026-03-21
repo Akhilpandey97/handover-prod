@@ -1372,12 +1372,6 @@ export const ManagerDashboard = () => {
                       });
                       return (
                         <>
-                    {sortedProjects.length > 0 && (
-                      <div className="flex items-center gap-3 pb-2 border-b">
-                        <Checkbox checked={allFilteredSelected} onCheckedChange={() => toggleSelectAll(filteredProjectIds)} />
-                        <span className="text-sm text-muted-foreground">Select all ({sortedProjects.length})</span>
-                      </div>
-                    )}
                     {sortedProjects.length === 0 ? (
                       <div className="text-center py-20">
                         <FolderKanban className="h-16 w-16 mx-auto text-muted-foreground/30 mb-4" />
