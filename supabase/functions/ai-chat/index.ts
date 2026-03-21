@@ -1,5 +1,9 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
+export const config = {
+  verify_jwt: true,
+};
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
@@ -14,6 +18,9 @@ serve(async (req) => {
   }
 
   try {
+    const authHeader = req.headers.get("authorization");
+    console.log("Auth header present:", !!authHeader);
+    
     const { messages, projectContext } = await req.json();
     const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
     const model = Deno.env.get("OPENAI_MODEL") || DEFAULT_MODEL;
