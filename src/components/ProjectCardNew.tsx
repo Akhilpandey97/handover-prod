@@ -222,7 +222,7 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
                 </div>
               </div>
 
-              <div className="rounded-full bg-blue-600 p-1.5">
+              <div className="rounded-full p-1.5" style={{ backgroundColor: "#2A4698" }}>
                 <ArrowUpRight className="h-4 w-4 text-white" />
               </div>
             </Link>
@@ -257,7 +257,8 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
 
               <Button
                 size="icon"
-                className="bg-blue-600 text-white hover:bg-blue-700 border-none shadow-md"
+                className="text-white border-none shadow-md"
+                style={{ backgroundColor: "#2A4698" }}
                 onClick={() => setIsExpanded((value) => !value)}
                 aria-label="Toggle project details"
               >
