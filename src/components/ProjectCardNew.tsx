@@ -179,8 +179,8 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
               rel="noreferrer"
               className="flex min-w-0 w-full items-center gap-3 rounded-2xl px-3 py-3 transition-colors"
               style={{
-                background: "linear-gradient(90deg, #dbeafe, #bfdbfe)",
-                border: "1px solid #3b82f6",
+                backgroundColor: projectStripBackground,
+                border: `1px solid ${projectStripBorder}`,
                 width: "100%",
               }}
             >
