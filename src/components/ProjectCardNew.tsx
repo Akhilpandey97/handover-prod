@@ -164,53 +164,39 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
 
   return (
     <>
-      <Card
-        className="overflow-hidden shadow-sm transition-shadow hover:shadow-md w-full"
-        style={{
-          backgroundColor: projectStripOuterBackground,
-          border: `1px solid ${projectStripOuterBorder}`,
-        }}
+       <div
+        className="group w-full border-b border-border/40 transition-colors hover:bg-muted/30"
       >
-        <div className="flex flex-col gap-1.5 p-2">
-          <div className="flex items-center gap-2">
+        <div className="flex flex-col">
+          <div className="flex items-center gap-3 px-3 py-1.5">
             <Link
               to={`/projects/${project.id}`}
               target="_blank"
               rel="noreferrer"
-              className="flex min-w-0 flex-1 items-center gap-2 rounded-lg px-2 py-2 transition-colors"
-              style={{
-                backgroundColor: projectStripBackground,
-                border: `1px solid ${projectStripBorder}`,
-              }}
+              className="flex min-w-0 flex-1 items-center gap-2.5"
             >
-              <div className="min-w-0 flex-1 flex flex-wrap items-center gap-1.5">
-                <h3 className="truncate text-sm font-semibold tracking-tight text-foreground">{project.merchantName}</h3>
-                <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5">MID {project.mid}</Badge>
-                <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-5">{teamLabels[project.currentOwnerTeam] || project.currentOwnerTeam}</Badge>
-                {project.assignedOwnerName && (
-                  <Badge variant="outline" className="gap-0.5 text-[10px] px-1.5 py-0 h-5">
-                    <User className="h-2.5 w-2.5" />
-                    {project.assignedOwnerName}
-                  </Badge>
-                )}
-                {isPending && <Badge className="text-[10px] px-1.5 py-0 h-5">Pending</Badge>}
-                {isRejected && <Badge variant="destructive" className="text-[10px] px-1.5 py-0 h-5">Action needed</Badge>}
-              </div>
-
-              <div className="rounded-full p-1 bg-primary">
-                <ArrowUpRight className="h-3 w-3 text-primary-foreground" />
-              </div>
+              <h3 className="truncate text-[13px] font-semibold tracking-tight text-foreground">{project.merchantName}</h3>
+              <span className="shrink-0 rounded border border-border/60 bg-muted/50 px-1.5 py-px text-[10px] font-medium text-muted-foreground">MID {project.mid}</span>
+              <span className="shrink-0 rounded bg-primary/8 px-1.5 py-px text-[10px] font-semibold text-primary">{teamLabels[project.currentOwnerTeam] || project.currentOwnerTeam}</span>
+              {project.assignedOwnerName && (
+                <span className="shrink-0 flex items-center gap-1 text-[10px] text-muted-foreground">
+                  <User className="h-2.5 w-2.5" />
+                  {project.assignedOwnerName}
+                </span>
+              )}
+              {isPending && <span className="shrink-0 rounded bg-warning/15 px-1.5 py-px text-[10px] font-semibold text-warning">Pending</span>}
+              {isRejected && <span className="shrink-0 rounded bg-destructive/12 px-1.5 py-px text-[10px] font-semibold text-destructive">Action needed</span>}
             </Link>
 
-            <div className="flex items-center gap-1 shrink-0">
+            <div className="flex items-center gap-1.5 shrink-0">
               {isPending && (
-                <Button size="sm" className="gap-1 h-7 text-xs px-2" onClick={handleAccept}>
+                <Button size="sm" className="gap-1 h-6 text-[11px] px-2 rounded-md" onClick={handleAccept}>
                   <CheckCircle2 className="h-3 w-3" />
                   Accept
                 </Button>
               )}
               {canReject && (
-                <Button size="sm" variant="destructive" className="gap-1 h-7 text-xs px-2" onClick={() => setRejectOpen(true)}>
+                <Button size="sm" variant="destructive" className="gap-1 h-6 text-[11px] px-2 rounded-md" onClick={() => setRejectOpen(true)}>
                   <XCircle className="h-3 w-3" />
                   Reject
                 </Button>
@@ -219,7 +205,7 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
                 <Button
                   size="sm"
                   variant={isTransferReady ? "default" : "outline"}
-                  className="gap-1 h-7 text-xs px-2"
+                  className="gap-1 h-6 text-[11px] px-2 rounded-md"
                   onClick={() => isTransferReady && setTransferOpen(true)}
                   disabled={!isTransferReady}
                 >
@@ -227,25 +213,26 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
                   Transfer
                 </Button>
               )}
-              <Button
-                size="icon"
-                className="h-7 w-7 bg-primary text-primary-foreground border-none shadow-sm"
+              <Link
+                to={`/projects/${project.id}`}
+                target="_blank"
+                rel="noreferrer"
+                className="flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <ArrowUpRight className="h-3.5 w-3.5" />
+              </Link>
+              <button
+                className="flex h-6 w-6 items-center justify-center rounded-full border border-primary/30 bg-primary text-primary-foreground transition-transform hover:scale-105"
                 onClick={() => setIsExpanded((v) => !v)}
                 aria-label="Toggle project details"
               >
                 {isExpanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
-              </Button>
+              </button>
             </div>
           </div>
 
           {isExpanded && (
-            <div
-              className="space-y-2 rounded-lg p-2"
-              style={{
-                backgroundColor: hexToRgba(projectExpandedBackground, 0.95),
-                border: `1px solid ${hexToRgba(projectExpandedBorder, 0.86)}`,
-              }}
-            >
+            <div className="border-t border-border/30 px-3 py-2 space-y-2">
               <div className="grid gap-1.5 grid-cols-2 sm:grid-cols-4">
                 <MetricTile borderColor={projectExpandedBorder} label={getLabel("field_arr")} value={`${project.arr} Cr`} />
                 <MetricTile borderColor={projectExpandedBorder} label="Pending on" value={responsibilityLabels[computedResponsibility] || computedResponsibility} />
@@ -269,7 +256,6 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
                   </Select>
                 </MetricTile>
               </div>
-
               <div
                 className="flex flex-wrap items-center gap-1.5 pt-1.5"
                 style={{ borderTop: `1px solid ${hexToRgba(projectExpandedBorder, 0.52)}` }}
@@ -288,7 +274,7 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
             </div>
           )}
         </div>
-      </Card>
+      </div>
 
       <TransferDialog project={project} open={transferOpen} onOpenChange={setTransferOpen} onTransfer={handleTransfer} />
       <RejectTransferDialog project={project} open={rejectOpen} onOpenChange={setRejectOpen} onReject={handleReject} />
