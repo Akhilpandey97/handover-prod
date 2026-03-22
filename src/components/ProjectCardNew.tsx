@@ -183,31 +183,18 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
                 border: `1px solid ${projectStripBorder}`,
               }}
             >
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 border border-primary/30">
-                <Building2 className="h-3.5 w-3.5 text-primary" />
-              </div>
-
-              <div className="min-w-0 flex-1">
-                <div className="flex flex-wrap items-center gap-1.5">
-                  <h3 className="truncate text-sm font-semibold tracking-tight text-foreground">{project.merchantName}</h3>
-                  <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5">MID {project.mid}</Badge>
-                  <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-5">{teamLabels[project.currentOwnerTeam] || project.currentOwnerTeam}</Badge>
-                  {project.assignedOwnerName && (
-                    <Badge variant="outline" className="gap-0.5 text-[10px] px-1.5 py-0 h-5">
-                      <User className="h-2.5 w-2.5" />
-                      {project.assignedOwnerName}
-                    </Badge>
-                  )}
-                  {isPending && <Badge className="text-[10px] px-1.5 py-0 h-5">Pending</Badge>}
-                  {isRejected && <Badge variant="destructive" className="text-[10px] px-1.5 py-0 h-5">Action needed</Badge>}
-                </div>
-                <div className="mt-0.5 flex flex-wrap items-center gap-x-2 text-[10px] text-muted-foreground">
-                  <span>{project.platform || "Platform not set"}</span>
-                  <span>•</span>
-                  <span>{completedChecklist}/{project.checklist.length} done</span>
-                  <span>•</span>
-                  <span>{stateLabels[project.projectState] || projectStateLabels[project.projectState]}</span>
-                </div>
+              <div className="min-w-0 flex-1 flex flex-wrap items-center gap-1.5">
+                <h3 className="truncate text-sm font-semibold tracking-tight text-foreground">{project.merchantName}</h3>
+                <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5">MID {project.mid}</Badge>
+                <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-5">{teamLabels[project.currentOwnerTeam] || project.currentOwnerTeam}</Badge>
+                {project.assignedOwnerName && (
+                  <Badge variant="outline" className="gap-0.5 text-[10px] px-1.5 py-0 h-5">
+                    <User className="h-2.5 w-2.5" />
+                    {project.assignedOwnerName}
+                  </Badge>
+                )}
+                {isPending && <Badge className="text-[10px] px-1.5 py-0 h-5">Pending</Badge>}
+                {isRejected && <Badge variant="destructive" className="text-[10px] px-1.5 py-0 h-5">Action needed</Badge>}
               </div>
 
               <div className="rounded-full p-1 bg-primary">
