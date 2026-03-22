@@ -886,7 +886,7 @@ const ProjectWorkspace = () => {
                   <TabsTrigger
                     key={tab.value}
                     value={tab.value}
-                    className="rounded-lg border border-transparent px-3 py-1.5 text-sm font-semibold text-muted-foreground data-[state=active]:border-primary data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm"
+                    className="rounded border border-transparent px-4 py-1.5 text-sm font-semibold text-muted-foreground data-[state=active]:border-primary data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm"
                   >
                     {tab.label}
                   </TabsTrigger>
