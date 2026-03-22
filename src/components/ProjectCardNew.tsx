@@ -232,13 +232,7 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
           </div>
 
           {isExpanded && (
-            <div
-              className="space-y-2 rounded-lg p-2"
-              style={{
-                backgroundColor: hexToRgba(projectExpandedBackground, 0.95),
-                border: `1px solid ${hexToRgba(projectExpandedBorder, 0.86)}`,
-              }}
-            >
+            <div className="border-t border-border/30 px-3 py-2 space-y-2">
               <div className="grid gap-1.5 grid-cols-2 sm:grid-cols-4">
                 <MetricTile borderColor={projectExpandedBorder} label={getLabel("field_arr")} value={`${project.arr} Cr`} />
                 <MetricTile borderColor={projectExpandedBorder} label="Pending on" value={responsibilityLabels[computedResponsibility] || computedResponsibility} />
@@ -262,7 +256,6 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
                   </Select>
                 </MetricTile>
               </div>
-
               <div
                 className="flex flex-wrap items-center gap-1.5 pt-1.5"
                 style={{ borderTop: `1px solid ${hexToRgba(projectExpandedBorder, 0.52)}` }}
@@ -281,7 +274,7 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
             </div>
           )}
         </div>
-      </Card>
+      </div>
 
       <TransferDialog project={project} open={transferOpen} onOpenChange={setTransferOpen} onTransfer={handleTransfer} />
       <RejectTransferDialog project={project} open={rejectOpen} onOpenChange={setRejectOpen} onReject={handleReject} />
