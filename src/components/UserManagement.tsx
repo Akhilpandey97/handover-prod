@@ -31,6 +31,7 @@ interface UserWithRole {
   email: string;
   team: TeamRole;
   created_at: string | null;
+  tenant_name: string | null;
 }
 
 const teamColors: Record<TeamRole, string> = {
