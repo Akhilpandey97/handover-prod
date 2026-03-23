@@ -1835,12 +1835,6 @@ export const ManagerDashboard = () => {
             </Card>
           </div>}
 
-          {/* Checklist Tab */}
-          {activeTab === "checklist" && <ChecklistManagement />}
-
-          {/* Users Tab */}
-          {activeTab === "users" && <UserManagement />}
-
           {/* Settings Tab */}
           {activeTab === "settings" && <div className="space-y-6">
             {settingsSubTab === "navigation" ? (
@@ -1874,6 +1868,12 @@ export const ManagerDashboard = () => {
                   </div>
                 </CardContent>
               </Card>
+            ) : settingsSubTab === "users" ? (
+              <UserManagement />
+            ) : settingsSubTab === "checklist" ? (
+              <ChecklistManagement />
+            ) : settingsSubTab === "emails" ? (
+              <ParsedEmailsTab />
             ) : (
               <SettingsPanel activeSubTab={settingsSubTab} />
             )}
@@ -1882,11 +1882,6 @@ export const ManagerDashboard = () => {
 
           {/* Kanban Tab */}
           {activeTab === "kanban" && <KanbanBoard />}
-
-          {/* Emails Tab */}
-          {activeTab === "emails" && <div className="space-y-6">
-            <ParsedEmailsTab />
-          </div>}
 
           {/* Tenants Tab (Super Admin only) */}
           {activeTab === "tenants" && currentUser?.team === "super_admin" && <TenantManagement />}
