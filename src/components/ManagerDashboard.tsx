@@ -569,11 +569,8 @@ export const ManagerDashboard = () => {
     listview: { icon: <List className="h-4 w-4" />, label: "List View" },
     calendar: { icon: <CalendarDays className="h-4 w-4" />, label: "Calendar" },
     reports: { icon: <TrendingUp className="h-4 w-4" />, label: "Reports" },
-    checklist: { icon: <ListChecks className="h-4 w-4" />, label: "Checklist" },
-    users: { icon: <Users className="h-4 w-4" />, label: "Users" },
     settings: { icon: <Settings className="h-4 w-4" />, label: "Settings" },
     kanban: { icon: <FolderKanban className="h-4 w-4" />, label: "Kanban" },
-    emails: { icon: <Mail className="h-4 w-4" />, label: "Emails" },
     tenants: { icon: <Building2 className="h-4 w-4" />, label: "Tenants" },
   };
 
@@ -586,6 +583,9 @@ export const ManagerDashboard = () => {
     colours: { label: "Colours" },
     email: { label: "Email" },
     navigation: { label: "Navigation" },
+    users: { label: "Users" },
+    checklist: { label: "Checklist" },
+    emails: { label: "Emails" },
   };
 
   const REPORTS_SUB_CONFIG: Record<string, { label: string; icon?: string }> = {
