@@ -85,11 +85,15 @@ export const UserManagement = () => {
 
       if (profilesError) throw profilesError;
 
-      const { data: roles, error: rolesError } = await supabase
-        .from("user_roles")
-        .select("*");
+      const [{ data: roles, error: rolesError }, { data: tenants, error: tenantsError }] = await Promise.all([
+        supabase.from("user_roles").select("*"),
+        supabase.from("tenants").select("id, name"),
+      ]);
 
       if (rolesError) throw rolesError;
+      if (tenantsError) throw tenantsError;
+
+      const tenantMap = new Map((tenants || []).map(t => [t.id, t.name]));
 
       const usersWithRoles: UserWithRole[] = (profiles || []).map(profile => {
         const userRole = roles?.find(r => r.user_id === profile.id);
@@ -99,6 +103,7 @@ export const UserManagement = () => {
           email: profile.email,
           team: userRole?.role || profile.team,
           created_at: profile.created_at,
+          tenant_name: profile.tenant_id ? tenantMap.get(profile.tenant_id) || null : null,
         };
       });
 
