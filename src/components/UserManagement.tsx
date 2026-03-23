@@ -31,6 +31,7 @@ interface UserWithRole {
   email: string;
   team: TeamRole;
   created_at: string | null;
+  tenant_name: string | null;
 }
 
 const teamColors: Record<TeamRole, string> = {
@@ -84,11 +85,15 @@ export const UserManagement = () => {
 
       if (profilesError) throw profilesError;
 
-      const { data: roles, error: rolesError } = await supabase
-        .from("user_roles")
-        .select("*");
+      const [{ data: roles, error: rolesError }, { data: tenants, error: tenantsError }] = await Promise.all([
+        supabase.from("user_roles").select("*"),
+        supabase.from("tenants").select("id, name"),
+      ]);
 
       if (rolesError) throw rolesError;
+      if (tenantsError) throw tenantsError;
+
+      const tenantMap = new Map((tenants || []).map(t => [t.id, t.name]));
 
       const usersWithRoles: UserWithRole[] = (profiles || []).map(profile => {
         const userRole = roles?.find(r => r.user_id === profile.id);
@@ -98,6 +103,7 @@ export const UserManagement = () => {
           email: profile.email,
           team: userRole?.role || profile.team,
           created_at: profile.created_at,
+          tenant_name: profile.tenant_id ? tenantMap.get(profile.tenant_id) || null : null,
         };
       });
 
@@ -295,6 +301,7 @@ export const UserManagement = () => {
                 <TableHead>Name</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>Team</TableHead>
+                <TableHead>Tenant</TableHead>
                 <TableHead>Created</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
@@ -308,6 +315,9 @@ export const UserManagement = () => {
                     <Badge className={`${teamColors[user.team]} text-white`}>
                       {teamLabels[user.team]}
                     </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <span className="text-sm text-muted-foreground">{user.tenant_name || "—"}</span>
                   </TableCell>
                   <TableCell>
                     {user.created_at ? new Date(user.created_at).toLocaleDateString() : "N/A"}
