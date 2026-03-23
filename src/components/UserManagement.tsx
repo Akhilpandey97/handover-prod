@@ -317,6 +317,9 @@ export const UserManagement = () => {
                     </Badge>
                   </TableCell>
                   <TableCell>
+                    <span className="text-sm text-muted-foreground">{user.tenant_name || "—"}</span>
+                  </TableCell>
+                  <TableCell>
                     {user.created_at ? new Date(user.created_at).toLocaleDateString() : "N/A"}
                   </TableCell>
                   <TableCell className="text-right">
