@@ -507,7 +507,9 @@ const ProjectWorkspace = () => {
     };
   }, [project]);
 
-  if (isLoading) {
+  const { isLoading: projectsLoading } = useProjects();
+
+  if (isLoading || projectsLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
         <div className="text-center">

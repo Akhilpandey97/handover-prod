@@ -551,6 +551,82 @@ export const ReportsBuilder = ({ projects, customFields = [], customValuesMap = 
     );
   };
 
+  // When used as a standalone pivot tab, only render the pivot card
+  if (initialPivot) {
+    return (
+      <Card>
+        <CardHeader className="py-3 px-4">
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <Sigma className="h-4 w-4" />
+              Pivot Table
+            </CardTitle>
+            <div className="flex gap-2 items-center flex-wrap">
+              <div className="flex items-center gap-1.5">
+                <Label className="text-xs text-muted-foreground whitespace-nowrap">Rows:</Label>
+                <Select value={pivotRowField} onValueChange={(v) => { setPivotRowField(v); setShowPivot(true); }}>
+                  <SelectTrigger className="h-7 text-xs w-[130px]"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Select…</SelectItem>
+                    {groupableColumns.map(k => {
+                      const col = allColumns.find(c => c.key === k);
+                      return <SelectItem key={k} value={k}>{col?.label || k}</SelectItem>;
+                    })}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <Label className="text-xs text-muted-foreground whitespace-nowrap">Columns:</Label>
+                <Select value={pivotColField} onValueChange={(v) => { setPivotColField(v); setShowPivot(true); }}>
+                  <SelectTrigger className="h-7 text-xs w-[130px]"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">None</SelectItem>
+                    {groupableColumns.filter(k => k !== pivotRowField).map(k => {
+                      const col = allColumns.find(c => c.key === k);
+                      return <SelectItem key={k} value={k}>{col?.label || k}</SelectItem>;
+                    })}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <Label className="text-xs text-muted-foreground whitespace-nowrap">Values:</Label>
+                <Select value={pivotValueField} onValueChange={setPivotValueField}>
+                  <SelectTrigger className="h-7 text-xs w-[110px]"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {NUMERIC_COLUMNS.map(k => {
+                      const col = allColumns.find(c => c.key === k);
+                      return <SelectItem key={k} value={k}>{col?.label || k}</SelectItem>;
+                    })}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <Label className="text-xs text-muted-foreground whitespace-nowrap">Agg:</Label>
+                <Select value={pivotAggType} onValueChange={(v) => setPivotAggType(v as AggType)}>
+                  <SelectTrigger className="h-7 text-xs w-[90px]"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="sum">Sum</SelectItem>
+                    <SelectItem value="avg">Average</SelectItem>
+                    <SelectItem value="count">Count</SelectItem>
+                    <SelectItem value="min">Min</SelectItem>
+                    <SelectItem value="max">Max</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="p-0">
+          <div className="overflow-auto max-h-[70vh]">
+            {showPivot ? renderExcelPivot() : (
+              <p className="text-sm text-muted-foreground p-4">Select a Row field to create a pivot table.</p>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <div className="space-y-4">
       {savedReports.length > 0 && (
