@@ -43,6 +43,7 @@ import {
   Bot,
   CheckCheck,
   CheckCircle2,
+  ChevronDown,
   ChevronRight,
   Clock3,
   Eye,
@@ -471,6 +472,7 @@ const ProjectWorkspace = () => {
   const [aiSummary, setAiSummary] = useState<string[]>([]);
   const [aiSummaryLoading, setAiSummaryLoading] = useState(false);
   const [aiSummaryError, setAiSummaryError] = useState<string | null>(null);
+  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
 
   const project = projects.find((entry) => entry.id === projectId) ?? null;
 
@@ -743,139 +745,158 @@ const ProjectWorkspace = () => {
 
             <div className="h-px bg-border/50" />
 
-            {/* Ownership section */}
-            <div className="py-3">
-              <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.2em] text-primary">Ownership</p>
-              <div className="space-y-2">
-                {[
-                  ["Owner", project.assignedOwnerName || "Unassigned"],
-                  ["Team", teamLabels[project.currentOwnerTeam] || project.currentOwnerTeam],
-                  ["Phase", phaseLabels[project.currentPhase] || project.currentPhase],
-                  ["Sales SPOC", project.salesSpoc || "—"],
-                ].map(([label, value]) => (
-                  <div key={label} className="flex items-baseline justify-between gap-2">
-                    <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
-                    <p className="text-xs font-semibold text-foreground text-right truncate max-w-[120px]">{value}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="h-px bg-border/50" />
-
-            {/* Execution section */}
-            <div className="py-3">
-              <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.2em] text-primary">Execution</p>
-              <div className="space-y-2">
-                <div className="flex items-baseline justify-between gap-2">
-                  <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Responsibility</p>
-                  <p className="text-xs font-semibold text-foreground">{responsibilityLabels[pendingOn] || pendingOn}</p>
-                </div>
-                <div className="flex items-baseline justify-between gap-2">
-                  <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Checklist</p>
-                  <p className="text-xs font-semibold text-foreground">{completedChecklist}/{project.checklist.length}</p>
-                </div>
-                <Progress
-                  value={project.checklist.length ? (completedChecklist / project.checklist.length) * 100 : 0}
-                  className="h-1.5 rounded-full bg-secondary"
-                />
-                <div className="grid grid-cols-2 gap-1.5 pt-1">
-                  <div className="rounded-md border border-border/60 bg-card/80 px-2 py-1.5 text-center">
-                    <p className="text-xs font-bold text-foreground">{formatDuration(timeByParty.gokwik)}</p>
-                    <p className="text-[8px] uppercase tracking-widest text-muted-foreground">Internal</p>
-                  </div>
-                  <div className="rounded-md border border-border/60 bg-card/80 px-2 py-1.5 text-center">
-                    <p className="text-xs font-bold text-foreground">{formatDuration(timeByParty.merchant)}</p>
-                    <p className="text-[8px] uppercase tracking-widest text-muted-foreground">Merchant</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="h-px bg-border/50" />
-
-            {/* Risk */}
-            <div className="py-3">
-              <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.2em] text-primary">Risk</p>
-              <div className="flex items-center gap-2">
-                <Badge className={cn("border text-[10px] font-semibold", risk.tone)}>{risk.label}</Badge>
-                <span className="text-[10px] font-semibold text-muted-foreground">Score {risk.score}</span>
-              </div>
-              {risk.drivers[0]?.points > 0 ? (
-                <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">{risk.drivers[0].label}</p>
-              ) : null}
-            </div>
-
-            <div className="h-px bg-border/50" />
-
-            {/* Key Dates */}
-            <div className="py-3">
-              <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.2em] text-primary">Key dates</p>
-              <div className="space-y-1.5">
-                {[
-                  ["Kick-off", project.dates.kickOffDate || "—"],
-                  ["Expected go-live", project.dates.expectedGoLiveDate || "—"],
-                  ["Go-live", project.dates.goLiveDate || "—"],
-                  ["Last update", getLastUpdated(project)],
-                ].map(([label, value]) => (
-                  <div key={label} className="flex items-baseline justify-between gap-2">
-                    <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
-                    <p className="text-[11px] font-semibold text-foreground text-right truncate max-w-[110px]">{value}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="h-px bg-border/50" />
-
-            {/* Business Data */}
-            <div className="py-3">
-              <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.2em] text-primary">Business</p>
-              <div className="space-y-1.5">
-                {[
-                  ["Platform", project.platform],
-                  ["Category", project.category || "—"],
-                  ["ARR", `${project.arr} Cr`],
-                  ["Txn / day", `${project.txnsPerDay}`],
-                  ["AOV", `₹${project.aov.toLocaleString()}`],
-                  ["Integration", project.integrationType || "—"],
-                  ["PG onboarding", project.pgOnboarding || "—"],
-                ].map(([label, value]) => (
-                  <div key={label} className="flex items-baseline justify-between gap-2">
-                    <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
-                    <p className="text-[11px] font-semibold text-foreground text-right truncate max-w-[110px]">{value}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="h-px bg-border/50" />
-
-            {/* Links */}
-            <div className="py-3">
-              <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.2em] text-primary">Links</p>
-              <div className="space-y-1">
-                {quickLinks.length > 0 ? (
-                  quickLinks.map((link) => (
-                    <a
-                      key={link.label}
-                      href={link.href}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="flex items-center justify-between rounded-md border border-border/60 bg-card/80 px-2.5 py-1.5 text-[11px] font-semibold text-foreground transition hover:bg-accent/60"
-                    >
-                      <div className="flex items-center gap-1.5">
-                        <link.icon className="h-3 w-3" />
-                        <span>{link.label}</span>
+            {/* Collapsible sections */}
+            {[
+              {
+                key: "ownership",
+                title: "Ownership",
+                content: (
+                  <div className="space-y-2">
+                    {[
+                      ["Owner", project.assignedOwnerName || "Unassigned"],
+                      ["Team", teamLabels[project.currentOwnerTeam] || project.currentOwnerTeam],
+                      ["Phase", phaseLabels[project.currentPhase] || project.currentPhase],
+                      ["Sales SPOC", project.salesSpoc || "—"],
+                    ].map(([label, value]) => (
+                      <div key={label} className="flex items-baseline justify-between gap-2">
+                        <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
+                        <p className="text-xs font-semibold text-foreground text-right truncate max-w-[120px]">{value}</p>
                       </div>
-                      <ExternalLink className="h-2.5 w-2.5 text-muted-foreground" />
-                    </a>
-                  ))
-                ) : (
-                  <p className="text-[11px] text-muted-foreground">No links attached.</p>
-                )}
+                    ))}
+                  </div>
+                ),
+              },
+              {
+                key: "execution",
+                title: "Execution",
+                content: (
+                  <div className="space-y-2">
+                    <div className="flex items-baseline justify-between gap-2">
+                      <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Responsibility</p>
+                      <p className="text-xs font-semibold text-foreground">{responsibilityLabels[pendingOn] || pendingOn}</p>
+                    </div>
+                    <div className="flex items-baseline justify-between gap-2">
+                      <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Checklist</p>
+                      <p className="text-xs font-semibold text-foreground">{completedChecklist}/{project.checklist.length}</p>
+                    </div>
+                    <Progress
+                      value={project.checklist.length ? (completedChecklist / project.checklist.length) * 100 : 0}
+                      className="h-1.5 rounded-full bg-secondary"
+                    />
+                    <div className="grid grid-cols-2 gap-1.5 pt-1">
+                      <div className="rounded-md border border-border/60 bg-card/80 px-2 py-1.5 text-center">
+                        <p className="text-xs font-bold text-foreground">{formatDuration(timeByParty.gokwik)}</p>
+                        <p className="text-[8px] uppercase tracking-widest text-muted-foreground">Internal</p>
+                      </div>
+                      <div className="rounded-md border border-border/60 bg-card/80 px-2 py-1.5 text-center">
+                        <p className="text-xs font-bold text-foreground">{formatDuration(timeByParty.merchant)}</p>
+                        <p className="text-[8px] uppercase tracking-widest text-muted-foreground">Merchant</p>
+                      </div>
+                    </div>
+                  </div>
+                ),
+              },
+              {
+                key: "risk",
+                title: "Risk",
+                content: (
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <Badge className={cn("border text-[10px] font-semibold", risk.tone)}>{risk.label}</Badge>
+                      <span className="text-[10px] font-semibold text-muted-foreground">Score {risk.score}</span>
+                    </div>
+                    {risk.drivers[0]?.points > 0 ? (
+                      <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">{risk.drivers[0].label}</p>
+                    ) : null}
+                  </div>
+                ),
+              },
+              {
+                key: "dates",
+                title: "Key dates",
+                content: (
+                  <div className="space-y-1.5">
+                    {[
+                      ["Kick-off", project.dates.kickOffDate || "—"],
+                      ["Expected go-live", project.dates.expectedGoLiveDate || "—"],
+                      ["Go-live", project.dates.goLiveDate || "—"],
+                      ["Last update", getLastUpdated(project)],
+                    ].map(([label, value]) => (
+                      <div key={label} className="flex items-baseline justify-between gap-2">
+                        <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
+                        <p className="text-[11px] font-semibold text-foreground text-right truncate max-w-[110px]">{value}</p>
+                      </div>
+                    ))}
+                  </div>
+                ),
+              },
+              {
+                key: "business",
+                title: "Business",
+                content: (
+                  <div className="space-y-1.5">
+                    {[
+                      ["Platform", project.platform],
+                      ["Category", project.category || "—"],
+                      ["ARR", `${project.arr} Cr`],
+                      ["Txn / day", `${project.txnsPerDay}`],
+                      ["AOV", `₹${project.aov.toLocaleString()}`],
+                      ["Integration", project.integrationType || "—"],
+                      ["PG onboarding", project.pgOnboarding || "—"],
+                    ].map(([label, value]) => (
+                      <div key={label} className="flex items-baseline justify-between gap-2">
+                        <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
+                        <p className="text-[11px] font-semibold text-foreground text-right truncate max-w-[110px]">{value}</p>
+                      </div>
+                    ))}
+                  </div>
+                ),
+              },
+              {
+                key: "links",
+                title: "Links",
+                content: (
+                  <div className="space-y-1">
+                    {quickLinks.length > 0 ? (
+                      quickLinks.map((link) => (
+                        <a
+                          key={link.label}
+                          href={link.href}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="flex items-center justify-between rounded-md border border-border/60 bg-card/80 px-2.5 py-1.5 text-[11px] font-semibold text-foreground transition hover:bg-accent/60"
+                        >
+                          <div className="flex items-center gap-1.5">
+                            <link.icon className="h-3 w-3" />
+                            <span>{link.label}</span>
+                          </div>
+                          <ExternalLink className="h-2.5 w-2.5 text-muted-foreground" />
+                        </a>
+                      ))
+                    ) : (
+                      <p className="text-[11px] text-muted-foreground">No links attached.</p>
+                    )}
+                  </div>
+                ),
+              },
+            ].map((section) => (
+              <div key={section.key}>
+                <div className="py-3">
+                  <button
+                    type="button"
+                    onClick={() => setExpandedSections(prev => ({ ...prev, [section.key]: !prev[section.key] }))}
+                    className="flex w-full items-center justify-between group"
+                  >
+                    <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary">{section.title}</p>
+                    <ChevronDown className={cn("h-3 w-3 text-muted-foreground transition-transform", expandedSections[section.key] ? "rotate-0" : "-rotate-90")} />
+                  </button>
+                  {expandedSections[section.key] && (
+                    <div className="mt-2">{section.content}</div>
+                  )}
+                </div>
+                <div className="h-px bg-border/50" />
               </div>
-            </div>
+            ))}
           </div>
         </ScrollArea>
 
