@@ -4,11 +4,12 @@ import { useProjects } from "@/contexts/ProjectContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLabels } from "@/contexts/LabelsContext";
 import { calculateTimeFromChecklist, formatDuration } from "@/data/projectsData";
-import { MessageCircle, X, Send, Loader2, Bot, User, Check, CheckCheck, Trash2 } from "lucide-react";
+import { MessageCircle, X, Send, Loader2, Bot, CheckCheck, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import ReactMarkdown from "react-markdown";
 import { supabase } from "@/integrations/supabase/client";
+import { useQueryClient } from "@tanstack/react-query";
 
 type Msg = { role: "user" | "assistant"; content: string; time: string };
 
@@ -30,6 +31,7 @@ export const AiChatBot = () => {
   const { projects } = useProjects();
   const { currentUser } = useAuth();
   const { teamLabels, responsibilityLabels } = useLabels();
+  const queryClient = useQueryClient();
 
   // Load chat history from DB
   useEffect(() => {
@@ -57,7 +59,6 @@ export const AiChatBot = () => {
     loadHistory();
   }, [currentUser, historyLoaded]);
 
-  // Save message to DB
   const saveMessage = async (role: "user" | "assistant", content: string) => {
     const { data: session } = await supabase.auth.getSession();
     if (!session?.session?.user) return;
@@ -68,7 +69,6 @@ export const AiChatBot = () => {
     });
   };
 
-  // Clear chat history
   const clearHistory = async () => {
     const { data: session } = await supabase.auth.getSession();
     if (!session?.session?.user) return;
@@ -91,11 +91,13 @@ export const AiChatBot = () => {
 
   const getProjectContext = useCallback(() => {
     if (!projects.length) return "";
+
+    // Fetch profiles for owner mapping
     const summary = projects.slice(0, 20).map(p => {
       const time = calculateTimeFromChecklist(p.checklist);
       const completed = p.checklist.filter(c => c.completed).length;
       const total = p.checklist.length;
-      return `- ${p.merchantName} (${p.mid}): Phase=${p.currentPhase}, State=${p.projectState}, Team=${teamLabels[p.currentOwnerTeam] || p.currentOwnerTeam}, Owner=${p.assignedOwnerName || "Unassigned"}, Tasks=${completed}/${total}, ${responsibilityLabels.gokwik}Time=${formatDuration(time.gokwik)}, ${responsibilityLabels.merchant}Time=${formatDuration(time.merchant)}, ARR=${p.arr}Cr`;
+      return `- ${p.merchantName} (ID=${p.id}, MID=${p.mid}): Phase=${p.currentPhase}, State=${p.projectState}, Team=${teamLabels[p.currentOwnerTeam] || p.currentOwnerTeam}, Owner=${p.assignedOwnerName || "Unassigned"} (OwnerID=${p.assignedOwner || "none"}), Tasks=${completed}/${total}, ${responsibilityLabels.gokwik}Time=${formatDuration(time.gokwik)}, ${responsibilityLabels.merchant}Time=${formatDuration(time.merchant)}, ARR=${p.arr}Cr`;
     }).join("\n");
     return `Total projects: ${projects.length}\n${summary}`;
   }, [projects, teamLabels, responsibilityLabels]);
@@ -107,12 +109,10 @@ export const AiChatBot = () => {
     setMessages(prev => [...prev, userMsg]);
     setIsLoading(true);
 
-    // Save user message
     saveMessage("user", userMsg.content);
 
     if (inputRef.current) inputRef.current.style.height = "auto";
 
-    let assistantSoFar = "";
     const allMessages = [...messages, userMsg].map(m => ({ role: m.role, content: m.content }));
 
     try {
@@ -135,77 +135,20 @@ export const AiChatBot = () => {
 
       if (resp.status === 429) { toast.error("Rate limit exceeded. Please try again."); setIsLoading(false); return; }
       if (resp.status === 402) { toast.error("AI credits exhausted."); setIsLoading(false); return; }
-      if (!resp.ok || !resp.body) throw new Error("Failed to start stream");
+      if (!resp.ok) throw new Error("Failed to get response");
 
-      const reader = resp.body.getReader();
-      const decoder = new TextDecoder();
-      let textBuffer = "";
-      let streamDone = false;
-      const assistantTime = getTime();
+      const data = await resp.json();
+      const content = data.choices?.[0]?.message?.content || "I couldn't generate a response.";
+      const actions = data.actions as string[] | undefined;
 
-      while (!streamDone) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        textBuffer += decoder.decode(value, { stream: true });
+      const assistantMsg: Msg = { role: "assistant", content, time: getTime() };
+      setMessages(prev => [...prev, assistantMsg]);
+      saveMessage("assistant", content);
 
-        let newlineIndex: number;
-        while ((newlineIndex = textBuffer.indexOf("\n")) !== -1) {
-          let line = textBuffer.slice(0, newlineIndex);
-          textBuffer = textBuffer.slice(newlineIndex + 1);
-          if (line.endsWith("\r")) line = line.slice(0, -1);
-          if (line.startsWith(":") || line.trim() === "") continue;
-          if (!line.startsWith("data: ")) continue;
-          const jsonStr = line.slice(6).trim();
-          if (jsonStr === "[DONE]") { streamDone = true; break; }
-          try {
-            const parsed = JSON.parse(jsonStr);
-            const content = parsed.choices?.[0]?.delta?.content as string | undefined;
-            if (content) {
-              assistantSoFar += content;
-              setMessages(prev => {
-                const last = prev[prev.length - 1];
-                if (last?.role === "assistant") {
-                  return prev.map((m, i) => (i === prev.length - 1 ? { ...m, content: assistantSoFar } : m));
-                }
-                return [...prev, { role: "assistant", content: assistantSoFar, time: assistantTime }];
-              });
-            }
-          } catch {
-            textBuffer = line + "\n" + textBuffer;
-            break;
-          }
-        }
-      }
-
-      // Final flush
-      if (textBuffer.trim()) {
-        for (let raw of textBuffer.split("\n")) {
-          if (!raw) continue;
-          if (raw.endsWith("\r")) raw = raw.slice(0, -1);
-          if (raw.startsWith(":") || raw.trim() === "") continue;
-          if (!raw.startsWith("data: ")) continue;
-          const jsonStr = raw.slice(6).trim();
-          if (jsonStr === "[DONE]") continue;
-          try {
-            const parsed = JSON.parse(jsonStr);
-            const content = parsed.choices?.[0]?.delta?.content as string | undefined;
-            if (content) {
-              assistantSoFar += content;
-              setMessages(prev => {
-                const last = prev[prev.length - 1];
-                if (last?.role === "assistant") {
-                  return prev.map((m, i) => (i === prev.length - 1 ? { ...m, content: assistantSoFar } : m));
-                }
-                return [...prev, { role: "assistant", content: assistantSoFar, time: assistantTime }];
-              });
-            }
-          } catch { /* ignore */ }
-        }
-      }
-
-      // Save final assistant message
-      if (assistantSoFar) {
-        saveMessage("assistant", assistantSoFar);
+      // If actions were taken, refresh project data
+      if (actions && actions.length > 0) {
+        queryClient.invalidateQueries({ queryKey: ["projects"] });
+        toast.success("AI action completed", { description: actions.join(", ") });
       }
     } catch (e) {
       console.error("Chat error:", e);
@@ -254,7 +197,7 @@ export const AiChatBot = () => {
               <div>
                 <p className="font-semibold text-sm">AI Assistant</p>
                 <p className="text-[11px] text-white/70">
-                  {isLoading ? "typing..." : "online"}
+                  {isLoading ? "thinking..." : "online · can take actions"}
                 </p>
               </div>
             </div>
@@ -297,13 +240,14 @@ export const AiChatBot = () => {
                 </div>
                 <p className="text-sm font-semibold mb-1">Hey there! 👋</p>
                 <p className="text-xs text-muted-foreground mb-4 max-w-[280px] mx-auto">
-                  I'm your project AI assistant. Ask me about status, timelines, blockers, or workloads.
+                  I can answer questions and <strong>take actions</strong> — assign owners, update project state, and more.
                 </p>
                 <div className="space-y-2">
                   {[
                     "Which projects are at risk?",
+                    "Assign owner Rahul to Kirtilal",
+                    "Mark project XYZ as in_progress",
                     "Summarize team workloads",
-                    "What's blocking progress?",
                   ].map((q) => (
                     <button
                       key={q}
@@ -350,7 +294,7 @@ export const AiChatBot = () => {
               </div>
             ))}
 
-            {isLoading && messages[messages.length - 1]?.role !== "assistant" && (
+            {isLoading && (
               <div className="flex justify-start">
                 <div className="bg-card border rounded-2xl rounded-bl-md px-4 py-3 shadow-sm">
                   <div className="flex gap-1.5">
@@ -372,7 +316,7 @@ export const AiChatBot = () => {
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
                 onInput={handleTextareaInput}
-                placeholder="Type a message..."
+                placeholder="Ask a question or give an action..."
                 rows={1}
                 disabled={isLoading}
                 className="flex-1 resize-none rounded-2xl border bg-muted/50 px-4 py-2.5 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-[hsl(142,71%,45%)]/30 disabled:opacity-50 max-h-[120px]"
