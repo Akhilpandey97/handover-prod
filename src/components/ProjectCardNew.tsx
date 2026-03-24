@@ -281,6 +281,7 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
               </div>
             </div>
           )}
+        </div>
       </Card>
 
       <TransferDialog project={project} open={transferOpen} onOpenChange={setTransferOpen} onTransfer={handleTransfer} />
