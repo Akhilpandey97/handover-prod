@@ -242,13 +242,13 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
 
           {isExpanded && (
             <div
-              className="space-y-2 rounded-lg p-2"
+              className="space-y-1.5 rounded-md p-2 mx-1.5 mb-1"
               style={{
                 backgroundColor: hexToRgba(projectExpandedBackground, 0.95),
                 border: `1px solid ${hexToRgba(projectExpandedBorder, 0.86)}`,
               }}
             >
-              <div className="grid gap-1.5 grid-cols-2 sm:grid-cols-4">
+              <div className="grid gap-1 grid-cols-2 sm:grid-cols-4">
                 <MetricTile borderColor={projectExpandedBorder} label={getLabel("field_arr")} value={`${project.arr} Cr`} />
                 <MetricTile borderColor={projectExpandedBorder} label="Pending on" value={responsibilityLabels[computedResponsibility] || computedResponsibility} />
                 <MetricTile borderColor={projectExpandedBorder} label="Time split" value={`${formatDuration(timeByParty.gokwik)} / ${formatDuration(timeByParty.merchant)}`} />
@@ -273,23 +273,14 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
               </div>
 
               <div
-                className="flex flex-wrap items-center gap-1.5 pt-1.5"
+                className="flex flex-wrap items-center gap-1.5 pt-1"
                 style={{ borderTop: `1px solid ${hexToRgba(projectExpandedBorder, 0.52)}` }}
               >
                 <Badge variant="outline" className="text-[10px]">{teamLabels.mint}: {mintChecklist.filter((i) => i.completed).length}/{mintChecklist.length}</Badge>
                 <Badge variant="outline" className="text-[10px]">{teamLabels.integration}: {integrationChecklist.filter((i) => i.completed).length}/{integrationChecklist.length}</Badge>
-                <Button size="sm" variant="ghost" className="gap-1 h-6 text-[11px] px-2" onClick={() => handleAiAction("insights")}>
-                  <Brain className="h-3 w-3" />
-                  Insights
-                </Button>
-                <Button size="sm" variant="ghost" className="gap-1 h-6 text-[11px] px-2" onClick={() => handleAiAction("summary")}>
-                  <ListChecks className="h-3 w-3" />
-                  Summary
-                </Button>
               </div>
             </div>
           )}
-        </div>
       </Card>
 
       <TransferDialog project={project} open={transferOpen} onOpenChange={setTransferOpen} onTransfer={handleTransfer} />
