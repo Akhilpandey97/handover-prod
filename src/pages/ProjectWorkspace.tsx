@@ -472,6 +472,7 @@ const ProjectWorkspace = () => {
   const [aiSummary, setAiSummary] = useState<string[]>([]);
   const [aiSummaryLoading, setAiSummaryLoading] = useState(false);
   const [aiSummaryError, setAiSummaryError] = useState<string | null>(null);
+  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
 
   const project = projects.find((entry) => entry.id === projectId) ?? null;
 
