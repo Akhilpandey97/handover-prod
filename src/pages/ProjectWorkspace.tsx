@@ -43,6 +43,7 @@ import {
   Bot,
   CheckCheck,
   CheckCircle2,
+  ChevronDown,
   ChevronRight,
   Clock3,
   Eye,
