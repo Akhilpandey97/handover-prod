@@ -171,71 +171,73 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
           border: `1px solid ${projectStripOuterBorder}`,
         }}
       >
-        <div className="flex flex-col gap-1.5 p-2">
-          <div className="flex items-center gap-2">
-            <Link
-              to={`/projects/${project.id}`}
-              target="_blank"
-              rel="noreferrer"
-              className="flex min-w-0 flex-1 items-center gap-2 rounded-lg px-2 py-2 transition-colors"
-              style={{
-                backgroundColor: projectStripBackground,
-                border: `1px solid ${projectStripBorder}`,
-              }}
-            >
-              <div className="min-w-0 flex-1 flex flex-wrap items-center gap-1.5">
-                <h3 className="truncate text-sm font-semibold tracking-tight text-foreground">{project.merchantName}</h3>
-                <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5">MID {project.mid}</Badge>
-                <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-5">{teamLabels[project.currentOwnerTeam] || project.currentOwnerTeam}</Badge>
-                {project.assignedOwnerName && (
-                  <Badge variant="outline" className="gap-0.5 text-[10px] px-1.5 py-0 h-5">
-                    <User className="h-2.5 w-2.5" />
-                    {project.assignedOwnerName}
-                  </Badge>
-                )}
-                {isPending && <Badge className="text-[10px] px-1.5 py-0 h-5">Pending</Badge>}
-                {isRejected && <Badge variant="destructive" className="text-[10px] px-1.5 py-0 h-5">Action needed</Badge>}
-              </div>
-
-              <div className="rounded-full p-1 bg-primary">
-                <ArrowUpRight className="h-3 w-3 text-primary-foreground" />
-              </div>
-            </Link>
-
-            <div className="flex items-center gap-1 shrink-0">
-              {isPending && (
-                <Button size="sm" className="gap-1 h-7 text-xs px-2" onClick={handleAccept}>
-                  <CheckCircle2 className="h-3 w-3" />
-                  Accept
-                </Button>
+        <div className="flex items-center gap-1.5 px-1.5 py-1">
+          <Link
+            to={`/projects/${project.id}`}
+            target="_blank"
+            rel="noreferrer"
+            className="flex min-w-0 flex-1 items-center gap-1.5 rounded-md px-2 py-1.5 transition-colors"
+            style={{
+              backgroundColor: projectStripBackground,
+              border: `1px solid ${projectStripBorder}`,
+            }}
+          >
+            <div className="min-w-0 flex-1 flex flex-wrap items-center gap-1">
+              <h3 className="truncate text-xs font-semibold tracking-tight text-foreground">{project.merchantName}</h3>
+              <Badge variant="outline" className="text-[9px] px-1 py-0 h-4">MID {project.mid}</Badge>
+              <Badge variant="secondary" className="text-[9px] px-1 py-0 h-4">{teamLabels[project.currentOwnerTeam] || project.currentOwnerTeam}</Badge>
+              {project.assignedOwnerName && (
+                <Badge variant="outline" className="gap-0.5 text-[9px] px-1 py-0 h-4">
+                  <User className="h-2 w-2" />
+                  {project.assignedOwnerName}
+                </Badge>
               )}
-              {canReject && (
-                <Button size="sm" variant="destructive" className="gap-1 h-7 text-xs px-2" onClick={() => setRejectOpen(true)}>
-                  <XCircle className="h-3 w-3" />
-                  Reject
-                </Button>
-              )}
-              {canTransfer && (
-                <Button
-                  size="sm"
-                  variant={isTransferReady ? "default" : "outline"}
-                  className="gap-1 h-7 text-xs px-2"
-                  onClick={() => isTransferReady && setTransferOpen(true)}
-                  disabled={!isTransferReady}
-                >
-                  <ArrowRight className="h-3 w-3" />
-                  Transfer
-                </Button>
-              )}
-              <Button
-                size="icon"
-                className="h-7 w-7 bg-primary text-primary-foreground border-none shadow-sm"
-                onClick={() => setIsExpanded((v) => !v)}
-                aria-label="Toggle project details"
-              >
-                {isExpanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
-              </Button>
+              {isPending && <Badge className="text-[9px] px-1 py-0 h-4">Pending</Badge>}
+              {isRejected && <Badge variant="destructive" className="text-[9px] px-1 py-0 h-4">Action needed</Badge>}
             </div>
+            <ArrowUpRight className="h-3 w-3 text-primary shrink-0" />
+          </Link>
+
+          <div className="flex items-center gap-0.5 shrink-0">
+            <Button size="sm" variant="ghost" className="gap-0.5 h-6 text-[10px] px-1.5 text-muted-foreground hover:text-foreground" onClick={() => handleAiAction("insights")}>
+              <Brain className="h-3 w-3" />
+              Insights
+            </Button>
+            <Button size="sm" variant="ghost" className="gap-0.5 h-6 text-[10px] px-1.5 text-muted-foreground hover:text-foreground" onClick={() => handleAiAction("summary")}>
+              <ListChecks className="h-3 w-3" />
+              Summary
+            </Button>
+            {isPending && (
+              <Button size="sm" className="gap-0.5 h-6 text-[10px] px-1.5" onClick={handleAccept}>
+                <CheckCircle2 className="h-3 w-3" />
+                Accept
+              </Button>
+            )}
+            {canReject && (
+              <Button size="sm" variant="destructive" className="gap-0.5 h-6 text-[10px] px-1.5" onClick={() => setRejectOpen(true)}>
+                <XCircle className="h-3 w-3" />
+                Reject
+              </Button>
+            )}
+            {canTransfer && (
+              <Button
+                size="sm"
+                variant={isTransferReady ? "default" : "outline"}
+                className="gap-0.5 h-6 text-[10px] px-1.5"
+                onClick={() => isTransferReady && setTransferOpen(true)}
+                disabled={!isTransferReady}
+              >
+                <ArrowRight className="h-3 w-3" />
+                Transfer
+              </Button>
+            )}
+            <Button
+              size="icon"
+              className="h-6 w-6 bg-primary text-primary-foreground border-none shadow-sm"
+              onClick={() => setIsExpanded((v) => !v)}
+            >
+              {isExpanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+            </Button>
           </div>
 
           {isExpanded && (

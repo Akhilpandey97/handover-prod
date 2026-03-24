@@ -29,8 +29,6 @@ const App = () => (
                   <Route path="*" element={<NotFound />} />
                 </Routes>
               </BrowserRouter>
-              <SpeedInsights />
-              <Analytics />
             </ProjectProvider>
           </LabelsProvider>
         </AuthProvider>
