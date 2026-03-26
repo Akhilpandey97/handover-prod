@@ -252,11 +252,11 @@ export const AiChatBot = () => {
                     { icon: "👥", label: "Team Workloads", prompt: "Summarize team workloads" },
                   ].map((q) => (
                     <button
-                      key={q}
-                      onClick={() => setInput(q)}
+                      key={q.label}
+                      onClick={() => setInput(q.prompt)}
                       className="block w-full text-left text-xs px-3 py-2 rounded-xl border bg-card hover:bg-muted/60 transition-colors text-muted-foreground hover:text-foreground"
                     >
-                      💬 {q}
+                      {q.icon} {q.label}
                     </button>
                   ))}
                 </div>

@@ -586,6 +586,7 @@ export const ManagerDashboard = () => {
     users: { label: "Users" },
     checklist: { label: "Checklist" },
     emails: { label: "Emails" },
+    "activity-log": { label: "Activity Log" },
   };
 
   const REPORTS_SUB_CONFIG: Record<string, { label: string; icon?: string }> = {
