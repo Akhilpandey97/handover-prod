@@ -239,49 +239,49 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
               {isExpanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
             </Button>
           </div>
-
-          {isExpanded && (
-            <div
-              className="space-y-1.5 rounded-md p-2 mx-1.5 mb-1"
-              style={{
-                backgroundColor: hexToRgba(projectExpandedBackground, 0.95),
-                border: `1px solid ${hexToRgba(projectExpandedBorder, 0.86)}`,
-              }}
-            >
-              <div className="grid gap-1 grid-cols-2 sm:grid-cols-4">
-                <MetricTile borderColor={projectExpandedBorder} label={getLabel("field_arr")} value={`${project.arr} Cr`} />
-                <MetricTile borderColor={projectExpandedBorder} label="Pending on" value={responsibilityLabels[computedResponsibility] || computedResponsibility} />
-                <MetricTile borderColor={projectExpandedBorder} label="Time split" value={`${formatDuration(timeByParty.gokwik)} / ${formatDuration(timeByParty.merchant)}`} />
-                <MetricTile borderColor={projectExpandedBorder} label="Checklist" value={`${completedChecklist}/${project.checklist.length}`} />
-                <MetricTile borderColor={projectExpandedBorder} label={getLabel("field_kick_off_date")} value={project.dates.kickOffDate || "—"} />
-                <MetricTile borderColor={projectExpandedBorder} label={getLabel("field_go_live_date")} value={project.dates.goLiveDate || project.dates.expectedGoLiveDate || "—"} />
-                <MetricTile borderColor={projectExpandedBorder} label="Phase" value={projectPhaseDisplay} />
-                <MetricTile borderColor={projectExpandedBorder} label="State">
-                  <Select value={project.projectState} onValueChange={(value) => handleStateChange(value as ProjectState)}>
-                    <SelectTrigger className="mt-0.5 h-6 border-border/60 bg-background px-2 text-xs font-semibold text-foreground">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {Object.entries(projectStateLabels).map(([key, label]) => (
-                        <SelectItem key={key} value={key}>
-                          {stateLabels[key as ProjectState] || label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </MetricTile>
-              </div>
-
-              <div
-                className="flex flex-wrap items-center gap-1.5 pt-1"
-                style={{ borderTop: `1px solid ${hexToRgba(projectExpandedBorder, 0.52)}` }}
-              >
-                <Badge variant="outline" className="text-[10px]">{teamLabels.mint}: {mintChecklist.filter((i) => i.completed).length}/{mintChecklist.length}</Badge>
-                <Badge variant="outline" className="text-[10px]">{teamLabels.integration}: {integrationChecklist.filter((i) => i.completed).length}/{integrationChecklist.length}</Badge>
-              </div>
-            </div>
-          )}
         </div>
+
+        {isExpanded && (
+          <div
+            className="space-y-1.5 rounded-md p-2 mx-1.5 mb-1.5"
+            style={{
+              backgroundColor: hexToRgba(projectExpandedBackground, 0.95),
+              border: `1px solid ${hexToRgba(projectExpandedBorder, 0.86)}`,
+            }}
+          >
+            <div className="grid gap-1 grid-cols-2 sm:grid-cols-4">
+              <MetricTile borderColor={projectExpandedBorder} label={getLabel("field_arr")} value={`${project.arr} Cr`} />
+              <MetricTile borderColor={projectExpandedBorder} label="Pending on" value={responsibilityLabels[computedResponsibility] || computedResponsibility} />
+              <MetricTile borderColor={projectExpandedBorder} label="Time split" value={`${formatDuration(timeByParty.gokwik)} / ${formatDuration(timeByParty.merchant)}`} />
+              <MetricTile borderColor={projectExpandedBorder} label="Checklist" value={`${completedChecklist}/${project.checklist.length}`} />
+              <MetricTile borderColor={projectExpandedBorder} label={getLabel("field_kick_off_date")} value={project.dates.kickOffDate || "—"} />
+              <MetricTile borderColor={projectExpandedBorder} label={getLabel("field_go_live_date")} value={project.dates.goLiveDate || project.dates.expectedGoLiveDate || "—"} />
+              <MetricTile borderColor={projectExpandedBorder} label="Phase" value={projectPhaseDisplay} />
+              <MetricTile borderColor={projectExpandedBorder} label="State">
+                <Select value={project.projectState} onValueChange={(value) => handleStateChange(value as ProjectState)}>
+                  <SelectTrigger className="mt-0.5 h-6 border-border/60 bg-background px-2 text-xs font-semibold text-foreground">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(projectStateLabels).map(([key, label]) => (
+                      <SelectItem key={key} value={key}>
+                        {stateLabels[key as ProjectState] || label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </MetricTile>
+            </div>
+
+            <div
+              className="flex flex-wrap items-center gap-1.5 pt-1"
+              style={{ borderTop: `1px solid ${hexToRgba(projectExpandedBorder, 0.52)}` }}
+            >
+              <Badge variant="outline" className="text-[10px]">{teamLabels.mint}: {mintChecklist.filter((i) => i.completed).length}/{mintChecklist.length}</Badge>
+              <Badge variant="outline" className="text-[10px]">{teamLabels.integration}: {integrationChecklist.filter((i) => i.completed).length}/{integrationChecklist.length}</Badge>
+            </div>
+          </div>
+        )}
       </Card>
 
       <TransferDialog project={project} open={transferOpen} onOpenChange={setTransferOpen} onTransfer={handleTransfer} />
