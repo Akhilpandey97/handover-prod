@@ -1875,6 +1875,8 @@ export const ManagerDashboard = () => {
               <ChecklistManagement />
             ) : settingsSubTab === "emails" ? (
               <ParsedEmailsTab />
+            ) : settingsSubTab === "activity-log" ? (
+              <ActivityLog />
             ) : (
               <SettingsPanel activeSubTab={settingsSubTab} />
             )}
