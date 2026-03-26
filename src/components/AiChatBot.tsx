@@ -242,12 +242,14 @@ export const AiChatBot = () => {
                 <p className="text-xs text-muted-foreground mb-4 max-w-[280px] mx-auto">
                   I can answer questions and <strong>take actions</strong> — assign owners, update project state, and more.
                 </p>
-                <div className="space-y-2">
+                <div className="space-y-1.5">
                   {[
-                    "Which projects are at risk?",
-                    "Assign owner Rahul to Kirtilal",
-                    "Mark project XYZ as in_progress",
-                    "Summarize team workloads",
+                    { icon: "👤", label: "Assign Owner", prompt: "Assign an owner to a project" },
+                    { icon: "✏️", label: "Update Project", prompt: "Update project state or fields" },
+                    { icon: "⚡", label: "Create Workflow", prompt: "Create an automated workflow rule" },
+                    { icon: "📋", label: "List Workflows", prompt: "Show me all active workflows" },
+                    { icon: "📊", label: "Project Insights", prompt: "Which projects are at risk?" },
+                    { icon: "👥", label: "Team Workloads", prompt: "Summarize team workloads" },
                   ].map((q) => (
                     <button
                       key={q}
