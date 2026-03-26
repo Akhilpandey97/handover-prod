@@ -1,0 +1,159 @@
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { RefreshCw, Search, Activity, UserCheck, Settings2, Workflow, FileEdit, Trash2 } from "lucide-react";
+import { format } from "date-fns";
+
+interface ActivityLogEntry {
+  id: string;
+  user_name: string | null;
+  action: string;
+  entity_type: string;
+  entity_id: string | null;
+  entity_name: string | null;
+  details: Record<string, unknown>;
+  created_at: string;
+}
+
+const actionIcons: Record<string, React.ReactNode> = {
+  assign_owner: <UserCheck className="h-4 w-4" />,
+  update_project: <FileEdit className="h-4 w-4" />,
+  create_workflow: <Workflow className="h-4 w-4" />,
+  delete_workflow: <Trash2 className="h-4 w-4" />,
+  default: <Activity className="h-4 w-4" />,
+};
+
+const actionLabels: Record<string, string> = {
+  assign_owner: "Owner Assigned",
+  update_project: "Project Updated",
+  create_workflow: "Workflow Created",
+  delete_workflow: "Workflow Deleted",
+  create_project: "Project Created",
+  delete_project: "Project Deleted",
+  transfer_project: "Project Transferred",
+  update_checklist: "Checklist Updated",
+  login: "User Login",
+  logout: "User Logout",
+};
+
+export const ActivityLog = () => {
+  const [logs, setLogs] = useState<ActivityLogEntry[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const [entityFilter, setEntityFilter] = useState("all");
+
+  const fetchLogs = async () => {
+    setIsLoading(true);
+    const { data, error } = await supabase
+      .from("activity_logs")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(200);
+    if (!error && data) {
+      setLogs(data as unknown as ActivityLogEntry[]);
+    }
+    setIsLoading(false);
+  };
+
+  useEffect(() => { fetchLogs(); }, []);
+
+  const filtered = logs.filter(log => {
+    const matchesSearch = !search ||
+      log.action.toLowerCase().includes(search.toLowerCase()) ||
+      (log.entity_name || "").toLowerCase().includes(search.toLowerCase()) ||
+      (log.user_name || "").toLowerCase().includes(search.toLowerCase());
+    const matchesEntity = entityFilter === "all" || log.entity_type === entityFilter;
+    return matchesSearch && matchesEntity;
+  });
+
+  const entityTypes = [...new Set(logs.map(l => l.entity_type))];
+
+  return (
+    <Card className="shadow-xl border-border/50">
+      <CardHeader className="border-b bg-muted/30 pb-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Activity className="h-5 w-5 text-primary" />
+            <CardTitle className="text-lg">Activity Log</CardTitle>
+            <Badge variant="secondary" className="text-xs">{filtered.length} entries</Badge>
+          </div>
+          <Button variant="outline" size="sm" onClick={fetchLogs} disabled={isLoading}>
+            <RefreshCw className={`h-4 w-4 mr-1.5 ${isLoading ? "animate-spin" : ""}`} />
+            Refresh
+          </Button>
+        </div>
+        <div className="flex gap-2 mt-3">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search actions, names..."
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              className="pl-9 h-9"
+            />
+          </div>
+          <Select value={entityFilter} onValueChange={setEntityFilter}>
+            <SelectTrigger className="w-[140px] h-9">
+              <SelectValue placeholder="All types" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All types</SelectItem>
+              {entityTypes.map(t => (
+                <SelectItem key={t} value={t}>{t}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </CardHeader>
+      <CardContent className="p-0">
+        <ScrollArea className="h-[500px]">
+          {filtered.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
+              <Activity className="h-10 w-10 mb-3 opacity-40" />
+              <p className="text-sm font-medium">No activity logs yet</p>
+              <p className="text-xs mt-1">Actions taken via AI chatbot and the app will appear here.</p>
+            </div>
+          ) : (
+            <div className="divide-y">
+              {filtered.map(log => (
+                <div key={log.id} className="flex items-start gap-3 px-5 py-3.5 hover:bg-muted/30 transition-colors">
+                  <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 mt-0.5 text-primary">
+                    {actionIcons[log.action] || actionIcons.default}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-sm font-semibold text-foreground">
+                        {actionLabels[log.action] || log.action}
+                      </span>
+                      <Badge variant="outline" className="text-[10px] uppercase tracking-wider">
+                        {log.entity_type}
+                      </Badge>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {log.entity_name && <span className="font-medium text-foreground">{log.entity_name}</span>}
+                      {log.entity_name && " · "}
+                      by {log.user_name || "System"}
+                    </p>
+                    {log.details && Object.keys(log.details).length > 0 && (
+                      <p className="text-[11px] text-muted-foreground mt-1 truncate">
+                        {Object.entries(log.details).map(([k, v]) => `${k}: ${v}`).join(", ")}
+                      </p>
+                    )}
+                  </div>
+                  <span className="text-[11px] text-muted-foreground whitespace-nowrap shrink-0">
+                    {format(new Date(log.created_at), "dd MMM, HH:mm")}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </ScrollArea>
+      </CardContent>
+    </Card>
+  );
+};

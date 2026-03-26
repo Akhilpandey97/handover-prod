@@ -11,6 +11,7 @@ import { BulkEditDialog, BulkFieldUpdates } from "./BulkEditDialog";
 import { ProjectCalendar } from "./ProjectCalendar";
 import { ParsedEmailsTab } from "./ParsedEmailsTab";
 import { KanbanBoard } from "./KanbanBoard";
+import { ActivityLog } from "./settings/ActivityLog";
 import { CSVUploadDialog } from "./CSVUploadDialog";
 import { AddProjectDialog } from "./AddProjectDialog";
 import { AssignOwnerDialog } from "./AssignOwnerDialog";
@@ -586,6 +587,7 @@ export const ManagerDashboard = () => {
     users: { label: "Users" },
     checklist: { label: "Checklist" },
     emails: { label: "Emails" },
+    "activity-log": { label: "Activity Log" },
   };
 
   const REPORTS_SUB_CONFIG: Record<string, { label: string; icon?: string }> = {
@@ -1874,6 +1876,8 @@ export const ManagerDashboard = () => {
               <ChecklistManagement />
             ) : settingsSubTab === "emails" ? (
               <ParsedEmailsTab />
+            ) : settingsSubTab === "activity-log" ? (
+              <ActivityLog />
             ) : (
               <SettingsPanel activeSubTab={settingsSubTab} />
             )}
