@@ -756,12 +756,6 @@ export const ProjectWorkspaceView = ({ projectId: projectIdProp, inModal = false
             <div className="pb-3 space-y-3">
               <div className="flex flex-wrap gap-1.5">
                 <Badge variant="outline" className="text-[10px] px-2 py-0.5 font-semibold">MID {project.mid}</Badge>
-                <Badge className={cn("border px-2 py-0.5 text-[10px] font-semibold", stateToneMap[project.projectState])}>
-                  {stateLabels[project.projectState] || projectStateLabels[project.projectState]}
-                </Badge>
-                <Badge variant="outline" className="text-[10px] px-2 py-0.5">{teamLabels[project.currentOwnerTeam] || project.currentOwnerTeam}</Badge>
-                <Badge variant="outline" className="text-[10px] px-2 py-0.5">{phaseLabels[project.currentPhase] || project.currentPhase}</Badge>
-                <Badge variant="outline" className="text-[10px] px-2 py-0.5">{risk.label}</Badge>
               </div>
               <p className="mb-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">Project state</p>
               <Select value={project.projectState} onValueChange={(v) => handleStateChange(v as ProjectState)}>
