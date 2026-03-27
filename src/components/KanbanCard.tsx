@@ -19,9 +19,15 @@ const phaseLabels: Record<string, string> = {
 export const KanbanCard = ({
   project,
   onOpenWorkspace,
+  draggable = false,
+  onDragStart,
+  onDragEnd,
 }: {
   project: Project;
   onOpenWorkspace: (projectId: string) => void;
+  draggable?: boolean;
+  onDragStart?: (projectId: string) => void;
+  onDragEnd?: () => void;
 }) => {
   const { stateLabels } = useLabels();
   const [loadingInsights, setLoadingInsights] = useState(false);
@@ -70,8 +76,19 @@ export const KanbanCard = ({
       <div
         role="button"
         tabIndex={0}
-        className="w-full rounded-md border bg-card p-3 space-y-2 shadow-sm text-xs text-left transition hover:border-primary/40 hover:shadow-md cursor-pointer"
+        draggable={draggable}
+        className={cn(
+          "w-full rounded-md border bg-card p-3 space-y-2 shadow-sm text-xs text-left transition hover:border-primary/40 hover:shadow-md cursor-pointer",
+          draggable && "cursor-grab active:cursor-grabbing"
+        )}
         onClick={() => onOpenWorkspace(project.id)}
+        onDragStart={(event) => {
+          if (!draggable) return;
+          event.dataTransfer.effectAllowed = "move";
+          event.dataTransfer.setData("text/plain", project.id);
+          onDragStart?.(project.id);
+        }}
+        onDragEnd={() => onDragEnd?.()}
         onKeyDown={(event) => {
           if (event.key === "Enter" || event.key === " ") {
             event.preventDefault();

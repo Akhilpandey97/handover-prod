@@ -768,7 +768,7 @@ export const ProjectWorkspaceView = ({ projectId: projectIdProp, inModal = false
                 <SelectTrigger className={cn("h-11 rounded-full text-base font-semibold border-2", stateSelectToneMap[project.projectState])}>
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className={cn(inModal && "z-[90]")}>
                   {PROJECT_STATES.map((state) => (
                     <SelectItem key={state} value={state} className={cn("rounded-2xl my-1 text-base font-medium", stateSelectToneMap[state])}>
                       {stateLabels[state] || projectStateLabels[state]}

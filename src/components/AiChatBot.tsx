@@ -267,16 +267,10 @@ export const AiChatBot = () => {
       });
     };
 
-    const onMouseMove = (event: MouseEvent) => handlePointerMove(event.clientX, event.clientY);
-    const onTouchMove = (event: TouchEvent) => {
-      const touch = event.touches[0];
-      if (touch) handlePointerMove(touch.clientX, touch.clientY);
-    };
+    const onPointerMove = (event: PointerEvent) => handlePointerMove(event.clientX, event.clientY);
     const onPointerUp = () => {
-      window.removeEventListener("mousemove", onMouseMove);
-      window.removeEventListener("mouseup", onPointerUp);
-      window.removeEventListener("touchmove", onTouchMove);
-      window.removeEventListener("touchend", onPointerUp);
+      window.removeEventListener("pointermove", onPointerMove);
+      window.removeEventListener("pointerup", onPointerUp);
       if (dragStateRef.current?.moved) {
         window.setTimeout(() => {
           suppressOpenRef.current = false;
@@ -287,27 +281,15 @@ export const AiChatBot = () => {
       dragStateRef.current = null;
     };
 
-    window.addEventListener("mousemove", onMouseMove);
-    window.addEventListener("mouseup", onPointerUp);
-    window.addEventListener("touchmove", onTouchMove, { passive: true });
-    window.addEventListener("touchend", onPointerUp);
+    window.addEventListener("pointermove", onPointerMove);
+    window.addEventListener("pointerup", onPointerUp);
   };
 
-  const handleLauncherPress = (event: React.MouseEvent<HTMLButtonElement> | React.TouchEvent<HTMLButtonElement>) => {
-    if ("touches" in event) {
-      const touch = event.touches[0];
-      if (touch) beginDrag(touch.clientX, touch.clientY);
-      return;
-    }
+  const handleLauncherPress = (event: React.PointerEvent<HTMLButtonElement>) => {
     beginDrag(event.clientX, event.clientY);
   };
 
-  const handleHeaderPress = (event: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>) => {
-    if ("touches" in event) {
-      const touch = event.touches[0];
-      if (touch) beginDrag(touch.clientX, touch.clientY);
-      return;
-    }
+  const handleHeaderPress = (event: React.PointerEvent<HTMLDivElement>) => {
     beginDrag(event.clientX, event.clientY);
   };
 
@@ -318,13 +300,12 @@ export const AiChatBot = () => {
     <>
       {!isOpen && (
         <button
-          onMouseDown={handleLauncherPress}
-          onTouchStart={handleLauncherPress}
+          onPointerDown={handleLauncherPress}
           onClick={() => {
             if (suppressOpenRef.current) return;
             setIsOpen(true);
           }}
-          className="fixed z-50 flex h-14 w-14 items-center justify-center rounded-full bg-[hsl(142,71%,45%)] text-white shadow-xl transition-all hover:scale-105 hover:shadow-2xl cursor-grab active:cursor-grabbing"
+          className="fixed z-[85] flex h-14 w-14 items-center justify-center rounded-full bg-[hsl(142,71%,45%)] text-white shadow-xl transition-all hover:scale-105 hover:shadow-2xl cursor-grab active:cursor-grabbing touch-none select-none"
           style={{ left: chatPosition.x, top: chatPosition.y }}
         >
           <MessageCircle className="h-6 w-6" />
@@ -333,14 +314,13 @@ export const AiChatBot = () => {
 
       {isOpen && (
         <div
-          className="fixed z-50 flex h-[600px] w-[420px] max-w-[calc(100vw-1.5rem)] flex-col overflow-hidden rounded-2xl border border-border shadow-2xl animate-in slide-in-from-bottom-4 duration-300"
+          className="fixed z-[85] flex h-[600px] w-[420px] max-w-[calc(100vw-1.5rem)] flex-col overflow-hidden rounded-2xl border border-border shadow-2xl animate-in slide-in-from-bottom-4 duration-300"
           style={{ left: chatPosition.x, top: chatPosition.y }}
         >
           {/* Header */}
           <div
-            className="flex items-center justify-between px-4 py-3 bg-[hsl(142,71%,35%)] text-white cursor-grab active:cursor-grabbing"
-            onMouseDown={handleHeaderPress}
-            onTouchStart={handleHeaderPress}
+            className="flex items-center justify-between px-4 py-3 bg-[hsl(142,71%,35%)] text-white cursor-grab active:cursor-grabbing touch-none select-none"
+            onPointerDown={handleHeaderPress}
           >
             <div className="flex items-center gap-3">
               <div className="h-10 w-10 rounded-full bg-white/20 flex items-center justify-center">
@@ -360,8 +340,7 @@ export const AiChatBot = () => {
                   size="icon"
                   className="h-8 w-8 text-white hover:bg-white/20"
                   onClick={clearHistory}
-                  onMouseDown={(event) => event.stopPropagation()}
-                  onTouchStart={(event) => event.stopPropagation()}
+                  onPointerDown={(event) => event.stopPropagation()}
                   title="Clear chat history"
                 >
                   <Trash2 className="h-4 w-4" />
@@ -372,8 +351,7 @@ export const AiChatBot = () => {
                 size="icon"
                 className="h-8 w-8 text-white hover:bg-white/20"
                 onClick={() => setIsOpen(false)}
-                onMouseDown={(event) => event.stopPropagation()}
-                onTouchStart={(event) => event.stopPropagation()}
+                onPointerDown={(event) => event.stopPropagation()}
               >
                 <X className="h-5 w-5" />
               </Button>

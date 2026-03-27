@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { useProjects } from "@/contexts/ProjectContext";
 import { useLabels } from "@/contexts/LabelsContext";
 import { useCustomFields, useAllCustomFieldValues } from "@/hooks/useCustomFields";
-import { Project, ProjectState, projectStateLabels } from "@/data/projectsData";
+import { Project, ProjectPhase, ProjectState, ResponsibilityParty, projectStateLabels } from "@/data/projectsData";
 import { KanbanCard } from "./KanbanCard";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -12,6 +12,7 @@ import { Separator } from "@/components/ui/separator";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { ProjectWorkspaceView } from "@/pages/ProjectWorkspace";
+import { toast } from "sonner";
 
 const KANBAN_FIELD_OPTIONS = [
   { key: "projectState", label: "Project State" },
@@ -82,11 +83,12 @@ function getColumnStyle(value: string, field: string): { color: string; bg: stri
 }
 
 export const KanbanBoard = () => {
-  const { projects } = useProjects();
+  const { projects, updateProject } = useProjects();
   const labels = useLabels();
   const { fields: customFields } = useCustomFields();
   const [groupField, setGroupField] = useState("projectState");
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
+  const [draggedProjectId, setDraggedProjectId] = useState<string | null>(null);
 
   const projectIds = useMemo(() => projects.map(p => p.id), [projects]);
   const { valuesMap: customValuesMap } = useAllCustomFieldValues(projectIds);
@@ -118,9 +120,46 @@ export const KanbanBoard = () => {
 
   const standardOptions = allFieldOptions.filter(o => !o.key.startsWith("custom_field_"));
   const customOptions = allFieldOptions.filter(o => o.key.startsWith("custom_field_"));
+  const supportsDragMove = ["projectState", "currentPhase", "currentOwnerTeam", "platform", "category", "currentResponsibility"].includes(groupField);
+
+  const handleProjectDrop = (projectId: string, targetValue: string) => {
+    const project = projects.find((item) => item.id === projectId);
+    if (!project || !supportsDragMove) return;
+
+    if (getFieldValue(project, groupField, customValuesMap) === targetValue) return;
+
+    const updatedProject: Project = { ...project };
+
+    switch (groupField) {
+      case "projectState":
+        updatedProject.projectState = targetValue as ProjectState;
+        break;
+      case "currentPhase":
+        updatedProject.currentPhase = targetValue as ProjectPhase;
+        break;
+      case "currentOwnerTeam":
+        updatedProject.currentOwnerTeam = targetValue as Project["currentOwnerTeam"];
+        break;
+      case "currentResponsibility":
+        updatedProject.currentResponsibility = targetValue as ResponsibilityParty;
+        break;
+      case "platform":
+        updatedProject.platform = targetValue;
+        break;
+      case "category":
+        updatedProject.category = targetValue;
+        break;
+      default:
+        toast.info("Dragging is only supported for standard editable fields.");
+        return;
+    }
+
+    updateProject(updatedProject);
+    toast.success(`Moved ${project.merchantName} to ${getFieldLabel(targetValue, groupField, labels)}`);
+  };
 
   return (
-    <div className="space-y-4">
+    <div className="flex h-full flex-col space-y-4">
       <div className="flex items-center gap-2">
         <Label className="text-xs text-muted-foreground whitespace-nowrap">Group By:</Label>
         <Select value={groupField} onValueChange={setGroupField}>
@@ -144,9 +183,29 @@ export const KanbanBoard = () => {
         </Select>
       </div>
 
-      <div className="flex gap-4 overflow-x-auto pb-4">
+      <div
+        className="grid min-w-full flex-1 gap-4 overflow-x-auto pb-4"
+        style={{ gridTemplateColumns: `repeat(${Math.max(columns.length, 1)}, minmax(320px, 1fr))` }}
+      >
         {columns.map((col) => (
-          <div key={col.key} className="flex-shrink-0 w-64">
+          <div
+            key={col.key}
+            className="min-w-0"
+            onDragOver={(event) => {
+              if (!supportsDragMove) return;
+              event.preventDefault();
+              event.dataTransfer.dropEffect = "move";
+            }}
+            onDrop={(event) => {
+              if (!supportsDragMove) return;
+              event.preventDefault();
+              const projectId = event.dataTransfer.getData("text/plain") || draggedProjectId;
+              if (projectId) {
+                handleProjectDrop(projectId, col.key);
+              }
+              setDraggedProjectId(null);
+            }}
+          >
             <Card className={cn("h-full", col.bg)}>
               <CardHeader className="pb-3 pt-4 px-4">
                 <CardTitle className="flex items-center justify-between text-sm">
@@ -159,7 +218,7 @@ export const KanbanBoard = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent className="px-3 pb-3">
-                <ScrollArea className="h-[calc(100vh-300px)]">
+                <ScrollArea className="h-[calc(100vh-220px)]">
                   <div className="space-y-3 pr-2">
                     {col.projects.length === 0 ? (
                       <p className="text-xs text-muted-foreground text-center py-8">
@@ -167,7 +226,14 @@ export const KanbanBoard = () => {
                       </p>
                     ) : (
                       col.projects.map((project) => (
-                        <KanbanCard key={project.id} project={project} onOpenWorkspace={setSelectedProjectId} />
+                        <KanbanCard
+                          key={project.id}
+                          project={project}
+                          onOpenWorkspace={setSelectedProjectId}
+                          draggable={supportsDragMove}
+                          onDragStart={setDraggedProjectId}
+                          onDragEnd={() => setDraggedProjectId(null)}
+                        />
                       ))
                     )}
                   </div>
@@ -179,8 +245,8 @@ export const KanbanBoard = () => {
       </div>
 
       {selectedProjectId ? (
-        <div className="fixed inset-0 z-[70] bg-background/55 backdrop-blur-[2px] p-5">
-          <div className="mx-auto h-full max-w-[1840px] overflow-hidden rounded-2xl border border-border/70 bg-background shadow-2xl">
+        <div className="fixed inset-0 z-[70] bg-background/55 backdrop-blur-[2px] p-6">
+          <div className="mx-auto h-full max-w-[1760px] overflow-hidden rounded-2xl border border-border/70 bg-background shadow-2xl">
             <ProjectWorkspaceView
               projectId={selectedProjectId}
               inModal

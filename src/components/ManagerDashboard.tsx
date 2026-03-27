@@ -914,7 +914,7 @@ export const ManagerDashboard = () => {
 
         {/* Content Area */}
         <div className="flex-1 min-h-0 overflow-y-auto">
-          <div className={cn(activeTab === "projects" ? "p-0" : "p-8")}>
+          <div className={cn(activeTab === "projects" ? "p-0" : activeTab === "kanban" ? "px-6 py-5" : "p-8")}>
 
           {/* ========= OVERVIEW TAB ========= */}
           {activeTab === "dashboard" && <div className="space-y-6">
