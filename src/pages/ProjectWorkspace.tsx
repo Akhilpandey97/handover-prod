@@ -696,7 +696,7 @@ export const ProjectWorkspaceView = ({ projectId: projectIdProp, inModal = false
   };
 
   return (
-    <div className={cn("flex flex-col overflow-hidden bg-background", inModal ? "h-full" : "h-screen")}>
+    <div className={cn("flex flex-col overflow-hidden bg-background", inModal ? "h-full rounded-2xl border border-border/60" : "h-screen")}>
       {/* Unified header */}
       <div className="shrink-0 border-b border-border/60 bg-card/80 px-4 py-2">
         <div className="mx-auto flex max-w-[1680px] items-center justify-between gap-3">
@@ -718,7 +718,7 @@ export const ProjectWorkspaceView = ({ projectId: projectIdProp, inModal = false
             )}
             <ChevronRight className="h-3 w-3 text-muted-foreground shrink-0" />
             <div className="flex items-center gap-2 min-w-0">
-              <h1 className="text-2xl font-semibold tracking-tight text-foreground truncate">{project.merchantName}</h1>
+              <h1 className="text-[2.05rem] font-semibold tracking-tight text-foreground truncate">{project.merchantName}</h1>
             </div>
           </div>
 
@@ -755,15 +755,15 @@ export const ProjectWorkspaceView = ({ projectId: projectIdProp, inModal = false
           <div className="p-4 space-y-1">
             <div className="pb-3 space-y-3">
               <div className="flex flex-wrap gap-1.5">
-                <Badge variant="outline" className="text-[10px] px-2 py-0.5 font-semibold">MID {project.mid}</Badge>
-                <Badge className={cn("border px-2 py-0.5 text-[10px] font-semibold", stateToneMap[project.projectState])}>
+                <Badge variant="outline" className="text-[11px] px-2 py-0.5 font-semibold">MID {project.mid}</Badge>
+                <Badge className={cn("border px-2 py-0.5 text-[11px] font-semibold", stateToneMap[project.projectState])}>
                   {stateLabels[project.projectState] || projectStateLabels[project.projectState]}
                 </Badge>
-                <Badge variant="outline" className="text-[10px] px-2 py-0.5">{teamLabels[project.currentOwnerTeam] || project.currentOwnerTeam}</Badge>
-                <Badge variant="outline" className="text-[10px] px-2 py-0.5">{phaseLabels[project.currentPhase] || project.currentPhase}</Badge>
-                <Badge variant="outline" className="text-[10px] px-2 py-0.5">{risk.label}</Badge>
+                <Badge variant="outline" className="text-[11px] px-2 py-0.5">{teamLabels[project.currentOwnerTeam] || project.currentOwnerTeam}</Badge>
+                <Badge variant="outline" className="text-[11px] px-2 py-0.5">{phaseLabels[project.currentPhase] || project.currentPhase}</Badge>
+                <Badge variant="outline" className="text-[11px] px-2 py-0.5">{risk.label}</Badge>
               </div>
-              <p className="mb-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">Project state</p>
+              <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">Project state</p>
               <Select value={project.projectState} onValueChange={(v) => handleStateChange(v as ProjectState)}>
                 <SelectTrigger className={cn("h-11 rounded-full text-base font-semibold border-2", stateSelectToneMap[project.projectState])}>
                   <SelectValue />
@@ -794,8 +794,8 @@ export const ProjectWorkspaceView = ({ projectId: projectIdProp, inModal = false
                       ["Sales SPOC", project.salesSpoc || "—"],
                     ].map(([label, value]) => (
                       <div key={label} className="flex items-baseline justify-between gap-2">
-                        <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
-                        <p className="text-xs font-semibold text-foreground text-right truncate max-w-[120px]">{value}</p>
+                        <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
+                        <p className="text-sm font-semibold text-foreground text-right truncate max-w-[120px]">{value}</p>
                       </div>
                     ))}
                   </div>
@@ -807,12 +807,12 @@ export const ProjectWorkspaceView = ({ projectId: projectIdProp, inModal = false
                 content: (
                   <div className="space-y-2">
                     <div className="flex items-baseline justify-between gap-2">
-                      <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Responsibility</p>
-                      <p className="text-xs font-semibold text-foreground">{responsibilityLabels[pendingOn] || pendingOn}</p>
+                      <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Responsibility</p>
+                      <p className="text-sm font-semibold text-foreground">{responsibilityLabels[pendingOn] || pendingOn}</p>
                     </div>
                     <div className="flex items-baseline justify-between gap-2">
-                      <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Checklist</p>
-                      <p className="text-xs font-semibold text-foreground">{completedChecklist}/{project.checklist.length}</p>
+                      <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Checklist</p>
+                      <p className="text-sm font-semibold text-foreground">{completedChecklist}/{project.checklist.length}</p>
                     </div>
                     <Progress
                       value={project.checklist.length ? (completedChecklist / project.checklist.length) * 100 : 0}
@@ -820,12 +820,12 @@ export const ProjectWorkspaceView = ({ projectId: projectIdProp, inModal = false
                     />
                     <div className="grid grid-cols-2 gap-1.5 pt-1">
                       <div className="rounded-md border border-border/60 bg-card/80 px-2 py-1.5 text-center">
-                        <p className="text-xs font-bold text-foreground">{formatDuration(timeByParty.gokwik)}</p>
-                        <p className="text-[8px] uppercase tracking-widest text-muted-foreground">Internal</p>
+                        <p className="text-sm font-bold text-foreground">{formatDuration(timeByParty.gokwik)}</p>
+                        <p className="text-[9px] uppercase tracking-widest text-muted-foreground">Internal</p>
                       </div>
                       <div className="rounded-md border border-border/60 bg-card/80 px-2 py-1.5 text-center">
-                        <p className="text-xs font-bold text-foreground">{formatDuration(timeByParty.merchant)}</p>
-                        <p className="text-[8px] uppercase tracking-widest text-muted-foreground">Merchant</p>
+                        <p className="text-sm font-bold text-foreground">{formatDuration(timeByParty.merchant)}</p>
+                        <p className="text-[9px] uppercase tracking-widest text-muted-foreground">Merchant</p>
                       </div>
                     </div>
                   </div>
@@ -837,11 +837,11 @@ export const ProjectWorkspaceView = ({ projectId: projectIdProp, inModal = false
                 content: (
                   <div>
                     <div className="flex items-center gap-2">
-                      <Badge className={cn("border text-[10px] font-semibold", risk.tone)}>{risk.label}</Badge>
-                      <span className="text-[10px] font-semibold text-muted-foreground">Score {risk.score}</span>
+                      <Badge className={cn("border text-[11px] font-semibold", risk.tone)}>{risk.label}</Badge>
+                      <span className="text-[11px] font-semibold text-muted-foreground">Score {risk.score}</span>
                     </div>
                     {risk.drivers[0]?.points > 0 ? (
-                      <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">{risk.drivers[0].label}</p>
+                      <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{risk.drivers[0].label}</p>
                     ) : null}
                   </div>
                 ),
@@ -858,8 +858,8 @@ export const ProjectWorkspaceView = ({ projectId: projectIdProp, inModal = false
                       ["Last update", getLastUpdated(project)],
                     ].map(([label, value]) => (
                       <div key={label} className="flex items-baseline justify-between gap-2">
-                        <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
-                        <p className="text-[11px] font-semibold text-foreground text-right truncate max-w-[110px]">{value}</p>
+                        <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
+                        <p className="text-xs font-semibold text-foreground text-right truncate max-w-[110px]">{value}</p>
                       </div>
                     ))}
                   </div>
@@ -880,8 +880,8 @@ export const ProjectWorkspaceView = ({ projectId: projectIdProp, inModal = false
                       ["PG onboarding", project.pgOnboarding || "—"],
                     ].map(([label, value]) => (
                       <div key={label} className="flex items-baseline justify-between gap-2">
-                        <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
-                        <p className="text-[11px] font-semibold text-foreground text-right truncate max-w-[110px]">{value}</p>
+                        <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
+                        <p className="text-xs font-semibold text-foreground text-right truncate max-w-[110px]">{value}</p>
                       </div>
                     ))}
                   </div>
@@ -899,7 +899,7 @@ export const ProjectWorkspaceView = ({ projectId: projectIdProp, inModal = false
                           href={link.href}
                           target="_blank"
                           rel="noreferrer"
-                          className="flex items-center justify-between rounded-md border border-border/60 bg-card/80 px-2.5 py-1.5 text-[11px] font-semibold text-foreground transition hover:bg-accent/60"
+                          className="flex items-center justify-between rounded-md border border-border/60 bg-card/80 px-2.5 py-1.5 text-xs font-semibold text-foreground transition hover:bg-accent/60"
                         >
                           <div className="flex items-center gap-1.5">
                             <link.icon className="h-3 w-3" />
@@ -909,7 +909,7 @@ export const ProjectWorkspaceView = ({ projectId: projectIdProp, inModal = false
                         </a>
                       ))
                     ) : (
-                      <p className="text-[11px] text-muted-foreground">No links attached.</p>
+                      <p className="text-xs text-muted-foreground">No links attached.</p>
                     )}
                   </div>
                 ),
@@ -922,7 +922,7 @@ export const ProjectWorkspaceView = ({ projectId: projectIdProp, inModal = false
                     onClick={() => setExpandedSections(prev => ({ ...prev, [section.key]: !prev[section.key] }))}
                     className="flex w-full items-center justify-between group"
                   >
-                    <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary">{section.title}</p>
+                    <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-primary">{section.title}</p>
                     <ChevronDown className={cn("h-3 w-3 text-muted-foreground transition-transform", expandedSections[section.key] ? "rotate-0" : "-rotate-90")} />
                   </button>
                   {expandedSections[section.key] && (
@@ -965,9 +965,9 @@ export const ProjectWorkspaceView = ({ projectId: projectIdProp, inModal = false
                       { label: "Handoffs", value: `${project.transferHistory.length}`, sub: `${activityFeed.length} total events` },
                     ].map((metric) => (
                       <div key={metric.label} className="rounded-lg border border-border/60 bg-card/80 p-3">
-                        <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">{metric.label}</p>
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">{metric.label}</p>
                         <p className="mt-1 text-xl font-bold tracking-tight text-foreground">{metric.value}</p>
-                        <p className="mt-0.5 text-[10px] text-muted-foreground">{metric.sub}</p>
+                        <p className="mt-0.5 text-[11px] text-muted-foreground">{metric.sub}</p>
                       </div>
                     ))}
                   </div>
@@ -976,7 +976,7 @@ export const ProjectWorkspaceView = ({ projectId: projectIdProp, inModal = false
                   <div className="grid grid-cols-2 gap-2">
                     {/* Checklist breakdown */}
                     <div className="rounded-lg border border-border/60 bg-card/80 p-3">
-                      <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Checklist by team</p>
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Checklist by team</p>
                       <div className="mt-2 space-y-1.5">
                         {Object.entries(
                           project.checklist.reduce(
@@ -993,7 +993,7 @@ export const ProjectWorkspaceView = ({ projectId: projectIdProp, inModal = false
                           <div key={team}>
                             <div className="flex items-center justify-between mb-0.5">
                               <p className="text-xs font-semibold text-foreground">{teamLabels[team] || team}</p>
-                              <span className="text-[10px] font-semibold text-muted-foreground">{summary.done}/{summary.total}</span>
+                              <span className="text-[11px] font-semibold text-muted-foreground">{summary.done}/{summary.total}</span>
                             </div>
                             <Progress value={summary.total ? (summary.done / summary.total) * 100 : 0} className="h-1 bg-secondary" />
                           </div>
@@ -1004,21 +1004,21 @@ export const ProjectWorkspaceView = ({ projectId: projectIdProp, inModal = false
                     {/* Recent activity snapshot */}
                     <div className="rounded-lg border border-border/60 bg-card/80 p-3">
                       <div className="flex items-center justify-between mb-2">
-                        <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Recent activity</p>
-                        <button type="button" onClick={() => setActiveTab("activity")} className="text-[10px] font-semibold text-primary hover:underline">View all</button>
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Recent activity</p>
+                        <button type="button" onClick={() => setActiveTab("activity")} className="text-[11px] font-semibold text-primary hover:underline">View all</button>
                       </div>
                       <div className="space-y-1.5">
                         {activityFeed.slice(0, 4).map((item) => (
                           <div key={item.id} className="flex items-start gap-2">
                             <span className={cn("mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full", activityToneMap[item.kind])} />
                             <div className="min-w-0 flex-1">
-                              <p className="text-[11px] font-semibold text-foreground truncate">{item.title}</p>
-                              <p className="text-[10px] text-muted-foreground">{item.actor} · {item.timestampLabel}</p>
+                              <p className="text-xs font-semibold text-foreground truncate">{item.title}</p>
+                              <p className="text-[11px] text-muted-foreground">{item.actor} · {item.timestampLabel}</p>
                             </div>
                           </div>
                         ))}
                         {activityFeed.length === 0 ? (
-                          <p className="text-[11px] text-muted-foreground">No activity recorded.</p>
+                          <p className="text-xs text-muted-foreground">No activity recorded.</p>
                         ) : null}
                       </div>
                     </div>
@@ -1027,14 +1027,14 @@ export const ProjectWorkspaceView = ({ projectId: projectIdProp, inModal = false
                   {/* Notes summary */}
                   <div className="rounded-lg border border-border/60 bg-card/80 p-3">
                     <div className="flex items-center justify-between mb-2">
-                      <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Project notes</p>
-                      <button type="button" onClick={() => setActiveTab("notes")} className="text-[10px] font-semibold text-primary hover:underline">View all</button>
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Project notes</p>
+                      <button type="button" onClick={() => setActiveTab("notes")} className="text-[11px] font-semibold text-primary hover:underline">View all</button>
                     </div>
                     <div className="grid grid-cols-2 gap-2">
                       {noteSections.map(([label, value]) => (
                         <div key={label} className="rounded-md border border-border/40 bg-background/60 px-2.5 py-2">
-                          <p className="text-[10px] font-semibold text-foreground">{label}</p>
-                          <p className="mt-0.5 text-[11px] leading-relaxed text-muted-foreground line-clamp-2">{value}</p>
+                          <p className="text-[11px] font-semibold text-foreground">{label}</p>
+                          <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground line-clamp-2">{value}</p>
                         </div>
                       ))}
                     </div>
@@ -1043,10 +1043,10 @@ export const ProjectWorkspaceView = ({ projectId: projectIdProp, inModal = false
                   {/* Quick links grid */}
                   {quickLinks.length > 0 ? (
                     <div className="rounded-lg border border-border/60 bg-card/80 p-3">
-                      <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-2">Quick links</p>
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-2">Quick links</p>
                       <div className="flex flex-wrap gap-1.5">
                         {quickLinks.map((link) => (
-                          <a key={link.label} href={link.href} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 rounded-md border border-border/60 bg-background/60 px-2.5 py-1.5 text-[11px] font-semibold text-foreground transition hover:bg-accent/60">
+                          <a key={link.label} href={link.href} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 rounded-md border border-border/60 bg-background/60 px-2.5 py-1.5 text-xs font-semibold text-foreground transition hover:bg-accent/60">
                             <link.icon className="h-3 w-3" />
                             {link.label}
                             <ExternalLink className="h-2.5 w-2.5 text-muted-foreground" />
@@ -1062,17 +1062,17 @@ export const ProjectWorkspaceView = ({ projectId: projectIdProp, inModal = false
                 <div className="space-y-2">
                   <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border/60 bg-card/80 px-3 py-2">
                     <div>
-                      <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Activity timeline</p>
-                      <p className="text-xs font-semibold text-foreground">Execution history and delivery updates</p>
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Activity timeline</p>
+                      <p className="text-sm font-semibold text-foreground">Execution history and delivery updates</p>
                     </div>
-                    <Badge variant="outline" className="text-[10px]">{activityFeed.length} events</Badge>
+                    <Badge variant="outline" className="text-[11px]">{activityFeed.length} events</Badge>
                   </div>
 
                   {Object.entries(groupedActivity).map(([dateLabel, items]) => (
                     <div key={dateLabel}>
                       <div className="mb-1.5 flex items-center gap-3">
                         <div className="h-px flex-1 bg-border/50" />
-                        <Badge variant="outline" className="px-2 py-0.5 text-[10px]">{dateLabel}</Badge>
+                        <Badge variant="outline" className="px-2 py-0.5 text-[11px]">{dateLabel}</Badge>
                         <div className="h-px flex-1 bg-border/50" />
                       </div>
 
@@ -1090,9 +1090,9 @@ export const ProjectWorkspaceView = ({ projectId: projectIdProp, inModal = false
                                     {item.kind}
                                   </span>
                                 </div>
-                                <p className="text-[10px] text-muted-foreground">{item.actor} · {item.timestampLabel}</p>
-                                {item.description ? <p className="mt-1 text-xs leading-relaxed text-foreground">{item.description}</p> : null}
-                                <div className="mt-1.5 flex items-center gap-3 text-[10px] text-muted-foreground">
+                                <p className="text-[11px] text-muted-foreground">{item.actor} · {item.timestampLabel}</p>
+                                {item.description ? <p className="mt-1 text-sm leading-relaxed text-foreground">{item.description}</p> : null}
+                                <div className="mt-1.5 flex items-center gap-3 text-[11px] text-muted-foreground">
                                   <span>{item.source}</span>
                                   <button type="button" className="font-medium text-primary hover:underline">Reply</button>
                                   <button type="button" className="font-medium text-primary hover:underline">Copy link</button>
@@ -1110,7 +1110,7 @@ export const ProjectWorkspaceView = ({ projectId: projectIdProp, inModal = false
                     <div className="rounded-lg border border-dashed border-border/60 px-4 py-6 text-center">
                       <MessageSquareText className="mx-auto h-5 w-5 text-muted-foreground" />
                       <p className="mt-1.5 text-xs font-semibold text-foreground">No activity recorded yet</p>
-                      <p className="mt-0.5 text-[11px] text-muted-foreground">Handoffs, checklist updates, and milestones will appear here.</p>
+                      <p className="mt-0.5 text-xs text-muted-foreground">Handoffs, checklist updates, and milestones will appear here.</p>
                     </div>
                   ) : null}
                 </div>
@@ -1126,8 +1126,8 @@ export const ProjectWorkspaceView = ({ projectId: projectIdProp, inModal = false
                 <div className="space-y-2">
                   {noteSections.map(([label, value]) => (
                     <div key={label} className="rounded-lg border border-border/60 bg-card/80 p-3">
-                      <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">{label}</p>
-                      <p className="mt-1.5 text-xs leading-relaxed text-foreground">{value}</p>
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">{label}</p>
+                      <p className="mt-1.5 text-sm leading-relaxed text-foreground">{value}</p>
                     </div>
                   ))}
                 </div>
@@ -1144,12 +1144,12 @@ export const ProjectWorkspaceView = ({ projectId: projectIdProp, inModal = false
                           </div>
                           <ExternalLink className="h-3 w-3 text-muted-foreground" />
                         </div>
-                        <p className="mt-2 text-xs font-semibold text-foreground">{link.label}</p>
-                        <p className="text-[10px] text-muted-foreground">Open linked artifact</p>
+                        <p className="mt-2 text-sm font-semibold text-foreground">{link.label}</p>
+                        <p className="text-[11px] text-muted-foreground">Open linked artifact</p>
                       </a>
                     ))
                   ) : (
-                    <div className="rounded-lg border border-dashed border-border/60 px-4 py-6 text-[11px] text-muted-foreground">
+                    <div className="rounded-lg border border-dashed border-border/60 px-4 py-6 text-xs text-muted-foreground">
                       No files linked to this project yet.
                     </div>
                   )}
@@ -1164,7 +1164,7 @@ export const ProjectWorkspaceView = ({ projectId: projectIdProp, inModal = false
           <div className="p-3 space-y-3">
             {/* Recommended Actions — highlighted, on top */}
             <div className="rounded-lg border-2 border-primary/30 bg-primary/5 p-3">
-              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary">Recommended actions</p>
+              <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-primary">Recommended actions</p>
               <div className="mt-2 space-y-1">
                 {actionRecommendations.map((action) =>
                   action.href ? (
@@ -1176,8 +1176,8 @@ export const ProjectWorkspaceView = ({ projectId: projectIdProp, inModal = false
                       className="flex items-start justify-between rounded-md border border-primary/15 bg-card/90 px-2.5 py-2 transition hover:bg-accent/60"
                     >
                       <div>
-                        <p className="text-[11px] font-semibold text-foreground">{action.label}</p>
-                        <p className="text-[10px] text-muted-foreground">{action.sublabel}</p>
+                        <p className="text-xs font-semibold text-foreground">{action.label}</p>
+                        <p className="text-[11px] text-muted-foreground">{action.sublabel}</p>
                       </div>
                       <ExternalLink className="mt-0.5 h-3 w-3 text-muted-foreground" />
                     </a>
@@ -1188,8 +1188,8 @@ export const ProjectWorkspaceView = ({ projectId: projectIdProp, inModal = false
                       onClick={action.onClick}
                       className="w-full rounded-md border border-primary/15 bg-card/90 px-2.5 py-2 text-left transition hover:bg-accent/60"
                     >
-                      <p className="text-[11px] font-semibold text-foreground">{action.label}</p>
-                      <p className="text-[10px] text-muted-foreground">{action.sublabel}</p>
+                      <p className="text-xs font-semibold text-foreground">{action.label}</p>
+                      <p className="text-[11px] text-muted-foreground">{action.sublabel}</p>
                     </button>
                   ),
                 )}
@@ -1202,19 +1202,19 @@ export const ProjectWorkspaceView = ({ projectId: projectIdProp, inModal = false
                 <div className="flex h-6 w-6 items-center justify-center rounded-md bg-primary text-primary-foreground">
                   {aiSummaryLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Bot className="h-3 w-3" />}
                 </div>
-                <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-primary">Executive summary</p>
+                <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-primary">Executive summary</p>
               </div>
 
               <div className="space-y-1.5">
                 {aiSummaryLoading ? (
-                  <p className="text-[11px] text-muted-foreground">Generating summary...</p>
+                  <p className="text-xs text-muted-foreground">Generating summary...</p>
                 ) : aiSummaryError ? (
-                  <p className="text-[11px] text-warning">AI summary unavailable.</p>
+                  <p className="text-xs text-warning">AI summary unavailable.</p>
                 ) : (
                   summaryCards.map((card, index) => (
                     <div key={card.title} className={cn("rounded-md border px-2.5 py-2", index === 0 ? "border-primary/20 bg-primary/5" : "border-border/40 bg-background/60")}>
-                      <p className="text-[9px] font-bold uppercase tracking-[0.14em] text-primary">{card.title}</p>
-                      <p className="mt-0.5 text-[11px] leading-relaxed text-foreground">{card.body}</p>
+                      <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-primary">{card.title}</p>
+                      <p className="mt-0.5 text-xs leading-relaxed text-foreground">{card.body}</p>
                     </div>
                   ))
                 )}

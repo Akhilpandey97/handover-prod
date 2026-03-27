@@ -592,8 +592,8 @@ export const ManagerDashboard = () => {
   const REPORTS_SUB_CONFIG: Record<string, { label: string; icon?: string }> = {
     predefined: { label: "Pre Defined" },
     builder: { label: "Report Builder" },
-    pivot: { label: "Pivot Table", icon: "Σ" },
-    scheduler: { label: "📅 Scheduler" },
+    pivot: { label: "Pivot Table" },
+    scheduler: { label: "Scheduler" },
   };
 
   const handleTabDragStart = (tab: string) => setDraggedTab(tab);

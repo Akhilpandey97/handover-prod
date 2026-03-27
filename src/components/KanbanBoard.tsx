@@ -179,12 +179,14 @@ export const KanbanBoard = () => {
       </div>
 
       {selectedProjectId ? (
-        <div className="fixed inset-0 z-[70] bg-background">
-          <ProjectWorkspaceView
-            projectId={selectedProjectId}
-            inModal
-            onClose={() => setSelectedProjectId(null)}
-          />
+        <div className="fixed inset-0 z-[70] bg-background/55 backdrop-blur-[2px] p-5">
+          <div className="mx-auto h-full max-w-[1840px] overflow-hidden rounded-2xl border border-border/70 bg-background shadow-2xl">
+            <ProjectWorkspaceView
+              projectId={selectedProjectId}
+              inModal
+              onClose={() => setSelectedProjectId(null)}
+            />
+          </div>
         </div>
       ) : null}
     </div>
