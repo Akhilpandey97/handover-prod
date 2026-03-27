@@ -16,13 +16,14 @@ type Msg = { role: "user" | "assistant"; content: string; time: string };
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-chat`;
 const QUICK_ACTIONS = [
   { icon: "👤", label: "Assign Owner", prompt: "Assign an owner to an unassigned project." },
-  { icon: "✏️", label: "Update Project", prompt: "Update a project's state, phase, or other fields." },
-  { icon: "⚙️", label: "Create Workflow", prompt: "Create a workflow using supported triggers and actions." },
-  { icon: "🧪", label: "Sample Workflows", prompt: "Create sample workflows for my tenant using my email address." },
+  { icon: "✏️", label: "Update Project", prompt: "Update a project's state, phase, platform, category, ARR, notes, or go-live date." },
+  { icon: "⚙️", label: "Create Workflow", prompt: "Create a workflow using a supported trigger and action." },
+  { icon: "🆕", label: "New Project Alert", prompt: "Create a workflow to notify me by email whenever a new project is created." },
+  { icon: "✅", label: "Checklist Workflow", prompt: "Create a workflow for checklist completion, checklist comments, or all checklist items completed." },
+  { icon: "🧪", label: "Sample Workflow Pack", prompt: "Create sample workflows for my tenant using my email address." },
   { icon: "📋", label: "List Workflows", prompt: "List all active workflows and explain what each one does." },
-  { icon: "✅", label: "Checklist Automation", prompt: "Create a workflow for checklist completion or checklist comments." },
-  { icon: "📊", label: "Project Risks", prompt: "Which projects are at risk right now?" },
-  { icon: "👥", label: "Team Workloads", prompt: "Summarize current team workloads and handoff bottlenecks." },
+  { icon: "📊", label: "Project Risks", prompt: "Which projects are at risk right now, and why?" },
+  { icon: "👥", label: "Team Workloads", prompt: "Summarize current team workloads, owners with the most projects, and handoff bottlenecks." },
 ] as const;
 
 const getTime = () => {
@@ -251,7 +252,7 @@ export const AiChatBot = () => {
                 </div>
                 <p className="text-sm font-semibold mb-1">Hey there! 👋</p>
                 <p className="text-xs text-muted-foreground mb-4 max-w-[280px] mx-auto">
-                  I can answer questions and <strong>take actions</strong> — update projects, create real workflows, and automate checklist follow-ups.
+                  I can answer questions and <strong>take actions</strong> - assign owners, update projects, create real workflows, trigger checklist automations, and surface project risks.
                 </p>
                 <div className="space-y-1.5">
                   {QUICK_ACTIONS.map((q) => (
