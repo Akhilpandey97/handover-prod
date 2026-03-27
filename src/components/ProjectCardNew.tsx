@@ -6,6 +6,7 @@ import {
   calculateProjectResponsibilityFromChecklist,
   calculateTimeFromChecklist,
   formatDuration,
+  projectStateColors,
   projectStateLabels,
 } from "@/data/projectsData";
 import { useAuth } from "@/contexts/AuthContext";
@@ -32,6 +33,7 @@ import {
 } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { hexToRgba } from "@/utils/colorUtils";
+import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import {
   ArrowRight,
@@ -259,12 +261,26 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
               <MetricTile borderColor={projectExpandedBorder} label="Phase" value={projectPhaseDisplay} />
               <MetricTile borderColor={projectExpandedBorder} label="State">
                 <Select value={project.projectState} onValueChange={(value) => handleStateChange(value as ProjectState)}>
-                  <SelectTrigger className="mt-0.5 h-6 border-border/60 bg-background px-2 text-xs font-semibold text-foreground">
-                    <SelectValue />
+                  <SelectTrigger
+                    className={cn(
+                      "mt-0.5 h-8 rounded-full px-3 text-xs font-semibold shadow-none",
+                      projectStateColors[project.projectState]
+                    )}
+                  >
+                    <SelectValue>
+                      {stateLabels[project.projectState] || projectStateLabels[project.projectState]}
+                    </SelectValue>
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="rounded-2xl p-2">
                     {Object.entries(projectStateLabels).map(([key, label]) => (
-                      <SelectItem key={key} value={key}>
+                      <SelectItem
+                        key={key}
+                        value={key}
+                        className={cn(
+                          "mb-1 rounded-xl border text-sm font-semibold last:mb-0",
+                          projectStateColors[key as ProjectState]
+                        )}
+                      >
                         {stateLabels[key as ProjectState] || label}
                       </SelectItem>
                     ))}
