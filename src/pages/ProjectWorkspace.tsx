@@ -755,15 +755,15 @@ export const ProjectWorkspaceView = ({ projectId: projectIdProp, inModal = false
           <div className="p-4 space-y-1">
             <div className="pb-3 space-y-3">
               <div className="flex flex-wrap gap-1.5">
-                <Badge variant="outline" className="text-[11px] px-2 py-0.5 font-semibold">MID {project.mid}</Badge>
-                <Badge className={cn("border px-2 py-0.5 text-[11px] font-semibold", stateToneMap[project.projectState])}>
+                <Badge variant="outline" className="text-[10px] px-2 py-0.5 font-semibold">MID {project.mid}</Badge>
+                <Badge className={cn("border px-2 py-0.5 text-[10px] font-semibold", stateToneMap[project.projectState])}>
                   {stateLabels[project.projectState] || projectStateLabels[project.projectState]}
                 </Badge>
-                <Badge variant="outline" className="text-[11px] px-2 py-0.5">{teamLabels[project.currentOwnerTeam] || project.currentOwnerTeam}</Badge>
-                <Badge variant="outline" className="text-[11px] px-2 py-0.5">{phaseLabels[project.currentPhase] || project.currentPhase}</Badge>
-                <Badge variant="outline" className="text-[11px] px-2 py-0.5">{risk.label}</Badge>
+                <Badge variant="outline" className="text-[10px] px-2 py-0.5">{teamLabels[project.currentOwnerTeam] || project.currentOwnerTeam}</Badge>
+                <Badge variant="outline" className="text-[10px] px-2 py-0.5">{phaseLabels[project.currentPhase] || project.currentPhase}</Badge>
+                <Badge variant="outline" className="text-[10px] px-2 py-0.5">{risk.label}</Badge>
               </div>
-              <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">Project state</p>
+              <p className="mb-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">Project state</p>
               <Select value={project.projectState} onValueChange={(v) => handleStateChange(v as ProjectState)}>
                 <SelectTrigger className={cn("h-11 rounded-full text-base font-semibold border-2", stateSelectToneMap[project.projectState])}>
                   <SelectValue />
@@ -794,8 +794,8 @@ export const ProjectWorkspaceView = ({ projectId: projectIdProp, inModal = false
                       ["Sales SPOC", project.salesSpoc || "—"],
                     ].map(([label, value]) => (
                       <div key={label} className="flex items-baseline justify-between gap-2">
-                        <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
-                        <p className="text-sm font-semibold text-foreground text-right truncate max-w-[120px]">{value}</p>
+                        <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
+                        <p className="text-xs font-semibold text-foreground text-right truncate max-w-[120px]">{value}</p>
                       </div>
                     ))}
                   </div>
@@ -807,12 +807,12 @@ export const ProjectWorkspaceView = ({ projectId: projectIdProp, inModal = false
                 content: (
                   <div className="space-y-2">
                     <div className="flex items-baseline justify-between gap-2">
-                      <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Responsibility</p>
-                      <p className="text-sm font-semibold text-foreground">{responsibilityLabels[pendingOn] || pendingOn}</p>
+                      <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Responsibility</p>
+                      <p className="text-xs font-semibold text-foreground">{responsibilityLabels[pendingOn] || pendingOn}</p>
                     </div>
                     <div className="flex items-baseline justify-between gap-2">
-                      <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Checklist</p>
-                      <p className="text-sm font-semibold text-foreground">{completedChecklist}/{project.checklist.length}</p>
+                      <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Checklist</p>
+                      <p className="text-xs font-semibold text-foreground">{completedChecklist}/{project.checklist.length}</p>
                     </div>
                     <Progress
                       value={project.checklist.length ? (completedChecklist / project.checklist.length) * 100 : 0}
@@ -820,12 +820,12 @@ export const ProjectWorkspaceView = ({ projectId: projectIdProp, inModal = false
                     />
                     <div className="grid grid-cols-2 gap-1.5 pt-1">
                       <div className="rounded-md border border-border/60 bg-card/80 px-2 py-1.5 text-center">
-                        <p className="text-sm font-bold text-foreground">{formatDuration(timeByParty.gokwik)}</p>
-                        <p className="text-[9px] uppercase tracking-widest text-muted-foreground">Internal</p>
+                        <p className="text-xs font-bold text-foreground">{formatDuration(timeByParty.gokwik)}</p>
+                        <p className="text-[8px] uppercase tracking-widest text-muted-foreground">Internal</p>
                       </div>
                       <div className="rounded-md border border-border/60 bg-card/80 px-2 py-1.5 text-center">
-                        <p className="text-sm font-bold text-foreground">{formatDuration(timeByParty.merchant)}</p>
-                        <p className="text-[9px] uppercase tracking-widest text-muted-foreground">Merchant</p>
+                        <p className="text-xs font-bold text-foreground">{formatDuration(timeByParty.merchant)}</p>
+                        <p className="text-[8px] uppercase tracking-widest text-muted-foreground">Merchant</p>
                       </div>
                     </div>
                   </div>
@@ -837,11 +837,11 @@ export const ProjectWorkspaceView = ({ projectId: projectIdProp, inModal = false
                 content: (
                   <div>
                     <div className="flex items-center gap-2">
-                      <Badge className={cn("border text-[11px] font-semibold", risk.tone)}>{risk.label}</Badge>
-                      <span className="text-[11px] font-semibold text-muted-foreground">Score {risk.score}</span>
+                      <Badge className={cn("border text-[10px] font-semibold", risk.tone)}>{risk.label}</Badge>
+                      <span className="text-[10px] font-semibold text-muted-foreground">Score {risk.score}</span>
                     </div>
                     {risk.drivers[0]?.points > 0 ? (
-                      <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{risk.drivers[0].label}</p>
+                      <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">{risk.drivers[0].label}</p>
                     ) : null}
                   </div>
                 ),
@@ -858,8 +858,8 @@ export const ProjectWorkspaceView = ({ projectId: projectIdProp, inModal = false
                       ["Last update", getLastUpdated(project)],
                     ].map(([label, value]) => (
                       <div key={label} className="flex items-baseline justify-between gap-2">
-                        <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
-                        <p className="text-xs font-semibold text-foreground text-right truncate max-w-[110px]">{value}</p>
+                        <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
+                        <p className="text-[11px] font-semibold text-foreground text-right truncate max-w-[110px]">{value}</p>
                       </div>
                     ))}
                   </div>
@@ -880,8 +880,8 @@ export const ProjectWorkspaceView = ({ projectId: projectIdProp, inModal = false
                       ["PG onboarding", project.pgOnboarding || "—"],
                     ].map(([label, value]) => (
                       <div key={label} className="flex items-baseline justify-between gap-2">
-                        <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
-                        <p className="text-xs font-semibold text-foreground text-right truncate max-w-[110px]">{value}</p>
+                        <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
+                        <p className="text-[11px] font-semibold text-foreground text-right truncate max-w-[110px]">{value}</p>
                       </div>
                     ))}
                   </div>
@@ -899,7 +899,7 @@ export const ProjectWorkspaceView = ({ projectId: projectIdProp, inModal = false
                           href={link.href}
                           target="_blank"
                           rel="noreferrer"
-                          className="flex items-center justify-between rounded-md border border-border/60 bg-card/80 px-2.5 py-1.5 text-xs font-semibold text-foreground transition hover:bg-accent/60"
+                          className="flex items-center justify-between rounded-md border border-border/60 bg-card/80 px-2.5 py-1.5 text-[11px] font-semibold text-foreground transition hover:bg-accent/60"
                         >
                           <div className="flex items-center gap-1.5">
                             <link.icon className="h-3 w-3" />
@@ -909,7 +909,7 @@ export const ProjectWorkspaceView = ({ projectId: projectIdProp, inModal = false
                         </a>
                       ))
                     ) : (
-                      <p className="text-xs text-muted-foreground">No links attached.</p>
+                      <p className="text-[11px] text-muted-foreground">No links attached.</p>
                     )}
                   </div>
                 ),
@@ -922,7 +922,7 @@ export const ProjectWorkspaceView = ({ projectId: projectIdProp, inModal = false
                     onClick={() => setExpandedSections(prev => ({ ...prev, [section.key]: !prev[section.key] }))}
                     className="flex w-full items-center justify-between group"
                   >
-                    <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-primary">{section.title}</p>
+                    <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary">{section.title}</p>
                     <ChevronDown className={cn("h-3 w-3 text-muted-foreground transition-transform", expandedSections[section.key] ? "rotate-0" : "-rotate-90")} />
                   </button>
                   {expandedSections[section.key] && (
