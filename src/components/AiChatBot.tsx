@@ -13,7 +13,6 @@ import { useQueryClient } from "@tanstack/react-query";
 
 type Msg = { role: "user" | "assistant"; content: string; time: string };
 
-const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-chat`;
 const QUICK_ACTIONS = [
   { icon: "👤", label: "Assign Owner", prompt: "Assign an owner to an unassigned project." },
   { icon: "✏️", label: "Update Project", prompt: "Update a project's state, phase, platform, category, ARR, notes, or go-live date." },
@@ -128,28 +127,22 @@ export const AiChatBot = () => {
     const allMessages = [...messages, userMsg].map(m => ({ role: m.role, content: m.content }));
 
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.access_token) {
-        toast.error("User not authenticated");
-        setIsLoading(false);
-        return;
-      }
-
-      const resp = await fetch(CHAT_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${session.access_token}`,
-          "apikey": import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-        },
-        body: JSON.stringify({ messages: allMessages, projectContext: getProjectContext() }),
+      const { data, error } = await supabase.functions.invoke("ai-chat", {
+        body: { messages: allMessages, projectContext: getProjectContext() },
       });
 
-      if (resp.status === 429) { toast.error("Rate limit exceeded. Please try again."); setIsLoading(false); return; }
-      if (resp.status === 402) { toast.error("AI credits exhausted."); setIsLoading(false); return; }
-      if (!resp.ok) throw new Error("Failed to get response");
+      if (error) {
+        if (error.message?.includes("429")) {
+          toast.error("Rate limit exceeded. Please try again.");
+          return;
+        }
+        if (error.message?.includes("402")) {
+          toast.error("AI credits exhausted.");
+          return;
+        }
+        throw error;
+      }
 
-      const data = await resp.json();
       const content = data.choices?.[0]?.message?.content || "I couldn't generate a response.";
       const actions = data.actions as string[] | undefined;
 
