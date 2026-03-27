@@ -914,7 +914,7 @@ export const ManagerDashboard = () => {
 
         {/* Content Area */}
         <div className="flex-1 min-h-0 overflow-y-auto">
-          <div className="p-8">
+          <div className={cn(activeTab === "projects" ? "p-0" : "p-8")}>
 
           {/* ========= OVERVIEW TAB ========= */}
           {activeTab === "dashboard" && <div className="space-y-6">
@@ -1132,8 +1132,8 @@ export const ManagerDashboard = () => {
           </div>}
 
           {/* ========= PROJECTS TAB ========= */}
-          {activeTab === "projects" && <div className="space-y-6">
-            <Card className="shadow-xl border-border/50">
+          {activeTab === "projects" && <div>
+            <Card className="rounded-none border-x-0 border-t-0 border-border/50 shadow-none">
               <CardHeader className="border-b bg-muted/30 px-4 py-4">
                 <div className="flex items-center justify-between flex-wrap gap-3">
                   <div className="flex items-center gap-3 relative">
