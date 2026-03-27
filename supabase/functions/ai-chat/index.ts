@@ -485,7 +485,33 @@ async function executeToolCall(
       .order("created_at", { ascending: false });
     if (error) return JSON.stringify({ success: false, error: error.message });
     if (!data || data.length === 0) return JSON.stringify({ success: true, workflows: [], message: "No active workflows found." });
-    return JSON.stringify({ success: true, workflows: data });
+    const workflows = data.map((workflow) => ({
+      id: workflow.id,
+      name: workflow.name,
+      description: workflow.description,
+      trigger_type: workflow.trigger_type,
+      trigger_entity: workflow.trigger_entity,
+      trigger_field: workflow.trigger_field,
+      trigger_value: workflow.trigger_value,
+      action_type: workflow.action_type,
+      action_summary: workflow.action_type === "assign_owner"
+        ? `Assign ${workflow.action_config?.owner_name || workflow.action_config?.owner_email || workflow.action_config?.owner_id || "owner"}`
+        : workflow.action_type === "notify_email"
+          ? `Email ${workflow.action_config?.email || "recipient"}`
+          : workflow.action_type === "update_field"
+            ? `Update ${workflow.action_config?.field || "field"}`
+            : workflow.action_type === "append_project_note"
+              ? "Append project note"
+              : workflow.action_type === "create_comment"
+                ? "Create checklist comment"
+                : workflow.action_type === "create_checklist_item"
+                  ? `Create checklist item: ${workflow.action_config?.title || "New task"}`
+                  : workflow.action_type === "log_activity"
+                    ? "Log activity"
+                    : workflow.action_type,
+      is_active: workflow.is_active,
+    }));
+    return JSON.stringify({ success: true, workflows });
   }
 
   if (functionName === "delete_workflow") {
@@ -583,14 +609,26 @@ When the user asks to assign or update, use the appropriate tool. Match project 
 
 ${projectContext ? `Current project data:\n${projectContext}\n\n` : ""}
 
-Guidelines:
-- Be concise and actionable
-- Use bullet points for lists
+Response style:
+- Keep answers short and easy to scan
+- Prefer a 1-line takeaway first
+- Use short bullets instead of paragraphs
+- Avoid repeating the user's question
+- Avoid long intros like "Here are the active workflows and their functions"
+- Cap normal answers at 3-5 bullets unless the user asks for full detail
+- For workflow lists, use this format exactly:
+  - **Workflow Name**
+  - Trigger: ...
+  - Action: ...
+  - Purpose: ...
+- For action confirmations, use this format:
+  - Done: ...
+  - Result: ...
+  - Next: ... (only if helpful)
 - Highlight risks and blockers proactively
 - Reference specific project names and data when available
 - If asked about something not in the data, say so clearly
-- When performing actions, confirm what you did
-- When asked about workflows, suggest relevant automations`;
+- When asked about workflows, suggest relevant automations only if helpful`;
 
     const firstResponse = await fetch(OPENAI_API_URL, {
       method: "POST",
