@@ -13,11 +13,11 @@ export const projectStateLabels: Record<ProjectState, string> = {
 };
 
 export const projectStateColors: Record<ProjectState, string> = {
-  not_started: "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300",
-  on_hold: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400",
-  in_progress: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400",
-  live: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400",
-  blocked: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400",
+  not_started: "border border-[#d8e2f0] bg-[#eff4fb] text-[#5d718f]",
+  on_hold: "border border-[#ffe3a3] bg-[#fff4db] text-[#9a6700]",
+  in_progress: "border border-[#d3e0f7] bg-[#edf3ff] text-[#244b8f]",
+  live: "border border-[#d2eadb] bg-[#ecf8f1] text-[#246447]",
+  blocked: "border border-[#ffd2d5] bg-[#fff0f0] text-[#b5474d]",
 };
 
 export interface TransferRecord {

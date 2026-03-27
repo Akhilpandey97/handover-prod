@@ -111,6 +111,14 @@ const stateToneMap: Record<ProjectState, string> = {
   blocked: "bg-[#fff0f0] text-[#b5474d] border-[#ffd2d5]",
 };
 
+const stateSelectToneMap: Record<ProjectState, string> = {
+  not_started: "border-[#d8e2f0] bg-[#eff4fb] text-[#5d718f]",
+  on_hold: "border-[#ffe3a3] bg-[#fff4db] text-[#9a6700]",
+  in_progress: "border-[#d3e0f7] bg-[#edf3ff] text-[#244b8f]",
+  live: "border-[#d2eadb] bg-[#ecf8f1] text-[#246447]",
+  blocked: "border-[#ffd2d5] bg-[#fff0f0] text-[#b5474d]",
+};
+
 const activityToneMap: Record<ActivityKind, string> = {
   user: "bg-emerald-500",
   system: "bg-slate-500",
@@ -480,7 +488,10 @@ export const ProjectWorkspaceView = ({ projectId: projectIdProp, inModal = false
   const [aiSummary, setAiSummary] = useState<string[]>([]);
   const [aiSummaryLoading, setAiSummaryLoading] = useState(false);
   const [aiSummaryError, setAiSummaryError] = useState<string | null>(null);
-  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
+  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
+    ownership: true,
+    execution: true,
+  });
 
   const project = projects.find((entry) => entry.id === projectId) ?? null;
 
@@ -694,32 +705,20 @@ export const ProjectWorkspaceView = ({ projectId: projectIdProp, inModal = false
               <button
                 type="button"
                 onClick={onClose}
-                className="inline-flex items-center gap-1 rounded-md px-1.5 py-1 text-xs font-medium text-muted-foreground hover:bg-accent/60 hover:text-foreground shrink-0"
+                className="inline-flex items-center gap-1 rounded-md px-1.5 py-1 text-sm font-medium text-muted-foreground hover:bg-accent/60 hover:text-foreground shrink-0"
               >
                 <ArrowLeft className="h-3.5 w-3.5" />
                 Kanban
               </button>
             ) : (
-              <Link to="/" className="inline-flex items-center gap-1 rounded-md px-1.5 py-1 text-xs font-medium text-muted-foreground hover:bg-accent/60 hover:text-foreground shrink-0">
+              <Link to="/" className="inline-flex items-center gap-1 rounded-md px-1.5 py-1 text-sm font-medium text-muted-foreground hover:bg-accent/60 hover:text-foreground shrink-0">
                 <ArrowLeft className="h-3.5 w-3.5" />
                 Projects
               </Link>
             )}
             <ChevronRight className="h-3 w-3 text-muted-foreground shrink-0" />
             <div className="flex items-center gap-2 min-w-0">
-              <h1 className="text-sm font-semibold tracking-tight text-foreground truncate">{project.merchantName}</h1>
-              <Badge variant="outline" className="text-[10px] shrink-0">MID {project.mid}</Badge>
-            </div>
-            <div className="flex flex-wrap items-center gap-1 shrink-0">
-              <Badge className={cn("border px-1.5 py-0 text-[10px] font-semibold", stateToneMap[project.projectState])}>
-                {stateLabels[project.projectState] || projectStateLabels[project.projectState]}
-              </Badge>
-              <Badge variant="outline" className="text-[10px] px-1.5 py-0">{teamLabels[project.currentOwnerTeam] || project.currentOwnerTeam}</Badge>
-              <Badge variant="outline" className="text-[10px] px-1.5 py-0">{phaseLabels[project.currentPhase] || project.currentPhase}</Badge>
-              <Badge variant="outline" className="text-[10px] px-1.5 py-0">{risk.label}</Badge>
-              {project.pendingAcceptance ? (
-                <Badge className="border border-warning/30 bg-warning/10 text-warning text-[10px] px-1.5 py-0">Pending</Badge>
-              ) : null}
+              <h1 className="text-2xl font-semibold tracking-tight text-foreground truncate">{project.merchantName}</h1>
             </div>
           </div>
 
@@ -754,16 +753,24 @@ export const ProjectWorkspaceView = ({ projectId: projectIdProp, inModal = false
         {/* LEFT PANEL — Ownership & Context */}
         <ScrollArea className="w-[240px] shrink-0 border-r border-border/60 bg-card/50">
           <div className="p-4 space-y-1">
-            {/* Project State */}
-            <div className="pb-3">
+            <div className="pb-3 space-y-3">
+              <div className="flex flex-wrap gap-1.5">
+                <Badge variant="outline" className="text-[10px] px-2 py-0.5 font-semibold">MID {project.mid}</Badge>
+                <Badge className={cn("border px-2 py-0.5 text-[10px] font-semibold", stateToneMap[project.projectState])}>
+                  {stateLabels[project.projectState] || projectStateLabels[project.projectState]}
+                </Badge>
+                <Badge variant="outline" className="text-[10px] px-2 py-0.5">{teamLabels[project.currentOwnerTeam] || project.currentOwnerTeam}</Badge>
+                <Badge variant="outline" className="text-[10px] px-2 py-0.5">{phaseLabels[project.currentPhase] || project.currentPhase}</Badge>
+                <Badge variant="outline" className="text-[10px] px-2 py-0.5">{risk.label}</Badge>
+              </div>
               <p className="mb-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">Project state</p>
               <Select value={project.projectState} onValueChange={(v) => handleStateChange(v as ProjectState)}>
-                <SelectTrigger className="h-8 rounded-lg text-xs font-semibold">
+                <SelectTrigger className={cn("h-11 rounded-full text-base font-semibold border-2", stateSelectToneMap[project.projectState])}>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   {PROJECT_STATES.map((state) => (
-                    <SelectItem key={state} value={state}>
+                    <SelectItem key={state} value={state} className={cn("rounded-2xl my-1 text-base font-medium", stateSelectToneMap[state])}>
                       {stateLabels[state] || projectStateLabels[state]}
                     </SelectItem>
                   ))}
