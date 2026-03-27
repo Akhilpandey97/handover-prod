@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { processWorkflowEvents } from "@/utils/processWorkflowEvents";
 
 export interface ChecklistComment {
   id: string;
@@ -88,7 +89,8 @@ export const useAddChecklistComment = () => {
       if (error) throw error;
       return data;
     },
-    onSuccess: (_, variables) => {
+    onSuccess: async (_, variables) => {
+      await processWorkflowEvents();
       queryClient.invalidateQueries({
         queryKey: ["checklist-comments", variables.checklistItemId],
       });

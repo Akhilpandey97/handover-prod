@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { processWorkflowQueue } from "../_shared/workflow-engine.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -8,6 +9,30 @@ const corsHeaders = {
 
 const OPENAI_API_URL = "https://api.openai.com/v1/chat/completions";
 const DEFAULT_MODEL = "gpt-4.1-mini";
+const WORKFLOW_TRIGGER_TYPES = [
+  "project_created",
+  "field_match",
+  "field_changed",
+  "field_changed_to",
+  "owner_unassigned",
+  "project_blocked",
+  "checklist_item_completed",
+  "checklist_item_uncompleted",
+  "checklist_responsibility_changed",
+  "checklist_comment_added",
+  "checklist_any_completed",
+  "checklist_all_completed",
+  "checklist_completion_threshold",
+] as const;
+const WORKFLOW_ACTION_TYPES = [
+  "assign_owner",
+  "update_field",
+  "notify_email",
+  "log_activity",
+  "append_project_note",
+  "create_comment",
+  "create_checklist_item",
+] as const;
 
 const tools = [
   {
@@ -59,21 +84,39 @@ const tools = [
     type: "function",
     function: {
       name: "create_workflow",
-      description: "Create an automated workflow rule. Examples: auto-assign owner when a field matches a condition, change state at a scheduled time, notify when a project is blocked. trigger_field can be: project_state, current_phase, platform, category, arr, current_responsibility, assigned_owner, expected_go_live_date. action_type can be: assign_owner, update_field, notify.",
+      description: "Create an automated workflow rule using only supported trigger/action combinations. Supports project triggers like project_created, field_changed_to, owner_unassigned, project_blocked and checklist triggers like checklist_item_completed, checklist_comment_added, checklist_all_completed. Supports actions like assign_owner, update_field, notify_email, log_activity, append_project_note, create_comment, and create_checklist_item.",
       parameters: {
         type: "object",
         properties: {
           name: { type: "string", description: "Workflow name" },
           description: { type: "string", description: "What this workflow does" },
-          trigger_field: { type: "string", description: "The project field that triggers this workflow" },
-          trigger_value: { type: "string", description: "The value that triggers the action" },
-          action_type: { type: "string", enum: ["assign_owner", "update_field", "notify"], description: "What action to take" },
+          trigger_entity: { type: "string", enum: ["project", "checklist_item", "checklist_comment"], description: "Which entity this workflow listens to" },
+          trigger_type: { type: "string", enum: [...WORKFLOW_TRIGGER_TYPES], description: "What event should trigger the workflow" },
+          trigger_field: { type: "string", description: "The field to watch for field-based triggers. Use project columns or checklist item columns where relevant." },
+          trigger_value: { type: "string", description: "The value or threshold used by triggers like field_match, field_changed_to, or checklist_completion_threshold." },
+          action_type: { type: "string", enum: [...WORKFLOW_ACTION_TYPES], description: "What action to take" },
           action_config: {
             type: "object",
-            description: "Configuration for the action (e.g. {field: 'project_state', value: 'in_progress'} or {owner_id: '...', owner_name: '...'})",
+            description: "Configuration for the action. Examples: {owner_id:'...', owner_name:'...'}, {field:'project_state', value:'blocked'}, {email:'ops@example.com', subject:'...', message:'...'}, {title:'Review launch readiness', phase:'integration', owner_team:'integration'}",
           },
+          is_active: { type: "boolean", description: "Whether the workflow should start active. Defaults to true." },
         },
-        required: ["name", "trigger_field", "action_type", "action_config"],
+        required: ["name", "trigger_type", "action_type", "action_config"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "create_sample_workflows",
+      description: "Create a safe set of sample workflows that demonstrate supported workflow types and actions for the current tenant.",
+      parameters: {
+        type: "object",
+        properties: {
+          notification_email: { type: "string", description: "Email address to use for sample notification workflows. Defaults to the current user's email if available." },
+          activate: { type: "boolean", description: "Whether the sample workflows should be active immediately. Defaults to true." },
+        },
+        required: [],
       },
     },
   },
@@ -123,12 +166,167 @@ async function logActivity(
   });
 }
 
+const normalizeWorkflowArgs = (raw: Record<string, unknown>) => {
+  const triggerType = String(raw.trigger_type || "").trim();
+  const actionType = String(raw.action_type || "").trim();
+  const triggerField = raw.trigger_field ? String(raw.trigger_field).trim() : null;
+  let triggerEntity = raw.trigger_entity ? String(raw.trigger_entity).trim() : "project";
+  let triggerValue = raw.trigger_value !== undefined && raw.trigger_value !== null ? String(raw.trigger_value) : null;
+  const actionConfig = (raw.action_config || {}) as Record<string, unknown>;
+
+  if (!WORKFLOW_TRIGGER_TYPES.includes(triggerType as typeof WORKFLOW_TRIGGER_TYPES[number])) {
+    throw new Error(`Unsupported trigger_type: ${triggerType}`);
+  }
+
+  if (!WORKFLOW_ACTION_TYPES.includes(actionType as typeof WORKFLOW_ACTION_TYPES[number])) {
+    throw new Error(`Unsupported action_type: ${actionType}`);
+  }
+
+  if (triggerType.startsWith("checklist_") && triggerType !== "checklist_comment_added") {
+    triggerEntity = "checklist_item";
+  }
+  if (triggerType === "checklist_comment_added") {
+    triggerEntity = "checklist_comment";
+  }
+
+  if (["field_match", "field_changed", "field_changed_to"].includes(triggerType) && !triggerField) {
+    throw new Error(`trigger_field is required for ${triggerType}`);
+  }
+
+  if (["field_match", "field_changed_to"].includes(triggerType) && !triggerValue) {
+    throw new Error(`trigger_value is required for ${triggerType}`);
+  }
+
+  if (triggerType === "checklist_completion_threshold") {
+    triggerValue = triggerValue || String(actionConfig.threshold || actionConfig.percentage || "");
+    if (!triggerValue) throw new Error("checklist_completion_threshold requires trigger_value or action_config.threshold");
+  }
+
+  if (actionType === "notify_email" && !actionConfig.email) {
+    throw new Error("notify_email requires action_config.email");
+  }
+
+  if (actionType === "update_field" && (!actionConfig.field || actionConfig.value === undefined)) {
+    throw new Error("update_field requires action_config.field and action_config.value");
+  }
+
+  if (actionType === "assign_owner" && !actionConfig.owner_id) {
+    throw new Error("assign_owner requires action_config.owner_id");
+  }
+
+  return {
+    name: String(raw.name || "").trim(),
+    description: raw.description ? String(raw.description) : null,
+    trigger_entity: triggerEntity,
+    trigger_type: triggerType,
+    trigger_field: ["field_match", "field_changed", "field_changed_to"].includes(triggerType) ? triggerField : "*",
+    trigger_value: triggerValue,
+    action_type: actionType,
+    action_config: actionConfig,
+    is_active: raw.is_active === undefined ? true : Boolean(raw.is_active),
+  };
+};
+
+const getSampleWorkflowDefinitions = (email: string | null, activate: boolean) => {
+  const notificationEmail = email || "ops@example.com";
+  return [
+    {
+      name: "Sample: Notify On Project Creation",
+      description: "Send an email whenever a new project is created.",
+      trigger_type: "project_created",
+      trigger_entity: "project",
+      action_type: "notify_email",
+      action_config: {
+        email: notificationEmail,
+        subject: "New project created: {{project_name}}",
+        message: "A new project named {{project_name}} was created in phase {{current_phase}} with platform {{platform}}.",
+      },
+      is_active: activate,
+    },
+    {
+      name: "Sample: Log Unassigned Projects",
+      description: "Log whenever a project has no assigned owner.",
+      trigger_type: "owner_unassigned",
+      trigger_entity: "project",
+      action_type: "log_activity",
+      action_config: {
+        message: "Workflow noticed that {{project_name}} has no assigned owner.",
+      },
+      is_active: activate,
+    },
+    {
+      name: "Sample: Escalate Blocked Projects",
+      description: "Append a note whenever a project becomes blocked.",
+      trigger_type: "project_blocked",
+      trigger_entity: "project",
+      action_type: "append_project_note",
+      action_config: {
+        note: "Workflow alert: {{project_name}} entered blocked state.",
+      },
+      is_active: activate,
+    },
+    {
+      name: "Sample: Checklist Completion Audit",
+      description: "Log when a checklist item is completed.",
+      trigger_type: "checklist_item_completed",
+      trigger_entity: "checklist_item",
+      action_type: "log_activity",
+      action_config: {
+        message: "Checklist item {{checklist_title}} was completed for {{project_name}}.",
+      },
+      is_active: activate,
+    },
+    {
+      name: "Sample: Follow-up Checklist Task",
+      description: "Create a follow-up checklist item when a project enters integration.",
+      trigger_type: "field_changed_to",
+      trigger_entity: "project",
+      trigger_field: "current_phase",
+      trigger_value: "integration",
+      action_type: "create_checklist_item",
+      action_config: {
+        title: "Review integration readiness for {{project_name}}",
+        phase: "integration",
+        owner_team: "integration",
+      },
+      is_active: activate,
+    },
+    {
+      name: "Sample: Comment Notification",
+      description: "Send an email when a checklist comment is added.",
+      trigger_type: "checklist_comment_added",
+      trigger_entity: "checklist_comment",
+      action_type: "notify_email",
+      action_config: {
+        email: notificationEmail,
+        subject: "Checklist comment added on {{project_name}}",
+        message: "{{comment_author}} added a checklist comment: {{checklist_comment}}",
+      },
+      is_active: activate,
+    },
+    {
+      name: "Sample: All Checklist Items Complete",
+      description: "Move the project to in_progress once all checklist items are complete.",
+      trigger_type: "checklist_all_completed",
+      trigger_entity: "checklist_item",
+      action_type: "update_field",
+      action_config: {
+        target_entity: "project",
+        field: "project_state",
+        value: "in_progress",
+      },
+      is_active: activate,
+    },
+  ];
+};
+
 async function executeToolCall(
   functionName: string,
   args: Record<string, unknown>,
   supabase: ReturnType<typeof createClient>,
   tenantId: string | null,
   userId: string | null,
+  userEmail: string | null,
 ): Promise<string> {
   if (!tenantId) {
     return JSON.stringify({ success: false, error: "Missing tenant context for this request." });
@@ -145,6 +343,7 @@ async function executeToolCall(
       .single();
     if (error) return JSON.stringify({ success: false, error: error.message });
     await logActivity(supabase, tenantId, userId, "assign_owner", "project", project_id, data?.merchant_name, { owner_id, owner_name });
+    await processWorkflowQueue(supabase, tenantId, 50);
     return JSON.stringify({ success: true, message: `Assigned ${owner_name} as owner for ${data?.merchant_name || "the project"}.` });
   }
 
@@ -159,24 +358,52 @@ async function executeToolCall(
       .single();
     if (error) return JSON.stringify({ success: false, error: error.message });
     await logActivity(supabase, tenantId, userId, "update_project", "project", project_id, data?.merchant_name, updates);
+    await processWorkflowQueue(supabase, tenantId, 50);
     return JSON.stringify({ success: true, message: `Updated ${data?.merchant_name || "the project"}: ${Object.keys(updates).join(", ")}` });
   }
 
   if (functionName === "create_workflow") {
-    const { name, description, trigger_field, trigger_value, action_type, action_config } = args as any;
+    const normalized = normalizeWorkflowArgs(args);
     const { data, error } = await supabase.from("chat_workflows").insert({
       tenant_id: tenantId,
       created_by: userId,
-      name,
-      description: description || null,
-      trigger_field,
-      trigger_value: trigger_value || null,
-      action_type,
-      action_config,
+      ...normalized,
     }).select().single();
     if (error) return JSON.stringify({ success: false, error: error.message });
-    await logActivity(supabase, tenantId, userId, "create_workflow", "workflow", data.id, name, { trigger_field, trigger_value, action_type });
-    return JSON.stringify({ success: true, message: `Created workflow "${name}" (ID: ${data.id})` });
+    await logActivity(supabase, tenantId, userId, "create_workflow", "workflow", data.id, normalized.name, {
+      trigger_type: normalized.trigger_type,
+      trigger_entity: normalized.trigger_entity,
+      action_type: normalized.action_type,
+    });
+    return JSON.stringify({ success: true, message: `Created workflow "${normalized.name}" (ID: ${data.id})` });
+  }
+
+  if (functionName === "create_sample_workflows") {
+    const activate = args.activate === undefined ? true : Boolean(args.activate);
+    const email = args.notification_email ? String(args.notification_email) : userEmail;
+    const definitions = getSampleWorkflowDefinitions(email || null, activate).map(normalizeWorkflowArgs);
+    const { data, error } = await supabase
+      .from("chat_workflows")
+      .insert(definitions.map((workflow) => ({
+        tenant_id: tenantId,
+        created_by: userId,
+        ...workflow,
+      })))
+      .select("id, name");
+
+    if (error) return JSON.stringify({ success: false, error: error.message });
+
+    await logActivity(supabase, tenantId, userId, "create_workflow", "workflow_bundle", data?.[0]?.id || "", "Sample Workflows", {
+      count: data?.length || 0,
+      activate,
+      notification_email: email,
+    });
+
+    return JSON.stringify({
+      success: true,
+      message: `Created ${data?.length || 0} sample workflows.`,
+      workflows: data || [],
+    });
   }
 
   if (functionName === "list_workflows") {
@@ -227,13 +454,15 @@ serve(async (req) => {
     // Get tenant_id from auth token
     let tenantId: string | null = null;
     let userId: string | null = null;
+    let userEmail: string | null = null;
     if (authHeader) {
       const token = authHeader.replace("Bearer ", "");
       const { data: { user } } = await supabase.auth.getUser(token);
       if (user) {
         userId = user.id;
-        const { data: profile } = await supabase.from("profiles").select("tenant_id").eq("id", user.id).single();
+        const { data: profile } = await supabase.from("profiles").select("tenant_id, email").eq("id", user.id).single();
         tenantId = profile?.tenant_id || null;
+        userEmail = profile?.email || user.email || null;
       }
     }
 
@@ -250,15 +479,35 @@ You can take ACTIONS:
 - **Assign owner** to a project using assign_owner
 - **Update project fields** (state, phase, dates, notes, ARR, etc.) using update_project
 - **Create workflow rules** for automation using create_workflow
+- **Create a sample workflow pack** using create_sample_workflows
 - **List active workflows** using list_workflows
 - **Delete workflows** using delete_workflow
 
-WORKFLOW EXAMPLES you can suggest:
-- Auto-assign owner when a project enters a specific phase
-- Change project state when platform or category matches a value
-- Log a notification when a project becomes blocked
-- Auto-assign based on platform or category
-- Set responsibility when phase changes
+SUPPORTED WORKFLOW TRIGGERS:
+- project_created
+- field_match
+- field_changed
+- field_changed_to
+- owner_unassigned
+- project_blocked
+- checklist_item_completed
+- checklist_item_uncompleted
+- checklist_responsibility_changed
+- checklist_comment_added
+- checklist_any_completed
+- checklist_all_completed
+- checklist_completion_threshold
+
+SUPPORTED WORKFLOW ACTIONS:
+- assign_owner
+- update_field
+- notify_email
+- log_activity
+- append_project_note
+- create_comment
+- create_checklist_item
+
+Never claim a workflow was created unless it uses one of the supported trigger/action combinations above.
 
 When the user asks to assign or update, use the appropriate tool. Match project names to IDs from the context.
 
@@ -322,7 +571,7 @@ Guidelines:
           args = {};
         }
 
-        const result = await executeToolCall(toolCall.function.name, args, supabase, tenantId, userId);
+        const result = await executeToolCall(toolCall.function.name, args, supabase, tenantId, userId, userEmail);
         toolResults.push({ role: "tool", tool_call_id: toolCall.id, content: result });
         const parsed = JSON.parse(result);
         actionsTaken.push(parsed.success ? parsed.message : `Failed: ${parsed.error}`);

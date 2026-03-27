@@ -6,6 +6,7 @@ import type { Project, ProjectChecklist, ResponsibilityLog, ChecklistResponsibil
 import type { TeamRole } from "@/data/teams";
 import { teamLabels } from "@/data/teams";
 import { sendNotification } from "@/utils/sendNotification";
+import { processWorkflowEvents } from "@/utils/processWorkflowEvents";
 
 // Transform database row to Project type
 const transformDbProject = (row: any): Project => ({
@@ -289,7 +290,8 @@ export const useAddProject = () => {
 
       return newProject;
     },
-    onSuccess: () => {
+    onSuccess: async () => {
+      await processWorkflowEvents();
       queryClient.invalidateQueries({ queryKey: ["projects"] });
       toast.success("Project created successfully");
     },
@@ -343,7 +345,8 @@ export const useUpdateProject = () => {
       if (error) throw error;
       return project;
     },
-    onSuccess: () => {
+    onSuccess: async () => {
+      await processWorkflowEvents();
       queryClient.invalidateQueries({ queryKey: ["projects"] });
     },
     onError: (error) => {
@@ -392,7 +395,8 @@ export const useAcceptProject = () => {
       if (error) throw error;
       return projectId;
     },
-    onSuccess: () => {
+    onSuccess: async () => {
+      await processWorkflowEvents();
       queryClient.invalidateQueries({ queryKey: ["projects"] });
       toast.success("Project accepted successfully");
     },
@@ -467,7 +471,8 @@ export const useTransferProject = () => {
 
       return projectId;
     },
-    onSuccess: () => {
+    onSuccess: async () => {
+      await processWorkflowEvents();
       queryClient.invalidateQueries({ queryKey: ["projects"] });
       toast.success("Project transferred successfully");
     },
@@ -522,7 +527,8 @@ export const useRejectProject = () => {
 
       return projectId;
     },
-    onSuccess: () => {
+    onSuccess: async () => {
+      await processWorkflowEvents();
       queryClient.invalidateQueries({ queryKey: ["projects"] });
       toast.success("Project sent back successfully");
     },
@@ -552,7 +558,8 @@ export const useUpdateChecklist = () => {
       if (error) throw error;
       return { projectId, checklistId, completed };
     },
-    onSuccess: () => {
+    onSuccess: async () => {
+      await processWorkflowEvents();
       queryClient.invalidateQueries({ queryKey: ["projects"] });
     },
     onError: (error) => {
@@ -581,7 +588,8 @@ export const useUpdateChecklistComment = () => {
       if (error) throw error;
       return { checklistId, comment };
     },
-    onSuccess: () => {
+    onSuccess: async () => {
+      await processWorkflowEvents();
       queryClient.invalidateQueries({ queryKey: ["projects"] });
       toast.success("Comment saved");
     },
@@ -627,7 +635,8 @@ export const useToggleResponsibility = () => {
       if (projectError) throw projectError;
       return { projectId, party };
     },
-    onSuccess: () => {
+    onSuccess: async () => {
+      await processWorkflowEvents();
       queryClient.invalidateQueries({ queryKey: ["projects"] });
     },
     onError: (error) => {
@@ -671,7 +680,8 @@ export const useToggleChecklistResponsibility = () => {
       if (itemError) throw itemError;
       return { checklistId, party };
     },
-    onSuccess: () => {
+    onSuccess: async () => {
+      await processWorkflowEvents();
       queryClient.invalidateQueries({ queryKey: ["projects"] });
     },
     onError: (error) => {

@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { processWorkflowQueue } from "../_shared/workflow-engine.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -325,6 +326,8 @@ serve(async (req) => {
                 started_at: new Date().toISOString(),
                 tenant_id: tenantId,
               });
+
+              await processWorkflowQueue(supabase, tenantId, 50);
 
               console.log(`Auto-created project ${createdProject.id} for email ${msg.id}`);
             }
