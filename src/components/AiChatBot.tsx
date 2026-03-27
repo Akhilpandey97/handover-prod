@@ -12,6 +12,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 
 type Msg = { role: "user" | "assistant"; content: string; time: string };
+type ChatPosition = { x: number; y: number };
+
+const CHAT_BUTTON_SIZE = 56;
+const CHAT_PANEL_WIDTH = 420;
+const CHAT_PANEL_HEIGHT = 600;
+const CHAT_MARGIN = 24;
+const CHAT_POSITION_KEY = "ai_chat_position";
 
 const QUICK_ACTIONS = [
   { icon: "👤", label: "Assign Owner", prompt: "Assign an owner to an unassigned project." },
@@ -36,12 +43,33 @@ export const AiChatBot = () => {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [historyLoaded, setHistoryLoaded] = useState(false);
+  const [chatPosition, setChatPosition] = useState<ChatPosition | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const dragStateRef = useRef<{ offsetX: number; offsetY: number; moved: boolean } | null>(null);
+  const suppressOpenRef = useRef(false);
   const { projects } = useProjects();
   const { currentUser } = useAuth();
   const { teamLabels, responsibilityLabels } = useLabels();
   const queryClient = useQueryClient();
+
+  const getBounds = useCallback((open: boolean) => {
+    const width = open ? Math.min(CHAT_PANEL_WIDTH, window.innerWidth - CHAT_MARGIN) : CHAT_BUTTON_SIZE;
+    const height = open ? CHAT_PANEL_HEIGHT : CHAT_BUTTON_SIZE;
+    return {
+      maxX: Math.max(CHAT_MARGIN, window.innerWidth - width - CHAT_MARGIN),
+      maxY: Math.max(CHAT_MARGIN, window.innerHeight - height - CHAT_MARGIN),
+    };
+  }, []);
+
+  const clampPosition = useCallback((position: ChatPosition, open: boolean) => {
+    if (typeof window === "undefined") return position;
+    const { maxX, maxY } = getBounds(open);
+    return {
+      x: Math.min(Math.max(CHAT_MARGIN, position.x), maxX),
+      y: Math.min(Math.max(CHAT_MARGIN, position.y), maxY),
+    };
+  }, [getBounds]);
 
   // Load chat history from DB
   useEffect(() => {
@@ -92,6 +120,41 @@ export const AiChatBot = () => {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages]);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || chatPosition) return;
+    const saved = window.localStorage.getItem(CHAT_POSITION_KEY);
+    if (saved) {
+      try {
+        setChatPosition(clampPosition(JSON.parse(saved), false));
+        return;
+      } catch {
+        window.localStorage.removeItem(CHAT_POSITION_KEY);
+      }
+    }
+    setChatPosition({
+      x: window.innerWidth - CHAT_BUTTON_SIZE - CHAT_MARGIN,
+      y: window.innerHeight - CHAT_BUTTON_SIZE - CHAT_MARGIN,
+    });
+  }, [chatPosition, clampPosition]);
+
+  useEffect(() => {
+    if (!chatPosition || typeof window === "undefined") return;
+    window.localStorage.setItem(CHAT_POSITION_KEY, JSON.stringify(chatPosition));
+  }, [chatPosition]);
+
+  useEffect(() => {
+    if (!chatPosition || typeof window === "undefined") return;
+    const handleResize = () => {
+      setChatPosition((current) => current ? clampPosition(current, isOpen) : current);
+    };
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, [chatPosition, clampPosition, isOpen]);
+
+  useEffect(() => {
+    setChatPosition((current) => current ? clampPosition(current, isOpen) : current);
+  }, [isOpen, clampPosition]);
 
   useEffect(() => {
     if (isOpen && inputRef.current) {
@@ -178,23 +241,107 @@ export const AiChatBot = () => {
     }
   };
 
+  const beginDrag = (clientX: number, clientY: number) => {
+    if (!chatPosition) return;
+    dragStateRef.current = {
+      offsetX: clientX - chatPosition.x,
+      offsetY: clientY - chatPosition.y,
+      moved: false,
+    };
+
+    const handlePointerMove = (moveX: number, moveY: number) => {
+      setChatPosition((current) => {
+        if (!current || !dragStateRef.current) return current;
+        const next = clampPosition(
+          {
+            x: moveX - dragStateRef.current.offsetX,
+            y: moveY - dragStateRef.current.offsetY,
+          },
+          isOpen
+        );
+        if (Math.abs(next.x - current.x) > 2 || Math.abs(next.y - current.y) > 2) {
+          dragStateRef.current.moved = true;
+          suppressOpenRef.current = true;
+        }
+        return next;
+      });
+    };
+
+    const onMouseMove = (event: MouseEvent) => handlePointerMove(event.clientX, event.clientY);
+    const onTouchMove = (event: TouchEvent) => {
+      const touch = event.touches[0];
+      if (touch) handlePointerMove(touch.clientX, touch.clientY);
+    };
+    const onPointerUp = () => {
+      window.removeEventListener("mousemove", onMouseMove);
+      window.removeEventListener("mouseup", onPointerUp);
+      window.removeEventListener("touchmove", onTouchMove);
+      window.removeEventListener("touchend", onPointerUp);
+      if (dragStateRef.current?.moved) {
+        window.setTimeout(() => {
+          suppressOpenRef.current = false;
+        }, 0);
+      } else {
+        suppressOpenRef.current = false;
+      }
+      dragStateRef.current = null;
+    };
+
+    window.addEventListener("mousemove", onMouseMove);
+    window.addEventListener("mouseup", onPointerUp);
+    window.addEventListener("touchmove", onTouchMove, { passive: true });
+    window.addEventListener("touchend", onPointerUp);
+  };
+
+  const handleLauncherPress = (event: React.MouseEvent<HTMLButtonElement> | React.TouchEvent<HTMLButtonElement>) => {
+    if ("touches" in event) {
+      const touch = event.touches[0];
+      if (touch) beginDrag(touch.clientX, touch.clientY);
+      return;
+    }
+    beginDrag(event.clientX, event.clientY);
+  };
+
+  const handleHeaderPress = (event: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>) => {
+    if ("touches" in event) {
+      const touch = event.touches[0];
+      if (touch) beginDrag(touch.clientX, touch.clientY);
+      return;
+    }
+    beginDrag(event.clientX, event.clientY);
+  };
+
   if (!currentUser) return null;
+  if (!chatPosition) return null;
 
   return (
     <>
       {!isOpen && (
         <button
-          onClick={() => setIsOpen(true)}
-          className="fixed bottom-6 right-6 z-50 h-14 w-14 rounded-full bg-[hsl(142,71%,45%)] text-white shadow-xl hover:shadow-2xl transition-all hover:scale-105 flex items-center justify-center"
+          onMouseDown={handleLauncherPress}
+          onTouchStart={handleLauncherPress}
+          onClick={() => {
+            if (suppressOpenRef.current) return;
+            setIsOpen(true);
+          }}
+          className="fixed z-50 flex h-14 w-14 items-center justify-center rounded-full bg-[hsl(142,71%,45%)] text-white shadow-xl transition-all hover:scale-105 hover:shadow-2xl cursor-grab active:cursor-grabbing"
+          style={{ left: chatPosition.x, top: chatPosition.y }}
         >
           <MessageCircle className="h-6 w-6" />
         </button>
       )}
 
       {isOpen && (
-        <div className="fixed bottom-6 right-6 z-50 h-[600px] w-[420px] max-w-[calc(100vw-1.5rem)] rounded-2xl border border-border shadow-2xl flex flex-col overflow-hidden animate-in slide-in-from-bottom-4 duration-300">
+        <div
+          className="fixed z-50 flex h-[600px] w-[420px] max-w-[calc(100vw-1.5rem)] flex-col overflow-hidden rounded-2xl border border-border shadow-2xl animate-in slide-in-from-bottom-4 duration-300"
+          style={{ left: chatPosition.x, top: chatPosition.y }}
+        >
           {/* Header */}
-          <div className="flex items-center justify-between px-4 py-3 bg-[hsl(142,71%,35%)] text-white">
+          <div
+            className="flex items-center justify-between px-4 py-3 bg-[hsl(142,71%,35%)] text-white cursor-grab active:cursor-grabbing"
+            onMouseDown={handleHeaderPress}
+            onTouchStart={handleHeaderPress}
+          >
             <div className="flex items-center gap-3">
               <div className="h-10 w-10 rounded-full bg-white/20 flex items-center justify-center">
                 <Bot className="h-5 w-5" />
@@ -213,6 +360,8 @@ export const AiChatBot = () => {
                   size="icon"
                   className="h-8 w-8 text-white hover:bg-white/20"
                   onClick={clearHistory}
+                  onMouseDown={(event) => event.stopPropagation()}
+                  onTouchStart={(event) => event.stopPropagation()}
                   title="Clear chat history"
                 >
                   <Trash2 className="h-4 w-4" />
@@ -223,6 +372,8 @@ export const AiChatBot = () => {
                 size="icon"
                 className="h-8 w-8 text-white hover:bg-white/20"
                 onClick={() => setIsOpen(false)}
+                onMouseDown={(event) => event.stopPropagation()}
+                onTouchStart={(event) => event.stopPropagation()}
               >
                 <X className="h-5 w-5" />
               </Button>
