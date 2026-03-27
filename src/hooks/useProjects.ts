@@ -288,7 +288,16 @@ export const useAddProject = () => {
         if (logError) throw logError;
       }
 
-      const workflowResult = await processWorkflowEvents(100, 3);
+      const workflowResult = await processWorkflowEvents(100, 3, {
+        entityType: "project",
+        entityId: newProject.id,
+        entityName: newProject.merchant_name,
+        source: "project_create",
+        details: {
+          project_state: newProject.project_state,
+          current_phase: newProject.current_phase,
+        },
+      });
       if (!workflowResult.success) {
         console.error("Workflow processing after project creation failed:", workflowResult.error);
       }

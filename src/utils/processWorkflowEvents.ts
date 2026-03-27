@@ -7,9 +7,59 @@ type WorkflowProcessingResult = {
   error?: string;
 };
 
+type WorkflowProcessingLogContext = {
+  entityType?: string;
+  entityId?: string | null;
+  entityName?: string | null;
+  source?: string;
+  details?: Record<string, unknown>;
+};
+
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-export const processWorkflowEvents = async (limit = 50, attempts = 2): Promise<WorkflowProcessingResult> => {
+const logWorkflowProcessingFailure = async (
+  errorMessage: string,
+  context?: WorkflowProcessingLogContext,
+) => {
+  try {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) return;
+
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("tenant_id, name")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    if (!profile?.tenant_id) return;
+
+    await supabase.from("activity_logs").insert({
+      tenant_id: profile.tenant_id,
+      user_id: user.id,
+      user_name: profile.name || user.email || "System",
+      action: "workflow_error",
+      entity_type: context?.entityType || "workflow",
+      entity_id: context?.entityId || null,
+      entity_name: context?.entityName || null,
+      details: {
+        source: context?.source || "workflow-events",
+        error: errorMessage,
+        ...(context?.details || {}),
+      },
+    });
+  } catch (loggingError) {
+    console.error("Failed to log workflow processing error:", loggingError);
+  }
+};
+
+export const processWorkflowEvents = async (
+  limit = 50,
+  attempts = 2,
+  context?: WorkflowProcessingLogContext,
+): Promise<WorkflowProcessingResult> => {
   let lastError = "Failed to process workflow events";
 
   for (let attempt = 1; attempt <= attempts; attempt += 1) {
@@ -37,5 +87,6 @@ export const processWorkflowEvents = async (limit = 50, attempts = 2): Promise<W
     }
   }
 
+  await logWorkflowProcessingFailure(lastError, context);
   return { success: false, error: lastError };
 };
