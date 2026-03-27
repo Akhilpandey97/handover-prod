@@ -14,6 +14,16 @@ import { useQueryClient } from "@tanstack/react-query";
 type Msg = { role: "user" | "assistant"; content: string; time: string };
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-chat`;
+const QUICK_ACTIONS = [
+  { icon: "👤", label: "Assign Owner", prompt: "Assign an owner to an unassigned project." },
+  { icon: "✏️", label: "Update Project", prompt: "Update a project's state, phase, or other fields." },
+  { icon: "⚙️", label: "Create Workflow", prompt: "Create a workflow using supported triggers and actions." },
+  { icon: "🧪", label: "Sample Workflows", prompt: "Create sample workflows for my tenant using my email address." },
+  { icon: "📋", label: "List Workflows", prompt: "List all active workflows and explain what each one does." },
+  { icon: "✅", label: "Checklist Automation", prompt: "Create a workflow for checklist completion or checklist comments." },
+  { icon: "📊", label: "Project Risks", prompt: "Which projects are at risk right now?" },
+  { icon: "👥", label: "Team Workloads", prompt: "Summarize current team workloads and handoff bottlenecks." },
+] as const;
 
 const getTime = () => {
   const now = new Date();
@@ -102,10 +112,11 @@ export const AiChatBot = () => {
     return `Total projects: ${projects.length}\n${summary}`;
   }, [projects, teamLabels, responsibilityLabels]);
 
-  const sendMessage = async () => {
-    if (!input.trim() || isLoading) return;
-    const userMsg: Msg = { role: "user", content: input.trim(), time: getTime() };
-    setInput("");
+  const sendMessage = async (overrideContent?: string) => {
+    const messageContent = (overrideContent ?? input).trim();
+    if (!messageContent || isLoading) return;
+    const userMsg: Msg = { role: "user", content: messageContent, time: getTime() };
+    if (!overrideContent) setInput("");
     setMessages(prev => [...prev, userMsg]);
     setIsLoading(true);
 
@@ -240,20 +251,14 @@ export const AiChatBot = () => {
                 </div>
                 <p className="text-sm font-semibold mb-1">Hey there! 👋</p>
                 <p className="text-xs text-muted-foreground mb-4 max-w-[280px] mx-auto">
-                  I can answer questions and <strong>take actions</strong> — assign owners, update project state, and more.
+                  I can answer questions and <strong>take actions</strong> — update projects, create real workflows, and automate checklist follow-ups.
                 </p>
                 <div className="space-y-1.5">
-                  {[
-                    { icon: "👤", label: "Assign Owner", prompt: "Assign an owner to a project" },
-                    { icon: "✏️", label: "Update Project", prompt: "Update project state or fields" },
-                    { icon: "⚡", label: "Create Workflow", prompt: "Create an automated workflow rule" },
-                    { icon: "📋", label: "List Workflows", prompt: "Show me all active workflows" },
-                    { icon: "📊", label: "Project Insights", prompt: "Which projects are at risk?" },
-                    { icon: "👥", label: "Team Workloads", prompt: "Summarize team workloads" },
-                  ].map((q) => (
+                  {QUICK_ACTIONS.map((q) => (
                     <button
                       key={q.label}
-                      onClick={() => setInput(q.prompt)}
+                      onClick={() => void sendMessage(q.prompt)}
+                      disabled={isLoading}
                       className="block w-full text-left text-xs px-3 py-2 rounded-xl border bg-card hover:bg-muted/60 transition-colors text-muted-foreground hover:text-foreground"
                     >
                       {q.icon} {q.label}
