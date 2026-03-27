@@ -25,6 +25,10 @@ const actionIcons: Record<string, React.ReactNode> = {
   update_project: <FileEdit className="h-4 w-4" />,
   create_workflow: <Workflow className="h-4 w-4" />,
   delete_workflow: <Trash2 className="h-4 w-4" />,
+  workflow_assign_owner: <UserCheck className="h-4 w-4" />,
+  workflow_update_field: <Settings2 className="h-4 w-4" />,
+  workflow_notify: <Activity className="h-4 w-4" />,
+  workflow_error: <Trash2 className="h-4 w-4" />,
   default: <Activity className="h-4 w-4" />,
 };
 
@@ -33,6 +37,10 @@ const actionLabels: Record<string, string> = {
   update_project: "Project Updated",
   create_workflow: "Workflow Created",
   delete_workflow: "Workflow Deleted",
+  workflow_assign_owner: "Workflow Assigned Owner",
+  workflow_update_field: "Workflow Updated Project",
+  workflow_notify: "Workflow Notification",
+  workflow_error: "Workflow Error",
   create_project: "Project Created",
   delete_project: "Project Deleted",
   transfer_project: "Project Transferred",
@@ -72,6 +80,11 @@ export const ActivityLog = () => {
   });
 
   const entityTypes = [...new Set(logs.map(l => l.entity_type))];
+  const formatDetailValue = (value: unknown) => {
+    if (value === null || value === undefined) return "";
+    if (typeof value === "object") return JSON.stringify(value);
+    return String(value);
+  };
 
   return (
     <Card className="shadow-xl border-border/50">
@@ -141,7 +154,7 @@ export const ActivityLog = () => {
                     </p>
                     {log.details && Object.keys(log.details).length > 0 && (
                       <p className="text-[11px] text-muted-foreground mt-1 truncate">
-                        {Object.entries(log.details).map(([k, v]) => `${k}: ${v}`).join(", ")}
+                        {Object.entries(log.details).map(([k, v]) => `${k}: ${formatDetailValue(v)}`).join(", ")}
                       </p>
                     )}
                   </div>

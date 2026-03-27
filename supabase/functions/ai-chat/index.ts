@@ -104,6 +104,7 @@ const tools = [
 async function logActivity(
   supabase: ReturnType<typeof createClient>,
   tenantId: string | null,
+  userId: string | null,
   action: string,
   entityType: string,
   entityId?: string,
@@ -112,6 +113,7 @@ async function logActivity(
 ) {
   await supabase.from("activity_logs").insert({
     tenant_id: tenantId,
+    user_id: userId,
     action,
     entity_type: entityType,
     entity_id: entityId || null,
@@ -126,27 +128,45 @@ async function executeToolCall(
   args: Record<string, unknown>,
   supabase: ReturnType<typeof createClient>,
   tenantId: string | null,
+  userId: string | null,
 ): Promise<string> {
+  if (!tenantId) {
+    return JSON.stringify({ success: false, error: "Missing tenant context for this request." });
+  }
+
   if (functionName === "assign_owner") {
     const { project_id, owner_id, owner_name } = args as { project_id: string; owner_id: string; owner_name: string };
-    const { error } = await supabase.from("projects").update({ assigned_owner: owner_id }).eq("id", project_id);
+    const { data, error } = await supabase
+      .from("projects")
+      .update({ assigned_owner: owner_id })
+      .eq("id", project_id)
+      .eq("tenant_id", tenantId)
+      .select("id, merchant_name")
+      .single();
     if (error) return JSON.stringify({ success: false, error: error.message });
-    await logActivity(supabase, tenantId, "assign_owner", "project", project_id, owner_name, { owner_id, owner_name });
-    return JSON.stringify({ success: true, message: `Assigned ${owner_name} as owner.` });
+    await logActivity(supabase, tenantId, userId, "assign_owner", "project", project_id, data?.merchant_name, { owner_id, owner_name });
+    return JSON.stringify({ success: true, message: `Assigned ${owner_name} as owner for ${data?.merchant_name || "the project"}.` });
   }
 
   if (functionName === "update_project") {
     const { project_id, updates } = args as { project_id: string; updates: Record<string, unknown> };
-    const { error } = await supabase.from("projects").update(updates).eq("id", project_id);
+    const { data, error } = await supabase
+      .from("projects")
+      .update(updates)
+      .eq("id", project_id)
+      .eq("tenant_id", tenantId)
+      .select("id, merchant_name")
+      .single();
     if (error) return JSON.stringify({ success: false, error: error.message });
-    await logActivity(supabase, tenantId, "update_project", "project", project_id, undefined, updates);
-    return JSON.stringify({ success: true, message: `Updated project fields: ${Object.keys(updates).join(", ")}` });
+    await logActivity(supabase, tenantId, userId, "update_project", "project", project_id, data?.merchant_name, updates);
+    return JSON.stringify({ success: true, message: `Updated ${data?.merchant_name || "the project"}: ${Object.keys(updates).join(", ")}` });
   }
 
   if (functionName === "create_workflow") {
     const { name, description, trigger_field, trigger_value, action_type, action_config } = args as any;
     const { data, error } = await supabase.from("chat_workflows").insert({
       tenant_id: tenantId,
+      created_by: userId,
       name,
       description: description || null,
       trigger_field,
@@ -155,12 +175,17 @@ async function executeToolCall(
       action_config,
     }).select().single();
     if (error) return JSON.stringify({ success: false, error: error.message });
-    await logActivity(supabase, tenantId, "create_workflow", "workflow", data.id, name, { trigger_field, action_type });
+    await logActivity(supabase, tenantId, userId, "create_workflow", "workflow", data.id, name, { trigger_field, trigger_value, action_type });
     return JSON.stringify({ success: true, message: `Created workflow "${name}" (ID: ${data.id})` });
   }
 
   if (functionName === "list_workflows") {
-    const { data, error } = await supabase.from("chat_workflows").select("*").eq("is_active", true).order("created_at", { ascending: false });
+    const { data, error } = await supabase
+      .from("chat_workflows")
+      .select("*")
+      .eq("tenant_id", tenantId)
+      .eq("is_active", true)
+      .order("created_at", { ascending: false });
     if (error) return JSON.stringify({ success: false, error: error.message });
     if (!data || data.length === 0) return JSON.stringify({ success: true, workflows: [], message: "No active workflows found." });
     return JSON.stringify({ success: true, workflows: data });
@@ -168,10 +193,16 @@ async function executeToolCall(
 
   if (functionName === "delete_workflow") {
     const { workflow_id } = args as { workflow_id: string };
-    const { error } = await supabase.from("chat_workflows").delete().eq("id", workflow_id);
+    const { data, error } = await supabase
+      .from("chat_workflows")
+      .delete()
+      .eq("id", workflow_id)
+      .eq("tenant_id", tenantId)
+      .select("id, name")
+      .single();
     if (error) return JSON.stringify({ success: false, error: error.message });
-    await logActivity(supabase, tenantId, "delete_workflow", "workflow", workflow_id);
-    return JSON.stringify({ success: true, message: `Deleted workflow ${workflow_id}` });
+    await logActivity(supabase, tenantId, userId, "delete_workflow", "workflow", workflow_id, data?.name);
+    return JSON.stringify({ success: true, message: `Deleted workflow ${data?.name || workflow_id}` });
   }
 
   return JSON.stringify({ success: false, error: "Unknown function" });
@@ -195,13 +226,22 @@ serve(async (req) => {
 
     // Get tenant_id from auth token
     let tenantId: string | null = null;
+    let userId: string | null = null;
     if (authHeader) {
       const token = authHeader.replace("Bearer ", "");
       const { data: { user } } = await supabase.auth.getUser(token);
       if (user) {
+        userId = user.id;
         const { data: profile } = await supabase.from("profiles").select("tenant_id").eq("id", user.id).single();
         tenantId = profile?.tenant_id || null;
       }
+    }
+
+    if (!userId || !tenantId) {
+      return new Response(JSON.stringify({ error: "Unauthorized or tenant context missing." }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     const systemPrompt = `You are an AI assistant for a project management dashboard. You help users understand their projects, provide insights, and answer questions about project status, timelines, and team workloads.
@@ -214,11 +254,10 @@ You can take ACTIONS:
 - **Delete workflows** using delete_workflow
 
 WORKFLOW EXAMPLES you can suggest:
-- Auto-assign owner when project enters a specific phase
-- Change project state when ARR exceeds a threshold
-- Notify when a project is blocked for too long
+- Auto-assign owner when a project enters a specific phase
+- Change project state when platform or category matches a value
+- Log a notification when a project becomes blocked
 - Auto-assign based on platform or category
-- Flag projects with no owner after X days
 - Set responsibility when phase changes
 
 When the user asks to assign or update, use the appropriate tool. Match project names to IDs from the context.
@@ -274,8 +313,14 @@ Guidelines:
       const actionsTaken: string[] = [];
 
       for (const toolCall of assistantMessage.tool_calls) {
-        const args = JSON.parse(toolCall.function.arguments);
-        const result = await executeToolCall(toolCall.function.name, args, supabase, tenantId);
+        let args: Record<string, unknown> = {};
+        try {
+          args = JSON.parse(toolCall.function.arguments || "{}");
+        } catch {
+          args = {};
+        }
+
+        const result = await executeToolCall(toolCall.function.name, args, supabase, tenantId, userId);
         toolResults.push({ role: "tool", tool_call_id: toolCall.id, content: result });
         const parsed = JSON.parse(result);
         actionsTaken.push(parsed.success ? parsed.message : `Failed: ${parsed.error}`);
