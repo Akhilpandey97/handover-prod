@@ -133,6 +133,12 @@ export const ManagerDashboard = () => {
   const [reportsExpanded, setReportsExpanded] = useState(false);
   const [settingsExpanded, setSettingsExpanded] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [settingsGroupExpanded, setSettingsGroupExpanded] = useState<Record<string, boolean>>({
+    Workspace: false,
+    "Data & Forms": false,
+    Communication: false,
+    Administration: false,
+  });
 
   // List view column selection
   const LIST_VIEW_COLUMNS = [
@@ -775,26 +781,47 @@ export const ManagerDashboard = () => {
           <div className="ml-6 mt-1 mb-1 space-y-3 pl-4">
             {SETTINGS_GROUPS.map((group) => (
               <div key={group.label} className="space-y-1">
-                <p className="px-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground/70">
-                  {group.label}
-                </p>
-                {group.items.map((key) => {
-                  const label = SETTINGS_SUB_CONFIG[key]?.label || key;
-                  return (
-                    <button
-                      key={key}
-                      onClick={() => { setActiveTab("settings"); setSettingsSubTab(key); }}
-                      className={cn(
-                        "w-full flex items-center gap-2.5 text-left px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150",
-                        settingsSubTab === key && activeTab === "settings"
-                          ? "bg-primary text-primary-foreground shadow-md"
-                          : "text-foreground/60 hover:text-foreground hover:bg-muted/60"
-                      )}
-                    >
-                      {label}
-                    </button>
-                  );
-                })}
+                <button
+                  type="button"
+                  onClick={() =>
+                    setSettingsGroupExpanded((prev) => ({
+                      ...prev,
+                      [group.label]: !prev[group.label],
+                    }))
+                  }
+                  className="flex w-full items-center justify-between rounded-xl border border-primary/15 bg-primary/[0.06] px-3 py-2 text-left"
+                >
+                  <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-primary">
+                    {group.label}
+                  </span>
+                  <ChevronDown
+                    className={cn(
+                      "h-4 w-4 text-primary transition-transform",
+                      settingsGroupExpanded[group.label] ? "rotate-180" : ""
+                    )}
+                  />
+                </button>
+                {settingsGroupExpanded[group.label] && (
+                  <div className="space-y-1">
+                    {group.items.map((key) => {
+                      const label = SETTINGS_SUB_CONFIG[key]?.label || key;
+                      return (
+                        <button
+                          key={key}
+                          onClick={() => { setActiveTab("settings"); setSettingsSubTab(key); }}
+                          className={cn(
+                            "w-full flex items-center gap-2.5 text-left px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150",
+                            settingsSubTab === key && activeTab === "settings"
+                              ? "bg-primary text-primary-foreground shadow-md"
+                              : "text-foreground/60 hover:text-foreground hover:bg-muted/60"
+                          )}
+                        >
+                          {label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             ))}
           </div>
