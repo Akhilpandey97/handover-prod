@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Separator } from "@/components/ui/separator";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
+import { ProjectWorkspaceView } from "@/pages/ProjectWorkspace";
 
 const KANBAN_FIELD_OPTIONS = [
   { key: "projectState", label: "Project State" },
@@ -85,6 +86,7 @@ export const KanbanBoard = () => {
   const labels = useLabels();
   const { fields: customFields } = useCustomFields();
   const [groupField, setGroupField] = useState("projectState");
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
 
   const projectIds = useMemo(() => projects.map(p => p.id), [projects]);
   const { valuesMap: customValuesMap } = useAllCustomFieldValues(projectIds);
@@ -165,7 +167,7 @@ export const KanbanBoard = () => {
                       </p>
                     ) : (
                       col.projects.map((project) => (
-                        <KanbanCard key={project.id} project={project} />
+                        <KanbanCard key={project.id} project={project} onOpenWorkspace={setSelectedProjectId} />
                       ))
                     )}
                   </div>
@@ -175,6 +177,16 @@ export const KanbanBoard = () => {
           </div>
         ))}
       </div>
+
+      {selectedProjectId ? (
+        <div className="fixed inset-0 z-[70] bg-background">
+          <ProjectWorkspaceView
+            projectId={selectedProjectId}
+            inModal
+            onClose={() => setSelectedProjectId(null)}
+          />
+        </div>
+      ) : null}
     </div>
   );
 };

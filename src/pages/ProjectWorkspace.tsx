@@ -56,6 +56,7 @@ import {
   ShieldAlert,
   Trash2,
   UserRound,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -63,6 +64,12 @@ type WorkspaceTab = "overview" | "activity" | "checklists" | "notes" | "files";
 type ActivityKind = "user" | "system" | "handoff" | "milestone";
 
 const PROJECT_STATES: ProjectState[] = ["not_started", "on_hold", "in_progress", "live", "blocked"];
+
+interface ProjectWorkspaceProps {
+  projectId?: string;
+  inModal?: boolean;
+  onClose?: () => void;
+}
 
 interface ActivityEntry {
   id: string;
@@ -453,8 +460,9 @@ const buildActionDrivenSummary = (
   return cards;
 };
 
-const ProjectWorkspace = () => {
-  const { projectId } = useParams();
+export const ProjectWorkspaceView = ({ projectId: projectIdProp, inModal = false, onClose }: ProjectWorkspaceProps) => {
+  const { projectId: routeProjectId } = useParams();
+  const projectId = projectIdProp || routeProjectId;
   const { isAuthenticated, isLoading, currentUser } = useAuth();
   const {
     projects,
@@ -513,7 +521,7 @@ const ProjectWorkspace = () => {
 
   if (isLoading || projectsLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
+      <div className={cn("flex items-center justify-center bg-background", inModal ? "min-h-full" : "min-h-screen")}>
         <div className="text-center">
           <div className="mx-auto mb-4 h-10 w-10 animate-spin rounded-full border-4 border-primary border-t-transparent" />
           <p className="text-sm text-muted-foreground">Loading project workspace...</p>
@@ -528,7 +536,7 @@ const ProjectWorkspace = () => {
 
   if (!project) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-background px-6">
+      <div className={cn("flex items-center justify-center bg-background px-6", inModal ? "min-h-full" : "min-h-screen")}>
         <Card className="w-full max-w-xl">
           <CardHeader>
             <CardTitle>Project not found</CardTitle>
@@ -537,9 +545,13 @@ const ProjectWorkspace = () => {
             <p className="mb-4 text-sm text-muted-foreground">
               This project could not be found in your current workspace.
             </p>
-            <Button asChild>
-              <Link to="/">Back to dashboard</Link>
-            </Button>
+            {inModal ? (
+              <Button onClick={onClose}>Close</Button>
+            ) : (
+              <Button asChild>
+                <Link to="/">Back to dashboard</Link>
+              </Button>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -673,15 +685,26 @@ const ProjectWorkspace = () => {
   };
 
   return (
-    <div className="flex h-screen flex-col overflow-hidden bg-background">
+    <div className={cn("flex flex-col overflow-hidden bg-background", inModal ? "h-full" : "h-screen")}>
       {/* Unified header */}
       <div className="shrink-0 border-b border-border/60 bg-card/80 px-4 py-2">
         <div className="mx-auto flex max-w-[1680px] items-center justify-between gap-3">
           <div className="flex items-center gap-3 min-w-0">
-            <Link to="/" className="inline-flex items-center gap-1 rounded-md px-1.5 py-1 text-xs font-medium text-muted-foreground hover:bg-accent/60 hover:text-foreground shrink-0">
-              <ArrowLeft className="h-3.5 w-3.5" />
-              Projects
-            </Link>
+            {inModal ? (
+              <button
+                type="button"
+                onClick={onClose}
+                className="inline-flex items-center gap-1 rounded-md px-1.5 py-1 text-xs font-medium text-muted-foreground hover:bg-accent/60 hover:text-foreground shrink-0"
+              >
+                <ArrowLeft className="h-3.5 w-3.5" />
+                Kanban
+              </button>
+            ) : (
+              <Link to="/" className="inline-flex items-center gap-1 rounded-md px-1.5 py-1 text-xs font-medium text-muted-foreground hover:bg-accent/60 hover:text-foreground shrink-0">
+                <ArrowLeft className="h-3.5 w-3.5" />
+                Projects
+              </Link>
+            )}
             <ChevronRight className="h-3 w-3 text-muted-foreground shrink-0" />
             <div className="flex items-center gap-2 min-w-0">
               <h1 className="text-sm font-semibold tracking-tight text-foreground truncate">{project.merchantName}</h1>
@@ -701,6 +724,11 @@ const ProjectWorkspace = () => {
           </div>
 
           <div className="flex items-center gap-1.5 shrink-0">
+            {inModal ? (
+              <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={onClose}>
+                <X className="h-4 w-4" />
+              </Button>
+            ) : null}
             {currentUser?.team === "manager" ? (
               <Button variant="outline" size="sm" className="h-7 text-xs px-2" onClick={() => setAssignOpen(true)}>
                 <UserRound className="h-3 w-3 mr-1" />
@@ -1212,5 +1240,7 @@ const ProjectWorkspace = () => {
     </div>
   );
 };
+
+const ProjectWorkspace = () => <ProjectWorkspaceView />;
 
 export default ProjectWorkspace;

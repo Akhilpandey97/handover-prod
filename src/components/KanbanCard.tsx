@@ -7,7 +7,6 @@ import { cn } from "@/lib/utils";
 import { useState } from "react";
 import { fetchAiInsights } from "@/utils/aiInsights";
 import { toast } from "sonner";
-import { ProjectDetailsDialog } from "./ProjectDetailsDialog";
 import { ChecklistDialog } from "./ChecklistDialog";
 
 const phaseLabels: Record<string, string> = {
@@ -17,10 +16,15 @@ const phaseLabels: Record<string, string> = {
   completed: "Completed",
 };
 
-export const KanbanCard = ({ project }: { project: Project }) => {
+export const KanbanCard = ({
+  project,
+  onOpenWorkspace,
+}: {
+  project: Project;
+  onOpenWorkspace: (projectId: string) => void;
+}) => {
   const { stateLabels } = useLabels();
   const [loadingInsights, setLoadingInsights] = useState(false);
-  const [detailsOpen, setDetailsOpen] = useState(false);
   const [checklistOpen, setChecklistOpen] = useState(false);
 
   const stateLabel =
@@ -63,10 +67,24 @@ export const KanbanCard = ({ project }: { project: Project }) => {
 
   return (
     <>
-      <div className="rounded-md border bg-card p-3 space-y-2 shadow-sm text-xs">
+      <div
+        role="button"
+        tabIndex={0}
+        className="w-full rounded-md border bg-card p-3 space-y-2 shadow-sm text-xs text-left transition hover:border-primary/40 hover:shadow-md cursor-pointer"
+        onClick={() => onOpenWorkspace(project.id)}
+        onKeyDown={(event) => {
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            onOpenWorkspace(project.id);
+          }
+        }}
+      >
         <button
           className="font-semibold text-sm truncate text-left w-full hover:text-primary hover:underline cursor-pointer transition-colors"
-          onClick={() => setDetailsOpen(true)}
+          onClick={(event) => {
+            event.stopPropagation();
+            onOpenWorkspace(project.id);
+          }}
         >
           {project.merchantName}
         </button>
@@ -89,7 +107,10 @@ export const KanbanCard = ({ project }: { project: Project }) => {
             variant="ghost"
             size="sm"
             className="h-6 px-2 text-[11px] gap-1 text-primary"
-            onClick={handleInsights}
+            onClick={(event) => {
+              event.stopPropagation();
+              void handleInsights();
+            }}
             disabled={loadingInsights}
           >
             <Sparkles className="h-3 w-3" />
@@ -99,19 +120,16 @@ export const KanbanCard = ({ project }: { project: Project }) => {
             variant="ghost"
             size="sm"
             className="h-6 px-2 text-[11px] gap-1 text-muted-foreground hover:text-primary"
-            onClick={() => setChecklistOpen(true)}
+            onClick={(event) => {
+              event.stopPropagation();
+              setChecklistOpen(true);
+            }}
           >
             <ListChecks className="h-3 w-3" />
             {completedChecklist}/{totalChecklist}
           </Button>
         </div>
       </div>
-
-      <ProjectDetailsDialog
-        project={project}
-        open={detailsOpen}
-        onOpenChange={setDetailsOpen}
-      />
 
       <ChecklistDialog
         project={project}
