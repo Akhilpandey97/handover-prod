@@ -1134,7 +1134,7 @@ export const ManagerDashboard = () => {
           {/* ========= PROJECTS TAB ========= */}
           {activeTab === "projects" && <div className="space-y-6">
             <Card className="shadow-xl border-border/50">
-              <CardHeader className="border-b bg-muted/30">
+              <CardHeader className="border-b bg-muted/30 px-4 py-4">
                 <div className="flex items-center justify-between flex-wrap gap-3">
                   <div className="flex items-center gap-3 relative">
                     <CardTitle className="text-lg flex items-center gap-3">
@@ -1363,7 +1363,7 @@ export const ManagerDashboard = () => {
                 </div>
               </CardHeader>
                <CardContent className="p-0">
-                  <div className="p-6 space-y-4">
+                  <div className="px-4 py-4 space-y-3">
                     {(() => {
                       const sortedProjects = sortField === "none" ? filteredProjects : [...filteredProjects].sort((a, b) => {
                         let cmp = 0;
@@ -1385,8 +1385,8 @@ export const ManagerDashboard = () => {
                       </div>
                     ) : (
                       sortedProjects.map((project) => (
-                        <div key={project.id} className="flex items-start gap-3">
-                          <div className="pt-4">
+                        <div key={project.id} className="flex items-start gap-2.5">
+                          <div className="pt-3">
                             <Checkbox checked={selectedProjects.has(project.id)} onCheckedChange={() => toggleProjectSelection(project.id)} />
                           </div>
                           <div className="flex-1">
