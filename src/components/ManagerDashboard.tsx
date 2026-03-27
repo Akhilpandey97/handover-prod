@@ -134,7 +134,7 @@ export const ManagerDashboard = () => {
   const [settingsExpanded, setSettingsExpanded] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [settingsGroupExpanded, setSettingsGroupExpanded] = useState<Record<string, boolean>>({
-    Workspace: false,
+    General: false,
     "Data & Forms": false,
     Communication: false,
     Administration: false,
@@ -596,7 +596,7 @@ export const ManagerDashboard = () => {
   };
 
   const SETTINGS_GROUPS: Array<{ label: string; items: string[] }> = [
-    { label: "Workspace", items: ["general", "workflow", "activity-log"] },
+    { label: "General", items: ["general", "workflow", "activity-log"] },
     { label: "Data & Forms", items: ["fields", "custom-fields", "checklist", "checklist-forms"] },
     { label: "Communication", items: ["email", "emails"] },
     { label: "Administration", items: ["colours", "navigation", "users"] },
@@ -789,7 +789,7 @@ export const ManagerDashboard = () => {
                       [group.label]: !prev[group.label],
                     }))
                   }
-                  className="flex w-full items-center justify-between rounded-xl border border-primary/15 bg-primary/[0.06] px-3 py-2 text-left"
+                  className="flex w-full items-center justify-between px-3 py-1 text-left"
                 >
                   <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-primary">
                     {group.label}
