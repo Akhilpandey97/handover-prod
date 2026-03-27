@@ -576,18 +576,25 @@ export const ManagerDashboard = () => {
 
   const SETTINGS_SUB_CONFIG: Record<string, { label: string }> = {
     general: { label: "General" },
-    workflow: { label: "Workflow" },
+    workflow: { label: "Workflow Rules" },
+    "activity-log": { label: "Activity Log" },
     fields: { label: "Field Labels" },
     "custom-fields": { label: "Custom Fields" },
+    checklist: { label: "Checklist" },
     "checklist-forms": { label: "Checklist Forms" },
-    colours: { label: "Colours" },
-    email: { label: "Email" },
+    email: { label: "Email Settings" },
+    emails: { label: "Parsed Emails" },
+    colours: { label: "Appearance" },
     navigation: { label: "Navigation" },
     users: { label: "Users" },
-    checklist: { label: "Checklist" },
-    emails: { label: "Emails" },
-    "activity-log": { label: "Activity Log" },
   };
+
+  const SETTINGS_GROUPS: Array<{ label: string; items: string[] }> = [
+    { label: "Workspace", items: ["general", "workflow", "activity-log"] },
+    { label: "Data & Forms", items: ["fields", "custom-fields", "checklist", "checklist-forms"] },
+    { label: "Communication", items: ["email", "emails"] },
+    { label: "Administration", items: ["colours", "navigation", "users"] },
+  ];
 
   const REPORTS_SUB_CONFIG: Record<string, { label: string; icon?: string }> = {
     predefined: { label: "Pre Defined" },
@@ -765,20 +772,30 @@ export const ManagerDashboard = () => {
 
         {/* Settings sub-menu */}
         {isSettings && settingsExpanded && (
-          <div className="ml-6 mt-1 mb-1 space-y-1 pl-4">
-            {Object.entries(SETTINGS_SUB_CONFIG).map(([key, { label }]) => (
-              <button
-                key={key}
-                onClick={() => { setActiveTab("settings"); setSettingsSubTab(key); }}
-                className={cn(
-                  "w-full flex items-center gap-2.5 text-left px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150",
-                  settingsSubTab === key && activeTab === "settings"
-                    ? "bg-primary text-primary-foreground shadow-md"
-                    : "text-foreground/60 hover:text-foreground hover:bg-muted/60"
-                )}
-              >
-                {label}
-              </button>
+          <div className="ml-6 mt-1 mb-1 space-y-3 pl-4">
+            {SETTINGS_GROUPS.map((group) => (
+              <div key={group.label} className="space-y-1">
+                <p className="px-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground/70">
+                  {group.label}
+                </p>
+                {group.items.map((key) => {
+                  const label = SETTINGS_SUB_CONFIG[key]?.label || key;
+                  return (
+                    <button
+                      key={key}
+                      onClick={() => { setActiveTab("settings"); setSettingsSubTab(key); }}
+                      className={cn(
+                        "w-full flex items-center gap-2.5 text-left px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150",
+                        settingsSubTab === key && activeTab === "settings"
+                          ? "bg-primary text-primary-foreground shadow-md"
+                          : "text-foreground/60 hover:text-foreground hover:bg-muted/60"
+                      )}
+                    >
+                      {label}
+                    </button>
+                  );
+                })}
+              </div>
             ))}
           </div>
         )}
