@@ -97,7 +97,7 @@ const tools = [
           action_type: { type: "string", enum: [...WORKFLOW_ACTION_TYPES], description: "What action to take" },
           action_config: {
             type: "object",
-            description: "Configuration for the action. Examples: {owner_id:'...', owner_name:'...'}, {field:'project_state', value:'blocked'}, {email:'ops@example.com', subject:'...', message:'...'}, {title:'Review launch readiness', phase:'integration', owner_team:'integration'}",
+            description: "Configuration for the action. Examples: {owner_id:'...', owner_name:'...'} or {owner_email:'person@example.com'} for assign_owner; {field:'project_state', value:'blocked'} for update_field; {email:'ops@example.com', subject:'...', message:'...'} for notify_email; {title:'Review launch readiness', phase:'integration', owner_team:'integration'} for create_checklist_item",
           },
           is_active: { type: "boolean", description: "Whether the workflow should start active. Defaults to true." },
         },
@@ -166,7 +166,59 @@ async function logActivity(
   });
 }
 
-const normalizeWorkflowArgs = (raw: Record<string, unknown>) => {
+const findEmailInText = (text?: string | null) => {
+  if (!text) return null;
+  const match = text.match(/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/);
+  return match?.[0] || null;
+};
+
+const resolveWorkflowOwner = async (
+  supabase: ReturnType<typeof createClient>,
+  tenantId: string,
+  actionConfig: Record<string, unknown>,
+  fallbackText?: string | null,
+) => {
+  if (actionConfig.owner_id) {
+    return {
+      owner_id: String(actionConfig.owner_id),
+      owner_name: actionConfig.owner_name ? String(actionConfig.owner_name) : null,
+    };
+  }
+
+  const ownerEmail =
+    (actionConfig.owner_email ? String(actionConfig.owner_email) : null)
+    || (actionConfig.email ? String(actionConfig.email) : null)
+    || findEmailInText(fallbackText);
+  const ownerName = actionConfig.owner_name ? String(actionConfig.owner_name) : null;
+
+  let query = supabase
+    .from("profiles")
+    .select("id, name, email")
+    .eq("tenant_id", tenantId)
+    .limit(1);
+
+  if (ownerEmail) {
+    query = query.eq("email", ownerEmail);
+  } else if (ownerName) {
+    query = query.ilike("name", ownerName);
+  } else {
+    return null;
+  }
+
+  const { data, error } = await query.maybeSingle();
+  if (error || !data) return null;
+
+  return {
+    owner_id: data.id,
+    owner_name: data.name || ownerName || ownerEmail,
+  };
+};
+
+const normalizeWorkflowArgs = async (
+  raw: Record<string, unknown>,
+  supabase: ReturnType<typeof createClient>,
+  tenantId: string,
+) => {
   const triggerType = String(raw.trigger_type || "").trim();
   const actionType = String(raw.action_type || "").trim();
   const triggerField = raw.trigger_field ? String(raw.trigger_field).trim() : null;
@@ -210,8 +262,22 @@ const normalizeWorkflowArgs = (raw: Record<string, unknown>) => {
     throw new Error("update_field requires action_config.field and action_config.value");
   }
 
-  if (actionType === "assign_owner" && !actionConfig.owner_id) {
-    throw new Error("assign_owner requires action_config.owner_id");
+  if (actionType === "assign_owner") {
+    const resolvedOwner = await resolveWorkflowOwner(
+      supabase,
+      tenantId,
+      actionConfig,
+      [raw.description, JSON.stringify(actionConfig)].filter(Boolean).join(" "),
+    );
+
+    if (!resolvedOwner?.owner_id) {
+      throw new Error("assign_owner requires action_config.owner_id or a resolvable owner email/name");
+    }
+
+    actionConfig.owner_id = resolvedOwner.owner_id;
+    if (!actionConfig.owner_name && resolvedOwner.owner_name) {
+      actionConfig.owner_name = resolvedOwner.owner_name;
+    }
   }
 
   return {
@@ -363,7 +429,7 @@ async function executeToolCall(
   }
 
   if (functionName === "create_workflow") {
-    const normalized = normalizeWorkflowArgs(args);
+    const normalized = await normalizeWorkflowArgs(args, supabase, tenantId);
     const { data, error } = await supabase.from("chat_workflows").insert({
       tenant_id: tenantId,
       created_by: userId,
@@ -381,7 +447,11 @@ async function executeToolCall(
   if (functionName === "create_sample_workflows") {
     const activate = args.activate === undefined ? true : Boolean(args.activate);
     const email = args.notification_email ? String(args.notification_email) : userEmail;
-    const definitions = getSampleWorkflowDefinitions(email || null, activate).map(normalizeWorkflowArgs);
+    const definitions = await Promise.all(
+      getSampleWorkflowDefinitions(email || null, activate).map((definition) =>
+        normalizeWorkflowArgs(definition, supabase, tenantId),
+      ),
+    );
     const { data, error } = await supabase
       .from("chat_workflows")
       .insert(definitions.map((workflow) => ({
