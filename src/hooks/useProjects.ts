@@ -288,7 +288,12 @@ export const useAddProject = () => {
         if (logError) throw logError;
       }
 
-      const workflowResult = await processWorkflowEvents(100, 3, {
+      return { newProject };
+    },
+    onSuccess: ({ newProject }) => {
+      queryClient.invalidateQueries({ queryKey: ["projects"] });
+      toast.success("Project created successfully");
+      void processWorkflowEvents(100, 3, {
         entityType: "project",
         entityId: newProject.id,
         entityName: newProject.merchant_name,
@@ -297,21 +302,14 @@ export const useAddProject = () => {
           project_state: newProject.project_state,
           current_phase: newProject.current_phase,
         },
+      }).then((workflowResult) => {
+        if (!workflowResult.success) {
+          console.error("Workflow processing after project creation failed:", workflowResult.error);
+          toast.warning("Project created, but workflow processing needs attention", {
+            description: workflowResult.error,
+          });
+        }
       });
-      if (!workflowResult.success) {
-        console.error("Workflow processing after project creation failed:", workflowResult.error);
-      }
-
-      return { newProject, workflowResult };
-    },
-    onSuccess: ({ workflowResult }) => {
-      queryClient.invalidateQueries({ queryKey: ["projects"] });
-      toast.success("Project created successfully");
-      if (!workflowResult.success) {
-        toast.warning("Project created, but workflow processing needs attention", {
-          description: workflowResult.error,
-        });
-      }
     },
     onError: (error) => {
       console.error("Error creating project:", error);
