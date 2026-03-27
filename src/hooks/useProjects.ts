@@ -288,12 +288,21 @@ export const useAddProject = () => {
         if (logError) throw logError;
       }
 
-      return newProject;
+      const workflowResult = await processWorkflowEvents(100, 3);
+      if (!workflowResult.success) {
+        console.error("Workflow processing after project creation failed:", workflowResult.error);
+      }
+
+      return { newProject, workflowResult };
     },
-    onSuccess: async () => {
-      await processWorkflowEvents();
+    onSuccess: ({ workflowResult }) => {
       queryClient.invalidateQueries({ queryKey: ["projects"] });
       toast.success("Project created successfully");
+      if (!workflowResult.success) {
+        toast.warning("Project created, but workflow processing needs attention", {
+          description: workflowResult.error,
+        });
+      }
     },
     onError: (error) => {
       console.error("Error creating project:", error);

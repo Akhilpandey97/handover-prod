@@ -537,9 +537,8 @@ export const ManagerDashboard = () => {
   const blockedProjects = displayProjects.filter(p => p.projectState === "blocked").length;
   const onHoldProjects = displayProjects.filter(p => p.projectState === "on_hold").length;
 
-  const handleAddProject = (project: Project) => {
-    addProject(project);
-    toast.success(`Added ${project.merchantName}`);
+  const handleAddProject = async (project: Project) => {
+    return addProject(project);
   };
 
   const filteredProjectIds = filteredProjects.map(p => p.id);

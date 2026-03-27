@@ -29,7 +29,7 @@ import { DatePickerField } from "@/components/ui/date-picker-field";
 interface AddProjectDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSave: (project: Project) => void;
+  onSave: (project: Project) => Promise<Project | null>;
 }
 
 export const AddProjectDialog = ({
@@ -72,10 +72,11 @@ export const AddProjectDialog = ({
     if (!project.merchantName.trim() || !project.mid.trim()) {
       return;
     }
-    onSave(project);
+    const createdProject = await onSave(project);
+    if (!createdProject) return;
     // Save custom field values after project is created
     if (Object.keys(customDraft).length > 0) {
-      await saveValues(project.id, customDraft);
+      await saveValues(createdProject.id, customDraft);
     }
     setProject(createDefaultProject());
     setCustomDraft({});

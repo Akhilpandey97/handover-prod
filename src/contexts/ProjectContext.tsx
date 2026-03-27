@@ -19,7 +19,7 @@ import {
 interface ProjectContextType {
   projects: Project[];
   isLoading: boolean;
-  addProject: (project: Project) => void;
+  addProject: (project: Project) => Promise<Project | null>;
   updateProject: (project: Project) => void;
   deleteProject: (projectId: string) => void;
   acceptProject: (projectId: string) => void;
@@ -53,8 +53,9 @@ export const ProjectProvider = ({ children }: { children: ReactNode }) => {
   const toggleResponsibilityMutation = useToggleResponsibility();
   const toggleChecklistResponsibilityMutation = useToggleChecklistResponsibility();
 
-  const addProject = (project: Project) => {
-    addProjectMutation.mutate(project);
+  const addProject = async (project: Project) => {
+    const result = await addProjectMutation.mutateAsync(project);
+    return result?.newProject ?? null;
   };
 
   const updateProject = (updatedProject: Project) => {

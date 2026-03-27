@@ -250,11 +250,15 @@ export const EmailToProjectDialog = ({ email, open, onOpenChange, onProjectCreat
       assignedOwnerName: undefined,
     };
 
-    addProject(newProject);
+    const createdProject = await addProject(newProject);
+    if (!createdProject) {
+      toast.error("Project was created locally but could not be confirmed");
+      return;
+    }
 
     await supabase
       .from("parsed_emails")
-      .update({ status: "project_created" })
+      .update({ status: "project_created", project_id: createdProject.id })
       .eq("id", email.id);
 
     toast.success(`Project "${merchantName}" created — assign an owner from Projects tab`);
