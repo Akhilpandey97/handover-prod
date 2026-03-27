@@ -642,11 +642,6 @@ export const ProjectWorkspaceView = ({ projectId: projectIdProp, inModal = false
   ].filter(Boolean) as Array<{ label: string; href: string; icon: typeof Globe }>;
 
   const actionRecommendations = [
-    {
-      label: "Open checklist",
-      sublabel: `${completedChecklist}/${project.checklist.length} items complete`,
-      onClick: () => setActiveTab("checklists"),
-    },
     !project.assignedOwnerName && currentUser?.team === "manager"
       ? { label: "Assign owner", sublabel: "Establish clear ownership", onClick: () => setAssignOpen(true) }
       : null,
