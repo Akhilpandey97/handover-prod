@@ -30,6 +30,14 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -74,7 +82,6 @@ import {
   Mail,
   GripVertical,
   List,
-  X,
 } from "lucide-react";
 import { exportProjectsToCSV } from "@/utils/exportProjects";
 import { exportProjectChecklistCSV, exportTeamOwnerCSV } from "@/utils/reportExportCSV";
@@ -210,6 +217,7 @@ export const ManagerDashboard = () => {
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const [sortOpen, setSortOpen] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [listColumnsOpen, setListColumnsOpen] = useState(false);
 
   // Fetch profiles for owner filter
   const [allProfiles, setAllProfiles] = useState<{ id: string; name: string; team: string }[]>([]);
@@ -688,6 +696,10 @@ export const ManagerDashboard = () => {
     } finally {
       setTeamAiLoading(false);
     }
+  };
+
+  const openProjectWorkspaceTab = (projectId: string) => {
+    window.open(`/projects/${projectId}`, "_blank", "noopener,noreferrer");
   };
 
   const sidebarTabs = [...tabOrder, ...(currentUser?.team === "super_admin" && !tabOrder.includes("tenants") ? ["tenants"] : [])]
@@ -1457,7 +1469,6 @@ export const ManagerDashboard = () => {
 
           {/* ========= LIST VIEW TAB ========= */}
           {activeTab === "listview" && <div className="space-y-4">
-            {/* Column selector chips */}
             <Card className="shadow-xl border-border/50">
               <CardHeader className="border-b bg-muted/30 py-3">
                 <div className="flex items-center justify-between">
@@ -1466,6 +1477,224 @@ export const ManagerDashboard = () => {
                     List View
                   </CardTitle>
                   <div className="flex items-center gap-2">
+                    <div className="relative">
+                      <DropdownMenu open={listColumnsOpen} onOpenChange={setListColumnsOpen}>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="outline" size="sm" className="gap-2">
+                            <List className="h-4 w-4" />
+                            Select Columns
+                            <Badge variant="default" className="ml-1 h-5 px-1.5 text-[10px]">
+                              {listViewColumns.length}
+                            </Badge>
+                            <ChevronDown className={cn("h-3 w-3 transition-transform", listColumnsOpen && "rotate-180")} />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-56">
+                          <DropdownMenuLabel>Visible Columns</DropdownMenuLabel>
+                          <DropdownMenuSeparator />
+                          {LIST_VIEW_COLUMNS.map((col) => {
+                            const active = listViewColumns.includes(col.key);
+                            return (
+                              <DropdownMenuCheckboxItem
+                                key={col.key}
+                                checked={active}
+                                onCheckedChange={(checked) => {
+                                  const newCols = checked
+                                    ? [...listViewColumns, col.key]
+                                    : listViewColumns.filter((key) => key !== col.key);
+                                  setListViewColumns(newCols);
+                                  localStorage.setItem("listview_columns", JSON.stringify(newCols));
+                                }}
+                              >
+                                {col.label}
+                              </DropdownMenuCheckboxItem>
+                            );
+                          })}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                    <div className="relative">
+                      <Collapsible open={filtersOpen} onOpenChange={setFiltersOpen}>
+                        <CollapsibleTrigger asChild>
+                          <Button variant="outline" size="sm" className="gap-2">
+                            <Search className="h-4 w-4" />
+                            Filters
+                            {hasActiveFilters && <Badge variant="default" className="ml-1 h-5 px-1.5 text-[10px]">{[teamFilter !== "all", ownerFilter !== "all", phaseFilter !== "all", stateFilter !== "all", platformFilter !== "all", categoryFilter !== "all", responsibilityFilter !== "all", arrMin, arrMax, kickOffFrom, kickOffTo, goLiveFrom, goLiveTo].filter(Boolean).length}</Badge>}
+                            <ChevronDown className={`h-3 w-3 transition-transform ${filtersOpen ? "rotate-180" : ""}`} />
+                          </Button>
+                        </CollapsibleTrigger>
+                        <CollapsibleContent className="absolute right-0 top-full z-20 mt-2 w-[600px] space-y-3 rounded-lg border bg-card p-4 shadow-xl">
+                          <div className="flex items-center justify-between mb-2">
+                            <p className="text-sm font-semibold">Filters</p>
+                            {hasActiveFilters && (
+                              <Button variant="ghost" size="sm" onClick={clearFilters} className="text-xs h-7">Clear All</Button>
+                            )}
+                          </div>
+                          <div className="grid grid-cols-2 gap-3">
+                            <div className="space-y-1">
+                              <label className="text-xs text-muted-foreground font-medium">Team</label>
+                              <Select value={teamFilter} onValueChange={(v) => { setTeamFilter(v); setOwnerFilter("all"); }}>
+                                <SelectTrigger className="w-full"><SelectValue placeholder="All Teams" /></SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="all">All Teams</SelectItem>
+                                  <SelectItem value="mint">{teamLabels.mint}</SelectItem>
+                                  <SelectItem value="integration">{teamLabels.integration}</SelectItem>
+                                  <SelectItem value="ms">{teamLabels.ms}</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div className="space-y-1">
+                              <label className="text-xs text-muted-foreground font-medium">Owner</label>
+                              <Select value={ownerFilter} onValueChange={setOwnerFilter}>
+                                <SelectTrigger className="w-full"><SelectValue placeholder="All Owners" /></SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="all">All Owners</SelectItem>
+                                  {filteredOwners.map((owner) => (
+                                    <SelectItem key={owner.id} value={owner.id}>{owner.name}</SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div className="space-y-1">
+                              <label className="text-xs text-muted-foreground font-medium">Phase</label>
+                              <Select value={phaseFilter} onValueChange={setPhaseFilter}>
+                                <SelectTrigger className="w-full"><SelectValue placeholder="All Phases" /></SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="all">All Phases</SelectItem>
+                                  {uniquePhaseLabels.map(label => (
+                                    <SelectItem key={label} value={label}>{label}</SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div className="space-y-1">
+                              <label className="text-xs text-muted-foreground font-medium">State</label>
+                              <Select value={stateFilter} onValueChange={setStateFilter}>
+                                <SelectTrigger className="w-full"><SelectValue placeholder="All States" /></SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="all">All States</SelectItem>
+                                  {(Object.keys(projectStateLabels) as ProjectState[]).map(s => (
+                                    <SelectItem key={s} value={s}>{stateLabelsFromCtx[s] || projectStateLabels[s]}</SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div className="space-y-1">
+                              <label className="text-xs text-muted-foreground font-medium">Platform</label>
+                              <Select value={platformFilter} onValueChange={setPlatformFilter}>
+                                <SelectTrigger className="w-full"><SelectValue placeholder="All Platforms" /></SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="all">All Platforms</SelectItem>
+                                  {uniquePlatforms.map(p => (
+                                    <SelectItem key={p} value={p}>{p}</SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div className="space-y-1">
+                              <label className="text-xs text-muted-foreground font-medium">Category</label>
+                              <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                                <SelectTrigger className="w-full"><SelectValue placeholder="All Categories" /></SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="all">All Categories</SelectItem>
+                                  {uniqueCategories.map(c => (
+                                    <SelectItem key={c} value={c}>{c}</SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div className="space-y-1">
+                              <label className="text-xs text-muted-foreground font-medium">Responsibility</label>
+                              <Select value={responsibilityFilter} onValueChange={setResponsibilityFilter}>
+                                <SelectTrigger className="w-full"><SelectValue placeholder="All" /></SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="all">All</SelectItem>
+                                  <SelectItem value="gokwik">{responsibilityLabels.gokwik}</SelectItem>
+                                  <SelectItem value="merchant">{responsibilityLabels.merchant}</SelectItem>
+                                  <SelectItem value="neutral">Neutral</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div className="space-y-1">
+                              <label className="text-xs text-muted-foreground font-medium">ARR Range (Cr)</label>
+                              <div className="flex gap-1">
+                                <Input type="number" placeholder="Min" value={arrMin} onChange={e => setArrMin(e.target.value)} className="w-full h-9 text-xs" />
+                                <Input type="number" placeholder="Max" value={arrMax} onChange={e => setArrMax(e.target.value)} className="w-full h-9 text-xs" />
+                              </div>
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-2 gap-3 pt-2 border-t">
+                            <div className="space-y-1 border rounded-md p-3 overflow-hidden">
+                              <label className="text-xs text-muted-foreground font-medium">Start Date Range</label>
+                              <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-1">
+                                <Input type="date" value={kickOffFrom} onChange={e => setKickOffFrom(e.target.value)} className="h-9 text-xs min-w-0" />
+                                <span className="text-xs text-muted-foreground px-1">to</span>
+                                <Input type="date" value={kickOffTo} onChange={e => setKickOffTo(e.target.value)} className="h-9 text-xs min-w-0" />
+                              </div>
+                            </div>
+                            <div className="space-y-1 border rounded-md p-3 overflow-hidden">
+                              <label className="text-xs text-muted-foreground font-medium">Go-Live Date Range</label>
+                              <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-1">
+                                <Input type="date" value={goLiveFrom} onChange={e => setGoLiveFrom(e.target.value)} className="h-9 text-xs min-w-0" />
+                                <span className="text-xs text-muted-foreground px-1">to</span>
+                                <Input type="date" value={goLiveTo} onChange={e => setGoLiveTo(e.target.value)} className="h-9 text-xs min-w-0" />
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex justify-end border-t pt-3">
+                            <Button size="sm" onClick={() => setFiltersOpen(false)}>Done</Button>
+                          </div>
+                        </CollapsibleContent>
+                      </Collapsible>
+                    </div>
+                    <div className="relative">
+                      <Collapsible open={sortOpen} onOpenChange={setSortOpen}>
+                        <CollapsibleTrigger asChild>
+                          <Button variant="outline" size="sm" className="gap-2">
+                            <ArrowUpDown className="h-4 w-4" />
+                            Sort
+                            {sortField !== "none" && <Badge variant="default" className="ml-1 h-5 px-1.5 text-[10px]">1</Badge>}
+                            <ChevronDown className={`h-3 w-3 transition-transform ${sortOpen ? "rotate-180" : ""}`} />
+                          </Button>
+                        </CollapsibleTrigger>
+                        <CollapsibleContent className="absolute right-0 top-full z-20 mt-2 w-[320px] space-y-3 rounded-lg border bg-card p-4 shadow-xl">
+                          <div className="flex items-center justify-between mb-2">
+                            <p className="text-sm font-semibold">Sort By</p>
+                            {sortField !== "none" && (
+                              <Button variant="ghost" size="sm" onClick={() => { setSortField("none"); setSortDirection("asc"); }} className="text-xs h-7">Clear</Button>
+                            )}
+                          </div>
+                          <div className="grid grid-cols-2 gap-3">
+                            <div className="space-y-1">
+                              <label className="text-xs text-muted-foreground font-medium">Field</label>
+                              <Select value={sortField} onValueChange={setSortField}>
+                                <SelectTrigger className="w-full"><SelectValue placeholder="None" /></SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="none">None</SelectItem>
+                                  <SelectItem value="arr">ARR</SelectItem>
+                                  <SelectItem value="owner">Owner</SelectItem>
+                                  <SelectItem value="phase">Phase</SelectItem>
+                                  <SelectItem value="platform">Platform</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div className="space-y-1">
+                              <label className="text-xs text-muted-foreground font-medium">Direction</label>
+                              <Select value={sortDirection} onValueChange={(v) => setSortDirection(v as "asc" | "desc")}>
+                                <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="asc">Ascending</SelectItem>
+                                  <SelectItem value="desc">Descending</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          </div>
+                          <div className="flex justify-end border-t pt-3">
+                            <Button size="sm" onClick={() => setSortOpen(false)}>Done</Button>
+                          </div>
+                        </CollapsibleContent>
+                      </Collapsible>
+                    </div>
                     <span className="text-xs text-muted-foreground">
                       {filteredProjects.length} project{filteredProjects.length !== 1 ? "s" : ""}
                     </span>
@@ -1480,32 +1709,6 @@ export const ManagerDashboard = () => {
                   </div>
                 </div>
               </CardHeader>
-              <div className="px-4 py-3 border-b flex flex-wrap gap-2">
-                {LIST_VIEW_COLUMNS.map(col => {
-                  const active = listViewColumns.includes(col.key);
-                  return (
-                    <button
-                      key={col.key}
-                      onClick={() => {
-                        const newCols = active
-                          ? listViewColumns.filter(c => c !== col.key)
-                          : [...listViewColumns, col.key];
-                        setListViewColumns(newCols);
-                        localStorage.setItem("listview_columns", JSON.stringify(newCols));
-                      }}
-                      className={cn(
-                        "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-colors",
-                        active
-                          ? "bg-primary text-primary-foreground border-primary"
-                          : "bg-muted/40 text-muted-foreground border-border hover:bg-muted"
-                      )}
-                    >
-                      {col.label}
-                      {active && <X className="h-3 w-3" />}
-                    </button>
-                  );
-                })}
-              </div>
               <CardContent className="p-0">
                 <div className="overflow-auto">
                   <Table>
@@ -1520,8 +1723,17 @@ export const ManagerDashboard = () => {
                     </TableHeader>
                     <TableBody>
                       {(() => {
-                        const totalPages = Math.ceil(filteredProjects.length / listViewPageSize);
-                        const paged = filteredProjects.slice((listViewPage - 1) * listViewPageSize, listViewPage * listViewPageSize);
+                        const sortedListProjects = sortField === "none" ? filteredProjects : [...filteredProjects].sort((a, b) => {
+                          let cmp = 0;
+                          switch (sortField) {
+                            case "arr": cmp = a.arr - b.arr; break;
+                            case "owner": cmp = (a.assignedOwnerName || "").localeCompare(b.assignedOwnerName || ""); break;
+                            case "phase": cmp = getProjectPhaseLabel(a).localeCompare(getProjectPhaseLabel(b)); break;
+                            case "platform": cmp = (a.platform || "").localeCompare(b.platform || ""); break;
+                          }
+                          return sortDirection === "desc" ? -cmp : cmp;
+                        });
+                        const paged = sortedListProjects.slice((listViewPage - 1) * listViewPageSize, listViewPage * listViewPageSize);
                         return paged.map(project => {
                           const getColValue = (key: string) => {
                             switch (key) {
@@ -1558,7 +1770,11 @@ export const ManagerDashboard = () => {
                             project.projectState === "blocked" ? "text-destructive" : "text-muted-foreground";
 
                           return (
-                            <TableRow key={project.id}>
+                            <TableRow
+                              key={project.id}
+                              className="cursor-pointer"
+                              onClick={() => openProjectWorkspaceTab(project.id)}
+                            >
                               {listViewColumns.map(colKey => (
                                 <TableCell key={colKey} className={cn("text-sm", colKey === "status" && statusColor, colKey === "recentComments" && "max-w-[200px]")}>
                                   {colKey === "recentComments" ? (
@@ -1576,10 +1792,10 @@ export const ManagerDashboard = () => {
                               ))}
                               <TableCell>
                                 <div className="flex gap-1">
-                                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { /* edit */ }}>
+                                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); /* edit */ }}>
                                     <Pencil className="h-3.5 w-3.5" />
                                   </Button>
-                                  <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => deleteProject(project.id)}>
+                                  <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={(e) => { e.stopPropagation(); deleteProject(project.id); }}>
                                     <Trash2 className="h-3.5 w-3.5" />
                                   </Button>
                                 </div>
