@@ -53,9 +53,10 @@ export const ProjectProvider = ({ children }: { children: ReactNode }) => {
   const toggleResponsibilityMutation = useToggleResponsibility();
   const toggleChecklistResponsibilityMutation = useToggleChecklistResponsibility();
 
-  const addProject = async (project: Project) => {
+  const addProject = async (project: Project): Promise<Project | null> => {
     const result = await addProjectMutation.mutateAsync(project);
-    return result?.newProject ?? null;
+    // The mutation returns the raw DB row; we return the original project shape
+    return result?.newProject ? project : null;
   };
 
   const updateProject = (updatedProject: Project) => {
