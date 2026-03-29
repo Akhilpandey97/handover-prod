@@ -2152,7 +2152,7 @@ export const ManagerDashboard = () => {
           </div>}
 
           {/* Kanban Tab */}
-          {activeTab === "kanban" && <KanbanBoard />}
+          {activeTab === "kanban" && <KanbanBoard filteredProjects={filteredProjects} />}
 
           {/* Tenants Tab (Super Admin only) */}
           {activeTab === "tenants" && currentUser?.team === "super_admin" && <TenantManagement />}
