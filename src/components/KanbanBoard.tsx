@@ -10,9 +10,13 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { cn } from "@/lib/utils";
 import { ProjectWorkspaceView } from "@/pages/ProjectWorkspace";
 import { toast } from "sonner";
+import { ArrowUpDown, ChevronDown, Filter, X } from "lucide-react";
 
 const KANBAN_FIELD_OPTIONS = [
   { key: "projectState", label: "Project State" },
@@ -39,6 +43,15 @@ const PHASE_COLORS: Record<string, { color: string; bg: string }> = {
   completed: { color: "text-emerald-600", bg: "bg-emerald-500/5" },
 };
 
+const SORT_OPTIONS = [
+  { key: "none", label: "Default" },
+  { key: "merchantName", label: "Merchant Name" },
+  { key: "arr", label: "ARR" },
+  { key: "projectState", label: "State" },
+  { key: "currentPhase", label: "Phase" },
+  { key: "platform", label: "Platform" },
+];
+
 function getFieldValue(project: Project, field: string, customValuesMap?: Record<string, Record<string, string>>): string {
   switch (field) {
     case "projectState": return project.projectState;
@@ -49,7 +62,6 @@ function getFieldValue(project: Project, field: string, customValuesMap?: Record
     case "currentResponsibility": return project.currentResponsibility;
     case "assignedOwnerName": return project.assignedOwnerName || "Unassigned";
     default:
-      // Check if it's a custom field
       if (field.startsWith("custom_field_") && customValuesMap) {
         const fieldId = field.replace("custom_field_", "");
         return customValuesMap[project.id]?.[fieldId] || "Unset";
@@ -82,16 +94,73 @@ function getColumnStyle(value: string, field: string): { color: string; bg: stri
   return colors[hash % colors.length];
 }
 
-export const KanbanBoard = () => {
-  const { projects, updateProject } = useProjects();
+function sortProjects(projects: Project[], sortField: string, sortDirection: "asc" | "desc"): Project[] {
+  if (sortField === "none") return projects;
+  return [...projects].sort((a, b) => {
+    let aVal: string | number = "";
+    let bVal: string | number = "";
+    switch (sortField) {
+      case "merchantName": aVal = a.merchantName.toLowerCase(); bVal = b.merchantName.toLowerCase(); break;
+      case "arr": aVal = a.arr; bVal = b.arr; break;
+      case "projectState": aVal = a.projectState; bVal = b.projectState; break;
+      case "currentPhase": aVal = a.currentPhase; bVal = b.currentPhase; break;
+      case "platform": aVal = (a.platform || "").toLowerCase(); bVal = (b.platform || "").toLowerCase(); break;
+      default: return 0;
+    }
+    if (aVal < bVal) return sortDirection === "asc" ? -1 : 1;
+    if (aVal > bVal) return sortDirection === "asc" ? 1 : -1;
+    return 0;
+  });
+}
+
+interface KanbanBoardProps {
+  filteredProjects?: Project[];
+}
+
+export const KanbanBoard = ({ filteredProjects }: KanbanBoardProps) => {
+  const { projects: allProjects, updateProject } = useProjects();
   const labels = useLabels();
   const { fields: customFields } = useCustomFields();
   const [groupField, setGroupField] = useState("projectState");
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [draggedProjectId, setDraggedProjectId] = useState<string | null>(null);
 
+  // Local filters
+  const [searchQuery, setSearchQuery] = useState("");
+  const [stateFilter, setStateFilter] = useState("all");
+  const [phaseFilter, setPhaseFilter] = useState("all");
+  const [platformFilter, setPlatformFilter] = useState("all");
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [sortField, setSortField] = useState("none");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
+
+  const projects = filteredProjects || allProjects;
+
   const projectIds = useMemo(() => projects.map(p => p.id), [projects]);
   const { valuesMap: customValuesMap } = useAllCustomFieldValues(projectIds);
+
+  // Unique values for filter dropdowns
+  const uniquePlatforms = useMemo(() => {
+    const vals = new Set<string>();
+    projects.forEach(p => { if (p.platform) vals.add(p.platform); });
+    return Array.from(vals).sort();
+  }, [projects]);
+
+  // Apply local filters
+  const localFiltered = useMemo(() => {
+    return projects.filter(p => {
+      const matchesSearch = !searchQuery ||
+        p.merchantName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        p.mid.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesState = stateFilter === "all" || p.projectState === stateFilter;
+      const matchesPhase = phaseFilter === "all" || p.currentPhase === phaseFilter;
+      const matchesPlatform = platformFilter === "all" || p.platform === platformFilter;
+      return matchesSearch && matchesState && matchesPhase && matchesPlatform;
+    });
+  }, [projects, searchQuery, stateFilter, phaseFilter, platformFilter]);
+
+  // Apply sort
+  const sortedProjects = useMemo(() => sortProjects(localFiltered, sortField, sortDirection), [localFiltered, sortField, sortDirection]);
 
   // Build combined group-by options including custom fields
   const allFieldOptions = useMemo(() => {
@@ -101,7 +170,7 @@ export const KanbanBoard = () => {
 
   const columns = useMemo(() => {
     const groupMap = new Map<string, Project[]>();
-    projects.forEach(p => {
+    sortedProjects.forEach(p => {
       const val = getFieldValue(p, groupField, customValuesMap);
       const existing = groupMap.get(val) || [];
       existing.push(p);
@@ -116,14 +185,23 @@ export const KanbanBoard = () => {
         ...getColumnStyle(key, groupField),
       }))
       .sort((a, b) => a.label.localeCompare(b.label));
-  }, [projects, groupField, labels, customValuesMap]);
+  }, [sortedProjects, groupField, labels, customValuesMap]);
 
   const standardOptions = allFieldOptions.filter(o => !o.key.startsWith("custom_field_"));
   const customOptions = allFieldOptions.filter(o => o.key.startsWith("custom_field_"));
   const supportsDragMove = ["projectState", "currentPhase", "currentOwnerTeam", "platform", "category", "currentResponsibility"].includes(groupField);
 
+  const hasLocalFilters = searchQuery || stateFilter !== "all" || phaseFilter !== "all" || platformFilter !== "all";
+
+  const clearLocalFilters = () => {
+    setSearchQuery("");
+    setStateFilter("all");
+    setPhaseFilter("all");
+    setPlatformFilter("all");
+  };
+
   const handleProjectDrop = (projectId: string, targetValue: string) => {
-    const project = projects.find((item) => item.id === projectId);
+    const project = allProjects.find((item) => item.id === projectId);
     if (!project || !supportsDragMove) return;
 
     if (getFieldValue(project, groupField, customValuesMap) === targetValue) return;
@@ -159,8 +237,9 @@ export const KanbanBoard = () => {
   };
 
   return (
-    <div className="flex h-full flex-col space-y-4">
-      <div className="flex items-center gap-2">
+    <div className="flex h-full flex-col space-y-3">
+      {/* Toolbar */}
+      <div className="flex items-center gap-2 flex-wrap">
         <Label className="text-xs text-muted-foreground whitespace-nowrap">Group By:</Label>
         <Select value={groupField} onValueChange={setGroupField}>
           <SelectTrigger className="h-8 text-xs w-[180px]">
@@ -181,6 +260,116 @@ export const KanbanBoard = () => {
             )}
           </SelectContent>
         </Select>
+
+        <Separator orientation="vertical" className="h-6" />
+
+        {/* Search */}
+        <div className="relative">
+          <Input
+            placeholder="Search projects..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="h-8 text-xs w-[180px] pl-8"
+          />
+          <Filter className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground" />
+        </div>
+
+        {/* Filters */}
+        <Collapsible open={filtersOpen} onOpenChange={setFiltersOpen}>
+          <CollapsibleTrigger asChild>
+            <Button variant="outline" size="sm" className="h-8 gap-1.5 text-xs">
+              <Filter className="h-3 w-3" />
+              Filters
+              {hasLocalFilters && (
+                <Badge variant="default" className="ml-1 h-4 px-1 text-[10px]">
+                  {[stateFilter !== "all", phaseFilter !== "all", platformFilter !== "all"].filter(Boolean).length}
+                </Badge>
+              )}
+              <ChevronDown className={cn("h-3 w-3 transition-transform", filtersOpen && "rotate-180")} />
+            </Button>
+          </CollapsibleTrigger>
+          <CollapsibleContent className="absolute z-20 mt-1 bg-card border rounded-lg shadow-lg p-4 w-[480px]">
+            <div className="grid grid-cols-3 gap-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs font-medium">State</Label>
+                <Select value={stateFilter} onValueChange={setStateFilter}>
+                  <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All States</SelectItem>
+                    <SelectItem value="not_started">{labels.stateLabels.not_started || "Not Started"}</SelectItem>
+                    <SelectItem value="in_progress">{labels.stateLabels.in_progress || "In Progress"}</SelectItem>
+                    <SelectItem value="on_hold">{labels.stateLabels.on_hold || "On Hold"}</SelectItem>
+                    <SelectItem value="blocked">{labels.stateLabels.blocked || "Blocked"}</SelectItem>
+                    <SelectItem value="live">{labels.stateLabels.live || "Live"}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs font-medium">Phase</Label>
+                <Select value={phaseFilter} onValueChange={setPhaseFilter}>
+                  <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Phases</SelectItem>
+                    <SelectItem value="mint">{labels.phaseLabels.mint || "MINT"}</SelectItem>
+                    <SelectItem value="integration">{labels.phaseLabels.integration || "Integration"}</SelectItem>
+                    <SelectItem value="ms">{labels.phaseLabels.ms || "Merchant Success"}</SelectItem>
+                    <SelectItem value="completed">{labels.phaseLabels.completed || "Completed"}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs font-medium">Platform</Label>
+                <Select value={platformFilter} onValueChange={setPlatformFilter}>
+                  <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Platforms</SelectItem>
+                    {uniquePlatforms.map(p => (
+                      <SelectItem key={p} value={p}>{p}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="flex items-center justify-between mt-3 pt-3 border-t">
+              {hasLocalFilters && (
+                <Button variant="ghost" size="sm" className="h-7 text-xs gap-1" onClick={clearLocalFilters}>
+                  <X className="h-3 w-3" /> Clear Filters
+                </Button>
+              )}
+              <Button size="sm" className="h-7 text-xs ml-auto" onClick={() => setFiltersOpen(false)}>Done</Button>
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
+
+        {/* Sort */}
+        <div className="flex items-center gap-1.5">
+          <Select value={sortField} onValueChange={setSortField}>
+            <SelectTrigger className="h-8 text-xs w-[140px]">
+              <ArrowUpDown className="h-3 w-3 mr-1" />
+              <SelectValue placeholder="Sort" />
+            </SelectTrigger>
+            <SelectContent>
+              {SORT_OPTIONS.map(opt => (
+                <SelectItem key={opt.key} value={opt.key}>{opt.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {sortField !== "none" && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 w-8 p-0"
+              onClick={() => setSortDirection(d => d === "asc" ? "desc" : "asc")}
+            >
+              <ArrowUpDown className={cn("h-3.5 w-3.5", sortDirection === "desc" && "rotate-180")} />
+            </Button>
+          )}
+        </div>
+
+        {/* Result count */}
+        <span className="text-xs text-muted-foreground ml-auto">
+          {sortedProjects.length} project{sortedProjects.length !== 1 ? "s" : ""}
+        </span>
       </div>
 
       <div
@@ -218,7 +407,7 @@ export const KanbanBoard = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent className="px-3 pb-3">
-                <ScrollArea className="h-[calc(100vh-220px)]">
+                <ScrollArea className="h-[calc(100vh-260px)]">
                   <div className="space-y-3 pr-2">
                     {col.projects.length === 0 ? (
                       <p className="text-xs text-muted-foreground text-center py-8">

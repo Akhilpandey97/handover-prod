@@ -2,12 +2,20 @@ import { Project, projectStateLabels, projectStateColors } from "@/data/projects
 import { useLabels } from "@/contexts/LabelsContext";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Sparkles, ListChecks } from "lucide-react";
+import { Sparkles, ListChecks, X, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 import { fetchAiInsights } from "@/utils/aiInsights";
 import { toast } from "sonner";
 import { ChecklistDialog } from "./ChecklistDialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import ReactMarkdown from "react-markdown";
 
 const phaseLabels: Record<string, string> = {
   mint: "MINT",
@@ -32,6 +40,8 @@ export const KanbanCard = ({
   const { stateLabels } = useLabels();
   const [loadingInsights, setLoadingInsights] = useState(false);
   const [checklistOpen, setChecklistOpen] = useState(false);
+  const [insightsOpen, setInsightsOpen] = useState(false);
+  const [insightsContent, setInsightsContent] = useState("");
 
   const stateLabel =
     stateLabels[project.projectState] ||
@@ -52,6 +62,8 @@ export const KanbanCard = ({
 
   const handleInsights = async () => {
     setLoadingInsights(true);
+    setInsightsOpen(true);
+    setInsightsContent("");
     try {
       const result = await fetchAiInsights({
         type: "project_insights",
@@ -63,9 +75,10 @@ export const KanbanCard = ({
           arr: project.arr,
         },
       });
-      toast.info(result, { duration: 10000 });
+      setInsightsContent(result);
     } catch (e: any) {
       toast.error(e.message || "Failed to get insights");
+      setInsightsOpen(false);
     } finally {
       setLoadingInsights(false);
     }
@@ -153,6 +166,30 @@ export const KanbanCard = ({
         open={checklistOpen}
         onOpenChange={setChecklistOpen}
       />
+
+      {/* AI Insights Dialog */}
+      <Dialog open={insightsOpen} onOpenChange={setInsightsOpen}>
+        <DialogContent className="sm:max-w-lg max-h-[80vh]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-base">
+              <Sparkles className="h-4 w-4 text-primary" />
+              AI Insights — {project.merchantName}
+            </DialogTitle>
+          </DialogHeader>
+          <ScrollArea className="max-h-[60vh] pr-2">
+            {loadingInsights ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                <span className="ml-2 text-sm text-muted-foreground">Generating insights…</span>
+              </div>
+            ) : (
+              <div className="prose prose-sm dark:prose-invert max-w-none text-sm leading-relaxed">
+                <ReactMarkdown>{insightsContent}</ReactMarkdown>
+              </div>
+            )}
+          </ScrollArea>
+        </DialogContent>
+      </Dialog>
     </>
   );
 };
