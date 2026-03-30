@@ -30,6 +30,7 @@ import {
   Zap,
 } from "lucide-react";
 import { ThemeToggle } from "./ThemeToggle";
+import { DashboardSkeleton } from "./skeletons/DashboardSkeleton";
 
 type TabType = "pending" | "active" | "all";
 
@@ -53,14 +54,7 @@ export const TeamDashboard = () => {
   if (!currentUser) return null;
 
   if (isLoading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <div className="h-12 w-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-lg text-muted-foreground">Loading your projects...</p>
-        </div>
-      </div>
-    );
+    return <DashboardSkeleton />;
   }
 
   const pendingProjects = getPendingProjects(currentUser.team);
