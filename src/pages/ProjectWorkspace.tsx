@@ -531,14 +531,7 @@ export const ProjectWorkspaceView = ({ projectId: projectIdProp, inModal = false
   const { isLoading: projectsLoading } = useProjects();
 
   if (isLoading || projectsLoading) {
-    return (
-      <div className={cn("flex items-center justify-center bg-background", inModal ? "min-h-full" : "min-h-screen")}>
-        <div className="text-center">
-          <div className="mx-auto mb-4 h-10 w-10 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-          <p className="text-sm text-muted-foreground">Loading project workspace...</p>
-        </div>
-      </div>
-    );
+    return <WorkspaceSkeleton inModal={inModal} />;
   }
 
   if (!isAuthenticated) {
