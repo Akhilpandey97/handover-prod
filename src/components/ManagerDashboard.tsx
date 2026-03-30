@@ -90,6 +90,7 @@ import { ThemeToggle } from "./ThemeToggle";
 import { toast } from "sonner";
 import { fetchAiInsights } from "@/utils/aiInsights";
 import { cn } from "@/lib/utils";
+import { DashboardSkeleton } from "./skeletons/DashboardSkeleton";
 
 // Report components
 import { ExecutiveDashboard } from "./reports/ExecutiveDashboard";

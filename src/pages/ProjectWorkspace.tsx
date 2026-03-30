@@ -36,6 +36,7 @@ import {
 } from "@/data/projectsData";
 import { fetchAiInsights } from "@/utils/aiInsights";
 import { cn } from "@/lib/utils";
+import { WorkspaceSkeleton } from "@/components/skeletons/WorkspaceSkeleton";
 import {
   ArrowLeft,
   ArrowRight,

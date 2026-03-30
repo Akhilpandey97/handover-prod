@@ -30,6 +30,7 @@ import {
   Zap,
 } from "lucide-react";
 import { ThemeToggle } from "./ThemeToggle";
+import { DashboardSkeleton } from "./skeletons/DashboardSkeleton";
 
 type TabType = "pending" | "active" | "all";
 

@@ -3,6 +3,7 @@ import { LoginScreen } from "@/components/LoginScreen";
 import { TeamDashboard } from "@/components/TeamDashboard";
 import { ManagerDashboard } from "@/components/ManagerDashboard";
 import { AiChatBot } from "@/components/AiChatBot";
+import { DashboardSkeleton } from "@/components/skeletons/DashboardSkeleton";
 
 const Index = () => {
   const { isAuthenticated, currentUser, isLoading } = useAuth();
