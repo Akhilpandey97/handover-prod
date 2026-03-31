@@ -119,6 +119,14 @@ export const ActivityLog = () => {
             Refresh
           </Button>
         </div>
+        <Tabs value={sourceFilter} onValueChange={v => setSourceFilter(v as any)} className="mt-3">
+          <TabsList className="h-8">
+            <TabsTrigger value="all" className="text-xs h-7 px-3">All</TabsTrigger>
+            <TabsTrigger value="user" className="text-xs h-7 px-3 gap-1"><UserCheck className="h-3 w-3" />User</TabsTrigger>
+            <TabsTrigger value="system" className="text-xs h-7 px-3 gap-1"><Settings2 className="h-3 w-3" />System</TabsTrigger>
+            <TabsTrigger value="ai" className="text-xs h-7 px-3 gap-1"><Bot className="h-3 w-3" />AI</TabsTrigger>
+          </TabsList>
+        </Tabs>
         <div className="flex gap-2 mt-3">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />

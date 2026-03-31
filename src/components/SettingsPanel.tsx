@@ -472,6 +472,16 @@ export const SettingsPanel = ({ activeSubTab }: SettingsPanelProps) => {
           </Card>
         </TabsContent>
 
+        {/* Workflows Tab */}
+        <TabsContent value="workflows">
+          <WorkflowManager />
+        </TabsContent>
+
+        {/* Activity Log Tab */}
+        <TabsContent value="activity-log">
+          <ActivityLog />
+        </TabsContent>
+
         {/* Secrets Tab */}
         <TabsContent value="secrets">
           <SecretsManager />
