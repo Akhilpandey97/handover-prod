@@ -170,9 +170,12 @@ export const KanbanBoard = ({ filteredProjects }: KanbanBoardProps) => {
       const matchesState = stateFilter === "all" || p.projectState === stateFilter;
       const matchesPhase = phaseFilter === "all" || p.currentPhase === phaseFilter;
       const matchesPlatform = platformFilter === "all" || p.platform === platformFilter;
-      return matchesSearch && matchesState && matchesPhase && matchesPlatform;
+      const matchesOwner = ownerFilter === "all" || p.assignedOwnerName === ownerFilter;
+      const matchesResponsibility = responsibilityFilter === "all" || p.currentResponsibility === responsibilityFilter;
+      const matchesCategory = categoryFilter === "all" || p.category === categoryFilter;
+      return matchesSearch && matchesState && matchesPhase && matchesPlatform && matchesOwner && matchesResponsibility && matchesCategory;
     });
-  }, [projects, searchQuery, stateFilter, phaseFilter, platformFilter]);
+  }, [projects, searchQuery, stateFilter, phaseFilter, platformFilter, ownerFilter, responsibilityFilter, categoryFilter]);
 
   // Apply sort
   const sortedProjects = useMemo(() => sortProjects(localFiltered, sortField, sortDirection), [localFiltered, sortField, sortDirection]);
