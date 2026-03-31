@@ -130,6 +130,9 @@ export const KanbanBoard = ({ filteredProjects }: KanbanBoardProps) => {
   const [stateFilter, setStateFilter] = useState("all");
   const [phaseFilter, setPhaseFilter] = useState("all");
   const [platformFilter, setPlatformFilter] = useState("all");
+  const [ownerFilter, setOwnerFilter] = useState("all");
+  const [responsibilityFilter, setResponsibilityFilter] = useState("all");
+  const [categoryFilter, setCategoryFilter] = useState("all");
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [sortField, setSortField] = useState("none");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
@@ -146,6 +149,18 @@ export const KanbanBoard = ({ filteredProjects }: KanbanBoardProps) => {
     return Array.from(vals).sort();
   }, [projects]);
 
+  const uniqueOwners = useMemo(() => {
+    const vals = new Set<string>();
+    projects.forEach(p => { if (p.assignedOwnerName) vals.add(p.assignedOwnerName); });
+    return Array.from(vals).sort();
+  }, [projects]);
+
+  const uniqueCategories = useMemo(() => {
+    const vals = new Set<string>();
+    projects.forEach(p => { if (p.category) vals.add(p.category); });
+    return Array.from(vals).sort();
+  }, [projects]);
+
   // Apply local filters
   const localFiltered = useMemo(() => {
     return projects.filter(p => {
@@ -155,9 +170,12 @@ export const KanbanBoard = ({ filteredProjects }: KanbanBoardProps) => {
       const matchesState = stateFilter === "all" || p.projectState === stateFilter;
       const matchesPhase = phaseFilter === "all" || p.currentPhase === phaseFilter;
       const matchesPlatform = platformFilter === "all" || p.platform === platformFilter;
-      return matchesSearch && matchesState && matchesPhase && matchesPlatform;
+      const matchesOwner = ownerFilter === "all" || p.assignedOwnerName === ownerFilter;
+      const matchesResponsibility = responsibilityFilter === "all" || p.currentResponsibility === responsibilityFilter;
+      const matchesCategory = categoryFilter === "all" || p.category === categoryFilter;
+      return matchesSearch && matchesState && matchesPhase && matchesPlatform && matchesOwner && matchesResponsibility && matchesCategory;
     });
-  }, [projects, searchQuery, stateFilter, phaseFilter, platformFilter]);
+  }, [projects, searchQuery, stateFilter, phaseFilter, platformFilter, ownerFilter, responsibilityFilter, categoryFilter]);
 
   // Apply sort
   const sortedProjects = useMemo(() => sortProjects(localFiltered, sortField, sortDirection), [localFiltered, sortField, sortDirection]);
@@ -191,14 +209,19 @@ export const KanbanBoard = ({ filteredProjects }: KanbanBoardProps) => {
   const customOptions = allFieldOptions.filter(o => o.key.startsWith("custom_field_"));
   const supportsDragMove = ["projectState", "currentPhase", "currentOwnerTeam", "platform", "category", "currentResponsibility"].includes(groupField);
 
-  const hasLocalFilters = searchQuery || stateFilter !== "all" || phaseFilter !== "all" || platformFilter !== "all";
+  const hasLocalFilters = searchQuery || stateFilter !== "all" || phaseFilter !== "all" || platformFilter !== "all" || ownerFilter !== "all" || responsibilityFilter !== "all" || categoryFilter !== "all";
 
   const clearLocalFilters = () => {
     setSearchQuery("");
     setStateFilter("all");
     setPhaseFilter("all");
     setPlatformFilter("all");
+    setOwnerFilter("all");
+    setResponsibilityFilter("all");
+    setCategoryFilter("all");
   };
+  
+  const activeFilterCount = [stateFilter !== "all", phaseFilter !== "all", platformFilter !== "all", ownerFilter !== "all", responsibilityFilter !== "all", categoryFilter !== "all"].filter(Boolean).length;
 
   const handleProjectDrop = (projectId: string, targetValue: string) => {
     const project = allProjects.find((item) => item.id === projectId);
@@ -282,13 +305,13 @@ export const KanbanBoard = ({ filteredProjects }: KanbanBoardProps) => {
               Filters
               {hasLocalFilters && (
                 <Badge variant="default" className="ml-1 h-4 px-1 text-[10px]">
-                  {[stateFilter !== "all", phaseFilter !== "all", platformFilter !== "all"].filter(Boolean).length}
+                  {activeFilterCount}
                 </Badge>
               )}
               <ChevronDown className={cn("h-3 w-3 transition-transform", filtersOpen && "rotate-180")} />
             </Button>
           </CollapsibleTrigger>
-          <CollapsibleContent className="absolute z-20 mt-1 bg-card border rounded-lg shadow-lg p-4 w-[480px]">
+          <CollapsibleContent className="absolute z-20 mt-1 bg-card border rounded-lg shadow-lg p-4 w-[640px]">
             <div className="grid grid-cols-3 gap-3">
               <div className="space-y-1.5">
                 <Label className="text-xs font-medium">State</Label>
@@ -325,6 +348,42 @@ export const KanbanBoard = ({ filteredProjects }: KanbanBoardProps) => {
                     <SelectItem value="all">All Platforms</SelectItem>
                     {uniquePlatforms.map(p => (
                       <SelectItem key={p} value={p}>{p}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs font-medium">Owner</Label>
+                <Select value={ownerFilter} onValueChange={setOwnerFilter}>
+                  <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Owners</SelectItem>
+                    {uniqueOwners.map(o => (
+                      <SelectItem key={o} value={o}>{o}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs font-medium">Responsibility</Label>
+                <Select value={responsibilityFilter} onValueChange={setResponsibilityFilter}>
+                  <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All</SelectItem>
+                    <SelectItem value="gokwik">{labels.responsibilityLabels?.gokwik || "Internal"}</SelectItem>
+                    <SelectItem value="merchant">{labels.responsibilityLabels?.merchant || "Merchant"}</SelectItem>
+                    <SelectItem value="neutral">{labels.responsibilityLabels?.neutral || "Neutral"}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs font-medium">Category</Label>
+                <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                  <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Categories</SelectItem>
+                    {uniqueCategories.map(c => (
+                      <SelectItem key={c} value={c}>{c}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -440,6 +499,8 @@ export const KanbanBoard = ({ filteredProjects }: KanbanBoardProps) => {
               projectId={selectedProjectId}
               inModal
               onClose={() => setSelectedProjectId(null)}
+              projectIds={sortedProjects.map(p => p.id)}
+              onNavigate={setSelectedProjectId}
             />
           </div>
         </div>

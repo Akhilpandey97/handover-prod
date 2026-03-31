@@ -7,12 +7,14 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Save, RotateCcw, Settings, Palette, Tags, Layers, Mail, FileText, KeyRound } from "lucide-react";
+import { Save, RotateCcw, Settings, Palette, Tags, Layers, Mail, FileText, KeyRound, Workflow, Activity } from "lucide-react";
 import { LogoUpload } from "./LogoUpload";
 import { CustomFieldsManager } from "./settings/CustomFieldsManager";
 import { ChecklistFormsManager } from "./settings/ChecklistFormsManager";
 import { ThemePresets } from "./settings/ThemePresets";
 import { SecretsManager } from "./settings/SecretsManager";
+import { WorkflowManager } from "./settings/WorkflowManager";
+import { ActivityLog } from "./settings/ActivityLog";
 
 interface LabelGroup {
   title: string;
@@ -372,6 +374,12 @@ export const SettingsPanel = ({ activeSubTab }: SettingsPanelProps) => {
             <TabsTrigger value="email" className="gap-1.5">
               <Mail className="h-3.5 w-3.5" />Email
             </TabsTrigger>
+            <TabsTrigger value="workflows" className="gap-1.5">
+              <Workflow className="h-3.5 w-3.5" />Workflows
+            </TabsTrigger>
+            <TabsTrigger value="activity-log" className="gap-1.5">
+              <Activity className="h-3.5 w-3.5" />Activity Log
+            </TabsTrigger>
             <TabsTrigger value="secrets" className="gap-1.5">
               <KeyRound className="h-3.5 w-3.5" />Secrets
             </TabsTrigger>
@@ -462,6 +470,16 @@ export const SettingsPanel = ({ activeSubTab }: SettingsPanelProps) => {
             </CardHeader>
             <CardContent>{renderLabelGroups(EMAIL_GROUPS)}</CardContent>
           </Card>
+        </TabsContent>
+
+        {/* Workflows Tab */}
+        <TabsContent value="workflows">
+          <WorkflowManager />
+        </TabsContent>
+
+        {/* Activity Log Tab */}
+        <TabsContent value="activity-log">
+          <ActivityLog />
         </TabsContent>
 
         {/* Secrets Tab */}

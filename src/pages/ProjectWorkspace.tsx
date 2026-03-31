@@ -70,6 +70,8 @@ interface ProjectWorkspaceProps {
   projectId?: string;
   inModal?: boolean;
   onClose?: () => void;
+  projectIds?: string[];
+  onNavigate?: (id: string) => void;
 }
 
 interface ActivityEntry {
@@ -469,7 +471,7 @@ const buildActionDrivenSummary = (
   return cards;
 };
 
-export const ProjectWorkspaceView = ({ projectId: projectIdProp, inModal = false, onClose }: ProjectWorkspaceProps) => {
+export const ProjectWorkspaceView = ({ projectId: projectIdProp, inModal = false, onClose, projectIds, onNavigate }: ProjectWorkspaceProps) => {
   const { projectId: routeProjectId } = useParams();
   const projectId = projectIdProp || routeProjectId;
   const { isAuthenticated, isLoading, currentUser } = useAuth();
@@ -712,6 +714,35 @@ export const ProjectWorkspaceView = ({ projectId: projectIdProp, inModal = false
           </div>
 
           <div className="flex items-center gap-1.5 shrink-0">
+            {/* Prev/Next navigation */}
+            {inModal && projectIds && projectIds.length > 1 && onNavigate && (() => {
+              const currentIndex = projectIds.indexOf(project.id);
+              const hasPrev = currentIndex > 0;
+              const hasNext = currentIndex < projectIds.length - 1;
+              return (
+                <div className="flex items-center gap-1 mr-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-7 w-7 p-0"
+                    disabled={!hasPrev}
+                    onClick={() => hasPrev && onNavigate(projectIds[currentIndex - 1])}
+                  >
+                    <ArrowLeft className="h-3.5 w-3.5" />
+                  </Button>
+                  <span className="text-[10px] text-muted-foreground px-1 tabular-nums">{currentIndex + 1}/{projectIds.length}</span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-7 w-7 p-0"
+                    disabled={!hasNext}
+                    onClick={() => hasNext && onNavigate(projectIds[currentIndex + 1])}
+                  >
+                    <ArrowRight className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              );
+            })()}
             {inModal ? (
               <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={onClose}>
                 <X className="h-4 w-4" />

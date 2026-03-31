@@ -1,12 +1,13 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { RefreshCw, Search, Activity, UserCheck, Settings2, Workflow, FileEdit, Trash2 } from "lucide-react";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { RefreshCw, Search, Activity, UserCheck, Settings2, Workflow, FileEdit, Trash2, Bot, CheckCircle2, XCircle, Globe } from "lucide-react";
 import { format } from "date-fns";
 
 interface ActivityLogEntry {
@@ -60,6 +61,7 @@ export const ActivityLog = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [entityFilter, setEntityFilter] = useState("all");
+  const [sourceFilter, setSourceFilter] = useState<"all" | "user" | "system" | "ai">("all");
 
   const fetchLogs = async () => {
     setIsLoading(true);
@@ -76,13 +78,21 @@ export const ActivityLog = () => {
 
   useEffect(() => { fetchLogs(); }, []);
 
+  const getSource = (log: ActivityLogEntry): "user" | "system" | "ai" => {
+    if (log.action.startsWith("workflow_")) return "system";
+    if (log.user_name === "AI" || log.user_name === "System" || !log.user_name) return "system";
+    if (log.action === "ai_chat" || log.entity_type === "ai") return "ai";
+    return "user";
+  };
+
   const filtered = logs.filter(log => {
     const matchesSearch = !search ||
       log.action.toLowerCase().includes(search.toLowerCase()) ||
       (log.entity_name || "").toLowerCase().includes(search.toLowerCase()) ||
       (log.user_name || "").toLowerCase().includes(search.toLowerCase());
     const matchesEntity = entityFilter === "all" || log.entity_type === entityFilter;
-    return matchesSearch && matchesEntity;
+    const matchesSource = sourceFilter === "all" || getSource(log) === sourceFilter;
+    return matchesSearch && matchesEntity && matchesSource;
   });
 
   const entityTypes = [...new Set(logs.map(l => l.entity_type))];
@@ -98,7 +108,10 @@ export const ActivityLog = () => {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Activity className="h-5 w-5 text-primary" />
-            <CardTitle className="text-lg">Activity Log</CardTitle>
+            <div>
+              <CardTitle className="text-lg">Activity Log</CardTitle>
+              <CardDescription className="text-xs mt-0.5">All system, user, and AI actions across your workspace</CardDescription>
+            </div>
             <Badge variant="secondary" className="text-xs">{filtered.length} entries</Badge>
           </div>
           <Button variant="outline" size="sm" onClick={fetchLogs} disabled={isLoading}>
@@ -106,6 +119,14 @@ export const ActivityLog = () => {
             Refresh
           </Button>
         </div>
+        <Tabs value={sourceFilter} onValueChange={v => setSourceFilter(v as any)} className="mt-3">
+          <TabsList className="h-8">
+            <TabsTrigger value="all" className="text-xs h-7 px-3">All</TabsTrigger>
+            <TabsTrigger value="user" className="text-xs h-7 px-3 gap-1"><UserCheck className="h-3 w-3" />User</TabsTrigger>
+            <TabsTrigger value="system" className="text-xs h-7 px-3 gap-1"><Settings2 className="h-3 w-3" />System</TabsTrigger>
+            <TabsTrigger value="ai" className="text-xs h-7 px-3 gap-1"><Bot className="h-3 w-3" />AI</TabsTrigger>
+          </TabsList>
+        </Tabs>
         <div className="flex gap-2 mt-3">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
