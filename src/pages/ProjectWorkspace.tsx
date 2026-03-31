@@ -471,7 +471,7 @@ const buildActionDrivenSummary = (
   return cards;
 };
 
-export const ProjectWorkspaceView = ({ projectId: projectIdProp, inModal = false, onClose }: ProjectWorkspaceProps) => {
+export const ProjectWorkspaceView = ({ projectId: projectIdProp, inModal = false, onClose, projectIds, onNavigate }: ProjectWorkspaceProps) => {
   const { projectId: routeProjectId } = useParams();
   const projectId = projectIdProp || routeProjectId;
   const { isAuthenticated, isLoading, currentUser } = useAuth();
