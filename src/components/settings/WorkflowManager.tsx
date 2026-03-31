@@ -128,15 +128,15 @@ export const WorkflowManager = () => {
       trigger_field: form.trigger_field,
       trigger_value: form.trigger_value.trim() || null,
       action_type: form.action_type,
-      action_config: parsedConfig,
+      action_config: parsedConfig as any,
       is_active: form.is_active,
     };
 
     if (editingId) {
-      const { error } = await supabase.from("chat_workflows").update(payload).eq("id", editingId);
+      const { error } = await supabase.from("chat_workflows").update(payload as any).eq("id", editingId);
       if (error) { toast.error("Failed to update workflow"); } else { toast.success("Workflow updated"); }
     } else {
-      const { error } = await supabase.from("chat_workflows").insert(payload);
+      const { error } = await supabase.from("chat_workflows").insert(payload as any);
       if (error) { toast.error("Failed to create workflow"); } else { toast.success("Workflow created"); }
     }
     setSaving(false);

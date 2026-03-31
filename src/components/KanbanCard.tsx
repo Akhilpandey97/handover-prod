@@ -2,7 +2,8 @@ import { Project, projectStateLabels, projectStateColors } from "@/data/projects
 import { useLabels } from "@/contexts/LabelsContext";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Sparkles, ListChecks, X, Loader2 } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
+import { Sparkles, ListChecks, Loader2, User, Calendar, Globe } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 import { fetchAiInsights } from "@/utils/aiInsights";
@@ -59,6 +60,7 @@ export const KanbanCard = ({
 
   const completedChecklist = project.checklist.filter(c => c.completed).length;
   const totalChecklist = project.checklist.length;
+  const checklistPercent = totalChecklist > 0 ? Math.round((completedChecklist / totalChecklist) * 100) : 0;
 
   const handleInsights = async () => {
     setLoadingInsights(true);
@@ -91,7 +93,7 @@ export const KanbanCard = ({
         tabIndex={0}
         draggable={draggable}
         className={cn(
-          "w-full rounded-md border bg-card p-3 space-y-2 shadow-sm text-xs text-left transition hover:border-primary/40 hover:shadow-md cursor-pointer",
+          "w-full rounded-lg border bg-card p-3.5 space-y-2.5 shadow-sm text-xs text-left transition hover:border-primary/40 hover:shadow-md cursor-pointer",
           draggable && "cursor-grab active:cursor-grabbing"
         )}
         onClick={() => onOpenWorkspace(project.id)}
@@ -109,16 +111,21 @@ export const KanbanCard = ({
           }
         }}
       >
-        <button
-          className="font-semibold text-sm truncate text-left w-full hover:text-primary hover:underline cursor-pointer transition-colors"
-          onClick={(event) => {
-            event.stopPropagation();
-            onOpenWorkspace(project.id);
-          }}
-        >
-          {project.merchantName}
-        </button>
+        {/* Header: name + MID */}
+        <div>
+          <button
+            className="font-semibold text-sm truncate text-left w-full hover:text-primary hover:underline cursor-pointer transition-colors"
+            onClick={(event) => {
+              event.stopPropagation();
+              onOpenWorkspace(project.id);
+            }}
+          >
+            {project.merchantName}
+          </button>
+          <p className="text-[10px] text-muted-foreground mt-0.5 truncate">MID: {project.mid}</p>
+        </div>
 
+        {/* Status badges */}
         <div className="flex items-center gap-1.5 flex-wrap">
           <Badge className={cn("text-[10px] px-1.5 py-0", projectStateColors[project.projectState])}>
             {stateLabel}
@@ -126,13 +133,47 @@ export const KanbanCard = ({
           <Badge variant="outline" className="text-[10px] px-1.5 py-0">
             {phaseLabel}
           </Badge>
+          {project.platform && project.platform !== "Custom" && (
+            <Badge variant="outline" className="text-[10px] px-1.5 py-0 gap-0.5">
+              <Globe className="h-2.5 w-2.5" />
+              {project.platform}
+            </Badge>
+          )}
         </div>
 
-        <div className="text-muted-foreground">
-          ARR: <span className="font-medium text-foreground">{arrDisplay}</span>
+        {/* Key metrics row */}
+        <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-[11px]">
+          <div className="text-muted-foreground">
+            ARR: <span className="font-semibold text-foreground">{arrDisplay}</span>
+          </div>
+          {project.assignedOwnerName && (
+            <div className="text-muted-foreground flex items-center gap-1 truncate">
+              <User className="h-2.5 w-2.5 shrink-0" />
+              <span className="font-medium text-foreground truncate">{project.assignedOwnerName}</span>
+            </div>
+          )}
+          {project.dates.expectedGoLiveDate && (
+            <div className="text-muted-foreground flex items-center gap-1">
+              <Calendar className="h-2.5 w-2.5 shrink-0" />
+              <span className="font-medium text-foreground">{project.dates.expectedGoLiveDate}</span>
+            </div>
+          )}
+          {project.category && (
+            <div className="text-muted-foreground truncate">{project.category}</div>
+          )}
         </div>
 
-        <div className="flex items-center gap-1.5">
+        {/* Checklist progress */}
+        <div className="space-y-1">
+          <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+            <span>Checklist {completedChecklist}/{totalChecklist}</span>
+            <span>{checklistPercent}%</span>
+          </div>
+          <Progress value={checklistPercent} className="h-1.5" />
+        </div>
+
+        {/* Actions */}
+        <div className="flex items-center gap-1.5 pt-0.5">
           <Button
             variant="ghost"
             size="sm"

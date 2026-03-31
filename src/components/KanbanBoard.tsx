@@ -440,6 +440,8 @@ export const KanbanBoard = ({ filteredProjects }: KanbanBoardProps) => {
               projectId={selectedProjectId}
               inModal
               onClose={() => setSelectedProjectId(null)}
+              projectIds={sortedProjects.map(p => p.id)}
+              onNavigate={setSelectedProjectId}
             />
           </div>
         </div>
