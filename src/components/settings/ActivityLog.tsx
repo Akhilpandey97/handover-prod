@@ -61,6 +61,7 @@ export const ActivityLog = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [entityFilter, setEntityFilter] = useState("all");
+  const [sourceFilter, setSourceFilter] = useState<"all" | "user" | "system" | "ai">("all");
 
   const fetchLogs = async () => {
     setIsLoading(true);
