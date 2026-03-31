@@ -108,7 +108,10 @@ export const ActivityLog = () => {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Activity className="h-5 w-5 text-primary" />
-            <CardTitle className="text-lg">Activity Log</CardTitle>
+            <div>
+              <CardTitle className="text-lg">Activity Log</CardTitle>
+              <CardDescription className="text-xs mt-0.5">All system, user, and AI actions across your workspace</CardDescription>
+            </div>
             <Badge variant="secondary" className="text-xs">{filtered.length} entries</Badge>
           </div>
           <Button variant="outline" size="sm" onClick={fetchLogs} disabled={isLoading}>
