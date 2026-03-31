@@ -149,6 +149,18 @@ export const KanbanBoard = ({ filteredProjects }: KanbanBoardProps) => {
     return Array.from(vals).sort();
   }, [projects]);
 
+  const uniqueOwners = useMemo(() => {
+    const vals = new Set<string>();
+    projects.forEach(p => { if (p.assignedOwnerName) vals.add(p.assignedOwnerName); });
+    return Array.from(vals).sort();
+  }, [projects]);
+
+  const uniqueCategories = useMemo(() => {
+    const vals = new Set<string>();
+    projects.forEach(p => { if (p.category) vals.add(p.category); });
+    return Array.from(vals).sort();
+  }, [projects]);
+
   // Apply local filters
   const localFiltered = useMemo(() => {
     return projects.filter(p => {
