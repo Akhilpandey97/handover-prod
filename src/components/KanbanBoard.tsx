@@ -305,7 +305,7 @@ export const KanbanBoard = ({ filteredProjects }: KanbanBoardProps) => {
               Filters
               {hasLocalFilters && (
                 <Badge variant="default" className="ml-1 h-4 px-1 text-[10px]">
-                  {[stateFilter !== "all", phaseFilter !== "all", platformFilter !== "all"].filter(Boolean).length}
+                  {activeFilterCount}
                 </Badge>
               )}
               <ChevronDown className={cn("h-3 w-3 transition-transform", filtersOpen && "rotate-180")} />
