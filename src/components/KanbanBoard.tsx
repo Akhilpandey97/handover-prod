@@ -311,7 +311,7 @@ export const KanbanBoard = ({ filteredProjects }: KanbanBoardProps) => {
               <ChevronDown className={cn("h-3 w-3 transition-transform", filtersOpen && "rotate-180")} />
             </Button>
           </CollapsibleTrigger>
-          <CollapsibleContent className="absolute z-20 mt-1 bg-card border rounded-lg shadow-lg p-4 w-[480px]">
+          <CollapsibleContent className="absolute z-20 mt-1 bg-card border rounded-lg shadow-lg p-4 w-[640px]">
             <div className="grid grid-cols-3 gap-3">
               <div className="space-y-1.5">
                 <Label className="text-xs font-medium">State</Label>
@@ -348,6 +348,42 @@ export const KanbanBoard = ({ filteredProjects }: KanbanBoardProps) => {
                     <SelectItem value="all">All Platforms</SelectItem>
                     {uniquePlatforms.map(p => (
                       <SelectItem key={p} value={p}>{p}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs font-medium">Owner</Label>
+                <Select value={ownerFilter} onValueChange={setOwnerFilter}>
+                  <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Owners</SelectItem>
+                    {uniqueOwners.map(o => (
+                      <SelectItem key={o} value={o}>{o}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs font-medium">Responsibility</Label>
+                <Select value={responsibilityFilter} onValueChange={setResponsibilityFilter}>
+                  <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All</SelectItem>
+                    <SelectItem value="gokwik">{labels.responsibilityLabels?.gokwik || "Internal"}</SelectItem>
+                    <SelectItem value="merchant">{labels.responsibilityLabels?.merchant || "Merchant"}</SelectItem>
+                    <SelectItem value="neutral">{labels.responsibilityLabels?.neutral || "Neutral"}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs font-medium">Category</Label>
+                <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                  <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Categories</SelectItem>
+                    {uniqueCategories.map(c => (
+                      <SelectItem key={c} value={c}>{c}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
