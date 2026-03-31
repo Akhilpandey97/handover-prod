@@ -78,13 +78,21 @@ export const ActivityLog = () => {
 
   useEffect(() => { fetchLogs(); }, []);
 
+  const getSource = (log: ActivityLogEntry): "user" | "system" | "ai" => {
+    if (log.action.startsWith("workflow_")) return "system";
+    if (log.user_name === "AI" || log.user_name === "System" || !log.user_name) return "system";
+    if (log.action === "ai_chat" || log.entity_type === "ai") return "ai";
+    return "user";
+  };
+
   const filtered = logs.filter(log => {
     const matchesSearch = !search ||
       log.action.toLowerCase().includes(search.toLowerCase()) ||
       (log.entity_name || "").toLowerCase().includes(search.toLowerCase()) ||
       (log.user_name || "").toLowerCase().includes(search.toLowerCase());
     const matchesEntity = entityFilter === "all" || log.entity_type === entityFilter;
-    return matchesSearch && matchesEntity;
+    const matchesSource = sourceFilter === "all" || getSource(log) === sourceFilter;
+    return matchesSearch && matchesEntity && matchesSource;
   });
 
   const entityTypes = [...new Set(logs.map(l => l.entity_type))];
