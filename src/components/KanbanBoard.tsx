@@ -209,14 +209,19 @@ export const KanbanBoard = ({ filteredProjects }: KanbanBoardProps) => {
   const customOptions = allFieldOptions.filter(o => o.key.startsWith("custom_field_"));
   const supportsDragMove = ["projectState", "currentPhase", "currentOwnerTeam", "platform", "category", "currentResponsibility"].includes(groupField);
 
-  const hasLocalFilters = searchQuery || stateFilter !== "all" || phaseFilter !== "all" || platformFilter !== "all";
+  const hasLocalFilters = searchQuery || stateFilter !== "all" || phaseFilter !== "all" || platformFilter !== "all" || ownerFilter !== "all" || responsibilityFilter !== "all" || categoryFilter !== "all";
 
   const clearLocalFilters = () => {
     setSearchQuery("");
     setStateFilter("all");
     setPhaseFilter("all");
     setPlatformFilter("all");
+    setOwnerFilter("all");
+    setResponsibilityFilter("all");
+    setCategoryFilter("all");
   };
+  
+  const activeFilterCount = [stateFilter !== "all", phaseFilter !== "all", platformFilter !== "all", ownerFilter !== "all", responsibilityFilter !== "all", categoryFilter !== "all"].filter(Boolean).length;
 
   const handleProjectDrop = (projectId: string, targetValue: string) => {
     const project = allProjects.find((item) => item.id === projectId);
