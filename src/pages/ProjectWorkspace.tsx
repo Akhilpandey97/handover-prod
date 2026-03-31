@@ -70,6 +70,8 @@ interface ProjectWorkspaceProps {
   projectId?: string;
   inModal?: boolean;
   onClose?: () => void;
+  projectIds?: string[];
+  onNavigate?: (id: string) => void;
 }
 
 interface ActivityEntry {
