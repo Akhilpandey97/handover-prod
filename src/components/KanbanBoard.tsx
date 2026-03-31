@@ -130,6 +130,9 @@ export const KanbanBoard = ({ filteredProjects }: KanbanBoardProps) => {
   const [stateFilter, setStateFilter] = useState("all");
   const [phaseFilter, setPhaseFilter] = useState("all");
   const [platformFilter, setPlatformFilter] = useState("all");
+  const [ownerFilter, setOwnerFilter] = useState("all");
+  const [responsibilityFilter, setResponsibilityFilter] = useState("all");
+  const [categoryFilter, setCategoryFilter] = useState("all");
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [sortField, setSortField] = useState("none");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
