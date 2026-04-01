@@ -173,7 +173,35 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
           border: `1px solid ${projectStripOuterBorder}`,
         }}
       >
-        <div className="flex items-center gap-1.5 px-1.5 py-1">
+        <div className="flex flex-col gap-0 px-1.5 py-1">
+          {/* Team checklist progress bar */}
+          {(() => {
+            const teams = ["mint", "integration", "ms"] as const;
+            const teamColors = ["hsl(var(--primary))", "hsl(217 91% 60%)", "hsl(142 71% 45%)"];
+            const segments = teams.map((t, i) => {
+              const items = project.checklist.filter(c => c.ownerTeam === t);
+              const done = items.filter(c => c.completed).length;
+              return { total: items.length, done, color: teamColors[i] };
+            });
+            const totalItems = segments.reduce((s, seg) => s + seg.total, 0);
+            if (totalItems === 0) return null;
+            return (
+              <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted/60 flex">
+                {segments.map((seg, i) => {
+                  const widthPct = (seg.total / totalItems) * 100;
+                  const fillPct = seg.total > 0 ? (seg.done / seg.total) * 100 : 0;
+                  return (
+                    <div key={i} className="relative h-full" style={{ width: `${widthPct}%` }}>
+                      <div
+                        className="absolute inset-y-0 left-0 rounded-full transition-all"
+                        style={{ width: `${fillPct}%`, backgroundColor: seg.color, opacity: 0.85 }}
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })()}
           <Link
             to={`/projects/${project.id}`}
             target="_blank"

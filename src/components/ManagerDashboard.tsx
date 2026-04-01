@@ -12,6 +12,7 @@ import { ProjectCalendar } from "./ProjectCalendar";
 import { ParsedEmailsTab } from "./ParsedEmailsTab";
 import { KanbanBoard } from "./KanbanBoard";
 import { ActivityLog } from "./settings/ActivityLog";
+import { WorkflowManager } from "./settings/WorkflowManager";
 import { CSVUploadDialog } from "./CSVUploadDialog";
 import { AddProjectDialog } from "./AddProjectDialog";
 import { AssignOwnerDialog } from "./AssignOwnerDialog";
@@ -585,6 +586,7 @@ export const ManagerDashboard = () => {
   const SETTINGS_SUB_CONFIG: Record<string, { label: string }> = {
     general: { label: "General" },
     workflow: { label: "Workflow Rules" },
+    workflows: { label: "Workflow Management" },
     "activity-log": { label: "Activity Log" },
     fields: { label: "Field Labels" },
     "custom-fields": { label: "Custom Fields" },
@@ -598,7 +600,7 @@ export const ManagerDashboard = () => {
   };
 
   const SETTINGS_GROUPS: Array<{ label: string; items: string[] }> = [
-    { label: "General", items: ["general", "workflow", "activity-log"] },
+    { label: "General", items: ["general", "workflow", "workflows", "activity-log"] },
     { label: "Data & Forms", items: ["fields", "custom-fields", "checklist", "checklist-forms"] },
     { label: "Communication", items: ["email", "emails"] },
     { label: "Administration", items: ["colours", "navigation", "users"] },
@@ -2139,6 +2141,8 @@ export const ManagerDashboard = () => {
               <ParsedEmailsTab />
             ) : settingsSubTab === "activity-log" ? (
               <ActivityLog />
+            ) : settingsSubTab === "workflows" ? (
+              <WorkflowManager />
             ) : (
               <SettingsPanel activeSubTab={settingsSubTab} />
             )}
