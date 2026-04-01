@@ -585,6 +585,7 @@ export const ManagerDashboard = () => {
   const SETTINGS_SUB_CONFIG: Record<string, { label: string }> = {
     general: { label: "General" },
     workflow: { label: "Workflow Rules" },
+    workflows: { label: "Workflow Management" },
     "activity-log": { label: "Activity Log" },
     fields: { label: "Field Labels" },
     "custom-fields": { label: "Custom Fields" },
