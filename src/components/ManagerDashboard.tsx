@@ -2140,6 +2140,8 @@ export const ManagerDashboard = () => {
               <ParsedEmailsTab />
             ) : settingsSubTab === "activity-log" ? (
               <ActivityLog />
+            ) : settingsSubTab === "workflows" ? (
+              <WorkflowManager />
             ) : (
               <SettingsPanel activeSubTab={settingsSubTab} />
             )}
