@@ -710,6 +710,35 @@ export const ProjectWorkspaceView = ({ projectId: projectIdProp, inModal = false
             <ChevronRight className="h-3 w-3 text-muted-foreground shrink-0" />
             <div className="flex items-center gap-2 min-w-0">
               <h1 className="text-[2.05rem] font-semibold tracking-tight text-foreground truncate">{project.merchantName}</h1>
+              {/* Prev/Next navigation inline */}
+              {inModal && projectIds && projectIds.length > 1 && onNavigate && (() => {
+                const currentIndex = projectIds.indexOf(project.id);
+                const hasPrev = currentIndex > 0;
+                const hasNext = currentIndex < projectIds.length - 1;
+                return (
+                  <div className="flex items-center gap-1 ml-2 shrink-0">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-7 w-7 p-0"
+                      disabled={!hasPrev}
+                      onClick={() => hasPrev && onNavigate(projectIds[currentIndex - 1])}
+                    >
+                      <ArrowLeft className="h-3.5 w-3.5" />
+                    </Button>
+                    <span className="text-[10px] text-muted-foreground px-1 tabular-nums">{currentIndex + 1}/{projectIds.length}</span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-7 w-7 p-0"
+                      disabled={!hasNext}
+                      onClick={() => hasNext && onNavigate(projectIds[currentIndex + 1])}
+                    >
+                      <ArrowRight className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                );
+              })()}
             </div>
           </div>
 
