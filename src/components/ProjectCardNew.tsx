@@ -174,45 +174,50 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
         }}
       >
         <div className="flex flex-col gap-0 px-1.5 py-1">
-          {/* Team checklist progress bar */}
-          {(() => {
-            const teams = ["mint", "integration", "ms"] as const;
-            const teamColors = ["hsl(var(--primary))", "hsl(217 91% 60%)", "hsl(142 71% 45%)"];
-            const segments = teams.map((t, i) => {
-              const items = project.checklist.filter(c => c.ownerTeam === t);
-              const done = items.filter(c => c.completed).length;
-              return { total: items.length, done, color: teamColors[i] };
-            });
-            const totalItems = segments.reduce((s, seg) => s + seg.total, 0);
-            if (totalItems === 0) return null;
-            return (
-              <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted/60 flex">
-                {segments.map((seg, i) => {
-                  const widthPct = (seg.total / totalItems) * 100;
-                  const fillPct = seg.total > 0 ? (seg.done / seg.total) * 100 : 0;
-                  return (
-                    <div key={i} className="relative h-full" style={{ width: `${widthPct}%` }}>
-                      <div
-                        className="absolute inset-y-0 left-0 rounded-full transition-all"
-                        style={{ width: `${fillPct}%`, backgroundColor: seg.color, opacity: 0.85 }}
-                      />
-                    </div>
-                  );
-                })}
-              </div>
-            );
-          })()}
+          {/* Project strip with integrated progress fill */}
           <Link
             to={`/projects/${project.id}`}
             target="_blank"
             rel="noreferrer"
-            className="flex min-w-0 flex-1 items-center gap-1.5 rounded-md px-2 py-1.5 transition-colors"
+            className="relative flex min-w-0 flex-1 items-center gap-1.5 rounded-md px-2 py-1.5 transition-colors overflow-hidden"
             style={{
               backgroundColor: projectStripBackground,
               border: `1px solid ${projectStripBorder}`,
             }}
           >
-            <div className="min-w-0 flex-1 flex flex-wrap items-center gap-1">
+            {/* Progress fill layer */}
+            {(() => {
+              const teams = ["mint", "integration", "ms"] as const;
+              const teamColors = ["hsl(var(--primary) / 0.18)", "hsl(217 91% 60% / 0.18)", "hsl(142 71% 45% / 0.18)"];
+              const segments = teams.map((t, i) => {
+                const items = project.checklist.filter(c => c.ownerTeam === t);
+                const done = items.filter(c => c.completed).length;
+                return { total: items.length, done, color: teamColors[i] };
+              });
+              const totalItems = segments.reduce((s, seg) => s + seg.total, 0);
+              if (totalItems === 0) return null;
+
+              let cursor = 0;
+              return (
+                <div className="absolute inset-0 flex">
+                  {segments.map((seg, i) => {
+                    const segWidth = (seg.total / totalItems) * 100;
+                    const fillPct = seg.total > 0 ? (seg.done / seg.total) * 100 : 0;
+                    const el = (
+                      <div key={i} className="relative h-full" style={{ width: `${segWidth}%` }}>
+                        <div
+                          className="absolute inset-y-0 left-0 transition-all duration-500"
+                          style={{ width: `${fillPct}%`, backgroundColor: seg.color }}
+                        />
+                      </div>
+                    );
+                    cursor += segWidth;
+                    return el;
+                  })}
+                </div>
+              );
+            })()}
+            <div className="relative min-w-0 flex-1 flex flex-wrap items-center gap-1 z-10">
               <h3 className="truncate text-xs font-semibold tracking-tight text-foreground">{project.merchantName}</h3>
               <Badge variant="outline" className="text-[9px] px-1 py-0 h-4">MID {project.mid}</Badge>
               <Badge variant="secondary" className="text-[9px] px-1 py-0 h-4">{teamLabels[project.currentOwnerTeam] || project.currentOwnerTeam}</Badge>
@@ -225,7 +230,7 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
               {isPending && <Badge className="text-[9px] px-1 py-0 h-4">Pending</Badge>}
               {isRejected && <Badge variant="destructive" className="text-[9px] px-1 py-0 h-4">Action needed</Badge>}
             </div>
-            <ArrowUpRight className="h-3 w-3 text-primary shrink-0" />
+            <ArrowUpRight className="relative h-3 w-3 text-primary shrink-0 z-10" />
           </Link>
 
           <div className="flex items-center gap-0.5 shrink-0">
