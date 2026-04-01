@@ -599,7 +599,7 @@ export const ManagerDashboard = () => {
   };
 
   const SETTINGS_GROUPS: Array<{ label: string; items: string[] }> = [
-    { label: "General", items: ["general", "workflow", "activity-log"] },
+    { label: "General", items: ["general", "workflow", "workflows", "activity-log"] },
     { label: "Data & Forms", items: ["fields", "custom-fields", "checklist", "checklist-forms"] },
     { label: "Communication", items: ["email", "emails"] },
     { label: "Administration", items: ["colours", "navigation", "users"] },
