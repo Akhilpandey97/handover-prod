@@ -9,6 +9,7 @@ import {
   projectStateColors,
   projectStateLabels,
 } from "@/data/projectsData";
+import { computeHealthScore } from "@/utils/aiHealthScore";
 import { useAuth } from "@/contexts/AuthContext";
 import { useProjects } from "@/contexts/ProjectContext";
 import { useLabels } from "@/contexts/LabelsContext";
