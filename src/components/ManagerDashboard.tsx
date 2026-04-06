@@ -1011,6 +1011,13 @@ export const ManagerDashboard = () => {
               })()}
             </div>
 
+            {/* AI Smart Alerts */}
+            <Card className="shadow-xl border-border/50">
+              <CardContent className="p-5">
+                <AiSmartAlerts projects={displayProjects} />
+              </CardContent>
+            </Card>
+
             {/* Team Performance & Time Distribution */}
             <div className="grid lg:grid-cols-2 gap-6">
               <Card className="shadow-xl border-border/50">
