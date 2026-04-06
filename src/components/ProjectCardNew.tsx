@@ -259,6 +259,16 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
               )}
               {isPending && <Badge className="text-[9px] px-1 py-0 h-4">Pending</Badge>}
               {isRejected && <Badge variant="destructive" className="text-[9px] px-1 py-0 h-4">Action needed</Badge>}
+              {healthScore.label !== "Healthy" && (
+                <Badge
+                  variant="outline"
+                  className="text-[8px] px-1 py-0 h-3.5 border-current"
+                  style={{ color: healthScore.color }}
+                  title={healthScore.factors.join("; ")}
+                >
+                  {healthScore.label} {healthScore.score}
+                </Badge>
+              )}
             </div>
             <ArrowUpRight className="relative h-3 w-3 text-primary shrink-0 z-10 opacity-0 group-hover:opacity-100 transition-opacity" />
           </Link>
