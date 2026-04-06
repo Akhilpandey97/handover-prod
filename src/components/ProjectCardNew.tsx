@@ -9,6 +9,7 @@ import {
   projectStateColors,
   projectStateLabels,
 } from "@/data/projectsData";
+import { computeHealthScore } from "@/utils/aiHealthScore";
 import { useAuth } from "@/contexts/AuthContext";
 import { useProjects } from "@/contexts/ProjectContext";
 import { useLabels } from "@/contexts/LabelsContext";
@@ -94,6 +95,7 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
   const completedChecklist = project.checklist.filter((item) => item.completed).length;
   const computedResponsibility = calculateProjectResponsibilityFromChecklist(project.checklist);
   const timeByParty = calculateTimeFromChecklist(project.checklist);
+  const healthScore = computeHealthScore(project);
 
   const currentTeamItems = project.checklist.filter((item) => item.ownerTeam === project.currentOwnerTeam);
   const nextIncompleteItem = currentTeamItems.find((item) => !item.completed) || project.checklist.find((item) => !item.completed);
@@ -173,48 +175,76 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
           border: `1px solid ${projectStripOuterBorder}`,
         }}
       >
-        <div className="flex flex-col gap-0 px-1.5 py-1">
+        <div className="flex items-center gap-0 px-1.5 py-1">
           {/* Project strip with integrated progress fill */}
           <Link
             to={`/projects/${project.id}`}
             target="_blank"
             rel="noreferrer"
-            className="relative flex min-w-0 flex-1 items-center gap-1.5 rounded-md px-2 py-1.5 transition-colors overflow-hidden"
+            className="relative flex min-w-0 flex-1 items-center gap-1.5 rounded-md px-2 py-1.5 transition-colors overflow-hidden group"
             style={{
               backgroundColor: projectStripBackground,
               border: `1px solid ${projectStripBorder}`,
             }}
           >
-            {/* Progress fill layer */}
+            {/* Progress fill — smooth gradient across team segments */}
             {(() => {
+              const totalItems = project.checklist.length;
+              if (totalItems === 0) return null;
+              const totalDone = project.checklist.filter(c => c.completed).length;
+              const pct = (totalDone / totalItems) * 100;
+
+              // Build gradient stops from team segments
               const teams = ["mint", "integration", "ms"] as const;
-              const teamColors = ["hsl(var(--primary) / 0.18)", "hsl(217 91% 60% / 0.18)", "hsl(142 71% 45% / 0.18)"];
+              const teamHues = [
+                "hsl(var(--primary) / 0.22)",
+                "hsl(217 91% 60% / 0.22)",
+                "hsl(142 71% 45% / 0.22)",
+              ];
               const segments = teams.map((t, i) => {
                 const items = project.checklist.filter(c => c.ownerTeam === t);
-                const done = items.filter(c => c.completed).length;
-                return { total: items.length, done, color: teamColors[i] };
+                return { total: items.length, done: items.filter(c => c.completed).length, color: teamHues[i] };
               });
-              const totalItems = segments.reduce((s, seg) => s + seg.total, 0);
-              if (totalItems === 0) return null;
 
               let cursor = 0;
+              const gradientStops: string[] = [];
+              segments.forEach((seg) => {
+                const segWidth = (seg.total / totalItems) * 100;
+                const fillEnd = cursor + (seg.total > 0 ? (seg.done / seg.total) * segWidth : 0);
+                if (seg.done > 0) {
+                  gradientStops.push(`${seg.color} ${cursor}%`);
+                  gradientStops.push(`${seg.color} ${fillEnd}%`);
+                }
+                gradientStops.push(`transparent ${fillEnd}%`);
+                gradientStops.push(`transparent ${cursor + segWidth}%`);
+                cursor += segWidth;
+              });
+
               return (
-                <div className="absolute inset-0 flex">
-                  {segments.map((seg, i) => {
-                    const segWidth = (seg.total / totalItems) * 100;
-                    const fillPct = seg.total > 0 ? (seg.done / seg.total) * 100 : 0;
-                    const el = (
-                      <div key={i} className="relative h-full" style={{ width: `${segWidth}%` }}>
-                        <div
-                          className="absolute inset-y-0 left-0 transition-all duration-500"
-                          style={{ width: `${fillPct}%`, backgroundColor: seg.color }}
-                        />
-                      </div>
-                    );
-                    cursor += segWidth;
-                    return el;
-                  })}
-                </div>
+                <div
+                  className="absolute inset-0 transition-all duration-700 ease-out"
+                  style={{
+                    background: `linear-gradient(90deg, ${gradientStops.join(", ")})`,
+                  }}
+                />
+              );
+            })()}
+            {/* Completion percentage pill */}
+            {(() => {
+              const totalItems = project.checklist.length;
+              if (totalItems === 0) return null;
+              const pct = Math.round((project.checklist.filter(c => c.completed).length / totalItems) * 100);
+              return (
+                <span className={cn(
+                  "relative z-10 shrink-0 rounded-full px-1.5 py-0.5 text-[9px] font-bold tabular-nums",
+                  pct === 100
+                    ? "bg-green-500/20 text-green-700 dark:text-green-400"
+                    : pct >= 50
+                    ? "bg-blue-500/15 text-blue-700 dark:text-blue-400"
+                    : "bg-muted text-muted-foreground"
+                )}>
+                  {pct}%
+                </span>
               );
             })()}
             <div className="relative min-w-0 flex-1 flex flex-wrap items-center gap-1 z-10">
@@ -229,8 +259,18 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
               )}
               {isPending && <Badge className="text-[9px] px-1 py-0 h-4">Pending</Badge>}
               {isRejected && <Badge variant="destructive" className="text-[9px] px-1 py-0 h-4">Action needed</Badge>}
+              {healthScore.label !== "Healthy" && (
+                <Badge
+                  variant="outline"
+                  className="text-[8px] px-1 py-0 h-3.5 border-current"
+                  style={{ color: healthScore.color }}
+                  title={healthScore.factors.join("; ")}
+                >
+                  {healthScore.label} {healthScore.score}
+                </Badge>
+              )}
             </div>
-            <ArrowUpRight className="relative h-3 w-3 text-primary shrink-0 z-10" />
+            <ArrowUpRight className="relative h-3 w-3 text-primary shrink-0 z-10 opacity-0 group-hover:opacity-100 transition-opacity" />
           </Link>
 
           <div className="flex items-center gap-0.5 shrink-0">

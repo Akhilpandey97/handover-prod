@@ -5,6 +5,7 @@ import { teamColors } from "@/data/teams";
 import { useLabels } from "@/contexts/LabelsContext";
 import { Project, calculateTimeFromChecklist, formatDuration } from "@/data/projectsData";
 import { fetchAiInsights } from "@/utils/aiInsights";
+import { AiSmartAlerts } from "./AiSmartAlerts";
 import { ProjectCardNew } from "./ProjectCardNew";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -34,22 +35,12 @@ import { DashboardSkeleton } from "./skeletons/DashboardSkeleton";
 
 type TabType = "pending" | "active" | "all";
 
-interface AiAlert {
-  project: string;
-  action: string;
-  priority: "high" | "medium" | "low";
-  alert: string;
-}
-
 export const TeamDashboard = () => {
   const { currentUser, logout } = useAuth();
   const { getPendingProjects, getActiveProjects, projects, isLoading } = useProjects();
   const { teamLabels, labels } = useLabels();
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState<TabType>("active");
-  const [aiAlerts, setAiAlerts] = useState<AiAlert[]>([]);
-  const [aiAlertsLoading, setAiAlertsLoading] = useState(false);
-  const [aiAlertsLoaded, setAiAlertsLoaded] = useState(false);
 
   if (!currentUser) return null;
 
@@ -115,35 +106,6 @@ export const TeamDashboard = () => {
 
   const displayProjects = getDisplayProjects();
 
-  const handleGenerateAiAlerts = async () => {
-    if (allUserProjects.length === 0) {
-      toast.info("No projects to analyze");
-      return;
-    }
-    setAiAlertsLoading(true);
-    try {
-      if (!currentUser) throw new Error("Not authenticated");
-      const result = await fetchAiInsights({ projects: allUserProjects, type: "next_actions" });
-      if (typeof result === "string") {
-        const lines = result.split("\n").filter(Boolean);
-        const parsed: AiAlert[] = lines.map((line) => ({
-          project: "",
-          action: line.replace(/^\s*[*-]\s*/, ""),
-          priority: "medium" as const,
-          alert: "",
-        }));
-        setAiAlerts(parsed);
-      } else {
-        setAiAlerts(result || []);
-      }
-      setAiAlertsLoaded(true);
-    } catch (err: any) {
-      console.error("AI alerts error:", err);
-      toast.error("Failed to generate AI alerts");
-    } finally {
-      setAiAlertsLoading(false);
-    }
-  };
 
   const sidebarItems: { key: TabType; label: string; icon: React.ReactNode; count: number; color: string }[] = [
     { 
@@ -227,70 +189,8 @@ export const TeamDashboard = () => {
           </div>
 
           {/* AI Alerts Section */}
-          <div className="mt-6">
-            <div className="flex items-center justify-between mb-3 px-3">
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                AI Alerts
-              </p>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-7 text-xs gap-1"
-                onClick={handleGenerateAiAlerts}
-                disabled={aiAlertsLoading}
-              >
-                {aiAlertsLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Brain className="h-3 w-3" />}
-                {aiAlertsLoaded ? "Refresh" : "Generate"}
-              </Button>
-            </div>
-
-            {aiAlertsLoading && (
-              <div className="flex items-center justify-center py-4 text-xs text-muted-foreground gap-2">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Analyzing projects...
-              </div>
-            )}
-
-            {!aiAlertsLoading && aiAlertsLoaded && aiAlerts.length === 0 && (
-              <p className="text-xs text-muted-foreground px-3">No alerts found.</p>
-            )}
-
-            {!aiAlertsLoading && aiAlerts.length > 0 && (
-              <ScrollArea className="h-[260px]">
-                <div className="space-y-2 px-2">
-                  {aiAlerts.map((alert, i) => (
-                    <div
-                      key={i}
-                      className={cn(
-                        "rounded-lg p-2.5 border text-xs",
-                        alert.priority === "high"
-                          ? "bg-destructive/10 border-destructive/30"
-                          : alert.priority === "medium"
-                          ? "bg-amber-500/10 border-amber-200 dark:border-amber-800"
-                          : "bg-muted/50 border-border"
-                      )}
-                    >
-                      <div className="flex items-center gap-1.5 mb-1">
-                        {alert.priority === "high" ? (
-                          <AlertTriangle className="h-3 w-3 text-destructive shrink-0" />
-                        ) : (
-                          <Zap className="h-3 w-3 text-amber-500 shrink-0" />
-                        )}
-                        <span className="font-semibold truncate">{alert.project}</span>
-                      </div>
-                      <p className="text-muted-foreground leading-relaxed">{alert.action}</p>
-                      {alert.alert && (
-                        <p className="mt-1 font-medium text-destructive">{alert.alert}</p>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </ScrollArea>
-            )}
-
-            {!aiAlertsLoaded && !aiAlertsLoading && (
-              <p className="text-xs text-muted-foreground px-3 italic">Click Generate to get AI-powered next actions for your projects.</p>
-            )}
+          <div className="mt-6 px-2">
+            <AiSmartAlerts projects={allUserProjects} compact />
           </div>
         </nav>
 

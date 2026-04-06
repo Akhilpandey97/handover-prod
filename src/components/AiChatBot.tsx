@@ -30,6 +30,9 @@ const QUICK_ACTIONS = [
   { icon: "📋", label: "List Workflows", prompt: "List all active workflows and explain what each one does." },
   { icon: "📊", label: "Project Risks", prompt: "Which projects are at risk right now, and why?" },
   { icon: "👥", label: "Team Workloads", prompt: "Summarize current team workloads, owners with the most projects, and handoff bottlenecks." },
+  { icon: "🩺", label: "Health Check", prompt: "Run a health check on all projects. Identify stale, blocked, or critical projects and suggest next actions for each." },
+  { icon: "📈", label: "Pipeline Forecast", prompt: "Forecast our revenue pipeline. Which projects are closest to going live and what's the projected ARR impact?" },
+  { icon: "🔄", label: "Handoff Analysis", prompt: "Analyze recent project handoffs between teams. Are there bottlenecks or rejected transfers? Suggest improvements." },
 ] as const;
 
 const getTime = () => {
