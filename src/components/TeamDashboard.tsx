@@ -5,6 +5,7 @@ import { teamColors } from "@/data/teams";
 import { useLabels } from "@/contexts/LabelsContext";
 import { Project, calculateTimeFromChecklist, formatDuration } from "@/data/projectsData";
 import { fetchAiInsights } from "@/utils/aiInsights";
+import { AiSmartAlerts } from "./AiSmartAlerts";
 import { ProjectCardNew } from "./ProjectCardNew";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
