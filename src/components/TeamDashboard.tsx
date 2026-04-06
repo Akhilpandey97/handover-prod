@@ -106,35 +106,6 @@ export const TeamDashboard = () => {
 
   const displayProjects = getDisplayProjects();
 
-  const handleGenerateAiAlerts = async () => {
-    if (allUserProjects.length === 0) {
-      toast.info("No projects to analyze");
-      return;
-    }
-    setAiAlertsLoading(true);
-    try {
-      if (!currentUser) throw new Error("Not authenticated");
-      const result = await fetchAiInsights({ projects: allUserProjects, type: "next_actions" });
-      if (typeof result === "string") {
-        const lines = result.split("\n").filter(Boolean);
-        const parsed: AiAlert[] = lines.map((line) => ({
-          project: "",
-          action: line.replace(/^\s*[*-]\s*/, ""),
-          priority: "medium" as const,
-          alert: "",
-        }));
-        setAiAlerts(parsed);
-      } else {
-        setAiAlerts(result || []);
-      }
-      setAiAlertsLoaded(true);
-    } catch (err: any) {
-      console.error("AI alerts error:", err);
-      toast.error("Failed to generate AI alerts");
-    } finally {
-      setAiAlertsLoading(false);
-    }
-  };
 
   const sidebarItems: { key: TabType; label: string; icon: React.ReactNode; count: number; color: string }[] = [
     { 
