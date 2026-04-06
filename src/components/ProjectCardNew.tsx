@@ -95,6 +95,7 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
   const completedChecklist = project.checklist.filter((item) => item.completed).length;
   const computedResponsibility = calculateProjectResponsibilityFromChecklist(project.checklist);
   const timeByParty = calculateTimeFromChecklist(project.checklist);
+  const healthScore = computeHealthScore(project);
 
   const currentTeamItems = project.checklist.filter((item) => item.ownerTeam === project.currentOwnerTeam);
   const nextIncompleteItem = currentTeamItems.find((item) => !item.completed) || project.checklist.find((item) => !item.completed);
