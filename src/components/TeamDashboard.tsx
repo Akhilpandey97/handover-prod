@@ -35,22 +35,12 @@ import { DashboardSkeleton } from "./skeletons/DashboardSkeleton";
 
 type TabType = "pending" | "active" | "all";
 
-interface AiAlert {
-  project: string;
-  action: string;
-  priority: "high" | "medium" | "low";
-  alert: string;
-}
-
 export const TeamDashboard = () => {
   const { currentUser, logout } = useAuth();
   const { getPendingProjects, getActiveProjects, projects, isLoading } = useProjects();
   const { teamLabels, labels } = useLabels();
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState<TabType>("active");
-  const [aiAlerts, setAiAlerts] = useState<AiAlert[]>([]);
-  const [aiAlertsLoading, setAiAlertsLoading] = useState(false);
-  const [aiAlertsLoaded, setAiAlertsLoaded] = useState(false);
 
   if (!currentUser) return null;
 
