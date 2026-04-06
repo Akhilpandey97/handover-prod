@@ -13,6 +13,7 @@ import { ParsedEmailsTab } from "./ParsedEmailsTab";
 import { KanbanBoard } from "./KanbanBoard";
 import { ActivityLog } from "./settings/ActivityLog";
 import { WorkflowManager } from "./settings/WorkflowManager";
+import { AiSmartAlerts } from "./AiSmartAlerts";
 import { CSVUploadDialog } from "./CSVUploadDialog";
 import { AddProjectDialog } from "./AddProjectDialog";
 import { AssignOwnerDialog } from "./AssignOwnerDialog";
