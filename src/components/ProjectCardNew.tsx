@@ -191,32 +191,34 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
             {(() => {
               const totalItems = project.checklist.length;
               if (totalItems === 0) return null;
-              const totalDone = project.checklist.filter(c => c.completed).length;
-              const pct = (totalDone / totalItems) * 100;
 
-              // Build gradient stops from team segments
               const teams = ["mint", "integration", "ms"] as const;
-              const teamHues = [
-                "hsl(var(--primary) / 0.22)",
-                "hsl(217 91% 60% / 0.22)",
-                "hsl(142 71% 45% / 0.22)",
+              const doneColors = [
+                "hsl(221 83% 53% / 0.28)",
+                "hsl(199 89% 48% / 0.25)",
+                "hsl(152 69% 46% / 0.25)",
               ];
+              const pendingColors = [
+                "hsl(221 83% 53% / 0.08)",
+                "hsl(199 89% 48% / 0.07)",
+                "hsl(152 69% 46% / 0.07)",
+              ];
+
               const segments = teams.map((t, i) => {
                 const items = project.checklist.filter(c => c.ownerTeam === t);
-                return { total: items.length, done: items.filter(c => c.completed).length, color: teamHues[i] };
+                return { total: items.length, done: items.filter(c => c.completed).length, doneColor: doneColors[i], pendingColor: pendingColors[i] };
               });
 
               let cursor = 0;
               const gradientStops: string[] = [];
               segments.forEach((seg) => {
+                if (seg.total === 0) return;
                 const segWidth = (seg.total / totalItems) * 100;
-                const fillEnd = cursor + (seg.total > 0 ? (seg.done / seg.total) * segWidth : 0);
-                if (seg.done > 0) {
-                  gradientStops.push(`${seg.color} ${cursor}%`);
-                  gradientStops.push(`${seg.color} ${fillEnd}%`);
-                }
-                gradientStops.push(`transparent ${fillEnd}%`);
-                gradientStops.push(`transparent ${cursor + segWidth}%`);
+                const doneEnd = cursor + (seg.done / seg.total) * segWidth;
+                gradientStops.push(`${seg.doneColor} ${cursor}%`);
+                gradientStops.push(`${seg.doneColor} ${doneEnd}%`);
+                gradientStops.push(`${seg.pendingColor} ${doneEnd}%`);
+                gradientStops.push(`${seg.pendingColor} ${cursor + segWidth}%`);
                 cursor += segWidth;
               });
 
