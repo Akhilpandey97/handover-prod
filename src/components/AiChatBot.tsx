@@ -219,6 +219,11 @@ export const AiChatBot = () => {
       setMessages(prev => [...prev, assistantMsg]);
       saveMessage("assistant", content);
 
+      // Auto-speak AI response
+      if (autoSpeak) {
+        speak(content);
+      }
+
       // If actions were taken, refresh project data
       if (actions && actions.length > 0) {
         queryClient.invalidateQueries({ queryKey: ["projects"] });
