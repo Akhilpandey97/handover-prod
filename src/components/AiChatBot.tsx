@@ -4,7 +4,8 @@ import { useProjects } from "@/contexts/ProjectContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLabels } from "@/contexts/LabelsContext";
 import { calculateTimeFromChecklist, formatDuration } from "@/data/projectsData";
-import { MessageCircle, X, Send, Loader2, Bot, CheckCheck, Trash2 } from "lucide-react";
+import { MessageCircle, X, Send, Loader2, Bot, CheckCheck, Trash2, Mic, MicOff, Volume2, VolumeX } from "lucide-react";
+import { useVoiceAssistant } from "@/hooks/useVoiceAssistant";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import ReactMarkdown from "react-markdown";
@@ -55,6 +56,8 @@ export const AiChatBot = () => {
   const { currentUser } = useAuth();
   const { teamLabels, responsibilityLabels } = useLabels();
   const queryClient = useQueryClient();
+  const { isListening, isSpeaking, transcript, isSupported: voiceSupported, startListening, stopListening, speak, stopSpeaking } = useVoiceAssistant();
+  const [autoSpeak, setAutoSpeak] = useState(true);
 
   const getBounds = useCallback((open: boolean) => {
     const width = open ? Math.min(CHAT_PANEL_WIDTH, window.innerWidth - CHAT_MARGIN) : CHAT_BUTTON_SIZE;
@@ -216,6 +219,11 @@ export const AiChatBot = () => {
       setMessages(prev => [...prev, assistantMsg]);
       saveMessage("assistant", content);
 
+      // Auto-speak AI response
+      if (autoSpeak) {
+        speak(content);
+      }
+
       // If actions were taken, refresh project data
       if (actions && actions.length > 0) {
         queryClient.invalidateQueries({ queryKey: ["projects"] });
@@ -332,11 +340,23 @@ export const AiChatBot = () => {
               <div>
                 <p className="font-semibold text-sm">AI Assistant</p>
                 <p className="text-[11px] text-white/70">
-                  {isLoading ? "thinking..." : "online · can take actions"}
+                  {isListening ? "🎙️ listening..." : isLoading ? "thinking..." : isSpeaking ? "🔊 speaking..." : "online · voice enabled"}
                 </p>
               </div>
             </div>
             <div className="flex items-center gap-1">
+              {voiceSupported && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 text-white hover:bg-white/20"
+                  onClick={() => { setAutoSpeak(prev => !prev); if (isSpeaking) stopSpeaking(); }}
+                  onPointerDown={(event) => event.stopPropagation()}
+                  title={autoSpeak ? "Mute voice responses" : "Enable voice responses"}
+                >
+                  {autoSpeak ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
+                </Button>
+              )}
               {messages.length > 0 && (
                 <Button
                   variant="ghost"
@@ -440,16 +460,55 @@ export const AiChatBot = () => {
             )}
           </div>
 
+          {/* Listening indicator */}
+          {isListening && (
+            <div className="px-3 py-1.5 border-t bg-red-50 dark:bg-red-950/30 flex items-center gap-2 text-xs text-red-600 dark:text-red-400">
+              <span className="relative flex h-2.5 w-2.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500" />
+              </span>
+              {transcript || "Listening... speak now"}
+            </div>
+          )}
+
           {/* Input */}
           <div className="px-3 py-2.5 border-t bg-card">
-            <div className="flex items-end gap-2">
+            <div className="flex items-end gap-1.5">
+              {voiceSupported && (
+                <button
+                  onClick={() => {
+                    if (isListening) {
+                      stopListening();
+                    } else {
+                      startListening(
+                        (text) => {
+                          sendMessage(text);
+                        },
+                        (interim) => {
+                          setInput(interim);
+                        }
+                      );
+                    }
+                  }}
+                  disabled={isLoading}
+                  className={cn(
+                    "h-10 w-10 rounded-full flex items-center justify-center shrink-0 transition-all",
+                    isListening
+                      ? "bg-red-500 text-white animate-pulse hover:bg-red-600"
+                      : "bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground"
+                  )}
+                  title={isListening ? "Stop listening" : "Voice input"}
+                >
+                  {isListening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+                </button>
+              )}
               <textarea
                 ref={inputRef}
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
                 onInput={handleTextareaInput}
-                placeholder="Ask a question or give an action..."
+                placeholder={isListening ? "Listening..." : "Ask a question or give an action..."}
                 rows={1}
                 disabled={isLoading}
                 className="flex-1 resize-none rounded-2xl border bg-muted/50 px-4 py-2.5 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-[hsl(142,71%,45%)]/30 disabled:opacity-50 max-h-[120px]"
