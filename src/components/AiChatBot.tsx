@@ -56,6 +56,8 @@ export const AiChatBot = () => {
   const { currentUser } = useAuth();
   const { teamLabels, responsibilityLabels } = useLabels();
   const queryClient = useQueryClient();
+  const { isListening, isSpeaking, transcript, isSupported: voiceSupported, startListening, stopListening, speak, stopSpeaking } = useVoiceAssistant();
+  const [autoSpeak, setAutoSpeak] = useState(true);
 
   const getBounds = useCallback((open: boolean) => {
     const width = open ? Math.min(CHAT_PANEL_WIDTH, window.innerWidth - CHAT_MARGIN) : CHAT_BUTTON_SIZE;
