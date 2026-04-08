@@ -340,11 +340,23 @@ export const AiChatBot = () => {
               <div>
                 <p className="font-semibold text-sm">AI Assistant</p>
                 <p className="text-[11px] text-white/70">
-                  {isLoading ? "thinking..." : "online · can take actions"}
+                  {isListening ? "🎙️ listening..." : isLoading ? "thinking..." : isSpeaking ? "🔊 speaking..." : "online · voice enabled"}
                 </p>
               </div>
             </div>
             <div className="flex items-center gap-1">
+              {voiceSupported && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 text-white hover:bg-white/20"
+                  onClick={() => { setAutoSpeak(prev => !prev); if (isSpeaking) stopSpeaking(); }}
+                  onPointerDown={(event) => event.stopPropagation()}
+                  title={autoSpeak ? "Mute voice responses" : "Enable voice responses"}
+                >
+                  {autoSpeak ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
+                </Button>
+              )}
               {messages.length > 0 && (
                 <Button
                   variant="ghost"
