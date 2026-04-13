@@ -1752,7 +1752,7 @@ export const ManagerDashboard = () => {
               </CardHeader>
               <CardContent className="p-0">
                 <div className="overflow-auto">
-                  <Table>
+                  <Table className="border-separate border-spacing-y-1">
                     <TableHeader className="sticky top-0 z-10 bg-muted/60 backdrop-blur-sm">
                       <TableRow className="border-b-2 border-border/60 hover:bg-transparent">
                         {listViewColumns.map((colKey, colIdx) => {
