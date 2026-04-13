@@ -1473,7 +1473,7 @@ export const ManagerDashboard = () => {
           {/* ========= LIST VIEW TAB ========= */}
           {activeTab === "listview" && <div className="space-y-4">
             <Card className="shadow-xl border-border/50">
-              <CardHeader className="border-b bg-muted/30 py-3">
+              <CardHeader className="sticky top-0 z-10 border-b bg-card/95 backdrop-blur-sm py-3">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-lg flex items-center gap-2">
                     <List className="h-5 w-5 text-primary" />
