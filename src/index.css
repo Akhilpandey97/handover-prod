@@ -6,7 +6,7 @@
 
 @layer base {
   :root {
-    --background: 210 33% 98%;
+    --background: 0 0% 100%;
     --foreground: 222 37% 14%;
 
     --card: 0 0% 100%;
@@ -57,8 +57,8 @@
     --sidebar-border: 214 24% 88%;
     --sidebar-ring: 221 67% 42%;
 
-    --surface: 214 40% 99%;
-    --surface-2: 214 35% 96%;
+    --surface: 0 0% 100%;
+    --surface-2: 210 20% 98%;
     --hero: 222 36% 16%;
     --hero-foreground: 210 40% 98%;
   }
@@ -134,11 +134,8 @@
     font-feature-settings: "cv11", "ss01";
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    background-image:
-      radial-gradient(circle at top left, hsl(var(--primary) / 0.08), transparent 28%),
-      radial-gradient(circle at 100% 0%, hsl(var(--info) / 0.06), transparent 22%),
-      linear-gradient(180deg, hsl(var(--surface)), hsl(var(--background)) 26%, hsl(var(--surface-2)) 100%);
-    background-attachment: fixed;
+    background-image: none;
+    background-color: hsl(var(--background));
   }
 
   h1,
