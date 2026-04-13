@@ -1715,13 +1715,13 @@ export const ManagerDashboard = () => {
               <CardContent className="p-0">
                 <div className="overflow-auto">
                   <Table>
-                    <TableHeader>
-                      <TableRow>
+                    <TableHeader className="sticky top-0 z-10 bg-muted/60 backdrop-blur-sm">
+                      <TableRow className="border-b-2 border-border/60 hover:bg-transparent">
                         {listViewColumns.map(colKey => {
                           const col = LIST_VIEW_COLUMNS.find(c => c.key === colKey);
-                          return col ? <TableHead key={colKey} className="whitespace-nowrap">{col.label}</TableHead> : null;
+                          return col ? <TableHead key={colKey} className="whitespace-nowrap text-[11px] font-bold uppercase tracking-wider text-muted-foreground py-3">{col.label}</TableHead> : null;
                         })}
-                        <TableHead className="w-20">Action</TableHead>
+                        <TableHead className="w-16 text-[11px] font-bold uppercase tracking-wider text-muted-foreground py-3">Action</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -1775,11 +1775,11 @@ export const ManagerDashboard = () => {
                           return (
                             <TableRow
                               key={project.id}
-                              className="cursor-pointer"
+                              className="cursor-pointer hover:bg-accent/40 transition-colors border-b border-border/30"
                               onClick={() => openProjectWorkspaceTab(project.id)}
                             >
                               {listViewColumns.map(colKey => (
-                                <TableCell key={colKey} className={cn("text-sm", colKey === "status" && statusColor, colKey === "recentComments" && "max-w-[200px]")}>
+                                <TableCell key={colKey} className={cn("text-sm py-4", colKey === "status" && statusColor, colKey === "recentComments" && "max-w-[200px]")}>
                                   {colKey === "recentComments" ? (
                                     <div className="space-y-0.5">
                                       {getColValue(colKey).split("\n").map((line, i) => (
