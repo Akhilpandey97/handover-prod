@@ -356,9 +356,6 @@ export const SettingsPanel = ({ activeSubTab }: SettingsPanelProps) => {
             <TabsTrigger value="general" className="gap-1.5">
               <Settings className="h-3.5 w-3.5" />General
             </TabsTrigger>
-            <TabsTrigger value="workflow" className="gap-1.5">
-              <Tags className="h-3.5 w-3.5" />Workflow
-            </TabsTrigger>
             <TabsTrigger value="fields" className="gap-1.5">
               <Tags className="h-3.5 w-3.5" />Field Labels
             </TabsTrigger>
@@ -386,7 +383,7 @@ export const SettingsPanel = ({ activeSubTab }: SettingsPanelProps) => {
           </TabsList>
         )}
 
-        {/* General Tab */}
+        {/* General Tab (merged with Workflow) */}
         <TabsContent value="general" className="space-y-6">
           <LogoUpload />
           <Card>
@@ -398,10 +395,6 @@ export const SettingsPanel = ({ activeSubTab }: SettingsPanelProps) => {
             </CardHeader>
             <CardContent>{renderLabelGroups(GENERAL_GROUPS)}</CardContent>
           </Card>
-        </TabsContent>
-
-        {/* Workflow Tab */}
-        <TabsContent value="workflow">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">

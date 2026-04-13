@@ -187,50 +187,6 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
               border: `1px solid ${projectStripBorder}`,
             }}
           >
-            {/* Progress fill — smooth gradient across team segments */}
-            {(() => {
-              const totalItems = project.checklist.length;
-              if (totalItems === 0) return null;
-
-              const teams = ["mint", "integration", "ms"] as const;
-              const doneColors = [
-                "hsl(221 83% 53% / 0.28)",
-                "hsl(199 89% 48% / 0.25)",
-                "hsl(152 69% 46% / 0.25)",
-              ];
-              const pendingColors = [
-                "hsl(221 83% 53% / 0.08)",
-                "hsl(199 89% 48% / 0.07)",
-                "hsl(152 69% 46% / 0.07)",
-              ];
-
-              const segments = teams.map((t, i) => {
-                const items = project.checklist.filter(c => c.ownerTeam === t);
-                return { total: items.length, done: items.filter(c => c.completed).length, doneColor: doneColors[i], pendingColor: pendingColors[i] };
-              });
-
-              let cursor = 0;
-              const gradientStops: string[] = [];
-              segments.forEach((seg) => {
-                if (seg.total === 0) return;
-                const segWidth = (seg.total / totalItems) * 100;
-                const doneEnd = cursor + (seg.done / seg.total) * segWidth;
-                gradientStops.push(`${seg.doneColor} ${cursor}%`);
-                gradientStops.push(`${seg.doneColor} ${doneEnd}%`);
-                gradientStops.push(`${seg.pendingColor} ${doneEnd}%`);
-                gradientStops.push(`${seg.pendingColor} ${cursor + segWidth}%`);
-                cursor += segWidth;
-              });
-
-              return (
-                <div
-                  className="absolute inset-0 transition-all duration-700 ease-out"
-                  style={{
-                    background: `linear-gradient(90deg, ${gradientStops.join(", ")})`,
-                  }}
-                />
-              );
-            })()}
             {/* Completion percentage pill */}
             {(() => {
               const totalItems = project.checklist.length;

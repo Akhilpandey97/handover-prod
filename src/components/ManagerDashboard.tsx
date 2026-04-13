@@ -586,7 +586,6 @@ export const ManagerDashboard = () => {
 
   const SETTINGS_SUB_CONFIG: Record<string, { label: string }> = {
     general: { label: "General" },
-    workflow: { label: "Workflow Rules" },
     workflows: { label: "Workflow Management" },
     "activity-log": { label: "Activity Log" },
     fields: { label: "Field Labels" },
@@ -601,7 +600,7 @@ export const ManagerDashboard = () => {
   };
 
   const SETTINGS_GROUPS: Array<{ label: string; items: string[] }> = [
-    { label: "General", items: ["general", "workflow", "workflows", "activity-log"] },
+    { label: "General", items: ["general", "workflows", "activity-log"] },
     { label: "Data & Forms", items: ["fields", "custom-fields", "checklist", "checklist-forms"] },
     { label: "Communication", items: ["email", "emails"] },
     { label: "Administration", items: ["colours", "navigation", "users"] },
@@ -1202,7 +1201,7 @@ export const ManagerDashboard = () => {
           {/* ========= PROJECTS TAB ========= */}
           {activeTab === "projects" && <div>
             <Card className="rounded-none border-x-0 border-t-0 border-border/50 shadow-none">
-              <CardHeader className="border-b bg-muted/30 px-4 py-4">
+              <CardHeader className="sticky top-0 z-10 border-b bg-card/95 backdrop-blur-sm px-4 py-3">
                 <div className="flex items-center justify-between flex-wrap gap-3">
                   <div className="flex items-center gap-3 relative">
                     <CardTitle className="text-lg flex items-center gap-3">
@@ -1474,7 +1473,7 @@ export const ManagerDashboard = () => {
           {/* ========= LIST VIEW TAB ========= */}
           {activeTab === "listview" && <div className="space-y-4">
             <Card className="shadow-xl border-border/50">
-              <CardHeader className="border-b bg-muted/30 py-3">
+              <CardHeader className="sticky top-0 z-10 border-b bg-card/95 backdrop-blur-sm py-3">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-lg flex items-center gap-2">
                     <List className="h-5 w-5 text-primary" />
@@ -1716,13 +1715,13 @@ export const ManagerDashboard = () => {
               <CardContent className="p-0">
                 <div className="overflow-auto">
                   <Table>
-                    <TableHeader>
-                      <TableRow>
+                    <TableHeader className="sticky top-0 z-10 bg-muted/60 backdrop-blur-sm">
+                      <TableRow className="border-b-2 border-border/60 hover:bg-transparent">
                         {listViewColumns.map(colKey => {
                           const col = LIST_VIEW_COLUMNS.find(c => c.key === colKey);
-                          return col ? <TableHead key={colKey} className="whitespace-nowrap">{col.label}</TableHead> : null;
+                          return col ? <TableHead key={colKey} className="whitespace-nowrap text-[11px] font-bold uppercase tracking-wider text-muted-foreground py-3">{col.label}</TableHead> : null;
                         })}
-                        <TableHead className="w-20">Action</TableHead>
+                        <TableHead className="w-16 text-[11px] font-bold uppercase tracking-wider text-muted-foreground py-3">Action</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -1776,11 +1775,11 @@ export const ManagerDashboard = () => {
                           return (
                             <TableRow
                               key={project.id}
-                              className="cursor-pointer"
+                              className="cursor-pointer hover:bg-accent/40 transition-colors border-b border-border/30"
                               onClick={() => openProjectWorkspaceTab(project.id)}
                             >
                               {listViewColumns.map(colKey => (
-                                <TableCell key={colKey} className={cn("text-sm", colKey === "status" && statusColor, colKey === "recentComments" && "max-w-[200px]")}>
+                                <TableCell key={colKey} className={cn("text-sm py-4", colKey === "status" && statusColor, colKey === "recentComments" && "max-w-[200px]")}>
                                   {colKey === "recentComments" ? (
                                     <div className="space-y-0.5">
                                       {getColValue(colKey).split("\n").map((line, i) => (
