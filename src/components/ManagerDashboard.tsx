@@ -1201,7 +1201,7 @@ export const ManagerDashboard = () => {
           {/* ========= PROJECTS TAB ========= */}
           {activeTab === "projects" && <div>
             <Card className="rounded-none border-x-0 border-t-0 border-border/50 shadow-none">
-              <CardHeader className="border-b bg-muted/30 px-4 py-4">
+              <CardHeader className="sticky top-0 z-10 border-b bg-card/95 backdrop-blur-sm px-4 py-3">
                 <div className="flex items-center justify-between flex-wrap gap-3">
                   <div className="flex items-center gap-3 relative">
                     <CardTitle className="text-lg flex items-center gap-3">
