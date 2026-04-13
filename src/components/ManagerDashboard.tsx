@@ -1495,24 +1495,62 @@ export const ManagerDashboard = () => {
                         <DropdownMenuContent align="end" className="w-56">
                           <DropdownMenuLabel>Visible Columns</DropdownMenuLabel>
                           <DropdownMenuSeparator />
-                          {LIST_VIEW_COLUMNS.map((col) => {
-                            const active = listViewColumns.includes(col.key);
-                            return (
-                              <DropdownMenuCheckboxItem
-                                key={col.key}
-                                checked={active}
-                                onCheckedChange={(checked) => {
-                                  const newCols = checked
-                                    ? [...listViewColumns, col.key]
-                                    : listViewColumns.filter((key) => key !== col.key);
-                                  setListViewColumns(newCols);
-                                  localStorage.setItem("listview_columns", JSON.stringify(newCols));
-                                }}
-                              >
-                                {col.label}
-                              </DropdownMenuCheckboxItem>
-                            );
-                          })}
+                          <div className="max-h-[320px] overflow-y-auto">
+                            {/* Active columns - draggable to reorder */}
+                            {listViewColumns.map((colKey, idx) => {
+                              const col = LIST_VIEW_COLUMNS.find(c => c.key === colKey);
+                              if (!col) return null;
+                              return (
+                                <div
+                                  key={col.key}
+                                  draggable
+                                  onDragStart={(e) => { e.dataTransfer.setData("col-idx", String(idx)); }}
+                                  onDragOver={(e) => e.preventDefault()}
+                                  onDrop={(e) => {
+                                    e.preventDefault();
+                                    const fromIdx = parseInt(e.dataTransfer.getData("col-idx"));
+                                    if (isNaN(fromIdx) || fromIdx === idx) return;
+                                    const newCols = [...listViewColumns];
+                                    const [moved] = newCols.splice(fromIdx, 1);
+                                    newCols.splice(idx, 0, moved);
+                                    setListViewColumns(newCols);
+                                    localStorage.setItem("listview_columns", JSON.stringify(newCols));
+                                  }}
+                                  className="flex items-center gap-2 px-2 py-1.5 text-sm cursor-grab hover:bg-accent/50 rounded-md transition-colors"
+                                >
+                                  <GripVertical className="h-3.5 w-3.5 text-muted-foreground/50 shrink-0" />
+                                  <DropdownMenuCheckboxItem
+                                    checked={true}
+                                    onCheckedChange={() => {
+                                      const newCols = listViewColumns.filter((key) => key !== col.key);
+                                      setListViewColumns(newCols);
+                                      localStorage.setItem("listview_columns", JSON.stringify(newCols));
+                                    }}
+                                    className="flex-1 p-0 focus:bg-transparent"
+                                  >
+                                    {col.label}
+                                  </DropdownMenuCheckboxItem>
+                                </div>
+                              );
+                            })}
+                            {/* Inactive columns */}
+                            {LIST_VIEW_COLUMNS.filter(col => !listViewColumns.includes(col.key)).map((col) => (
+                              <div key={col.key} className="flex items-center gap-2 px-2 py-1.5 text-sm opacity-60">
+                                <div className="w-3.5 shrink-0" />
+                                <DropdownMenuCheckboxItem
+                                  checked={false}
+                                  onCheckedChange={() => {
+                                    const newCols = [...listViewColumns, col.key];
+                                    setListViewColumns(newCols);
+                                    localStorage.setItem("listview_columns", JSON.stringify(newCols));
+                                  }}
+                                  className="flex-1 p-0 focus:bg-transparent"
+                                >
+                                  {col.label}
+                                </DropdownMenuCheckboxItem>
+                              </div>
+                            ))}
+                          </div>
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </div>
@@ -1717,14 +1755,37 @@ export const ManagerDashboard = () => {
                   <Table>
                     <TableHeader className="sticky top-0 z-10 bg-muted/60 backdrop-blur-sm">
                       <TableRow className="border-b-2 border-border/60 hover:bg-transparent">
-                        {listViewColumns.map(colKey => {
+                        {listViewColumns.map((colKey, colIdx) => {
                           const col = LIST_VIEW_COLUMNS.find(c => c.key === colKey);
-                          return col ? <TableHead key={colKey} className="whitespace-nowrap text-[11px] font-bold uppercase tracking-wider text-muted-foreground py-3">{col.label}</TableHead> : null;
+                          return col ? (
+                            <TableHead
+                              key={colKey}
+                              draggable
+                              onDragStart={(e) => { e.dataTransfer.setData("th-idx", String(colIdx)); }}
+                              onDragOver={(e) => e.preventDefault()}
+                              onDrop={(e) => {
+                                e.preventDefault();
+                                const fromIdx = parseInt(e.dataTransfer.getData("th-idx"));
+                                if (isNaN(fromIdx) || fromIdx === colIdx) return;
+                                const newCols = [...listViewColumns];
+                                const [moved] = newCols.splice(fromIdx, 1);
+                                newCols.splice(colIdx, 0, moved);
+                                setListViewColumns(newCols);
+                                localStorage.setItem("listview_columns", JSON.stringify(newCols));
+                              }}
+                              className="whitespace-nowrap text-[11px] font-bold uppercase tracking-wider text-muted-foreground py-3 cursor-grab select-none"
+                            >
+                              <span className="flex items-center gap-1">
+                                <GripVertical className="h-3 w-3 opacity-40" />
+                                {col.label}
+                              </span>
+                            </TableHead>
+                          ) : null;
                         })}
                         <TableHead className="w-16 text-[11px] font-bold uppercase tracking-wider text-muted-foreground py-3">Action</TableHead>
                       </TableRow>
                     </TableHeader>
-                    <TableBody>
+                    <TableBody className="[&_tr]:mb-1">
                       {(() => {
                         const sortedListProjects = sortField === "none" ? filteredProjects : [...filteredProjects].sort((a, b) => {
                           let cmp = 0;
@@ -1775,7 +1836,7 @@ export const ManagerDashboard = () => {
                           return (
                             <TableRow
                               key={project.id}
-                              className="cursor-pointer hover:bg-accent/40 transition-colors border-b border-border/30"
+                              className="cursor-pointer hover:bg-accent/40 transition-colors border-b-4 border-background [&>td:first-child]:rounded-l-lg [&>td:last-child]:rounded-r-lg bg-card"
                               onClick={() => openProjectWorkspaceTab(project.id)}
                             >
                               {listViewColumns.map(colKey => (
