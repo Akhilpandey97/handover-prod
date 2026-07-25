@@ -55,7 +55,6 @@ import {
   Loader2,
   MessageSquareText,
   ShieldAlert,
-  Trash2,
   UserRound,
   X,
 } from "lucide-react";
