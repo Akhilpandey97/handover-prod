@@ -55,7 +55,6 @@ import {
   Loader2,
   MessageSquareText,
   ShieldAlert,
-  Trash2,
   UserRound,
   X,
 } from "lucide-react";
@@ -759,11 +758,6 @@ export const ProjectWorkspaceView = ({ projectId: projectIdProp, inModal = false
               <ArrowRight className="h-3 w-3 mr-1" />
               Transfer
             </Button>
-            {currentUser?.team === "manager" ? (
-              <Button variant="destructive" size="sm" className="h-7 w-7 p-0" onClick={() => setDeleteConfirmOpen(true)}>
-                <Trash2 className="h-3 w-3" />
-              </Button>
-            ) : null}
           </div>
         </div>
       </div>
