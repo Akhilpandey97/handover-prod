@@ -264,11 +264,7 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
 
         {isExpanded && (
           <div
-            className="space-y-1.5 rounded-md p-2 mx-1.5 mb-1.5"
-            style={{
-              backgroundColor: hexToRgba(projectExpandedBackground, 0.95),
-              border: `1px solid ${hexToRgba(projectExpandedBorder, 0.86)}`,
-            }}
+            className="space-y-1.5 rounded-md p-2 mx-1.5 mb-1.5 bg-background/60 border border-border"
           >
             <div className="grid gap-1 grid-cols-2 sm:grid-cols-4">
               <MetricTile borderColor={projectExpandedBorder} label={getLabel("field_arr")} value={`${project.arr} Cr`} />
