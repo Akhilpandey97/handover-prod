@@ -165,11 +165,7 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
   return (
     <>
       <Card
-        className="overflow-hidden shadow-sm transition-shadow hover:shadow-md w-full"
-        style={{
-          backgroundColor: projectStripOuterBackground,
-          border: `1px solid ${projectStripOuterBorder}`,
-        }}
+        className="overflow-hidden shadow-sm transition-shadow hover:shadow-md w-full bg-muted/40 border-border"
       >
         <div className="flex items-center gap-0 px-1.5 py-1">
           {/* Project strip with integrated progress fill */}
@@ -177,11 +173,7 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
             to={`/projects/${project.id}`}
             target="_blank"
             rel="noreferrer"
-            className="relative flex min-w-0 flex-1 items-center gap-1.5 rounded-md px-2 py-1.5 transition-colors overflow-hidden group"
-            style={{
-              backgroundColor: projectStripBackground,
-              border: `1px solid ${projectStripBorder}`,
-            }}
+            className="relative flex min-w-0 flex-1 items-center gap-1.5 rounded-md px-2 py-1.5 transition-colors overflow-hidden group bg-card border border-border hover:bg-accent"
           >
             {/* Completion percentage pill */}
             {(() => {
