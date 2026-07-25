@@ -120,11 +120,7 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
     currentUser?.team !== "manager";
   const isTransferReady = canTransfer && allCurrentTeamChecklistCompleted;
 
-  const projectStripBackground = labels.color_project_strip_bg || "#f8fbff";
-  const projectStripBorder = labels.color_project_strip_border || "#d9e4f2";
-  const projectStripOuterBackground = labels.color_project_strip_outer_bg || "#bfdbfe";
-  const projectStripOuterBorder = labels.color_project_strip_outer_border || "#60a5fa";
-  const projectExpandedBackground = labels.color_project_expanded_bg || "#fdfefe";
+  // Use semantic tokens so both light and dark modes have proper contrast
   const projectExpandedBorder = labels.color_project_expanded_border || "#dce6ef";
 
   const handleAccept = () => {
