@@ -120,11 +120,7 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
     currentUser?.team !== "manager";
   const isTransferReady = canTransfer && allCurrentTeamChecklistCompleted;
 
-  const projectStripBackground = labels.color_project_strip_bg || "#f8fbff";
-  const projectStripBorder = labels.color_project_strip_border || "#d9e4f2";
-  const projectStripOuterBackground = labels.color_project_strip_outer_bg || "#bfdbfe";
-  const projectStripOuterBorder = labels.color_project_strip_outer_border || "#60a5fa";
-  const projectExpandedBackground = labels.color_project_expanded_bg || "#fdfefe";
+  // Use semantic tokens so both light and dark modes have proper contrast
   const projectExpandedBorder = labels.color_project_expanded_border || "#dce6ef";
 
   const handleAccept = () => {
@@ -169,11 +165,7 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
   return (
     <>
       <Card
-        className="overflow-hidden shadow-sm transition-shadow hover:shadow-md w-full"
-        style={{
-          backgroundColor: projectStripOuterBackground,
-          border: `1px solid ${projectStripOuterBorder}`,
-        }}
+        className="overflow-hidden shadow-sm transition-shadow hover:shadow-md w-full bg-muted/40 border-border"
       >
         <div className="flex items-center gap-0 px-1.5 py-1">
           {/* Project strip with integrated progress fill */}
@@ -181,11 +173,7 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
             to={`/projects/${project.id}`}
             target="_blank"
             rel="noreferrer"
-            className="relative flex min-w-0 flex-1 items-center gap-1.5 rounded-md px-2 py-1.5 transition-colors overflow-hidden group"
-            style={{
-              backgroundColor: projectStripBackground,
-              border: `1px solid ${projectStripBorder}`,
-            }}
+            className="relative flex min-w-0 flex-1 items-center gap-1.5 rounded-md px-2 py-1.5 transition-colors overflow-hidden group bg-card border border-border hover:bg-accent"
           >
             {/* Completion percentage pill */}
             {(() => {
@@ -276,11 +264,7 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
 
         {isExpanded && (
           <div
-            className="space-y-1.5 rounded-md p-2 mx-1.5 mb-1.5"
-            style={{
-              backgroundColor: hexToRgba(projectExpandedBackground, 0.95),
-              border: `1px solid ${hexToRgba(projectExpandedBorder, 0.86)}`,
-            }}
+            className="space-y-1.5 rounded-md p-2 mx-1.5 mb-1.5 bg-background/60 border border-border"
           >
             <div className="grid gap-1 grid-cols-2 sm:grid-cols-4">
               <MetricTile borderColor={projectExpandedBorder} label={getLabel("field_arr")} value={`${project.arr} Cr`} />
