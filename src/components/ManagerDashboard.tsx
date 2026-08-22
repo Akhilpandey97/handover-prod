@@ -853,8 +853,9 @@ export const ManagerDashboard = () => {
             {appLabels.org_logo_url ? (
               <img src={appLabels.org_logo_url} alt="Logo" className={cn("rounded-xl object-contain shadow-lg ring-2 ring-primary/20", sidebarCollapsed ? "h-8 w-8" : "h-12 w-12")} />
             ) : (
-              <div className={cn("rounded-xl bg-primary flex items-center justify-center shadow-lg ring-2 ring-primary/30", sidebarCollapsed ? "h-8 w-8" : "h-12 w-12")}>
-                <BarChart3 className={cn(sidebarCollapsed ? "h-4 w-4" : "h-6 w-6", "text-primary-foreground")} />
+              <div className={cn("rounded-xl gradient-primary flex items-center justify-center shadow-[var(--shadow-soft)]", sidebarCollapsed ? "h-8 w-8" : "h-11 w-11")}>
+                <BarChart3 className={cn(sidebarCollapsed ? "h-4 w-4" : "h-5 w-5", "text-primary-foreground")} />
+
               </div>
             )}
             {!sidebarCollapsed && (
