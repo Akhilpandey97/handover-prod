@@ -840,15 +840,16 @@ export const ManagerDashboard = () => {
   };
 
   return (
-    <div className="h-screen overflow-hidden bg-gradient-to-br from-background via-background to-muted/20 flex">
+    <div className="h-screen overflow-hidden bg-[hsl(var(--surface-2))] flex">
       {/* Left Sidebar — collapsible */}
       <aside className={cn(
         "bg-card border-r border-border flex flex-col shrink-0 transition-all duration-300 relative",
         sidebarCollapsed ? "w-16" : "w-72"
       )}>
         {/* Logo & Title */}
-        <div className="p-5 border-b border-border">
+        <div className="px-4 py-4 border-b border-border">
           <div className="flex items-center gap-3">
+
             {appLabels.org_logo_url ? (
               <img src={appLabels.org_logo_url} alt="Logo" className={cn("rounded-xl object-contain shadow-lg ring-2 ring-primary/20", sidebarCollapsed ? "h-8 w-8" : "h-12 w-12")} />
             ) : (
