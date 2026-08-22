@@ -735,12 +735,12 @@ export const ManagerDashboard = () => {
           onDragOver={(e) => handleTabDragOver(e, tab)}
           onDragEnd={handleTabDragEnd}
           className={cn(
-            "w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 text-left group",
+            "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 text-left group",
             isActive && !isReports && !isSettings
-              ? "bg-primary text-primary-foreground shadow-lg shadow-primary/25"
+              ? "gradient-primary text-primary-foreground shadow-[var(--shadow-soft)]"
               : isParentActive
-              ? "bg-muted text-foreground font-semibold"
-              : "hover:bg-muted/60 text-foreground/60 hover:text-foreground",
+              ? "bg-accent text-accent-foreground font-semibold"
+              : "hover:bg-accent/60 text-muted-foreground hover:text-foreground",
             draggedTab === tab ? "opacity-50" : ""
           )}
         >
@@ -750,10 +750,11 @@ export const ManagerDashboard = () => {
               ? "bg-primary-foreground/20 text-primary-foreground"
               : isParentActive
               ? "bg-primary/10 text-primary"
-              : "bg-muted/80 text-foreground/50 group-hover:text-foreground"
+              : "bg-muted text-muted-foreground group-hover:text-foreground"
           )}>
             {TAB_CONFIG[tab].icon}
           </span>
+
           <span className="font-medium text-sm flex-1">{TAB_CONFIG[tab].label}</span>
           {(isReports || isSettings) && (
             <ChevronDown className={cn(
