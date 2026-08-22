@@ -909,7 +909,7 @@ export const ManagerDashboard = () => {
       {/* Main Content */}
       <main className="flex-1 flex min-h-0 flex-col min-w-0">
         {/* Header */}
-        <header className="h-14 border-b bg-background/90 backdrop-blur-md flex items-center justify-between px-6 shrink-0">
+        <header className="h-16 border-b border-border bg-card/95 backdrop-blur-md flex items-center justify-between px-6 shrink-0">
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2">
               <h2 className="text-lg font-bold">{activeTabLabel}</h2>
