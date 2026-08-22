@@ -165,15 +165,15 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
   return (
     <>
       <Card
-        className="overflow-hidden shadow-sm transition-shadow hover:shadow-md w-full bg-muted/40 border-border"
+        className="overflow-hidden w-full surface-card border-0 bg-card"
       >
-        <div className="flex items-center gap-0 px-1.5 py-1">
-          {/* Project strip with integrated progress fill */}
+        <div className="flex items-center gap-1 px-2 py-1.5">
+          {/* Project strip */}
           <Link
             to={`/projects/${project.id}`}
             target="_blank"
             rel="noreferrer"
-            className="relative flex min-w-0 flex-1 items-center gap-1.5 rounded-md px-2 py-1.5 transition-colors overflow-hidden group bg-card border border-border hover:bg-accent"
+            className="relative flex min-w-0 flex-1 items-center gap-2 rounded-lg px-2.5 py-2 transition-colors overflow-hidden group hover:bg-accent/70"
           >
             {/* Completion percentage pill */}
             {(() => {
@@ -182,33 +182,33 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
               const pct = Math.round((project.checklist.filter(c => c.completed).length / totalItems) * 100);
               return (
                 <span className={cn(
-                  "relative z-10 shrink-0 rounded-full px-1.5 py-0.5 text-[9px] font-bold tabular-nums",
+                  "relative z-10 shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold tabular-nums",
                   pct === 100
-                    ? "bg-green-500/20 text-green-700 dark:text-green-400"
+                    ? "bg-success/15 text-success"
                     : pct >= 50
-                    ? "bg-blue-500/15 text-blue-700 dark:text-blue-400"
+                    ? "bg-primary/10 text-primary"
                     : "bg-muted text-muted-foreground"
                 )}>
                   {pct}%
                 </span>
               );
             })()}
-            <div className="relative min-w-0 flex-1 flex flex-wrap items-center gap-1 z-10">
-              <h3 className="truncate text-xs font-semibold tracking-tight text-foreground">{project.merchantName}</h3>
-              <Badge variant="outline" className="text-[9px] px-1 py-0 h-4">MID {project.mid}</Badge>
-              <Badge variant="secondary" className="text-[9px] px-1 py-0 h-4">{teamLabels[project.currentOwnerTeam] || project.currentOwnerTeam}</Badge>
+            <div className="relative min-w-0 flex-1 flex flex-wrap items-center gap-1.5 z-10">
+              <h3 className="truncate text-[13px] font-semibold tracking-tight text-foreground">{project.merchantName}</h3>
+              <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-[18px] font-medium">MID {project.mid}</Badge>
+              <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-[18px]">{teamLabels[project.currentOwnerTeam] || project.currentOwnerTeam}</Badge>
               {project.assignedOwnerName && (
-                <Badge variant="outline" className="gap-0.5 text-[9px] px-1 py-0 h-4">
-                  <User className="h-2 w-2" />
+                <Badge variant="outline" className="gap-1 text-[10px] px-1.5 py-0 h-[18px]">
+                  <User className="h-2.5 w-2.5" />
                   {project.assignedOwnerName}
                 </Badge>
               )}
-              {isPending && <Badge className="text-[9px] px-1 py-0 h-4">Pending</Badge>}
-              {isRejected && <Badge variant="destructive" className="text-[9px] px-1 py-0 h-4">Action needed</Badge>}
+              {isPending && <Badge className="text-[10px] px-1.5 py-0 h-[18px]">Pending</Badge>}
+              {isRejected && <Badge variant="destructive" className="text-[10px] px-1.5 py-0 h-[18px]">Action needed</Badge>}
               {healthScore.label !== "Healthy" && (
                 <Badge
                   variant="outline"
-                  className="text-[8px] px-1 py-0 h-3.5 border-current"
+                  className="text-[9px] px-1.5 py-0 h-[18px] border-current"
                   style={{ color: healthScore.color }}
                   title={healthScore.factors.join("; ")}
                 >
@@ -216,8 +216,9 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
                 </Badge>
               )}
             </div>
-            <ArrowUpRight className="relative h-3 w-3 text-primary shrink-0 z-10 opacity-0 group-hover:opacity-100 transition-opacity" />
+            <ArrowUpRight className="relative h-3.5 w-3.5 text-primary shrink-0 z-10 opacity-0 group-hover:opacity-100 transition-opacity" />
           </Link>
+
 
           <div className="flex items-center gap-0.5 shrink-0">
             <Button size="sm" variant="ghost" className="gap-0.5 h-6 text-[10px] px-1.5 text-muted-foreground hover:text-foreground" onClick={() => handleAiAction("insights")}>
