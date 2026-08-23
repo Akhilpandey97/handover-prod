@@ -4,12 +4,12 @@ import { useLabels } from "@/contexts/LabelsContext";
 import { useCustomFields, useCustomFieldValues } from "@/hooks/useCustomFields";
 import { CustomFieldsForm } from "./CustomFieldsRenderer";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
+  Sheet,
+  SheetContent,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -94,18 +94,18 @@ export const AddProjectDialog = ({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh]">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-3">
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent side="right" className="flex w-full flex-col gap-0 p-0 sm:max-w-2xl">
+        <SheetHeader className="border-b px-6 py-5 text-left">
+          <SheetTitle className="flex items-center gap-3">
             <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
               <Building2 className="h-5 w-5 text-primary" />
             </div>
             <span>Add New Project</span>
-          </DialogTitle>
-        </DialogHeader>
+          </SheetTitle>
+        </SheetHeader>
 
-        <ScrollArea className="max-h-[60vh] pr-4">
+        <ScrollArea className="flex-1 px-6 py-5">
           <Tabs defaultValue="info" className="w-full">
             <TabsList className={`grid w-full mb-4 ${customFields.length > 0 ? 'grid-cols-5' : 'grid-cols-4'}`}>
               <TabsTrigger value="info" className="gap-1 text-xs">
@@ -388,15 +388,15 @@ export const AddProjectDialog = ({
           </Tabs>
         </ScrollArea>
 
-        <DialogFooter className="gap-2">
+        <SheetFooter className="border-t px-6 py-4">
           <Button variant="outline" onClick={handleCancel}>
             Cancel
           </Button>
           <Button onClick={handleSave} disabled={!project.merchantName.trim() || !project.mid.trim()}>
             Add Project
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
   );
 };

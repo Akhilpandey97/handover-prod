@@ -1217,7 +1217,7 @@ export const ManagerDashboard = () => {
                 <KanbanBoard filteredProjects={filteredProjects} />
               </div>
             ) : (
-            <Card className="rounded-none border-x-0 border-t-0 border-border/50 shadow-none">
+            <Card className={cn("rounded-none border-x-0 border-t-0 border-border/50 shadow-none", projectView === "list" && "hidden")}>
               <CardHeader className="sticky top-0 z-10 border-b bg-card/95 backdrop-blur-sm px-4 py-3">
                 <div className="flex items-center justify-between flex-wrap gap-3">
                   <div className="flex items-center gap-3 relative">
@@ -1229,14 +1229,6 @@ export const ManagerDashboard = () => {
                       />
                       <span className="text-base font-medium">All Projects</span>
                     </CardTitle>
-                    <div className="flex items-center rounded-md border p-0.5">
-                      <Button variant="default" size="sm" className="h-7 px-2 text-xs">
-                        <List className="mr-1.5 h-3.5 w-3.5" />List
-                      </Button>
-                      <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={() => setProjectView("kanban")}>
-                        <FolderKanban className="mr-1.5 h-3.5 w-3.5" />Kanban
-                      </Button>
-                    </div>
                     {/* Sort Dropdown - left side */}
                     <Collapsible open={sortOpen} onOpenChange={setSortOpen}>
                       <CollapsibleTrigger asChild>
@@ -1497,7 +1489,7 @@ export const ManagerDashboard = () => {
           </div>}
 
           {/* ========= LIST VIEW TAB ========= */}
-          {activeTab === "listview" && <div className="space-y-4">
+          {activeTab === "projects" && projectView === "list" && <div className="space-y-4">
             <Card className="shadow-xl border-border/50">
               <CardHeader className="sticky top-0 z-10 border-b bg-card/95 backdrop-blur-sm py-3">
                 <div className="flex items-center justify-between">
