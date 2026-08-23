@@ -73,29 +73,29 @@ export const LoginScreen = () => {
             {/* Top bar */}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3.5">
-                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[hsl(0,0%,100%,0.1)] ring-1 ring-[hsl(0,0%,100%,0.12)]">
-                  <Building2 className="h-5 w-5 text-[hsl(0,0%,100%,0.9)]" />
+                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-hero-foreground/10 ring-1 ring-hero-foreground/15">
+                  <Building2 className="h-5 w-5 text-hero-foreground/90" />
                 </div>
                 <div>
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.3em] text-[hsl(0,0%,100%,0.5)]">{orgName}</p>
-                  <h1 className="text-lg font-bold tracking-[-0.03em] text-[hsl(0,0%,100%,0.95)]">{brandName}</h1>
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.3em] text-hero-foreground/50">{orgName}</p>
+                  <h1 className="text-lg font-bold tracking-[-0.03em] text-hero-foreground">{brandName}</h1>
                 </div>
               </div>
-              <ThemeToggle variant="secondary" className="h-9 w-9 border-[hsl(0,0%,100%,0.1)] bg-[hsl(0,0%,100%,0.06)] text-[hsl(0,0%,100%,0.7)] hover:bg-[hsl(0,0%,100%,0.1)] hover:text-[hsl(0,0%,100%,0.9)]" />
+              <ThemeToggle variant="secondary" className="h-9 w-9 border-hero-foreground/10 bg-hero-foreground/10 text-hero-foreground/70 hover:bg-hero-foreground/20 hover:text-hero-foreground" />
             </div>
 
             {/* Hero content */}
             <div className="max-w-[540px] space-y-7">
-              <div className="inline-flex items-center gap-2 rounded-full bg-[hsl(221,67%,37%,0.25)] px-4 py-1.5 ring-1 ring-[hsl(221,67%,37%,0.3)]">
-                <Sparkles className="h-3.5 w-3.5 text-[hsl(217,90%,76%)]" />
-                <span className="text-xs font-medium tracking-wide text-[hsl(217,90%,76%)]">Enterprise operating layer</span>
+              <div className="inline-flex items-center gap-2 rounded-full bg-primary-glow/20 px-4 py-1.5 ring-1 ring-primary-glow/30">
+                <Sparkles className="h-3.5 w-3.5 text-primary-glow" />
+                <span className="text-xs font-medium tracking-wide text-primary-glow">Enterprise operating layer</span>
               </div>
 
-              <h2 className="text-[2.75rem] font-extrabold leading-[1.05] tracking-[-0.04em] text-[hsl(0,0%,100%,0.97)]">
+              <h2 className="text-[2.75rem] font-extrabold leading-[1.05] tracking-[-0.04em] text-hero-foreground">
                 Run project handoffs with total control & visibility.
               </h2>
 
-              <p className="max-w-md text-[15px] leading-7 text-[hsl(0,0%,100%,0.55)]">
+              <p className="max-w-md text-[15px] leading-7 text-hero-foreground/60">
                 Boardroom-ready command centre for enterprise onboarding, inter-team execution, and delivery accountability.
               </p>
 
@@ -105,9 +105,9 @@ export const LoginScreen = () => {
                   { label: "Cross-team visibility", value: "Unified" },
                   { label: "Executive reporting", value: "Realtime" },
                 ].map((item) => (
-                  <div key={item.label} className="rounded-xl bg-[hsl(0,0%,100%,0.06)] p-4 ring-1 ring-[hsl(0,0%,100%,0.08)]">
-                    <p className="text-xl font-bold tracking-[-0.02em] text-[hsl(0,0%,100%,0.92)]">{item.value}</p>
-                    <p className="mt-0.5 text-xs text-[hsl(0,0%,100%,0.45)]">{item.label}</p>
+                  <div key={item.label} className="rounded-xl bg-hero-foreground/[0.07] p-4 ring-1 ring-hero-foreground/10">
+                    <p className="text-xl font-bold tracking-[-0.02em] text-hero-foreground/95">{item.value}</p>
+                    <p className="mt-0.5 text-xs text-hero-foreground/50">{item.label}</p>
                   </div>
                 ))}
               </div>
@@ -120,9 +120,9 @@ export const LoginScreen = () => {
                 { icon: CheckCircle2, text: "Enterprise-grade oversight with owner-level accountability." },
                 { icon: Zap, text: "Built for premium buyer confidence in demos and procurement reviews." },
               ].map((item, i) => (
-                <div key={i} className="flex gap-3 rounded-xl bg-[hsl(0,0%,100%,0.04)] p-4 ring-1 ring-[hsl(0,0%,100%,0.06)]">
-                  <item.icon className="mt-0.5 h-4 w-4 shrink-0 text-[hsl(217,90%,70%,0.7)]" />
-                  <p className="text-[13px] leading-5 text-[hsl(0,0%,100%,0.5)]">{item.text}</p>
+                <div key={i} className="flex gap-3 rounded-xl bg-hero-foreground/5 p-4 ring-1 ring-hero-foreground/10">
+                  <item.icon className="mt-0.5 h-4 w-4 shrink-0 text-primary-glow/80" />
+                  <p className="text-[13px] leading-5 text-hero-foreground/55">{item.text}</p>
                 </div>
               ))}
             </div>
