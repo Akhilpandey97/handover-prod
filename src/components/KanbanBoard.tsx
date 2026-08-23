@@ -299,17 +299,6 @@ export const KanbanBoard = ({ filteredProjects }: KanbanBoardProps) => {
 
         <Separator orientation="vertical" className="h-6" />
 
-        {/* Search */}
-        <div className="relative">
-          <Input
-            placeholder="Search projects..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="h-8 text-xs w-[180px] pl-8"
-          />
-          <Filter className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground" />
-        </div>
-
         {/* Filters */}
         <Collapsible open={filtersOpen} onOpenChange={setFiltersOpen}>
           <CollapsibleTrigger asChild>

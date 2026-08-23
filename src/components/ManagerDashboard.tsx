@@ -92,6 +92,7 @@ import { toast } from "sonner";
 import { fetchAiInsights } from "@/utils/aiInsights";
 import { cn } from "@/lib/utils";
 import { DashboardSkeleton } from "./skeletons/DashboardSkeleton";
+import { computeHealthScore } from "@/utils/aiHealthScore";
 
 // Report components
 import { ExecutiveDashboard } from "./reports/ExecutiveDashboard";
@@ -154,27 +155,18 @@ export const ManagerDashboard = () => {
   const LIST_VIEW_COLUMNS = [
     { key: "merchantName", label: "Merchant Name" },
     { key: "mid", label: "MID" },
-    { key: "platform", label: "Platform" },
-    { key: "category", label: "Category" },
-    { key: "merchantState", label: "Merchant State" },
-    { key: "mintComment", label: "Mint Comment" },
-    { key: "liveDate", label: "Live Date" },
-    { key: "recentComments", label: "Recent Comments" },
     { key: "status", label: "Status" },
-    { key: "arr", label: "ARR" },
+    { key: "phase", label: "Phase" },
     { key: "owner", label: "Owner" },
-    { key: "salesSpoc", label: "Sales SPOC" },
-    { key: "kickOffDate", label: "Start Date" },
-    { key: "goLiveDate", label: "Go-Live Date" },
-    { key: "integrationType", label: "Integration Type" },
-    { key: "pgOnboarding", label: "PG Onboarding" },
-    { key: "goLivePercent", label: "Go-Live %" },
+    { key: "checklist", label: "Checklist" },
+    { key: "goLiveDate", label: "Go-Live" },
+    { key: "risk", label: "Risk" },
   ];
   const [listViewColumns, setListViewColumns] = useState<string[]>(() => {
     try {
       const saved = localStorage.getItem("listview_columns");
-      return saved ? JSON.parse(saved) : ["merchantName", "platform", "category", "merchantState", "mintComment", "liveDate", "recentComments", "status"];
-    } catch { return ["merchantName", "platform", "category", "merchantState", "mintComment", "liveDate", "recentComments", "status"]; }
+      return saved ? JSON.parse(saved) : ["merchantName", "mid", "status", "phase", "owner", "checklist", "goLiveDate", "risk"];
+    } catch { return ["merchantName", "mid", "status", "phase", "owner", "checklist", "goLiveDate", "risk"]; }
   });
   const [listViewPage, setListViewPage] = useState(1);
   const [listViewPageSize, setListViewPageSize] = useState(10);
@@ -740,7 +732,7 @@ export const ManagerDashboard = () => {
               ? "gradient-primary text-primary-foreground shadow-[var(--shadow-soft)]"
               : isParentActive
               ? "bg-accent text-accent-foreground font-semibold"
-              : "hover:bg-accent/60 text-muted-foreground hover:text-foreground",
+              : "hover:bg-sidebar-accent/60 text-sidebar-foreground/70 hover:text-sidebar-foreground",
             draggedTab === tab ? "opacity-50" : ""
           )}
         >
@@ -750,7 +742,7 @@ export const ManagerDashboard = () => {
               ? "bg-primary-foreground/20 text-primary-foreground"
               : isParentActive
               ? "bg-primary/10 text-primary"
-              : "bg-muted text-muted-foreground group-hover:text-foreground"
+              : "bg-sidebar-accent text-sidebar-foreground/70 group-hover:text-sidebar-foreground"
           )}>
             {TAB_CONFIG[tab].icon}
           </span>
@@ -775,7 +767,7 @@ export const ManagerDashboard = () => {
                   "w-full flex items-center gap-2.5 text-left px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150",
                   reportSubTab === key && activeTab === "reports"
                     ? "bg-primary text-primary-foreground shadow-md"
-                    : "text-foreground/60 hover:text-foreground hover:bg-muted/60"
+                    : "text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent/60"
                 )}
               >
                 {cfg.icon && <span className="text-base">{cfg.icon}</span>}
@@ -822,7 +814,7 @@ export const ManagerDashboard = () => {
                             "w-full flex items-center gap-2.5 text-left px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150",
                             settingsSubTab === key && activeTab === "settings"
                               ? "bg-primary text-primary-foreground shadow-md"
-                              : "text-foreground/60 hover:text-foreground hover:bg-muted/60"
+                              : "text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent/60"
                           )}
                         >
                           {label}
@@ -843,8 +835,8 @@ export const ManagerDashboard = () => {
     <div className="h-screen overflow-hidden bg-[hsl(var(--surface-2))] flex">
       {/* Left Sidebar — collapsible */}
       <aside className={cn(
-        "bg-card border-r border-border flex flex-col shrink-0 transition-all duration-300 relative",
-        sidebarCollapsed ? "w-16" : "w-72"
+        "bg-sidebar text-sidebar-foreground flex flex-col shrink-0 transition-all duration-300 relative",
+        sidebarCollapsed ? "w-16" : "w-[212px]"
       )}>
         {/* Logo & Title */}
         <div className="px-4 py-4 border-b border-border">
@@ -860,8 +852,8 @@ export const ManagerDashboard = () => {
             )}
             {!sidebarCollapsed && (
               <div>
-                <h1 className="font-bold text-base text-foreground">{appLabels.app_title}</h1>
-                <p className="text-xs text-muted-foreground">{appLabels.app_subtitle}</p>
+                <h1 className="font-bold text-sm text-sidebar-foreground">{appLabels.app_title}</h1>
+                <p className="text-[10px] uppercase tracking-[0.16em] text-sidebar-foreground/55">{appLabels.app_subtitle}</p>
               </div>
             )}
           </div>
@@ -887,7 +879,7 @@ export const ManagerDashboard = () => {
                   "w-full flex items-center justify-center p-3 rounded-xl transition-all duration-200",
                   activeTab === tab
                     ? "bg-primary text-primary-foreground shadow-lg shadow-primary/25"
-                    : "hover:bg-muted/60 text-foreground/60 hover:text-foreground"
+                    : "hover:bg-sidebar-accent/60 text-sidebar-foreground/70 hover:text-sidebar-foreground"
                 )}
                 title={TAB_CONFIG[tab]?.label}
               >
@@ -912,7 +904,7 @@ export const ManagerDashboard = () => {
         <header className="h-16 border-b border-border bg-card/95 backdrop-blur-md flex items-center justify-between px-6 shrink-0">
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2">
-              <h2 className="text-lg font-bold">{activeTabLabel}</h2>
+              <h2 className="text-xl font-bold">{activeTabLabel}</h2>
             </div>
             <span className="text-xs text-muted-foreground">
               {activeTab === "projects" ? `${filteredProjects.length} project${filteredProjects.length !== 1 ? "s" : ""} found` : appLabels.app_subtitle}
@@ -920,6 +912,32 @@ export const ManagerDashboard = () => {
           </div>
 
           <div className="flex items-center gap-3">
+            {activeTab === "projects" && (
+              <div className="flex items-center rounded-lg bg-muted/70 p-0.5">
+                <Button
+                  type="button"
+                  variant={projectView === "kanban" ? "default" : "ghost"}
+                  size="sm"
+                  className="h-8 gap-1.5 px-3 text-xs"
+                  onClick={() => setProjectView("kanban")}
+                  aria-pressed={projectView === "kanban"}
+                >
+                  <FolderKanban className="h-3.5 w-3.5" />
+                  Board
+                </Button>
+                <Button
+                  type="button"
+                  variant={projectView === "list" ? "default" : "ghost"}
+                  size="sm"
+                  className="h-8 gap-1.5 px-3 text-xs"
+                  onClick={() => setProjectView("list")}
+                  aria-pressed={projectView === "list"}
+                >
+                  <List className="h-3.5 w-3.5" />
+                  List
+                </Button>
+              </div>
+            )}
             {/* Search */}
             <div className="w-64">
               <div className="relative">
@@ -1814,6 +1832,8 @@ export const ManagerDashboard = () => {
                               case "platform": return project.platform || "—";
                               case "category": return project.category || "—";
                               case "merchantState": return getProjectPhaseLabel(project);
+                              case "phase": return phaseLabels[project.currentPhase] || project.currentPhase;
+                              case "checklist": return `${project.checklist.filter(c => c.completed).length}/${project.checklist.length} checklist`;
                               case "mintComment": return project.notes?.currentPhaseComment || project.notes?.mintNotes || "—";
                               case "liveDate": return project.dates.goLiveDate || project.dates.expectedGoLiveDate || "—";
                               case "recentComments": {
@@ -1833,11 +1853,15 @@ export const ManagerDashboard = () => {
                               case "integrationType": return project.integrationType || "—";
                               case "pgOnboarding": return project.pgOnboarding || "—";
                               case "goLivePercent": return `${project.goLivePercent || 0}%`;
+                              case "risk": {
+                                const health = computeHealthScore(project);
+                                return health.label === "Healthy" ? "—" : health.factors[0] || health.label;
+                              }
                               default: return "—";
                             }
                           };
 
-                          const statusColor = project.projectState === "in_progress" ? "text-amber-500" :
+                          const statusColor = project.projectState === "in_progress" ? "text-primary" :
                             project.projectState === "live" ? "text-emerald-500" :
                             project.projectState === "blocked" ? "text-destructive" : "text-muted-foreground";
 
@@ -1848,7 +1872,7 @@ export const ManagerDashboard = () => {
                               onClick={() => openProjectWorkspaceTab(project.id)}
                             >
                               {listViewColumns.map(colKey => (
-                                <TableCell key={colKey} className={cn("text-sm py-4", colKey === "status" && statusColor, colKey === "recentComments" && "max-w-[200px]")}>
+                                <TableCell key={colKey} className={cn("text-sm py-3", colKey === "status" && statusColor, colKey === "risk" && (getColValue(colKey) === "—" ? "text-muted-foreground" : "font-semibold text-destructive"), colKey === "recentComments" && "max-w-[200px]")}>
                                   {colKey === "recentComments" ? (
                                     <div className="space-y-0.5">
                                       {getColValue(colKey).split("\n").map((line, i) => (
