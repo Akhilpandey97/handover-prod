@@ -63,11 +63,11 @@ export const LoginScreen = () => {
         {/* Left Hero Panel */}
         <section className="relative hidden overflow-hidden lg:flex">
           {/* Layered background */}
-          <div className="absolute inset-0 bg-[hsl(222,40%,10%)]" />
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_10%_20%,hsl(221,67%,37%,0.35),transparent),radial-gradient(ellipse_60%_50%_at_90%_80%,hsl(198,88%,45%,0.15),transparent)]" />
-          <div className="absolute inset-0 bg-[linear-gradient(to_right,hsl(0,0%,100%,0.03)_1px,transparent_1px),linear-gradient(to_bottom,hsl(0,0%,100%,0.03)_1px,transparent_1px)] bg-[size:56px_56px]" />
-          {/* Top glow accent */}
-          <div className="absolute -top-32 left-1/2 h-64 w-[600px] -translate-x-1/2 rounded-full bg-[hsl(221,67%,37%,0.2)] blur-[120px]" />
+          <div className="absolute inset-0 gradient-hero" />
+          <div className="absolute inset-0 enterprise-grid opacity-[0.35]" />
+          {/* Glow accents */}
+          <div className="absolute -top-40 left-1/2 h-72 w-[620px] -translate-x-1/2 rounded-full bg-primary-glow/25 blur-[140px]" />
+          <div className="absolute -bottom-32 right-0 h-72 w-[420px] rounded-full bg-teal/20 blur-[140px]" />
 
           <div className="relative z-10 flex w-full flex-col justify-between p-10 xl:p-14">
             {/* Top bar */}
