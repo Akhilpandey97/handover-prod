@@ -16,7 +16,7 @@ import { WorkflowManager } from "./settings/WorkflowManager";
 import { CSVUploadDialog } from "./CSVUploadDialog";
 import { AddProjectDialog } from "./AddProjectDialog";
 import { AssignOwnerDialog } from "./AssignOwnerDialog";
-import { Project, calculateTimeByParty, calculateTimeFromChecklist, formatDuration, projectStateLabels, ProjectState, ProjectPhase } from "@/data/projectsData";
+import { Project, calculateTimeByParty, calculateTimeFromChecklist, formatDuration, projectStateLabels, projectStateColors, ProjectState, ProjectPhase } from "@/data/projectsData";
 import { supabase } from "@/integrations/supabase/client";
 import { ProjectCardNew } from "./ProjectCardNew";
 import { Input } from "@/components/ui/input";
@@ -165,8 +165,8 @@ export const ManagerDashboard = () => {
   const [listViewColumns, setListViewColumns] = useState<string[]>(() => {
     try {
       const saved = localStorage.getItem("listview_columns");
-      return saved ? JSON.parse(saved) : ["merchantName", "mid", "status", "phase", "owner", "checklist", "goLiveDate", "risk"];
-    } catch { return ["merchantName", "mid", "status", "phase", "owner", "checklist", "goLiveDate", "risk"]; }
+      return saved ? JSON.parse(saved) : ["merchantName", "status", "phase", "owner", "checklist", "goLiveDate", "risk"];
+    } catch { return ["merchantName", "status", "phase", "owner", "checklist", "goLiveDate", "risk"]; }
   });
   const [listViewPage, setListViewPage] = useState(1);
   const [listViewPageSize, setListViewPageSize] = useState(10);
@@ -829,6 +829,56 @@ export const ManagerDashboard = () => {
         )}
       </div>
     );
+  };
+
+  const computeRiskText = (project: Project): string => {
+    const today = new Date();
+    const expectedGoLive = project.dates.expectedGoLiveDate ? new Date(project.dates.expectedGoLiveDate) : null;
+
+    if (expectedGoLive && expectedGoLive < today && project.projectState !== "live") {
+      const daysPast = Math.floor((today.getTime() - expectedGoLive.getTime()) / (1000 * 60 * 60 * 24));
+      return `Go-live passed ${daysPast} day${daysPast !== 1 ? "s" : ""} ago`;
+    }
+
+    const activityDates: Date[] = [];
+    project.checklist.forEach(c => {
+      if (c.completedAt) activityDates.push(new Date(c.completedAt));
+      if (c.commentAt) activityDates.push(new Date(c.commentAt));
+    });
+    project.transferHistory.forEach(t => {
+      if (t.transferredAt) activityDates.push(new Date(t.transferredAt));
+      if (t.acceptedAt) activityDates.push(new Date(t.acceptedAt));
+    });
+
+    const lastActivity = activityDates.length > 0
+      ? new Date(Math.max(...activityDates.map(d => d.getTime())))
+      : (project.dates.kickOffDate ? new Date(project.dates.kickOffDate) : null);
+
+    const daysSince = lastActivity
+      ? Math.floor((today.getTime() - lastActivity.getTime()) / (1000 * 60 * 60 * 24))
+      : 0;
+
+    if (project.projectState === "blocked") {
+      if (expectedGoLive) {
+        const daysToGoLive = Math.floor((expectedGoLive.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+        if (daysToGoLive >= 0) return `Blocked ${daysSince} day${daysSince !== 1 ? "s" : ""}, go-live in ${daysToGoLive}`;
+      }
+      return `Blocked ${daysSince} day${daysSince !== 1 ? "s" : ""}`;
+    }
+
+    if (project.projectState === "on_hold" && daysSince > 7) {
+      return `No movement in ${daysSince} day${daysSince !== 1 ? "s" : ""}`;
+    }
+
+    if (!project.assignedOwner && project.projectState !== "live") {
+      const kickOff = project.dates.kickOffDate ? new Date(project.dates.kickOffDate) : null;
+      if (kickOff) {
+        const daysUnassigned = Math.floor((today.getTime() - kickOff.getTime()) / (1000 * 60 * 60 * 24));
+        if (daysUnassigned > 1) return `Unassigned for ${daysUnassigned} day${daysUnassigned !== 1 ? "s" : ""}`;
+      }
+    }
+
+    return "—";
   };
 
   return (
@@ -1773,6 +1823,7 @@ export const ManagerDashboard = () => {
                   <Table className="border-separate border-spacing-y-1">
                     <TableHeader className="sticky top-0 z-10 bg-muted/60 backdrop-blur-sm">
                       <TableRow className="border-b-2 border-border/60 hover:bg-transparent">
+                        <TableHead className="w-10 py-3 pl-3 pr-0" />
                         {listViewColumns.map((colKey, colIdx) => {
                           const col = LIST_VIEW_COLUMNS.find(c => c.key === colKey);
                           return col ? (
@@ -1853,9 +1904,16 @@ export const ManagerDashboard = () => {
                             }
                           };
 
-                          const statusColor = project.projectState === "in_progress" ? "text-primary" :
-                            project.projectState === "live" ? "text-emerald-500" :
-                            project.projectState === "blocked" ? "text-destructive" : "text-muted-foreground";
+
+                          const riskText = computeRiskText(project);
+                          const riskIsCritical = riskText.includes("passed") || riskText.startsWith("Blocked");
+                          const goLiveRaw = project.dates.goLiveDate || project.dates.expectedGoLiveDate;
+                          const isLive = project.projectState === "live";
+                          const goLiveDate = goLiveRaw ? new Date(goLiveRaw) : null;
+                          const goLiveIsPast = goLiveDate && goLiveDate < new Date() && !isLive;
+                          const goLiveDisplay = goLiveDate
+                            ? goLiveDate.toLocaleDateString("en-GB", { day: "numeric", month: "short" })
+                            : "—";
 
                           return (
                             <TableRow
@@ -1863,21 +1921,77 @@ export const ManagerDashboard = () => {
                               className="cursor-pointer hover:bg-accent/40 transition-colors border-b-4 border-background [&>td:first-child]:rounded-l-lg [&>td:last-child]:rounded-r-lg bg-card"
                               onClick={() => openProjectWorkspaceTab(project.id)}
                             >
-                              {listViewColumns.map(colKey => (
-                                <TableCell key={colKey} className={cn("text-sm py-3", colKey === "status" && statusColor, colKey === "risk" && (getColValue(colKey) === "—" ? "text-muted-foreground" : "font-semibold text-destructive"), colKey === "recentComments" && "max-w-[200px]")}>
-                                  {colKey === "recentComments" ? (
-                                    <div className="space-y-0.5">
-                                      {getColValue(colKey).split("\n").map((line, i) => (
-                                        <div key={i} className="text-xs text-muted-foreground truncate">{line}</div>
-                                      ))}
-                                    </div>
-                                  ) : colKey === "mintComment" ? (
-                                    <span className="truncate block max-w-[180px]" title={getColValue(colKey)}>{getColValue(colKey)}</span>
-                                  ) : (
-                                    getColValue(colKey)
-                                  )}
-                                </TableCell>
-                              ))}
+                              <TableCell className="w-10 py-3 pl-3 pr-0" onClick={(e) => e.stopPropagation()}>
+                                <Checkbox
+                                  checked={selectedProjects.has(project.id)}
+                                  onCheckedChange={(checked) => {
+                                    const next = new Set(selectedProjects);
+                                    checked ? next.add(project.id) : next.delete(project.id);
+                                    setSelectedProjects(next);
+                                  }}
+                                />
+                              </TableCell>
+                              {listViewColumns.map(colKey => {
+                                const rawValue = getColValue(colKey);
+                                if (colKey === "merchantName") {
+                                  return (
+                                    <TableCell key={colKey} className="py-3">
+                                      <span className="font-semibold text-sm text-foreground">{project.merchantName}</span>
+                                      <span className="ml-2 text-xs text-muted-foreground">{project.mid}</span>
+                                    </TableCell>
+                                  );
+                                }
+                                if (colKey === "status") {
+                                  return (
+                                    <TableCell key={colKey} className="py-3">
+                                      <span className={cn("inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium", projectStateColors[project.projectState])}>
+                                        {stateLabelsFromCtx[project.projectState] || projectStateLabels[project.projectState]}
+                                      </span>
+                                    </TableCell>
+                                  );
+                                }
+                                if (colKey === "goLiveDate") {
+                                  return (
+                                    <TableCell key={colKey} className="py-3">
+                                      <span className={cn("text-sm", isLive && "text-emerald-600 font-medium", goLiveIsPast && "text-destructive font-semibold")}>
+                                        {goLiveRaw ? (isLive ? `Live ${goLiveDisplay}` : goLiveDisplay) : "—"}
+                                      </span>
+                                    </TableCell>
+                                  );
+                                }
+                                if (colKey === "risk") {
+                                  return (
+                                    <TableCell key={colKey} className="py-3">
+                                      <span className={cn("text-sm", riskText === "—" ? "text-muted-foreground" : riskIsCritical ? "text-destructive font-medium" : "text-amber-600 font-medium")}>
+                                        {riskText}
+                                      </span>
+                                    </TableCell>
+                                  );
+                                }
+                                if (colKey === "recentComments") {
+                                  return (
+                                    <TableCell key={colKey} className="py-3 max-w-[200px]">
+                                      <div className="space-y-0.5">
+                                        {rawValue.split("\n").map((line, i) => (
+                                          <div key={i} className="text-xs text-muted-foreground truncate">{line}</div>
+                                        ))}
+                                      </div>
+                                    </TableCell>
+                                  );
+                                }
+                                if (colKey === "mintComment") {
+                                  return (
+                                    <TableCell key={colKey} className="py-3">
+                                      <span className="truncate block max-w-[180px] text-sm" title={rawValue}>{rawValue}</span>
+                                    </TableCell>
+                                  );
+                                }
+                                return (
+                                  <TableCell key={colKey} className="text-sm py-3 text-foreground">
+                                    {rawValue}
+                                  </TableCell>
+                                );
+                              })}
                               <TableCell>
                                 <div className="flex gap-1">
                                   <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={(e) => { e.stopPropagation(); deleteProject(project.id); }}>
