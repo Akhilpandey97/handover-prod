@@ -60,7 +60,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
-type WorkspaceTab = "overview" | "activity" | "checklists" | "notes";
+type WorkspaceTab = "overview" | "activity" | "checklists" | "notes" | "details";
 type ActivityKind = "user" | "system" | "handoff" | "milestone";
 
 const PROJECT_STATES: ProjectState[] = ["not_started", "on_hold", "in_progress", "live", "blocked"];
@@ -98,10 +98,10 @@ interface RiskAssessment {
 }
 
 const tabOptions: Array<{ value: WorkspaceTab; label: string }> = [
-  { value: "overview", label: "Overview" },
+  { value: "checklists", label: "Checklist" },
   { value: "activity", label: "Activity" },
-  { value: "checklists", label: "Checklists" },
   { value: "notes", label: "Notes" },
+  { value: "details", label: "Details" },
 ];
 
 const stateToneMap: Record<ProjectState, string> = {
@@ -481,7 +481,7 @@ export const ProjectWorkspaceView = ({ projectId: projectIdProp, inModal = false
   } = useProjects();
   const { teamLabels, stateLabels, phaseLabels, responsibilityLabels } = useLabels();
 
-  const [activeTab, setActiveTab] = useState<WorkspaceTab>("activity");
+  const [activeTab, setActiveTab] = useState<WorkspaceTab>("checklists");
   const [editOpen, setEditOpen] = useState(false);
   const [assignOpen, setAssignOpen] = useState(false);
   const [transferOpen, setTransferOpen] = useState(false);
@@ -548,6 +548,10 @@ export const ProjectWorkspaceView = ({ projectId: projectIdProp, inModal = false
   const isTransferReady = canTransfer && allCurrentTeamChecklistCompleted;
   const risk = calculateRiskAssessment(project);
   const openTasksCount = project.checklist.length - completedChecklist;
+  const nextPendingItem = project.checklist.find((item) => !item.completed);
+  const waitingOnLabel = pendingOn === "merchant" ? responsibilityLabels.merchant : teamLabels[project.currentOwnerTeam] || project.currentOwnerTeam;
+  const waitingOnSub = pendingOn === "merchant" ? "External work outstanding" : `${openTasksCount} checklist item${openTasksCount === 1 ? "" : "s"} remaining`;
+  const nextStepLabel = nextPendingItem?.title || "Ready to transfer";
   const summaryCards = buildActionDrivenSummary(
     project,
     aiSummary,
@@ -748,10 +752,35 @@ export const ProjectWorkspaceView = ({ projectId: projectIdProp, inModal = false
         </div>
       </div>
 
+      <div className="grid shrink-0 border-b border-border/60 bg-card/60 px-4 py-4 sm:grid-cols-2 lg:grid-cols-4 lg:px-6">
+        <div className="border-border/60 px-2 sm:border-r sm:pr-5">
+          <p className="text-xs text-muted-foreground">Waiting on</p>
+          <p className="mt-1 text-lg font-semibold text-foreground">{waitingOnLabel}</p>
+          <p className="text-xs text-muted-foreground">{waitingOnSub}</p>
+        </div>
+        <div className="border-border/60 px-2 pt-3 sm:pl-5 sm:pt-0 lg:border-r">
+          <p className="text-xs text-muted-foreground">Next step</p>
+          <p className="mt-1 truncate text-lg font-semibold text-foreground">{nextStepLabel}</p>
+          <p className="text-xs text-muted-foreground">{phaseLabels[project.currentPhase] || project.currentPhase}</p>
+        </div>
+        <div className="border-border/60 px-2 pt-3 sm:pr-5 lg:border-r lg:pl-5 lg:pt-0">
+          <p className="text-xs text-muted-foreground">Expected go-live</p>
+          <p className="mt-1 text-lg font-semibold text-foreground">{project.dates.expectedGoLiveDate || "Not set"}</p>
+          <p className={cn("text-xs", risk.label === "Low risk" ? "text-muted-foreground" : "font-semibold text-destructive")}>{risk.label}</p>
+        </div>
+        <div className="px-2 pt-3 lg:pl-5 lg:pt-0">
+          <div className="flex items-center gap-2">
+            <span className={cn("h-1.5 w-1.5 rounded-full", risk.label === "Low risk" ? "bg-success" : "bg-destructive")} />
+            <p className={cn("text-sm font-semibold", risk.label === "Low risk" ? "text-success" : "text-destructive")}>{risk.label}</p>
+          </div>
+          <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{risk.drivers[0]?.label || "No major delivery risk detected."}</p>
+        </div>
+      </div>
+
       {/* 3-panel body */}
       <div className="mx-auto flex min-h-0 w-full max-w-[1680px] flex-1">
         {/* LEFT PANEL — Actions & AI */}
-        <ScrollArea className="hidden w-[280px] shrink-0 border-r border-border/60 bg-card/50 xl:block">
+        <ScrollArea className="hidden">
           <div className="p-3 space-y-3">
             <div className="rounded-lg border-2 border-primary/30 bg-primary/5 p-3">
               <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-primary">Recommended actions</p>
@@ -805,8 +834,43 @@ export const ProjectWorkspaceView = ({ projectId: projectIdProp, inModal = false
         </ScrollArea>
 
         {/* RIGHT PANEL — Ownership & Context */}
-        <ScrollArea className="order-3 hidden w-[240px] shrink-0 border-l border-border/60 bg-card/50 lg:block">
-          <div className="p-4 space-y-1">
+        <ScrollArea className="order-3 hidden w-[322px] shrink-0 border-l border-border/60 bg-card/50 lg:block">
+          <div className="space-y-1">
+            <div className="border-b border-border/60 p-4">
+              <div className="flex items-center gap-3">
+                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-xs font-bold text-primary-foreground">
+                  {(project.assignedOwnerName || project.currentOwnerTeam).slice(0, 2).toUpperCase()}
+                </div>
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold text-foreground">{project.assignedOwnerName || "Unassigned"}</p>
+                  <p className="text-xs text-muted-foreground">Owner · {teamLabels[project.currentOwnerTeam] || project.currentOwnerTeam}</p>
+                </div>
+              </div>
+            </div>
+            <div className="border-b border-border/60 p-4">
+              <div className="mb-2 flex items-center justify-between gap-2">
+                <p className="text-xs font-semibold text-muted-foreground">Action centre</p>
+                <span className="text-[11px] text-muted-foreground">{risk.label}</span>
+              </div>
+              <div className="space-y-1.5">
+                {actionRecommendations.map((action) => (
+                  action.href ? (
+                    <a key={action.label} href={action.href} target="_blank" rel="noreferrer" className="flex items-start gap-2 rounded-lg border border-border/60 bg-card px-3 py-2.5 transition hover:border-primary/40 hover:bg-accent/50">
+                      <span className={cn("mt-1 h-1.5 w-1.5 shrink-0 rounded-full", action.label === actionRecommendations[0]?.label ? "bg-destructive" : "bg-border")} />
+                      <span><span className="block text-xs font-semibold text-foreground">{action.label}</span><span className="block text-[11px] text-muted-foreground">{action.sublabel}</span></span>
+                    </a>
+                  ) : (
+                    <button key={action.label} type="button" onClick={action.onClick} className="flex w-full items-start gap-2 rounded-lg border border-border/60 bg-card px-3 py-2.5 text-left transition hover:border-primary/40 hover:bg-accent/50">
+                      <span className={cn("mt-1 h-1.5 w-1.5 shrink-0 rounded-full", action.label === actionRecommendations[0]?.label ? "bg-destructive" : "bg-border")} />
+                      <span><span className="block text-xs font-semibold text-foreground">{action.label}</span><span className="block text-[11px] text-muted-foreground">{action.sublabel}</span></span>
+                    </button>
+                  )
+                ))}
+              </div>
+            </div>
+            <div className="p-4">
+              <p className="text-xs font-semibold text-muted-foreground">Project facts</p>
+            </div>
             <div className="pb-3 space-y-3">
               <div className="flex flex-wrap gap-1.5">
                 <Badge variant="outline" className="text-[10px] px-2 py-0.5 font-semibold">MID {project.mid}</Badge>
@@ -1143,6 +1207,17 @@ export const ProjectWorkspaceView = ({ projectId: projectIdProp, inModal = false
                     <div key={label} className="rounded-lg border border-border/60 bg-card/80 p-3">
                       <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">{label}</p>
                       <p className="mt-1.5 text-sm leading-relaxed text-foreground">{value}</p>
+                    </div>
+                  ))}
+                </div>
+              </TabsContent>
+
+              <TabsContent value="details" className="m-0">
+                <div className="max-w-3xl space-y-2">
+                  {detailRows.map(([label, value]) => (
+                    <div key={label} className="flex items-center gap-4 border-b border-border/60 px-3 py-3 last:border-b-0">
+                      <span className="w-40 shrink-0 text-xs text-muted-foreground">{label}</span>
+                      <span className="text-sm font-medium text-foreground">{value}</span>
                     </div>
                   ))}
                 </div>

@@ -137,7 +137,7 @@ export const ManagerDashboard = () => {
   const [expandedProjects, setExpandedProjects] = useState<Set<string>>(new Set());
   const [csvDialogOpen, setCsvDialogOpen] = useState(false);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
-  const [projectView, setProjectView] = useState<"list" | "kanban">("list");
+  const [projectView, setProjectView] = useState<"list" | "kanban">("kanban");
 
   // Sidebar expand state for sub-menus
   const [reportsExpanded, setReportsExpanded] = useState(false);

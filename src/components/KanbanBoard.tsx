@@ -52,6 +52,11 @@ const SORT_OPTIONS = [
   { key: "platform", label: "Platform" },
 ];
 
+const GROUP_ORDER: Record<string, string[]> = {
+  projectState: ["not_started", "in_progress", "on_hold", "blocked", "live"],
+  currentPhase: ["mint", "integration", "ms", "completed"],
+};
+
 function getFieldValue(project: Project, field: string, customValuesMap?: Record<string, Record<string, string>>): string {
   switch (field) {
     case "projectState": return project.projectState;
@@ -195,6 +200,7 @@ export const KanbanBoard = ({ filteredProjects }: KanbanBoardProps) => {
       groupMap.set(val, existing);
     });
 
+    const order = GROUP_ORDER[groupField] || [];
     return Array.from(groupMap.entries())
       .map(([key, groupProjects]) => ({
         key,
@@ -202,7 +208,14 @@ export const KanbanBoard = ({ filteredProjects }: KanbanBoardProps) => {
         projects: groupProjects,
         ...getColumnStyle(key, groupField),
       }))
-      .sort((a, b) => a.label.localeCompare(b.label));
+      .sort((a, b) => {
+        const aIndex = order.indexOf(a.key);
+        const bIndex = order.indexOf(b.key);
+        if (aIndex === -1 && bIndex === -1) return a.label.localeCompare(b.label);
+        if (aIndex === -1) return 1;
+        if (bIndex === -1) return -1;
+        return aIndex - bIndex;
+      });
   }, [sortedProjects, groupField, labels, customValuesMap]);
 
   const standardOptions = allFieldOptions.filter(o => !o.key.startsWith("custom_field_"));
