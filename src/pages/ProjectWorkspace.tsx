@@ -803,8 +803,6 @@ export const ProjectWorkspaceView = ({ projectId: projectIdProp, inModal = false
           </div>
         </ScrollArea>
 
-        {/* CENTER PANEL — Tabs */}
-        <main className="flex min-w-0 flex-1 flex-col overflow-hidden">
         {/* RIGHT PANEL — Ownership & Context */}
         <ScrollArea className="order-3 hidden w-[240px] shrink-0 border-l border-border/60 bg-card/50 lg:block">
           <div className="p-4 space-y-1">
@@ -984,6 +982,8 @@ export const ProjectWorkspaceView = ({ projectId: projectIdProp, inModal = false
           </div>
         </ScrollArea>
 
+        {/* CENTER PANEL — Tabs */}
+        <main className="flex min-w-0 flex-1 flex-col overflow-hidden">
           <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as WorkspaceTab)} className="flex flex-1 flex-col overflow-hidden">
             <div className="shrink-0 border-b border-border/60 px-4 py-1.5">
               <TabsList className="h-auto gap-1 rounded-none bg-transparent p-0">
