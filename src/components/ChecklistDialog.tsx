@@ -21,7 +21,7 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { ChecklistCommentThread } from "@/components/ChecklistCommentThread";
 import { ChecklistFormDialog } from "@/components/ChecklistFormDialog";
-import { CheckCircle2, ClipboardList, Building2, Users, Minus, Lock, AlertCircle, FileText } from "lucide-react";
+import { CheckCircle2, Building2, Users, Minus, Lock, AlertCircle, FileText } from "lucide-react";
 
 interface ChecklistDialogProps {
   project: Project | null;
@@ -431,15 +431,6 @@ export const ChecklistDialog = ({
     return (
       <>
         <div className="flex h-full min-h-0 flex-col rounded-2xl border border-border/70 bg-background p-5">
-          <div className="mb-5 flex items-center gap-3">
-            <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-lg">
-              <ClipboardList className="h-6 w-6 text-white" />
-            </div>
-            <div>
-              <h2 className="text-xl font-semibold">Project Checklist</h2>
-              <p className="text-sm text-muted-foreground mt-0.5">{project.merchantName}</p>
-            </div>
-          </div>
           {checklistBody}
         </div>
 
@@ -464,20 +455,6 @@ export const ChecklistDialog = ({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="w-[95vw] max-w-[95vw] h-[95vh] max-h-[95vh] flex flex-col overflow-hidden">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-3">
-            <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-lg">
-              <ClipboardList className="h-6 w-6 text-white" />
-            </div>
-            <div>
-              <span className="text-xl">Project Checklist</span>
-              <p className="text-sm font-normal text-muted-foreground mt-0.5">
-                {project.merchantName}
-              </p>
-            </div>
-          </DialogTitle>
-        </DialogHeader>
-
         {checklistBody}
 
         {/* Checklist Form Dialog */}
