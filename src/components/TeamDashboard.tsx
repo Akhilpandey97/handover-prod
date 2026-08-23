@@ -131,30 +131,32 @@ export const TeamDashboard = () => {
     },
   ];
 
+  const completionPct = totalChecklist > 0 ? Math.round((completedChecklist / totalChecklist) * 100) : 0;
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 flex">
+    <div className="min-h-screen bg-background flex">
       {/* Left Sidebar */}
-      <aside className="w-72 border-r bg-card/50 backdrop-blur-sm flex flex-col">
+      <aside className="w-[264px] shrink-0 flex flex-col bg-sidebar text-sidebar-foreground">
         {/* Logo & Team */}
-        <div className="p-6 border-b">
+        <div className="p-5 border-b border-sidebar-border">
           <div className="flex items-center gap-3">
             {labels.org_logo_url ? (
-              <img src={labels.org_logo_url} alt="Logo" className="h-11 w-11 rounded-xl object-contain shadow-lg" />
+              <img src={labels.org_logo_url} alt="Logo" className="h-10 w-10 rounded-xl object-contain bg-sidebar-accent p-1" />
             ) : (
-              <div className={`h-11 w-11 rounded-xl ${teamColors[currentUser.team]} flex items-center justify-center shadow-lg`}>
-                <FolderKanban className="h-6 w-6 text-white" />
+              <div className="h-10 w-10 rounded-xl gradient-primary flex items-center justify-center">
+                <FolderKanban className="h-5 w-5 text-primary-foreground" />
               </div>
             )}
-            <div>
-              <h1 className="font-bold text-lg">{teamLabels[currentUser.team]}</h1>
-              <p className="text-xs text-muted-foreground">Team Dashboard</p>
+            <div className="min-w-0">
+              <h1 className="font-display font-bold text-[15px] leading-tight truncate">{teamLabels[currentUser.team]}</h1>
+              <p className="text-[11px] uppercase tracking-[0.18em] text-sidebar-foreground/50">Workspace</p>
             </div>
           </div>
         </div>
 
         {/* Navigation Tabs */}
-        <nav className="flex-1 p-4">
-          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3 px-3">
+        <nav className="flex-1 p-3 overflow-y-auto scrollbar-thin">
+          <p className="text-[10px] font-semibold text-sidebar-foreground/45 uppercase tracking-[0.2em] mb-2 px-3">
             Projects
           </p>
           <div className="space-y-1">
@@ -163,33 +165,48 @@ export const TeamDashboard = () => {
                 key={item.key}
                 onClick={() => setActiveTab(item.key)}
                 className={cn(
-                  "w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all duration-200",
+                  "w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm transition-colors",
                   activeTab === item.key
-                    ? "bg-primary text-primary-foreground shadow-lg"
-                    : "hover:bg-muted/80 text-muted-foreground hover:text-foreground"
+                    ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                    : "text-sidebar-foreground/70 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground"
                 )}
               >
                 <div className="flex items-center gap-3">
-                  <span className={activeTab === item.key ? "text-primary-foreground" : item.color}>
+                  <span className={activeTab === item.key ? "text-sidebar-primary" : "text-sidebar-foreground/50"}>
                     {item.icon}
                   </span>
                   <span className="font-medium">{item.label}</span>
                 </div>
-                <Badge 
-                  variant={activeTab === item.key ? "secondary" : "outline"}
+                <span
                   className={cn(
-                    "font-bold min-w-[28px] justify-center",
-                    activeTab === item.key && "bg-white/20 text-primary-foreground border-0"
+                    "min-w-[26px] rounded-md px-1.5 py-0.5 text-center text-[11px] font-semibold tabular-nums",
+                    activeTab === item.key
+                      ? "bg-sidebar-primary text-sidebar-primary-foreground"
+                      : "bg-sidebar-accent/70 text-sidebar-foreground/70"
                   )}
                 >
                   {item.count}
-                </Badge>
+                </span>
               </button>
             ))}
           </div>
 
+          {/* Progress summary */}
+          <div className="mt-5 mx-1 rounded-xl bg-sidebar-accent/50 p-4 ring-1 ring-sidebar-border">
+            <div className="flex items-baseline justify-between">
+              <p className="text-[11px] uppercase tracking-[0.16em] text-sidebar-foreground/50">Checklist</p>
+              <p className="font-display text-lg font-bold text-sidebar-foreground">{completionPct}%</p>
+            </div>
+            <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-sidebar-background/60">
+              <div className="h-full rounded-full bg-sidebar-primary transition-all" style={{ width: `${completionPct}%` }} />
+            </div>
+            <p className="mt-2 text-[11px] text-sidebar-foreground/50">
+              {completedChecklist} of {totalChecklist} tasks complete
+            </p>
+          </div>
+
           {/* AI Alerts Section */}
-          <div className="mt-6 px-2">
+          <div className="mt-4 px-1">
             <AiSmartAlerts projects={allUserProjects} compact />
           </div>
         </nav>
@@ -197,42 +214,42 @@ export const TeamDashboard = () => {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 flex flex-col">
+      <main className="flex-1 flex flex-col min-w-0">
         {/* Header */}
-        <header className="h-16 border-b bg-background/80 backdrop-blur-sm flex items-center justify-between px-8">
-          <div>
-            <h2 className="text-xl font-bold">
+        <header className="sticky top-0 z-20 h-16 border-b bg-background/85 backdrop-blur-md flex items-center justify-between gap-6 px-6 lg:px-8">
+          <div className="min-w-0">
+            <h2 className="font-display text-lg font-bold tracking-[-0.02em]">
               {activeTab === "pending" && "Pending Acceptance"}
               {activeTab === "active" && "Active Projects"}
               {activeTab === "all" && "All Projects"}
             </h2>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-xs text-muted-foreground">
               {displayProjects.length} project{displayProjects.length !== 1 ? "s" : ""} found
             </p>
           </div>
-          
-          <div className="flex items-center gap-4">
+
+          <div className="flex items-center gap-3">
             {/* Search */}
-            <div className="w-80">
+            <div className="w-64 xl:w-80">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   placeholder="Search by name or MID..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 h-10 bg-muted/50 border-0 focus:ring-2 focus:ring-primary/20"
+                  className="pl-9 h-9 rounded-lg bg-muted/60 border-transparent focus-visible:bg-background"
                 />
               </div>
             </div>
 
             {/* User Info */}
-            <div className="flex items-center gap-3 pl-4 border-l">
+            <div className="flex items-center gap-2.5 pl-3 border-l">
               <ThemeToggle />
-              <div className="text-right">
-                <p className="font-medium text-sm">{currentUser.name}</p>
-                <p className="text-xs text-muted-foreground">{teamLabels[currentUser.team] || currentUser.team}</p>
+              <div className="hidden text-right sm:block">
+                <p className="font-semibold text-[13px] leading-tight">{currentUser.name}</p>
+                <p className="text-[11px] text-muted-foreground">{teamLabels[currentUser.team] || currentUser.team}</p>
               </div>
-              <div className={`h-9 w-9 rounded-lg ${teamColors[currentUser.team]} flex items-center justify-center text-white font-semibold text-sm`}>
+              <div className="h-9 w-9 rounded-lg gradient-primary flex items-center justify-center text-primary-foreground font-semibold text-sm">
                 {currentUser.name.charAt(0)}
               </div>
               <Button variant="ghost" size="icon" onClick={logout} className="h-9 w-9 hover:bg-destructive/10 hover:text-destructive">
