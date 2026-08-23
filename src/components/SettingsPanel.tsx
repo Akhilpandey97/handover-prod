@@ -441,15 +441,6 @@ export const SettingsPanel = ({ activeSubTab }: SettingsPanelProps) => {
               COLOR_GROUPS.flatMap(g => g.keys).map(({ key }) => [key, getValue(key)])
             )}
           />
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Palette className="h-5 w-5" />Colours & Branding
-              </CardTitle>
-              <CardDescription>Fine-tune individual colours for team badges, card backgrounds, and state indicators</CardDescription>
-            </CardHeader>
-            <CardContent>{renderColorGroups(COLOR_GROUPS)}</CardContent>
-          </Card>
         </TabsContent>
 
         {/* Email Tab */}

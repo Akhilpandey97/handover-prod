@@ -108,7 +108,7 @@ const SETTINGS_SUB_TABS = ["general", "workflow", "fields", "custom-fields", "ch
 const PREDEFINED_REPORT_TYPES = ["executive", "operational", "merchant", "tactical", "project", "team"];
 
 // All nav items that can be toggled
-const ALL_NAV_ITEMS = ["dashboard", "projects", "listview", "kanban", "calendar", "reports", "checklist", "users", "settings", "emails"];
+const ALL_NAV_ITEMS = ["dashboard", "projects", "calendar", "reports", "checklist", "users", "settings", "emails"];
 
 export const ManagerDashboard = () => {
   const { currentUser, logout } = useAuth();
@@ -138,6 +138,7 @@ export const ManagerDashboard = () => {
   const [expandedProjects, setExpandedProjects] = useState<Set<string>>(new Set());
   const [csvDialogOpen, setCsvDialogOpen] = useState(false);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
+  const [projectView, setProjectView] = useState<"list" | "kanban">("list");
 
   // Sidebar expand state for sub-menus
   const [reportsExpanded, setReportsExpanded] = useState(false);
@@ -184,13 +185,15 @@ export const ManagerDashboard = () => {
     try {
       const saved = appLabels.nav_visibility;
       if (saved) return JSON.parse(saved);
-    } catch {}
+    } catch {
+      return Object.fromEntries(ALL_NAV_ITEMS.map(k => [k, true]));
+    }
     return Object.fromEntries(ALL_NAV_ITEMS.map(k => [k, true]));
   };
   const navVisibility = getNavVisibility();
 
   // Draggable tab order
-  const DEFAULT_TAB_ORDER = ["dashboard", "projects", "listview", "calendar", "reports", "checklist", "users", "settings", "kanban", "emails"];
+  const DEFAULT_TAB_ORDER = ["dashboard", "projects", "calendar", "reports", "checklist", "users", "settings", "emails"];
   const [tabOrder, setTabOrder] = useState<string[]>(() => {
     try {
       const saved = localStorage.getItem("manager_tab_order");
@@ -245,7 +248,7 @@ export const ManagerDashboard = () => {
       }
     }
   }, []);
-  const TAB_CONFIG_KEYS = ["dashboard", "projects", "listview", "calendar", "reports", "settings", "kanban", "tenants"];
+  const TAB_CONFIG_KEYS = ["dashboard", "projects", "calendar", "reports", "settings", "tenants"];
 
   // Calculate project time stats helper - FIXED: uses checklist-level time
   const calculateProjectStats = (project: Project) => {
@@ -576,11 +579,9 @@ export const ManagerDashboard = () => {
   const TAB_CONFIG: Record<string, { icon: React.ReactNode; label: string }> = {
     dashboard: { icon: <PieChart className="h-4 w-4" />, label: "Dashboard" },
     projects: { icon: <FolderKanban className="h-4 w-4" />, label: "Projects" },
-    listview: { icon: <List className="h-4 w-4" />, label: "List View" },
     calendar: { icon: <CalendarDays className="h-4 w-4" />, label: "Calendar" },
     reports: { icon: <TrendingUp className="h-4 w-4" />, label: "Reports" },
     settings: { icon: <Settings className="h-4 w-4" />, label: "Settings" },
-    kanban: { icon: <FolderKanban className="h-4 w-4" />, label: "Kanban" },
     tenants: { icon: <Building2 className="h-4 w-4" />, label: "Tenants" },
   };
 
@@ -971,11 +972,9 @@ export const ManagerDashboard = () => {
         <div className="flex-1 min-h-0 overflow-y-auto">
           <div
             className={cn(
-              ["projects", "reports", "settings", "calendar", "listview"].includes(activeTab)
+              ["projects", "reports", "settings", "calendar"].includes(activeTab)
                 ? "p-0"
-                : activeTab === "kanban"
-                  ? "px-6 py-5"
-                  : "p-8"
+                : "p-8"
             )}
           >
 
@@ -1203,6 +1202,11 @@ export const ManagerDashboard = () => {
 
           {/* ========= PROJECTS TAB ========= */}
           {activeTab === "projects" && <div>
+            {projectView === "kanban" ? (
+              <div className="px-6 py-5">
+                <KanbanBoard filteredProjects={filteredProjects} />
+              </div>
+            ) : (
             <Card className="rounded-none border-x-0 border-t-0 border-border/50 shadow-none">
               <CardHeader className="sticky top-0 z-10 border-b bg-card/95 backdrop-blur-sm px-4 py-3">
                 <div className="flex items-center justify-between flex-wrap gap-3">
@@ -1215,6 +1219,14 @@ export const ManagerDashboard = () => {
                       />
                       <span className="text-base font-medium">All Projects</span>
                     </CardTitle>
+                    <div className="flex items-center rounded-md border p-0.5">
+                      <Button variant="default" size="sm" className="h-7 px-2 text-xs">
+                        <List className="mr-1.5 h-3.5 w-3.5" />List
+                      </Button>
+                      <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={() => setProjectView("kanban")}>
+                        <FolderKanban className="mr-1.5 h-3.5 w-3.5" />Kanban
+                      </Button>
+                    </div>
                     {/* Sort Dropdown - left side */}
                     <Collapsible open={sortOpen} onOpenChange={setSortOpen}>
                       <CollapsibleTrigger asChild>
@@ -1471,6 +1483,7 @@ export const ManagerDashboard = () => {
                   </div>
               </CardContent>
             </Card>
+            )}
           </div>}
 
           {/* ========= LIST VIEW TAB ========= */}
@@ -1859,9 +1872,6 @@ export const ManagerDashboard = () => {
                               ))}
                               <TableCell>
                                 <div className="flex gap-1">
-                                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); /* edit */ }}>
-                                    <Pencil className="h-3.5 w-3.5" />
-                                  </Button>
                                   <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={(e) => { e.stopPropagation(); deleteProject(project.id); }}>
                                     <Trash2 className="h-3.5 w-3.5" />
                                   </Button>
@@ -2219,9 +2229,6 @@ export const ManagerDashboard = () => {
             )}
             {currentUser?.team === "super_admin" && <TenantManagement />}
           </div>}
-
-          {/* Kanban Tab */}
-          {activeTab === "kanban" && <KanbanBoard filteredProjects={filteredProjects} />}
 
           {/* Tenants Tab (Super Admin only) */}
           {activeTab === "tenants" && currentUser?.team === "super_admin" && <TenantManagement />}

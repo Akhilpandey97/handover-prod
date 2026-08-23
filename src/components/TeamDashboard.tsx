@@ -1,43 +1,29 @@
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useProjects } from "@/contexts/ProjectContext";
-import { teamColors } from "@/data/teams";
 import { useLabels } from "@/contexts/LabelsContext";
-import { Project, calculateTimeFromChecklist, formatDuration } from "@/data/projectsData";
-import { fetchAiInsights } from "@/utils/aiInsights";
-import { AiSmartAlerts } from "./AiSmartAlerts";
+import { Project } from "@/data/projectsData";
 import { ProjectCardNew } from "./ProjectCardNew";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
-import { toast } from "sonner";
 import {
-  Clock,
   FolderKanban,
   LogOut,
   Rocket,
   Search,
-  CheckCircle2,
   AlertCircle,
-  Timer,
-  Users,
-  Building2,
   Layers,
-  Brain,
-  Loader2,
-  AlertTriangle,
-  Zap,
 } from "lucide-react";
 import { ThemeToggle } from "./ThemeToggle";
 import { DashboardSkeleton } from "./skeletons/DashboardSkeleton";
 
-type TabType = "pending" | "active" | "all";
+type TabType = "attention" | "active" | "completed";
 
 export const TeamDashboard = () => {
   const { currentUser, logout } = useAuth();
-  const { getPendingProjects, getActiveProjects, projects, isLoading } = useProjects();
+  const { projects, isLoading } = useProjects();
   const { teamLabels, labels } = useLabels();
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState<TabType>("active");
@@ -47,9 +33,6 @@ export const TeamDashboard = () => {
   if (isLoading) {
     return <DashboardSkeleton />;
   }
-
-  const pendingProjects = getPendingProjects(currentUser.team);
-  const activeProjects = getActiveProjects(currentUser.team);
 
   const isRejectedForCurrentTeam = (project: Project) => {
     const lastTransfer = project.transferHistory.length > 0 ? project.transferHistory[project.transferHistory.length - 1] : null;
@@ -66,8 +49,23 @@ export const TeamDashboard = () => {
     return projectList.filter((p) => p.assignedOwner === currentUser.id || isRejectedForCurrentTeam(p));
   };
   
-  const pendingForUser = filterByOwner(pendingProjects);
-  const activeForUser = filterByOwner(activeProjects);
+  const allUserProjects = filterByOwner(projects);
+  const attentionForUser = allUserProjects.filter(
+    (project) =>
+      project.pendingAcceptance ||
+      project.projectState === "blocked" ||
+      isRejectedForCurrentTeam(project),
+  );
+  const activeForUser = allUserProjects.filter(
+    (project) =>
+      !project.pendingAcceptance &&
+      project.projectState !== "live" &&
+      project.currentPhase !== "completed" &&
+      !isRejectedForCurrentTeam(project),
+  );
+  const completedForUser = allUserProjects.filter(
+    (project) => project.projectState === "live" || project.currentPhase === "completed",
+  );
 
   // Filter by search
   const filterProjects = (projectList: typeof projects) =>
@@ -77,30 +75,15 @@ export const TeamDashboard = () => {
         p.mid.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
-  const filteredPending = filterProjects(pendingForUser);
+  const filteredAttention = filterProjects(attentionForUser);
   const filteredActive = filterProjects(activeForUser);
-
-  // All projects for this user
-  const allUserProjects = filterByOwner(projects);
-  const filteredAll = filterProjects(allUserProjects);
-
-  // Calculate stats
-  const totalChecklist = allUserProjects.reduce((sum, p) => sum + p.checklist.length, 0);
-  const completedChecklist = allUserProjects.reduce((sum, p) => sum + p.checklist.filter(c => c.completed).length, 0);
-
-  let totalGokwikTime = 0;
-  let totalMerchantTime = 0;
-  allUserProjects.forEach((p) => {
-    const time = calculateTimeFromChecklist(p.checklist);
-    totalGokwikTime += time.gokwik;
-    totalMerchantTime += time.merchant;
-  });
+  const filteredCompleted = filterProjects(completedForUser);
 
   const getDisplayProjects = () => {
     switch (activeTab) {
-      case "pending": return filteredPending;
+      case "attention": return filteredAttention;
       case "active": return filteredActive;
-      case "all": return filteredAll;
+      case "completed": return filteredCompleted;
     }
   };
 
@@ -109,10 +92,10 @@ export const TeamDashboard = () => {
 
   const sidebarItems: { key: TabType; label: string; icon: React.ReactNode; count: number; color: string }[] = [
     { 
-      key: "pending", 
-      label: "Pending", 
+      key: "attention",
+      label: "Needs attention",
       icon: <AlertCircle className="h-5 w-5" />, 
-      count: pendingForUser.length,
+      count: attentionForUser.length,
       color: "text-amber-500"
     },
     { 
@@ -123,15 +106,13 @@ export const TeamDashboard = () => {
       color: "text-emerald-500"
     },
     { 
-      key: "all", 
-      label: "All Projects", 
+      key: "completed",
+      label: "Completed",
       icon: <Layers className="h-5 w-5" />, 
-      count: allUserProjects.length,
+      count: completedForUser.length,
       color: "text-primary"
     },
   ];
-
-  const completionPct = totalChecklist > 0 ? Math.round((completedChecklist / totalChecklist) * 100) : 0;
 
   return (
     <div className="min-h-screen bg-background flex">
@@ -191,24 +172,6 @@ export const TeamDashboard = () => {
             ))}
           </div>
 
-          {/* Progress summary */}
-          <div className="mt-5 mx-1 rounded-xl bg-sidebar-accent/50 p-4 ring-1 ring-sidebar-border">
-            <div className="flex items-baseline justify-between">
-              <p className="text-[11px] uppercase tracking-[0.16em] text-sidebar-foreground/50">Checklist</p>
-              <p className="font-display text-lg font-bold text-sidebar-foreground">{completionPct}%</p>
-            </div>
-            <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-sidebar-background/60">
-              <div className="h-full rounded-full bg-sidebar-primary transition-all" style={{ width: `${completionPct}%` }} />
-            </div>
-            <p className="mt-2 text-[11px] text-sidebar-foreground/50">
-              {completedChecklist} of {totalChecklist} tasks complete
-            </p>
-          </div>
-
-          {/* AI Alerts Section */}
-          <div className="mt-4 px-1">
-            <AiSmartAlerts projects={allUserProjects} compact />
-          </div>
         </nav>
 
       </aside>
@@ -219,9 +182,9 @@ export const TeamDashboard = () => {
         <header className="sticky top-0 z-20 h-16 border-b bg-background/85 backdrop-blur-md flex items-center justify-between gap-6 px-6 lg:px-8">
           <div className="min-w-0">
             <h2 className="font-display text-lg font-bold tracking-[-0.02em]">
-              {activeTab === "pending" && "Pending Acceptance"}
+              {activeTab === "attention" && "Needs Attention"}
               {activeTab === "active" && "Active Projects"}
-              {activeTab === "all" && "All Projects"}
+              {activeTab === "completed" && "Completed Projects"}
             </h2>
             <p className="text-xs text-muted-foreground">
               {displayProjects.length} project{displayProjects.length !== 1 ? "s" : ""} found
@@ -265,19 +228,17 @@ export const TeamDashboard = () => {
             {displayProjects.length === 0 ? (
               <div className="text-center py-20">
                 <div className="h-20 w-20 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
-                  {activeTab === "pending" && <Clock className="h-10 w-10 text-amber-500" />}
-                  {activeTab === "active" && <Rocket className="h-10 w-10 text-emerald-500" />}
-                  {activeTab === "all" && <FolderKanban className="h-10 w-10 text-muted-foreground" />}
+                  <FolderKanban className="h-10 w-10 text-muted-foreground" />
                 </div>
                 <h3 className="font-semibold text-lg mb-2">
-                  {activeTab === "pending" && "No Pending Projects"}
+                  {activeTab === "attention" && "Nothing needs your attention"}
                   {activeTab === "active" && "No Active Projects"}
-                  {activeTab === "all" && "No Projects Assigned"}
+                  {activeTab === "completed" && "No Completed Projects"}
                 </h3>
                 <p className="text-muted-foreground max-w-sm mx-auto">
-                  {activeTab === "pending" && "You don't have any projects waiting for acceptance."}
-                  {activeTab === "active" && "Accept pending projects to get started."}
-                  {activeTab === "all" && "Contact your manager for project assignments."}
+                  {activeTab === "attention" && "Pending, blocked, and rejected projects will appear here."}
+                  {activeTab === "active" && "Your assigned projects will appear here."}
+                  {activeTab === "completed" && "Finished projects will appear here."}
                 </p>
               </div>
             ) : (

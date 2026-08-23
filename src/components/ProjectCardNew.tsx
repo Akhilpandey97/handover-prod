@@ -2,10 +2,6 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import {
   Project,
-  ProjectState,
-  calculateProjectResponsibilityFromChecklist,
-  calculateTimeFromChecklist,
-  formatDuration,
   projectStateColors,
   projectStateLabels,
 } from "@/data/projectsData";
@@ -13,39 +9,17 @@ import { computeHealthScore } from "@/utils/aiHealthScore";
 import { useAuth } from "@/contexts/AuthContext";
 import { useProjects } from "@/contexts/ProjectContext";
 import { useLabels } from "@/contexts/LabelsContext";
-import { fetchAiInsights } from "@/utils/aiInsights";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { TransferDialog } from "./TransferDialog";
 import { RejectTransferDialog } from "./RejectTransferDialog";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { hexToRgba } from "@/utils/colorUtils";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import {
   ArrowRight,
   ArrowUpRight,
-  Brain,
-  Building2,
   CheckCircle2,
-  ChevronDown,
-  ChevronUp,
-  ListChecks,
-  Loader2,
   User,
   XCircle,
 } from "lucide-react";
@@ -54,52 +28,16 @@ interface ProjectCardNewProps {
   project: Project;
 }
 
-const MetricTile = ({
-  label,
-  value,
-  children,
-  borderColor,
-}: {
-  label: string;
-  value?: string;
-  children?: React.ReactNode;
-  borderColor: string;
-}) => (
-  <div
-    className="rounded-lg px-2.5 py-1.5"
-    style={{
-      backgroundColor: hexToRgba(borderColor, 0.06),
-      border: `1px solid ${hexToRgba(borderColor, 0.35)}`,
-    }}
-  >
-    <p className="text-[10px] font-medium uppercase tracking-[0.18em] text-muted-foreground">{label}</p>
-    {children ?? <p className="mt-0.5 text-xs font-semibold text-foreground">{value || "—"}</p>}
-  </div>
-);
-
 export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
   const { currentUser } = useAuth();
-  const { acceptProject, transferProject, updateProject, rejectProject } = useProjects();
-  const { labels, teamLabels, responsibilityLabels, getLabel, stateLabels } = useLabels();
+  const { acceptProject, transferProject, rejectProject } = useProjects();
+  const { teamLabels, stateLabels } = useLabels();
 
-  const [isExpanded, setIsExpanded] = useState(false);
   const [transferOpen, setTransferOpen] = useState(false);
   const [rejectOpen, setRejectOpen] = useState(false);
-  const [aiDialogOpen, setAiDialogOpen] = useState(false);
-  const [aiDialogType, setAiDialogType] = useState<"insights" | "summary">("insights");
-  const [aiResult, setAiResult] = useState("");
-  const [aiLoading, setAiLoading] = useState(false);
 
-  const mintChecklist = project.checklist.filter((item) => item.ownerTeam === "mint");
-  const integrationChecklist = project.checklist.filter((item) => item.ownerTeam === "integration");
   const completedChecklist = project.checklist.filter((item) => item.completed).length;
-  const computedResponsibility = calculateProjectResponsibilityFromChecklist(project.checklist);
-  const timeByParty = calculateTimeFromChecklist(project.checklist);
   const healthScore = computeHealthScore(project);
-
-  const currentTeamItems = project.checklist.filter((item) => item.ownerTeam === project.currentOwnerTeam);
-  const nextIncompleteItem = currentTeamItems.find((item) => !item.completed) || project.checklist.find((item) => !item.completed);
-  const projectPhaseDisplay = nextIncompleteItem ? nextIncompleteItem.title : "All Complete";
 
   const currentTeamChecklist = project.checklist.filter((item) => item.ownerTeam === project.currentOwnerTeam);
   const allCurrentTeamChecklistCompleted = currentTeamChecklist.length > 0 && currentTeamChecklist.every((item) => item.completed);
@@ -120,9 +58,6 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
     currentUser?.team !== "manager";
   const isTransferReady = canTransfer && allCurrentTeamChecklistCompleted;
 
-  // Use semantic tokens so both light and dark modes have proper contrast
-  const projectExpandedBorder = labels.color_project_expanded_border || "#dce6ef";
-
   const handleAccept = () => {
     acceptProject(project.id);
     toast.success(`Accepted ${project.merchantName}`);
@@ -141,39 +76,16 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
     toast.success(`Transferred ${project.merchantName} to ${assigneeName}`);
   };
 
-  const handleStateChange = (newState: ProjectState) => {
-    updateProject({ ...project, projectState: newState });
-  };
-
-  const { session } = useAuth();
-  const handleAiAction = async (type: "insights" | "summary") => {
-    setAiDialogType(type);
-    setAiDialogOpen(true);
-    setAiLoading(true);
-    setAiResult("");
-
-    try {
-      const result = await fetchAiInsights({ project, type });
-      setAiResult(result || "No insights generated.");
-    } catch (error: any) {
-      setAiResult(`Failed to generate AI output. ${error.message || "Please try again."}`);
-    } finally {
-      setAiLoading(false);
-    }
-  };
-
   return (
     <>
       <Card
         className="overflow-hidden w-full surface-card border-0 bg-card"
       >
-        <div className="flex items-center gap-1 px-2 py-1.5">
+        <div className="flex flex-wrap items-center gap-2 px-3 py-2">
           {/* Project strip */}
           <Link
             to={`/projects/${project.id}`}
-            target="_blank"
-            rel="noreferrer"
-            className="relative flex min-w-0 flex-1 items-center gap-2 rounded-lg px-2.5 py-2 transition-colors overflow-hidden group hover:bg-accent/70"
+            className="relative flex min-w-0 flex-1 items-center gap-2 rounded-lg px-1.5 py-1.5 transition-colors overflow-hidden group hover:bg-accent/70"
           >
             {/* Completion percentage pill */}
             {(() => {
@@ -197,6 +109,9 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
               <h3 className="truncate text-[13px] font-semibold tracking-tight text-foreground">{project.merchantName}</h3>
               <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-[18px] font-medium">MID {project.mid}</Badge>
               <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-[18px]">{teamLabels[project.currentOwnerTeam] || project.currentOwnerTeam}</Badge>
+              <Badge className={cn("text-[10px] px-1.5 py-0 h-[18px]", projectStateColors[project.projectState])}>
+                {stateLabels[project.projectState] || projectStateLabels[project.projectState]}
+              </Badge>
               {project.assignedOwnerName && (
                 <Badge variant="outline" className="gap-1 text-[10px] px-1.5 py-0 h-[18px]">
                   <User className="h-2.5 w-2.5" />
@@ -220,15 +135,7 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
           </Link>
 
 
-          <div className="flex items-center gap-0.5 shrink-0">
-            <Button size="sm" variant="ghost" className="gap-0.5 h-6 text-[10px] px-1.5 text-muted-foreground hover:text-foreground" onClick={() => handleAiAction("insights")}>
-              <Brain className="h-3 w-3" />
-              Insights
-            </Button>
-            <Button size="sm" variant="ghost" className="gap-0.5 h-6 text-[10px] px-1.5 text-muted-foreground hover:text-foreground" onClick={() => handleAiAction("summary")}>
-              <ListChecks className="h-3 w-3" />
-              Summary
-            </Button>
+          <div className="flex items-center gap-1 shrink-0">
             {isPending && (
               <Button size="sm" className="gap-0.5 h-6 text-[10px] px-1.5" onClick={handleAccept}>
                 <CheckCircle2 className="h-3 w-3" />
@@ -253,96 +160,18 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
                 Transfer
               </Button>
             )}
-            <Button
-              size="icon"
-              className="h-6 w-6 bg-primary text-primary-foreground border-none shadow-sm"
-              onClick={() => setIsExpanded((v) => !v)}
-            >
-              {isExpanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
-            </Button>
           </div>
         </div>
-
-        {isExpanded && (
-          <div
-            className="space-y-1.5 rounded-md p-2 mx-1.5 mb-1.5 bg-background/60 border border-border"
-          >
-            <div className="grid gap-1 grid-cols-2 sm:grid-cols-4">
-              <MetricTile borderColor={projectExpandedBorder} label={getLabel("field_arr")} value={`${project.arr} Cr`} />
-              <MetricTile borderColor={projectExpandedBorder} label="Pending on" value={responsibilityLabels[computedResponsibility] || computedResponsibility} />
-              <MetricTile borderColor={projectExpandedBorder} label="Time split" value={`${formatDuration(timeByParty.gokwik)} / ${formatDuration(timeByParty.merchant)}`} />
-              <MetricTile borderColor={projectExpandedBorder} label="Checklist" value={`${completedChecklist}/${project.checklist.length}`} />
-              <MetricTile borderColor={projectExpandedBorder} label={getLabel("field_kick_off_date")} value={project.dates.kickOffDate || "—"} />
-              <MetricTile borderColor={projectExpandedBorder} label={getLabel("field_go_live_date")} value={project.dates.goLiveDate || project.dates.expectedGoLiveDate || "—"} />
-              <MetricTile borderColor={projectExpandedBorder} label="Phase" value={projectPhaseDisplay} />
-              <MetricTile borderColor={projectExpandedBorder} label="State">
-                <Select value={project.projectState} onValueChange={(value) => handleStateChange(value as ProjectState)}>
-                  <SelectTrigger
-                    className={cn(
-                      "mt-0.5 h-8 rounded-full px-3 text-xs font-semibold shadow-none",
-                      projectStateColors[project.projectState]
-                    )}
-                  >
-                    <SelectValue>
-                      {stateLabels[project.projectState] || projectStateLabels[project.projectState]}
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent className="rounded-2xl p-2">
-                    {Object.entries(projectStateLabels).map(([key, label]) => (
-                      <SelectItem
-                        key={key}
-                        value={key}
-                        className={cn(
-                          "mb-1 rounded-xl border text-sm font-semibold last:mb-0",
-                          projectStateColors[key as ProjectState]
-                        )}
-                      >
-                        {stateLabels[key as ProjectState] || label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </MetricTile>
-            </div>
-
-            <div
-              className="flex flex-wrap items-center gap-1.5 pt-1"
-              style={{ borderTop: `1px solid ${hexToRgba(projectExpandedBorder, 0.52)}` }}
-            >
-              <Badge variant="outline" className="text-[10px]">{teamLabels.mint}: {mintChecklist.filter((i) => i.completed).length}/{mintChecklist.length}</Badge>
-              <Badge variant="outline" className="text-[10px]">{teamLabels.integration}: {integrationChecklist.filter((i) => i.completed).length}/{integrationChecklist.length}</Badge>
-            </div>
-          </div>
-        )}
+        <div className="flex items-center gap-3 px-4 pb-2 text-[11px] text-muted-foreground">
+          <span>Checklist {completedChecklist}/{project.checklist.length}</span>
+          <span className="h-1 w-1 rounded-full bg-border" />
+          <span>{project.dates.expectedGoLiveDate ? `Go-live ${project.dates.expectedGoLiveDate}` : "No go-live date"}</span>
+        </div>
       </Card>
 
       <TransferDialog project={project} open={transferOpen} onOpenChange={setTransferOpen} onTransfer={handleTransfer} />
       <RejectTransferDialog project={project} open={rejectOpen} onOpenChange={setRejectOpen} onReject={handleReject} />
 
-      <Dialog open={aiDialogOpen} onOpenChange={setAiDialogOpen}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              {aiDialogType === "insights" ? <Brain className="h-5 w-5 text-primary" /> : <ListChecks className="h-5 w-5 text-primary" />}
-              {aiDialogType === "insights" ? "AI Project Insights" : "AI Task Summary"}
-            </DialogTitle>
-          </DialogHeader>
-          <ScrollArea className="max-h-[60vh]">
-            <div className="pr-4 text-sm leading-7 text-foreground">
-              {aiLoading ? (
-                <div className="flex items-center justify-center gap-2 py-8 text-muted-foreground">
-                  <Loader2 className="h-5 w-5 animate-spin" />
-                  Generating...
-                </div>
-              ) : (
-                aiResult.split("\n").filter(Boolean).map((line, index) => (
-                  <p key={index} className="mb-3">{line.replace(/^\s*[*-]\s*/, "")}</p>
-                ))
-              )}
-            </div>
-          </ScrollArea>
-        </DialogContent>
-      </Dialog>
     </>
   );
 };

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { LoginScreen } from "@/components/LoginScreen";
 import { AssignOwnerDialog } from "@/components/AssignOwnerDialog";
@@ -50,7 +50,6 @@ import {
   Eye,
   ExternalLink,
   FileStack,
-  Files,
   Globe,
   Loader2,
   MessageSquareText,
@@ -60,7 +59,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
-type WorkspaceTab = "overview" | "activity" | "checklists" | "notes" | "files";
+type WorkspaceTab = "overview" | "activity" | "checklists" | "notes";
 type ActivityKind = "user" | "system" | "handoff" | "milestone";
 
 const PROJECT_STATES: ProjectState[] = ["not_started", "on_hold", "in_progress", "live", "blocked"];
@@ -102,7 +101,6 @@ const tabOptions: Array<{ value: WorkspaceTab; label: string }> = [
   { value: "activity", label: "Activity" },
   { value: "checklists", label: "Checklists" },
   { value: "notes", label: "Notes" },
-  { value: "files", label: "Files" },
 ];
 
 const stateToneMap: Record<ProjectState, string> = {
@@ -500,36 +498,6 @@ export const ProjectWorkspaceView = ({ projectId: projectIdProp, inModal = false
   const activityFeed = useMemo(() => (project ? buildActivityFeed(project) : []), [project]);
   const groupedActivity = useMemo(() => groupByDate(activityFeed), [activityFeed]);
 
-  useEffect(() => {
-    let ignore = false;
-
-    const loadSummary = async () => {
-      if (!project) return;
-
-      setAiSummaryLoading(true);
-      setAiSummaryError(null);
-
-      try {
-        const result = await fetchAiInsights({ project, type: "summary" });
-        if (ignore) return;
-        setAiSummary(parseAiBullets(result));
-      } catch (error) {
-        if (ignore) return;
-        setAiSummaryError(error instanceof Error ? error.message : "Unable to generate AI summary.");
-        setAiSummary([]);
-      } finally {
-        if (!ignore) {
-          setAiSummaryLoading(false);
-        }
-      }
-    };
-
-    loadSummary();
-    return () => {
-      ignore = true;
-    };
-  }, [project]);
-
   const { isLoading: projectsLoading } = useProjects();
 
   if (isLoading || projectsLoading) {
@@ -661,6 +629,20 @@ export const ProjectWorkspaceView = ({ projectId: projectIdProp, inModal = false
     | { label: string; sublabel: string; href: string; onClick?: undefined }
   >;
 
+  const handleGenerateAiSummary = async () => {
+    setAiSummaryLoading(true);
+    setAiSummaryError(null);
+    try {
+      const result = await fetchAiInsights({ project, type: "summary" });
+      setAiSummary(parseAiBullets(result));
+    } catch (error) {
+      setAiSummaryError(error instanceof Error ? error.message : "Unable to generate AI summary.");
+      setAiSummary([]);
+    } finally {
+      setAiSummaryLoading(false);
+    }
+  };
+
   const handleSaveEdit = (updatedProject: Project) => {
     updateProject(updatedProject);
     toast.success("Project updated successfully");
@@ -708,7 +690,7 @@ export const ProjectWorkspaceView = ({ projectId: projectIdProp, inModal = false
             )}
             <ChevronRight className="h-3 w-3 text-muted-foreground shrink-0" />
             <div className="flex items-center gap-2 min-w-0">
-              <h1 className="text-[2.05rem] font-semibold tracking-tight text-foreground truncate">{project.merchantName}</h1>
+              <h1 className="max-w-[34vw] truncate text-xl font-semibold tracking-tight text-foreground sm:text-2xl">{project.merchantName}</h1>
               {/* Prev/Next navigation inline */}
               {inModal && projectIds && projectIds.length > 1 && onNavigate && (() => {
                 const currentIndex = projectIds.indexOf(project.id);
@@ -765,7 +747,7 @@ export const ProjectWorkspaceView = ({ projectId: projectIdProp, inModal = false
       {/* 3-panel body */}
       <div className="mx-auto flex min-h-0 w-full max-w-[1680px] flex-1">
         {/* LEFT PANEL — Ownership & Context */}
-        <ScrollArea className="w-[240px] shrink-0 border-r border-border/60 bg-card/50">
+        <ScrollArea className="hidden w-[240px] shrink-0 border-r border-border/60 bg-card/50 lg:block">
           <div className="p-4 space-y-1">
             <div className="pb-3 space-y-3">
               <div className="flex flex-wrap gap-1.5">
@@ -1032,37 +1014,6 @@ export const ProjectWorkspaceView = ({ projectId: projectIdProp, inModal = false
                     </div>
                   </div>
 
-                  {/* Notes summary */}
-                  <div className="rounded-lg border border-border/60 bg-card/80 p-3">
-                    <div className="flex items-center justify-between mb-2">
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Project notes</p>
-                      <button type="button" onClick={() => setActiveTab("notes")} className="text-[11px] font-semibold text-primary hover:underline">View all</button>
-                    </div>
-                    <div className="grid grid-cols-2 gap-2">
-                      {noteSections.map(([label, value]) => (
-                        <div key={label} className="rounded-md border border-border/40 bg-background/60 px-2.5 py-2">
-                          <p className="text-[11px] font-semibold text-foreground">{label}</p>
-                          <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground line-clamp-2">{value}</p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Quick links grid */}
-                  {quickLinks.length > 0 ? (
-                    <div className="rounded-lg border border-border/60 bg-card/80 p-3">
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-2">Quick links</p>
-                      <div className="flex flex-wrap gap-1.5">
-                        {quickLinks.map((link) => (
-                          <a key={link.label} href={link.href} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 rounded-md border border-border/60 bg-background/60 px-2.5 py-1.5 text-xs font-semibold text-foreground transition hover:bg-accent/60">
-                            <link.icon className="h-3 w-3" />
-                            {link.label}
-                            <ExternalLink className="h-2.5 w-2.5 text-muted-foreground" />
-                          </a>
-                        ))}
-                      </div>
-                    </div>
-                  ) : null}
                 </div>
               </TabsContent>
 
@@ -1102,8 +1053,6 @@ export const ProjectWorkspaceView = ({ projectId: projectIdProp, inModal = false
                                 {item.description ? <p className="mt-1 text-sm leading-relaxed text-foreground">{item.description}</p> : null}
                                 <div className="mt-1.5 flex items-center gap-3 text-[11px] text-muted-foreground">
                                   <span>{item.source}</span>
-                                  <button type="button" className="font-medium text-primary hover:underline">Reply</button>
-                                  <button type="button" className="font-medium text-primary hover:underline">Copy link</button>
                                 </div>
                               </div>
                               <span className={cn("mt-1 h-2 w-2 shrink-0 rounded-full", activityToneMap[item.kind])} />
@@ -1141,34 +1090,12 @@ export const ProjectWorkspaceView = ({ projectId: projectIdProp, inModal = false
                 </div>
               </TabsContent>
 
-              <TabsContent value="files" className="m-0">
-                <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
-                  {quickLinks.length > 0 ? (
-                    quickLinks.map((link) => (
-                      <a key={link.label} href={link.href} target="_blank" rel="noreferrer" className="rounded-lg border border-border/60 bg-card/80 p-3 transition hover:bg-accent/60">
-                        <div className="flex items-center justify-between gap-3">
-                          <div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary/10 text-primary">
-                            <link.icon className="h-3.5 w-3.5" />
-                          </div>
-                          <ExternalLink className="h-3 w-3 text-muted-foreground" />
-                        </div>
-                        <p className="mt-2 text-sm font-semibold text-foreground">{link.label}</p>
-                        <p className="text-[11px] text-muted-foreground">Open linked artifact</p>
-                      </a>
-                    ))
-                  ) : (
-                    <div className="rounded-lg border border-dashed border-border/60 px-4 py-6 text-xs text-muted-foreground">
-                      No files linked to this project yet.
-                    </div>
-                  )}
-                </div>
-              </TabsContent>
             </div>
           </Tabs>
         </main>
 
         {/* RIGHT PANEL — Actions first, then AI */}
-        <ScrollArea className="w-[280px] shrink-0 border-l border-border/60 bg-card/50">
+        <ScrollArea className="hidden w-[280px] shrink-0 border-l border-border/60 bg-card/50 xl:block">
           <div className="p-3 space-y-3">
             {/* Recommended Actions — highlighted, on top */}
             <div className="rounded-lg border-2 border-primary/30 bg-primary/5 p-3">
@@ -1206,11 +1133,23 @@ export const ProjectWorkspaceView = ({ projectId: projectIdProp, inModal = false
 
             {/* AI Summary — compact */}
             <div className="rounded-lg border border-border/60 bg-card/80 p-3">
-              <div className="flex items-center gap-2 mb-2">
+              <div className="flex items-center justify-between gap-2 mb-2">
+                <div className="flex items-center gap-2">
                 <div className="flex h-6 w-6 items-center justify-center rounded-md bg-primary text-primary-foreground">
                   {aiSummaryLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Bot className="h-3 w-3" />}
                 </div>
                 <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-primary">Executive summary</p>
+                </div>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 px-2 text-[11px]"
+                  onClick={() => void handleGenerateAiSummary()}
+                  disabled={aiSummaryLoading}
+                >
+                  {aiSummary.length > 0 ? "Refresh" : "Generate"}
+                </Button>
               </div>
 
               <div className="space-y-1.5">
@@ -1218,6 +1157,8 @@ export const ProjectWorkspaceView = ({ projectId: projectIdProp, inModal = false
                   <p className="text-xs text-muted-foreground">Generating summary...</p>
                 ) : aiSummaryError ? (
                   <p className="text-xs text-warning">AI summary unavailable.</p>
+                ) : aiSummary.length === 0 ? (
+                  <p className="text-xs text-muted-foreground">Generate a summary when you need help assessing this project.</p>
                 ) : (
                   summaryCards.map((card, index) => (
                     <div key={card.title} className={cn("rounded-md border px-2.5 py-2", index === 0 ? "border-primary/20 bg-primary/5" : "border-border/40 bg-background/60")}>
