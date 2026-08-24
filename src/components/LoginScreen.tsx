@@ -75,6 +75,23 @@ export const LoginScreen = () => {
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
+              {isSignup && (
+                <div className="space-y-1.5">
+                  <Label htmlFor="name" className="text-sm font-medium text-foreground">
+                    Full name
+                  </Label>
+                  <Input
+                    id="name"
+                    type="text"
+                    placeholder="John Doe"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    required
+                    className="h-11"
+                  />
+                </div>
+              )}
+
               <div className="space-y-1.5">
                 <Label htmlFor="email" className="text-sm font-medium text-foreground">
                   Email
