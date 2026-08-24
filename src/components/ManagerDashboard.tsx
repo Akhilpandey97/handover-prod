@@ -700,12 +700,8 @@ export const ManagerDashboard = () => {
     ? `Reports — ${REPORTS_SUB_CONFIG[reportSubTab]?.label || "Pre Defined"}`
     : TAB_CONFIG[activeTab]?.label || "Dashboard";
 
-  const toTitleCase = (value: string) => value.replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.slice(1).toLowerCase());
-  const sidebarTitle = (appLabels.app_title || "Command Centre").trim() || "Command Centre";
-  const rawSubtitle = (appLabels.app_subtitle || "Enterprise Delivery Operations").trim() || "Enterprise Delivery Operations";
-  const sidebarSubtitle = rawSubtitle.toLowerCase() === "enterprise delivery operations"
-    ? "Enterprise Delivery Operations"
-    : toTitleCase(rawSubtitle);
+  const sidebarTitle = "Handover";
+  const sidebarSubtitle = "";
   const selectedFilteredCount = filteredProjectIds.filter(id => selectedProjects.has(id)).length;
 
   // Render a single nav item
@@ -797,14 +793,14 @@ export const ManagerDashboard = () => {
                       [group.label]: !prev[group.label],
                     }))
                   }
-                  className="flex w-full items-center justify-between px-3 py-1 text-left"
+                  className="flex w-full items-center justify-between rounded-lg px-3 py-1.5 text-left hover:bg-sidebar-accent/45 transition-colors"
                 >
-                  <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-primary">
+                  <span className="text-xs font-semibold uppercase tracking-[0.14em] text-sidebar-foreground/85">
                     {group.label}
                   </span>
                   <ChevronDown
                     className={cn(
-                      "h-4 w-4 text-primary transition-transform",
+                      "h-4 w-4 text-sidebar-foreground/80 transition-transform",
                       settingsGroupExpanded[group.label] ? "rotate-180" : ""
                     )}
                   />
@@ -909,8 +905,7 @@ export const ManagerDashboard = () => {
             )}
             {!sidebarCollapsed && (
               <div className="min-w-0">
-                <h1 className="font-semibold text-[15px] leading-tight text-sidebar-foreground truncate">{sidebarTitle}</h1>
-                <p className="text-[11px] leading-tight tracking-[0.04em] text-sidebar-foreground/65 line-clamp-2">{sidebarSubtitle}</p>
+                <h1 className="font-semibold text-[16px] leading-tight text-sidebar-foreground truncate">{sidebarTitle}</h1>
               </div>
             )}
           </div>
@@ -964,7 +959,7 @@ export const ManagerDashboard = () => {
               <h2 className="text-xl font-bold">{activeTabLabel}</h2>
             </div>
             <span className="text-xs text-muted-foreground">
-              {activeTab === "projects" ? `${filteredProjects.length} project${filteredProjects.length !== 1 ? "s" : ""} found` : sidebarSubtitle}
+              {activeTab === "projects" ? `${filteredProjects.length} project${filteredProjects.length !== 1 ? "s" : ""} found` : "Handover"}
             </span>
           </div>
 
