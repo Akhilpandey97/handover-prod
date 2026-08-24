@@ -100,6 +100,7 @@ export const AssignOwnerDialog = ({ project, open, onOpenChange, projectIds, onA
   const handleAssign = async () => {
     setIsAssigning(true);
     try {
+      const owner = teamMembers.find(m => m.id === targetOwner);
       const updateData: Record<string, any> = {
         current_owner_team: targetTeam,
         updated_at: new Date().toISOString(),
@@ -116,7 +117,6 @@ export const AssignOwnerDialog = ({ project, open, onOpenChange, projectIds, onA
 
         if (error) throw error;
 
-        const owner = teamMembers.find(m => m.id === targetOwner);
         if (owner) {
           // Send notification for bulk
           sendNotification({
@@ -140,8 +140,23 @@ export const AssignOwnerDialog = ({ project, open, onOpenChange, projectIds, onA
 
         if (error) throw error;
 
+        // Log owner reassignment so it appears in activity timeline.
+        const ownerLabel = owner?.name || "Unassigned";
+        const { error: ownerLogError } = await supabase
+          .from("transfer_history")
+          .insert({
+            project_id: project.id,
+            from_team: project.currentOwnerTeam as DbTeamRole,
+            to_team: targetTeam as DbTeamRole,
+            transferred_by: "Manager",
+            accepted_by: owner?.name || null,
+            accepted_at: new Date().toISOString(),
+            notes: `OWNER_CHANGE:${ownerLabel}`,
+          });
+
+        if (ownerLogError) throw ownerLogError;
+
         await queryClient.invalidateQueries({ queryKey: ["projects"] });
-        const owner = teamMembers.find(m => m.id === targetOwner);
 
         if (owner) {
           sendNotification({

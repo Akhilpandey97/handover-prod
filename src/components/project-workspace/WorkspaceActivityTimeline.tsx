@@ -102,6 +102,20 @@ export const WorkspaceActivityTimeline = ({ project }: WorkspaceActivityTimeline
     });
 
     project.transferHistory.forEach((transfer) => {
+      if (transfer.notes?.startsWith("OWNER_CHANGE:")) {
+        const ownerName = transfer.notes.replace("OWNER_CHANGE:", "").trim() || "Unassigned";
+        addEvent({
+          id: `owner-change-${transfer.id}`,
+          kind: "user",
+          title: `Owner changed to ${ownerName}`,
+          source: "Owner assignment",
+          description: `Ownership assignment updated for ${project.merchantName}.`,
+          actor: transfer.transferredBy,
+          date: transfer.transferredAt,
+        });
+        return;
+      }
+
       addEvent({
         id: `transfer-${transfer.id}`,
         kind: "handoff",
