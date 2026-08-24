@@ -487,12 +487,53 @@ export const useTransferProject = () => {
 
       return projectId;
     },
+    onMutate: async ({ projectId, assigneeId }) => {
+      await queryClient.cancelQueries({ queryKey: ["projects"] });
+
+      const previousProjectsEntries = queryClient.getQueriesData<Project[]>({ queryKey: ["projects"] });
+      const nowIso = new Date().toISOString();
+      const actor = currentUser?.name || "Unknown";
+
+      queryClient.setQueriesData<Project[]>({ queryKey: ["projects"] }, (old) => {
+        if (!old) return old;
+        return old.map((project) => {
+          if (project.id !== projectId) return project;
+
+          const nextTeam: TeamRole = project.currentOwnerTeam === "mint" ? "integration" : "ms";
+
+          return {
+            ...project,
+            currentOwnerTeam: nextTeam,
+            currentPhase: nextTeam,
+            pendingAcceptance: true,
+            assignedOwner: assigneeId || undefined,
+            currentResponsibility: "neutral",
+            transferHistory: [
+              ...project.transferHistory,
+              {
+                id: `optimistic-transfer-${Date.now()}`,
+                fromTeam: project.currentOwnerTeam,
+                toTeam: nextTeam,
+                transferredBy: actor,
+                transferredAt: nowIso,
+                notes: assigneeId ? `Assigned to user ${assigneeId}` : undefined,
+              },
+            ],
+          };
+        });
+      });
+
+      return { previousProjectsEntries };
+    },
     onSuccess: async () => {
       await processWorkflowEvents();
       queryClient.invalidateQueries({ queryKey: ["projects"] });
       toast.success("Project transferred successfully");
     },
-    onError: (error) => {
+    onError: (error, _variables, context) => {
+      context?.previousProjectsEntries?.forEach(([key, data]) => {
+        queryClient.setQueryData(key, data);
+      });
       console.error("Error transferring project:", error);
       toast.error("Failed to transfer project");
     },
