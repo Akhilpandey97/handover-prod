@@ -398,10 +398,6 @@ export const KanbanBoard = ({ filteredProjects }: KanbanBoardProps) => {
           )}
         </div>
 
-        {/* Result count */}
-        <span className="text-xs text-muted-foreground ml-auto">
-          {sortedProjects.length} project{sortedProjects.length !== 1 ? "s" : ""}
-        </span>
       </div>
 
       <div
