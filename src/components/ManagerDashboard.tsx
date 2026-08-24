@@ -1139,46 +1139,58 @@ export const ManagerDashboard = () => {
           >
 
           {/* ========= OVERVIEW TAB ========= */}
-          {activeTab === "dashboard" && <div className="space-y-6">
-            {/* KPI Cards */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {activeTab === "dashboard" && <div className="mx-auto max-w-7xl space-y-5">
+            <section className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
+              <div className="flex flex-col gap-4 border-b border-slate-200 bg-slate-50/80 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-sky-700">Portfolio command center</p>
+                  <h3 className="mt-1 text-xl font-semibold text-slate-950">Delivery at a glance</h3>
+                  <p className="mt-1 text-sm text-slate-500">Monitor pipeline, workload, and delivery risk across every team.</p>
+                </div>
+                <div className="flex shrink-0 items-center gap-3 rounded-md border border-slate-200 bg-white px-3 py-2">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-md bg-sky-100 text-sky-700">
+                    <TrendingUp className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <p className="text-[11px] font-medium uppercase tracking-wide text-slate-500">Pipeline value</p>
+                    <p className="text-sm font-semibold text-slate-950">{totalArr.toFixed(2)} Cr</p>
+                  </div>
+                </div>
+              </div>
               {(() => {
                 const kpiCards = [
-                  { label: "Total", value: totalProjects, icon: FolderKanban, sub: `Pipeline ARR: ${totalArr.toFixed(2)} Cr` },
-                  { label: "Pending", value: pendingProjects, icon: AlertCircle, sub: "Awaiting acceptance" },
-                  { label: "Active", value: activeProjects, icon: Rocket, sub: `${blockedProjects} blocked, ${onHoldProjects} on hold` },
-                  { label: "Live", value: completedProjects, icon: CheckCircle2, sub: `Live ARR: ${liveArr.toFixed(2)} Cr` },
+                  { label: "All projects", value: totalProjects, icon: FolderKanban, sub: "Across the portfolio", tone: "text-slate-700 bg-slate-100" },
+                  { label: "Needs acceptance", value: pendingProjects, icon: AlertCircle, sub: "Waiting on a response", tone: "text-amber-700 bg-amber-100" },
+                  { label: "In delivery", value: activeProjects, icon: Rocket, sub: `${blockedProjects} blocked · ${onHoldProjects} on hold`, tone: "text-sky-700 bg-sky-100" },
+                  { label: "Live", value: completedProjects, icon: CheckCircle2, sub: `${liveArr.toFixed(2)} Cr realized`, tone: "text-emerald-700 bg-emerald-100" },
                 ];
                 return kpiCards.map((kpi) => (
-                  <Card key={kpi.label} className="border-border/70 bg-card hover:shadow-lg transition-shadow">
-                    <CardContent className="p-5">
+                  <div key={kpi.label} className="group border-b border-slate-200 p-5 last:border-b-0 sm:border-b-0 sm:border-r sm:last:border-r-0">
                       <div className="flex items-start justify-between">
                         <div>
-                          <p className="text-sm font-medium text-muted-foreground mb-1">{kpi.label}</p>
-                          <p className="text-3xl font-bold text-foreground">{kpi.value}</p>
+                          <p className="text-xs font-medium text-slate-500">{kpi.label}</p>
+                          <p className="mt-1 text-3xl font-semibold tracking-tight text-slate-950">{kpi.value}</p>
                         </div>
-                        <div className="h-12 w-12 rounded-2xl flex items-center justify-center bg-muted/70 border border-border/60">
-                          <kpi.icon className="h-6 w-6 text-muted-foreground" />
+                        <div className={`flex h-9 w-9 items-center justify-center rounded-md ${kpi.tone}`}>
+                          <kpi.icon className="h-4 w-4" />
                         </div>
                       </div>
-                      <p className="text-xs text-muted-foreground mt-2">{kpi.sub}</p>
-                    </CardContent>
-                  </Card>
+                      <p className="mt-3 text-xs text-slate-500">{kpi.sub}</p>
+                  </div>
                 ));
               })()}
-            </div>
+            </section>
 
-            {/* Team Performance & Time Distribution */}
-            <div className="grid lg:grid-cols-2 gap-6">
-              <Card className="shadow-xl border-border/50">
-                <CardHeader className="border-b bg-muted/30">
-                  <CardTitle className="text-lg flex items-center gap-2">
-                    <Users className="h-5 w-5 text-primary" />
-                    Team Performance
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="p-6">
-                   <div className="space-y-6">
+            <div className="grid gap-5 xl:grid-cols-[minmax(0,1.45fr)_minmax(320px,0.85fr)]">
+              <section className="rounded-lg border border-slate-200 bg-white shadow-sm">
+                <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
+                  <div>
+                    <p className="text-sm font-semibold text-slate-950">Team workload</p>
+                    <p className="mt-0.5 text-xs text-slate-500">Current project ownership and completion status</p>
+                  </div>
+                  <Users className="h-5 w-5 text-sky-700" />
+                </div>
+                <div className="divide-y divide-slate-100">
                     {teamOwnerReport.map((team) => {
                       const teamProjects = displayProjects.filter(p => p.currentOwnerTeam === team.team);
                       const totalCount = teamProjects.length;
@@ -1189,98 +1201,87 @@ export const ManagerDashboard = () => {
                         return teamItems.length > 0 && teamItems.every(c => c.completed);
                       }).length;
                       const activeCount = totalCount - pendingCount - completedCount;
+                      const completionRate = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
                       return (
-                        <div key={team.team} className="space-y-3">
-                          <div className="flex items-center justify-between">
+                        <div key={team.team} className="grid gap-4 px-5 py-4 md:grid-cols-[minmax(170px,0.8fr)_minmax(260px,1.2fr)_120px] md:items-center">
                             <div className="flex items-center gap-3">
-                              <div className={`h-10 w-10 rounded-lg ${teamColors[team.team]} flex items-center justify-center text-white font-bold`}>
+                              <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-md ${teamColors[team.team]} text-sm font-bold text-white`}>
                                 {team.teamLabel.charAt(0)}
                               </div>
                               <div>
-                                <p className="font-semibold">{team.teamLabel}</p>
-                                <p className="text-xs text-muted-foreground">{totalCount} projects</p>
+                                <p className="text-sm font-semibold text-slate-900">{team.teamLabel}</p>
+                                <p className="text-xs text-slate-500">{totalCount} owned projects</p>
                               </div>
                             </div>
-                          </div>
-                          {(() => {
-                            const miniCards = [
-                              { label: "Total", value: totalCount },
-                              { label: "Pending", value: pendingCount },
-                              { label: "Active", value: activeCount },
-                              { label: "Completed", value: completedCount },
-                            ];
-                            return (
-                              <div className="grid grid-cols-4 gap-2 text-center">
-                                {miniCards.map(mc => (
-                                  <div key={mc.label} className="rounded-lg p-2 bg-muted/45 border border-border/40">
-                                    <p className="text-lg font-bold text-foreground">{mc.value}</p>
-                                    <p className="text-[10px] text-muted-foreground">{mc.label}</p>
-                                  </div>
-                                ))}
-                              </div>
-                            );
-                          })()}
-                          {team.pendingCount > 0 && (
-                            <Badge variant="outline" className="text-amber-600 border-amber-200">
-                              {team.pendingCount} pending acceptance
-                            </Badge>
-                          )}
+                            <div className="grid grid-cols-3 gap-2 text-center">
+                              <div className="rounded-md bg-sky-50 px-2 py-2"><p className="text-base font-semibold text-sky-800">{activeCount}</p><p className="text-[10px] text-sky-700">active</p></div>
+                              <div className="rounded-md bg-amber-50 px-2 py-2"><p className="text-base font-semibold text-amber-800">{pendingCount}</p><p className="text-[10px] text-amber-700">pending</p></div>
+                              <div className="rounded-md bg-emerald-50 px-2 py-2"><p className="text-base font-semibold text-emerald-800">{completedCount}</p><p className="text-[10px] text-emerald-700">complete</p></div>
+                            </div>
+                            <div className="md:text-right">
+                              <p className="text-lg font-semibold text-slate-900">{completionRate}%</p>
+                              <p className="text-xs text-slate-500">completion</p>
+                            </div>
                         </div>
                       );
                     })}
-                  </div>
-                </CardContent>
-              </Card>
+                </div>
+              </section>
 
-              <Card className="shadow-xl border-border/50">
-                <CardHeader className="border-b bg-muted/30">
-                  <CardTitle className="text-lg flex items-center gap-2">
-                    <Timer className="h-5 w-5 text-primary" />
-                    Time Distribution
-                  </CardTitle>
-                  <CardDescription>Total time tracked across all projects (from checklist items)</CardDescription>
-                </CardHeader>
-                <CardContent className="p-6">
-                  <div className="space-y-6">
-                    <div className="grid grid-cols-2 gap-6">
-                      <div className="rounded-xl p-6 text-center bg-muted/45 border border-border/50">
-                        <Building2 className="h-8 w-8 mx-auto mb-3 text-muted-foreground" />
-                        <p className="text-3xl font-bold text-foreground">{formatDuration(totalGokwikTime)}</p>
-                        <p className="text-sm text-muted-foreground mt-1">{responsibilityLabels.gokwik} Time</p>
+              <section className="rounded-lg border border-slate-200 bg-slate-950 text-white shadow-sm">
+                <div className="border-b border-white/10 px-5 py-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-semibold">Effort balance</p>
+                      <p className="mt-0.5 text-xs text-slate-400">Tracked checklist time across delivery</p>
+                    </div>
+                    <Timer className="h-5 w-5 text-cyan-300" />
+                  </div>
+                </div>
+                <div className="space-y-5 p-5">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="rounded-md border border-white/10 bg-white/5 p-3">
+                        <Building2 className="h-4 w-4 text-cyan-300" />
+                        <p className="mt-4 text-2xl font-semibold tracking-tight">{formatDuration(totalGokwikTime)}</p>
+                        <p className="mt-1 text-xs text-slate-400">{responsibilityLabels.gokwik}</p>
                       </div>
-                      <div className="rounded-xl p-6 text-center bg-muted/45 border border-border/50">
-                        <Users className="h-8 w-8 mx-auto mb-3 text-muted-foreground" />
-                        <p className="text-3xl font-bold text-foreground">{formatDuration(totalMerchantTime)}</p>
-                        <p className="text-sm text-muted-foreground mt-1">{responsibilityLabels.merchant} Time</p>
+                      <div className="rounded-md border border-white/10 bg-white/5 p-3">
+                        <Users className="h-4 w-4 text-amber-300" />
+                        <p className="mt-4 text-2xl font-semibold tracking-tight">{formatDuration(totalMerchantTime)}</p>
+                        <p className="mt-1 text-xs text-slate-400">{responsibilityLabels.merchant}</p>
                       </div>
                     </div>
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-muted-foreground">Distribution</span>
-                        <span className="font-medium">
+                    <div>
+                      <div className="mb-2 flex items-center justify-between text-xs text-slate-300">
+                        <span>Effort split</span>
+                        <span className="font-semibold text-white">
                           {Math.round((totalGokwikTime / (totalGokwikTime + totalMerchantTime || 1)) * 100)}% / {Math.round((totalMerchantTime / (totalGokwikTime + totalMerchantTime || 1)) * 100)}%
                         </span>
                       </div>
-                      <div className="flex h-3 rounded-full overflow-hidden">
+                      <div className="flex h-2.5 overflow-hidden rounded-full bg-white/10">
                         <div className="transition-all" style={{ width: `${(totalGokwikTime / (totalGokwikTime + totalMerchantTime || 1)) * 100}%`, backgroundColor: appLabels.color_time_internal || "#3b82f6" }} />
                         <div className="transition-all" style={{ width: `${(totalMerchantTime / (totalGokwikTime + totalMerchantTime || 1)) * 100}%`, backgroundColor: appLabels.color_time_external || "#f59e0b" }} />
                       </div>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
+                    <div className="rounded-md border border-cyan-300/20 bg-cyan-300/10 px-3 py-2.5 text-xs text-cyan-100">
+                      {totalGokwikTime + totalMerchantTime > 0
+                        ? `${formatDuration(totalGokwikTime + totalMerchantTime)} recorded across all delivery checklists.`
+                        : "No checklist time has been tracked yet."}
+                    </div>
+                </div>
+              </section>
             </div>
 
-            {/* Phase Distribution & State Distribution */}
-            <div className="grid lg:grid-cols-2 gap-6">
-              <Card className="shadow-xl border-border/50">
-                <CardHeader className="border-b bg-muted/30">
-                   <CardTitle className="text-lg flex items-center gap-2">
-                    <BarChart3 className="h-5 w-5 text-primary" />
-                    Project Phase Distribution
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="p-6">
+            <div className="grid gap-5 lg:grid-cols-2">
+              <section className="rounded-lg border border-slate-200 bg-white shadow-sm">
+                <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
+                  <div>
+                    <p className="text-sm font-semibold text-slate-950">Delivery stages</p>
+                    <p className="mt-0.5 text-xs text-slate-500">Where active project work is concentrated</p>
+                  </div>
+                  <BarChart3 className="h-5 w-5 text-sky-700" />
+                </div>
+                <div className="space-y-4 p-5">
                   <div className="space-y-4">
                     {(() => {
                       // Group projects by next incomplete checklist item title (from current owner team first)
@@ -1296,45 +1297,44 @@ export const ManagerDashboard = () => {
                       return sorted.map(([label, count]) => {
                         const pct = totalProjects > 0 ? Math.round((count / totalProjects) * 100) : 0;
                         return (
-                          <div key={label} className="space-y-1">
+                          <div key={label} className="space-y-1.5">
                             <div className="flex items-center justify-between text-sm">
-                              <span className="font-medium truncate max-w-[70%]" title={label}>{label}</span>
-                              <span className="font-bold whitespace-nowrap">{count} ({pct}%)</span>
+                              <span className="max-w-[70%] truncate font-medium text-slate-700" title={label}>{label}</span>
+                              <span className="whitespace-nowrap text-xs font-semibold text-slate-900">{count} · {pct}%</span>
                             </div>
-                            <Progress value={pct} className="h-2" />
+                            <Progress value={pct} className="h-1.5" />
                           </div>
                         );
                       });
                     })()}
                   </div>
-                </CardContent>
-              </Card>
+                </div>
+              </section>
 
-              <Card className="shadow-xl border-border/50">
-                <CardHeader className="border-b bg-muted/30">
-                  <CardTitle className="text-lg flex items-center gap-2">
-                    <Settings className="h-5 w-5 text-primary" />
-                    State Distribution
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="p-6">
-                  <div className="space-y-4">
+              <section className="rounded-lg border border-slate-200 bg-white shadow-sm">
+                <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
+                  <div>
+                    <p className="text-sm font-semibold text-slate-950">Delivery health</p>
+                    <p className="mt-0.5 text-xs text-slate-500">Project state distribution across the portfolio</p>
+                  </div>
+                  <Settings className="h-5 w-5 text-sky-700" />
+                </div>
+                <div className="space-y-4 p-5">
                     {(Object.keys(projectStateLabels) as ProjectState[]).map(state => {
                       const count = displayProjects.filter(p => p.projectState === state).length;
                       const pct = totalProjects > 0 ? Math.round((count / totalProjects) * 100) : 0;
                       return (
-                        <div key={state} className="space-y-1">
+                        <div key={state} className="space-y-1.5">
                           <div className="flex items-center justify-between text-sm">
-                            <span className="font-medium">{stateLabelsFromCtx[state] || projectStateLabels[state]}</span>
-                            <span className="font-bold">{count} ({pct}%)</span>
+                            <span className="font-medium text-slate-700">{stateLabelsFromCtx[state] || projectStateLabels[state]}</span>
+                            <span className="text-xs font-semibold text-slate-900">{count} · {pct}%</span>
                           </div>
-                          <Progress value={pct} className="h-2" />
+                          <Progress value={pct} className="h-1.5" />
                         </div>
                       );
                     })}
-                  </div>
-                </CardContent>
-              </Card>
+                </div>
+              </section>
             </div>
           </div>}
 
