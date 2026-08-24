@@ -32,6 +32,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   DropdownMenu,
+  DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuLabel,
   DropdownMenuSeparator,
@@ -117,13 +118,13 @@ export const ManagerDashboard = () => {
   const { valuesMap: customValuesMap } = useAllCustomFieldValues(projectIds);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("");
-  const [teamFilter, setTeamFilter] = useState<string>("all");
-  const [ownerFilter, setOwnerFilter] = useState<string>("all");
-  const [phaseFilter, setPhaseFilter] = useState<string>("all");
-  const [stateFilter, setStateFilter] = useState<string>("all");
-  const [platformFilter, setPlatformFilter] = useState<string>("all");
-  const [categoryFilter, setCategoryFilter] = useState<string>("all");
-  const [responsibilityFilter, setResponsibilityFilter] = useState<string>("all");
+  const [teamFilter, setTeamFilter] = useState<string[]>([]);
+  const [ownerFilter, setOwnerFilter] = useState<string[]>([]);
+  const [phaseFilter, setPhaseFilter] = useState<string[]>([]);
+  const [stateFilter, setStateFilter] = useState<string[]>([]);
+  const [platformFilter, setPlatformFilter] = useState<string[]>([]);
+  const [categoryFilter, setCategoryFilter] = useState<string[]>([]);
+  const [responsibilityFilter, setResponsibilityFilter] = useState<string[]>([]);
   const [arrMin, setArrMin] = useState<string>("");
   const [arrMax, setArrMax] = useState<string>("");
   const [kickOffFrom, setKickOffFrom] = useState<string>("");
@@ -153,11 +154,30 @@ export const ManagerDashboard = () => {
   const LIST_VIEW_COLUMNS = [
     { key: "merchantName", label: "Merchant Name" },
     { key: "mid", label: "MID" },
+    { key: "platform", label: "Platform" },
+    { key: "category", label: "Category" },
     { key: "status", label: "Status" },
     { key: "phase", label: "Phase" },
     { key: "owner", label: "Owner" },
+    { key: "responsibility", label: "Responsibility" },
     { key: "checklist", label: "Checklist" },
+    { key: "arr", label: "ARR" },
+    { key: "txnsPerDay", label: "Txns/Day" },
+    { key: "aov", label: "AOV" },
+    { key: "goLivePercent", label: "Go Live %" },
+    { key: "pendingAcceptance", label: "Pending Acceptance" },
+    { key: "kickOffDate", label: "Kick-Off" },
     { key: "goLiveDate", label: "Go-Live" },
+    { key: "salesSpoc", label: "Sales SPOC" },
+    { key: "integrationType", label: "Integration Type" },
+    { key: "pgOnboarding", label: "PG Onboarding" },
+    { key: "brandUrl", label: "Brand URL" },
+    { key: "jiraLink", label: "JIRA Link" },
+    { key: "brdLink", label: "BRD Link" },
+    { key: "mintNotes", label: "MINT Notes" },
+    { key: "projectNotes", label: "Project Notes" },
+    { key: "currentPhaseComment", label: "Phase Comment" },
+    { key: "transferCount", label: "Transfer Count" },
     { key: "risk", label: "Risk" },
   ];
   const [listViewColumns, setListViewColumns] = useState<string[]>(() => {
@@ -367,9 +387,13 @@ export const ManagerDashboard = () => {
   };
 
   const filteredOwners = useMemo(() => {
-    if (teamFilter === "all") return allProfiles.filter(p => p.team !== "manager");
-    return allProfiles.filter(p => p.team === teamFilter);
+    if (teamFilter.length === 0) return allProfiles.filter(p => p.team !== "manager");
+    return allProfiles.filter(p => teamFilter.includes(p.team));
   }, [allProfiles, teamFilter]);
+
+  useEffect(() => {
+    setOwnerFilter((prev) => prev.filter((id) => filteredOwners.some((owner) => owner.id === id)));
+  }, [filteredOwners]);
 
   // Bulk selection helpers
   const toggleProjectSelection = (projectId: string) => {
@@ -501,13 +525,13 @@ export const ManagerDashboard = () => {
     const matchesSearch =
       p.merchantName.toLowerCase().includes(searchQuery.toLowerCase()) ||
       p.mid.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesTeam = teamFilter === "all" || p.currentOwnerTeam === teamFilter;
-    const matchesOwner = ownerFilter === "all" || p.assignedOwner === ownerFilter;
-    const matchesPhase = phaseFilter === "all" || getProjectPhaseLabel(p) === phaseFilter;
-    const matchesState = stateFilter === "all" || p.projectState === stateFilter;
-    const matchesPlatform = platformFilter === "all" || p.platform === platformFilter;
-    const matchesCategory = categoryFilter === "all" || p.category === categoryFilter;
-    const matchesResponsibility = responsibilityFilter === "all" || p.currentResponsibility === responsibilityFilter;
+    const matchesTeam = teamFilter.length === 0 || teamFilter.includes(p.currentOwnerTeam);
+    const matchesOwner = ownerFilter.length === 0 || ownerFilter.includes(p.assignedOwner || "");
+    const matchesPhase = phaseFilter.length === 0 || phaseFilter.includes(getProjectPhaseLabel(p));
+    const matchesState = stateFilter.length === 0 || stateFilter.includes(p.projectState);
+    const matchesPlatform = platformFilter.length === 0 || platformFilter.includes(p.platform || "");
+    const matchesCategory = categoryFilter.length === 0 || categoryFilter.includes(p.category || "");
+    const matchesResponsibility = responsibilityFilter.length === 0 || responsibilityFilter.includes(p.currentResponsibility);
     const matchesArrMin = !arrMin || p.arr >= parseFloat(arrMin);
     const matchesArrMax = !arrMax || p.arr <= parseFloat(arrMax);
     const matchesKickOffFrom = !kickOffFrom || p.dates.kickOffDate >= kickOffFrom;
@@ -547,13 +571,13 @@ export const ManagerDashboard = () => {
   const allFilteredSelected = filteredProjectIds.length > 0 && filteredProjectIds.every(id => selectedProjects.has(id));
 
   const clearFilters = () => {
-    setTeamFilter("all");
-    setOwnerFilter("all");
-    setPhaseFilter("all");
-    setStateFilter("all");
-    setPlatformFilter("all");
-    setCategoryFilter("all");
-    setResponsibilityFilter("all");
+    setTeamFilter([]);
+    setOwnerFilter([]);
+    setPhaseFilter([]);
+    setStateFilter([]);
+    setPlatformFilter([]);
+    setCategoryFilter([]);
+    setResponsibilityFilter([]);
     setArrMin("");
     setArrMax("");
     setKickOffFrom("");
@@ -562,7 +586,79 @@ export const ManagerDashboard = () => {
     setGoLiveTo("");
   };
 
-  const hasActiveFilters = teamFilter !== "all" || ownerFilter !== "all" || phaseFilter !== "all" || stateFilter !== "all" || platformFilter !== "all" || categoryFilter !== "all" || responsibilityFilter !== "all" || arrMin || arrMax || kickOffFrom || kickOffTo || goLiveFrom || goLiveTo;
+  const hasActiveFilters = teamFilter.length > 0 || ownerFilter.length > 0 || phaseFilter.length > 0 || stateFilter.length > 0 || platformFilter.length > 0 || categoryFilter.length > 0 || responsibilityFilter.length > 0 || arrMin || arrMax || kickOffFrom || kickOffTo || goLiveFrom || goLiveTo;
+
+  const activeFilterCount = [
+    teamFilter.length > 0,
+    ownerFilter.length > 0,
+    phaseFilter.length > 0,
+    stateFilter.length > 0,
+    platformFilter.length > 0,
+    categoryFilter.length > 0,
+    responsibilityFilter.length > 0,
+    arrMin,
+    arrMax,
+    kickOffFrom,
+    kickOffTo,
+    goLiveFrom,
+    goLiveTo,
+  ].filter(Boolean).length;
+
+  const applyMultiToggle = (selected: string[], value: string, checked: boolean) => {
+    if (checked) {
+      return selected.includes(value) ? selected : [...selected, value];
+    }
+    return selected.filter((item) => item !== value);
+  };
+
+  const formatMultiLabel = (selected: string[], allLabel: string, singularLabel: string) => {
+    if (selected.length === 0) return allLabel;
+    if (selected.length === 1) return selected[0];
+    return `${selected.length} ${singularLabel}s`;
+  };
+
+  const renderMultiFilter = (props: {
+    label: string;
+    selected: string[];
+    allLabel: string;
+    singularLabel: string;
+    options: Array<{ value: string; label: string }>;
+    onToggle: (value: string, checked: boolean) => void;
+    onClear: () => void;
+    summary?: string;
+  }) => {
+    const { label, selected, allLabel, singularLabel, options, onToggle, onClear, summary } = props;
+    const triggerLabel = summary || formatMultiLabel(selected, allLabel, singularLabel);
+
+    return (
+      <div className="space-y-1">
+        <label className="text-xs text-muted-foreground font-medium">{label}</label>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" className="w-full justify-between font-normal">
+              <span className="truncate">{triggerLabel}</span>
+              <ChevronDown className="h-4 w-4 text-muted-foreground" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="w-[320px] max-h-[320px] overflow-y-auto">
+            <DropdownMenuCheckboxItem checked={selected.length === 0} onCheckedChange={(checked) => checked && onClear()}>
+              {allLabel}
+            </DropdownMenuCheckboxItem>
+            <DropdownMenuSeparator />
+            {options.map((option) => (
+              <DropdownMenuCheckboxItem
+                key={option.value}
+                checked={selected.includes(option.value)}
+                onCheckedChange={(checked) => onToggle(option.value, checked === true)}
+              >
+                {option.label}
+              </DropdownMenuCheckboxItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+    );
+  };
 
   // Tab config for sidebar
   const TAB_CONFIG: Record<string, { icon: React.ReactNode; label: string }> = {
@@ -1314,7 +1410,7 @@ export const ManagerDashboard = () => {
                         <Button variant="outline" size="sm" className="gap-2">
                           <Search className="h-4 w-4" />
                           Filters
-                          {hasActiveFilters && <Badge variant="default" className="ml-1 h-5 px-1.5 text-[10px]">{[teamFilter !== "all", ownerFilter !== "all", phaseFilter !== "all", stateFilter !== "all", platformFilter !== "all", categoryFilter !== "all", responsibilityFilter !== "all", arrMin, arrMax, kickOffFrom, kickOffTo, goLiveFrom, goLiveTo].filter(Boolean).length}</Badge>}
+                          {hasActiveFilters && <Badge variant="default" className="ml-1 h-5 px-1.5 text-[10px]">{activeFilterCount}</Badge>}
                           <ChevronDown className={`h-3 w-3 transition-transform ${filtersOpen ? "rotate-180" : ""}`} />
                         </Button>
                       </CollapsibleTrigger>
@@ -1326,90 +1422,87 @@ export const ManagerDashboard = () => {
                           )}
                         </div>
                         <div className="grid grid-cols-2 gap-3">
-                          <div className="space-y-1">
-                            <label className="text-xs text-muted-foreground font-medium">Team</label>
-                            <Select value={teamFilter} onValueChange={(v) => { setTeamFilter(v); setOwnerFilter("all"); }}>
-                              <SelectTrigger className="w-full"><SelectValue placeholder="All Teams" /></SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="all">All Teams</SelectItem>
-                                <SelectItem value="mint">{teamLabels.mint}</SelectItem>
-                                <SelectItem value="integration">{teamLabels.integration}</SelectItem>
-                                <SelectItem value="ms">{teamLabels.ms}</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          <div className="space-y-1">
-                            <label className="text-xs text-muted-foreground font-medium">Owner</label>
-                            <Select value={ownerFilter} onValueChange={setOwnerFilter}>
-                              <SelectTrigger className="w-full"><SelectValue placeholder="All Owners" /></SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="all">All Owners</SelectItem>
-                                {filteredOwners.map((owner) => (
-                                  <SelectItem key={owner.id} value={owner.id}>{owner.name}</SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          <div className="space-y-1">
-                            <label className="text-xs text-muted-foreground font-medium">Phase</label>
-                            <Select value={phaseFilter} onValueChange={setPhaseFilter}>
-                              <SelectTrigger className="w-full"><SelectValue placeholder="All Phases" /></SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="all">All Phases</SelectItem>
-                                {uniquePhaseLabels.map(label => (
-                                  <SelectItem key={label} value={label}>{label}</SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          <div className="space-y-1">
-                            <label className="text-xs text-muted-foreground font-medium">State</label>
-                            <Select value={stateFilter} onValueChange={setStateFilter}>
-                              <SelectTrigger className="w-full"><SelectValue placeholder="All States" /></SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="all">All States</SelectItem>
-                                {(Object.keys(projectStateLabels) as ProjectState[]).map(s => (
-                                  <SelectItem key={s} value={s}>{stateLabelsFromCtx[s] || projectStateLabels[s]}</SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          <div className="space-y-1">
-                            <label className="text-xs text-muted-foreground font-medium">Platform</label>
-                            <Select value={platformFilter} onValueChange={setPlatformFilter}>
-                              <SelectTrigger className="w-full"><SelectValue placeholder="All Platforms" /></SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="all">All Platforms</SelectItem>
-                                {uniquePlatforms.map(p => (
-                                  <SelectItem key={p} value={p}>{p}</SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          <div className="space-y-1">
-                            <label className="text-xs text-muted-foreground font-medium">Category</label>
-                            <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                              <SelectTrigger className="w-full"><SelectValue placeholder="All Categories" /></SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="all">All Categories</SelectItem>
-                                {uniqueCategories.map(c => (
-                                  <SelectItem key={c} value={c}>{c}</SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          <div className="space-y-1">
-                            <label className="text-xs text-muted-foreground font-medium">Responsibility</label>
-                            <Select value={responsibilityFilter} onValueChange={setResponsibilityFilter}>
-                              <SelectTrigger className="w-full"><SelectValue placeholder="All" /></SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="all">All</SelectItem>
-                                <SelectItem value="gokwik">{responsibilityLabels.gokwik}</SelectItem>
-                                <SelectItem value="merchant">{responsibilityLabels.merchant}</SelectItem>
-                                <SelectItem value="neutral">Neutral</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
+                          {renderMultiFilter({
+                            label: "Team",
+                            selected: teamFilter,
+                            allLabel: "All Teams",
+                            singularLabel: "team",
+                            summary: teamFilter.length === 1 ? (teamLabels[teamFilter[0] as TeamRole] || teamFilter[0]) : undefined,
+                            options: [
+                              { value: "mint", label: teamLabels.mint },
+                              { value: "integration", label: teamLabels.integration },
+                              { value: "ms", label: teamLabels.ms },
+                            ],
+                            onToggle: (value, checked) => {
+                              setTeamFilter((prev) => applyMultiToggle(prev, value, checked));
+                              setOwnerFilter([]);
+                            },
+                            onClear: () => {
+                              setTeamFilter([]);
+                              setOwnerFilter([]);
+                            },
+                          })}
+                          {renderMultiFilter({
+                            label: "Owner",
+                            selected: ownerFilter,
+                            allLabel: "All Owners",
+                            singularLabel: "owner",
+                            summary: ownerFilter.length === 1 ? (filteredOwners.find((o) => o.id === ownerFilter[0])?.name || ownerFilter[0]) : undefined,
+                            options: filteredOwners.map((owner) => ({ value: owner.id, label: owner.name })),
+                            onToggle: (value, checked) => setOwnerFilter((prev) => applyMultiToggle(prev, value, checked)),
+                            onClear: () => setOwnerFilter([]),
+                          })}
+                          {renderMultiFilter({
+                            label: "Phase",
+                            selected: phaseFilter,
+                            allLabel: "All Phases",
+                            singularLabel: "phase",
+                            options: uniquePhaseLabels.map((label) => ({ value: label, label })),
+                            onToggle: (value, checked) => setPhaseFilter((prev) => applyMultiToggle(prev, value, checked)),
+                            onClear: () => setPhaseFilter([]),
+                          })}
+                          {renderMultiFilter({
+                            label: "State",
+                            selected: stateFilter,
+                            allLabel: "All States",
+                            singularLabel: "state",
+                            summary: stateFilter.length === 1 ? (stateLabelsFromCtx[stateFilter[0] as ProjectState] || projectStateLabels[stateFilter[0] as ProjectState] || stateFilter[0]) : undefined,
+                            options: (Object.keys(projectStateLabels) as ProjectState[]).map((s) => ({ value: s, label: stateLabelsFromCtx[s] || projectStateLabels[s] })),
+                            onToggle: (value, checked) => setStateFilter((prev) => applyMultiToggle(prev, value, checked)),
+                            onClear: () => setStateFilter([]),
+                          })}
+                          {renderMultiFilter({
+                            label: "Platform",
+                            selected: platformFilter,
+                            allLabel: "All Platforms",
+                            singularLabel: "platform",
+                            options: uniquePlatforms.map((platform) => ({ value: platform, label: platform })),
+                            onToggle: (value, checked) => setPlatformFilter((prev) => applyMultiToggle(prev, value, checked)),
+                            onClear: () => setPlatformFilter([]),
+                          })}
+                          {renderMultiFilter({
+                            label: "Category",
+                            selected: categoryFilter,
+                            allLabel: "All Categories",
+                            singularLabel: "category",
+                            options: uniqueCategories.map((category) => ({ value: category, label: category })),
+                            onToggle: (value, checked) => setCategoryFilter((prev) => applyMultiToggle(prev, value, checked)),
+                            onClear: () => setCategoryFilter([]),
+                          })}
+                          {renderMultiFilter({
+                            label: "Responsibility",
+                            selected: responsibilityFilter,
+                            allLabel: "All",
+                            singularLabel: "responsibility",
+                            summary: responsibilityFilter.length === 1 ? (responsibilityLabels[responsibilityFilter[0] as "gokwik" | "merchant" | "neutral"] || responsibilityFilter[0]) : undefined,
+                            options: [
+                              { value: "gokwik", label: responsibilityLabels.gokwik },
+                              { value: "merchant", label: responsibilityLabels.merchant },
+                              { value: "neutral", label: "Neutral" },
+                            ],
+                            onToggle: (value, checked) => setResponsibilityFilter((prev) => applyMultiToggle(prev, value, checked)),
+                            onClear: () => setResponsibilityFilter([]),
+                          })}
                           <div className="space-y-1">
                             <label className="text-xs text-muted-foreground font-medium">ARR Range (Cr)</label>
                             <div className="flex gap-1">
@@ -1670,7 +1763,7 @@ export const ManagerDashboard = () => {
                           <Button variant="outline" size="sm" className="gap-2">
                             <Search className="h-4 w-4" />
                             Filters
-                            {hasActiveFilters && <Badge variant="default" className="ml-1 h-5 px-1.5 text-[10px]">{[teamFilter !== "all", ownerFilter !== "all", phaseFilter !== "all", stateFilter !== "all", platformFilter !== "all", categoryFilter !== "all", responsibilityFilter !== "all", arrMin, arrMax, kickOffFrom, kickOffTo, goLiveFrom, goLiveTo].filter(Boolean).length}</Badge>}
+                            {hasActiveFilters && <Badge variant="default" className="ml-1 h-5 px-1.5 text-[10px]">{activeFilterCount}</Badge>}
                             <ChevronDown className={`h-3 w-3 transition-transform ${filtersOpen ? "rotate-180" : ""}`} />
                           </Button>
                         </CollapsibleTrigger>
@@ -1682,90 +1775,87 @@ export const ManagerDashboard = () => {
                             )}
                           </div>
                           <div className="grid grid-cols-2 gap-3">
-                            <div className="space-y-1">
-                              <label className="text-xs text-muted-foreground font-medium">Team</label>
-                              <Select value={teamFilter} onValueChange={(v) => { setTeamFilter(v); setOwnerFilter("all"); }}>
-                                <SelectTrigger className="w-full"><SelectValue placeholder="All Teams" /></SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="all">All Teams</SelectItem>
-                                  <SelectItem value="mint">{teamLabels.mint}</SelectItem>
-                                  <SelectItem value="integration">{teamLabels.integration}</SelectItem>
-                                  <SelectItem value="ms">{teamLabels.ms}</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </div>
-                            <div className="space-y-1">
-                              <label className="text-xs text-muted-foreground font-medium">Owner</label>
-                              <Select value={ownerFilter} onValueChange={setOwnerFilter}>
-                                <SelectTrigger className="w-full"><SelectValue placeholder="All Owners" /></SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="all">All Owners</SelectItem>
-                                  {filteredOwners.map((owner) => (
-                                    <SelectItem key={owner.id} value={owner.id}>{owner.name}</SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            </div>
-                            <div className="space-y-1">
-                              <label className="text-xs text-muted-foreground font-medium">Phase</label>
-                              <Select value={phaseFilter} onValueChange={setPhaseFilter}>
-                                <SelectTrigger className="w-full"><SelectValue placeholder="All Phases" /></SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="all">All Phases</SelectItem>
-                                  {uniquePhaseLabels.map(label => (
-                                    <SelectItem key={label} value={label}>{label}</SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            </div>
-                            <div className="space-y-1">
-                              <label className="text-xs text-muted-foreground font-medium">State</label>
-                              <Select value={stateFilter} onValueChange={setStateFilter}>
-                                <SelectTrigger className="w-full"><SelectValue placeholder="All States" /></SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="all">All States</SelectItem>
-                                  {(Object.keys(projectStateLabels) as ProjectState[]).map(s => (
-                                    <SelectItem key={s} value={s}>{stateLabelsFromCtx[s] || projectStateLabels[s]}</SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            </div>
-                            <div className="space-y-1">
-                              <label className="text-xs text-muted-foreground font-medium">Platform</label>
-                              <Select value={platformFilter} onValueChange={setPlatformFilter}>
-                                <SelectTrigger className="w-full"><SelectValue placeholder="All Platforms" /></SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="all">All Platforms</SelectItem>
-                                  {uniquePlatforms.map(p => (
-                                    <SelectItem key={p} value={p}>{p}</SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            </div>
-                            <div className="space-y-1">
-                              <label className="text-xs text-muted-foreground font-medium">Category</label>
-                              <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                                <SelectTrigger className="w-full"><SelectValue placeholder="All Categories" /></SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="all">All Categories</SelectItem>
-                                  {uniqueCategories.map(c => (
-                                    <SelectItem key={c} value={c}>{c}</SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            </div>
-                            <div className="space-y-1">
-                              <label className="text-xs text-muted-foreground font-medium">Responsibility</label>
-                              <Select value={responsibilityFilter} onValueChange={setResponsibilityFilter}>
-                                <SelectTrigger className="w-full"><SelectValue placeholder="All" /></SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="all">All</SelectItem>
-                                  <SelectItem value="gokwik">{responsibilityLabels.gokwik}</SelectItem>
-                                  <SelectItem value="merchant">{responsibilityLabels.merchant}</SelectItem>
-                                  <SelectItem value="neutral">Neutral</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </div>
+                            {renderMultiFilter({
+                              label: "Team",
+                              selected: teamFilter,
+                              allLabel: "All Teams",
+                              singularLabel: "team",
+                              summary: teamFilter.length === 1 ? (teamLabels[teamFilter[0] as TeamRole] || teamFilter[0]) : undefined,
+                              options: [
+                                { value: "mint", label: teamLabels.mint },
+                                { value: "integration", label: teamLabels.integration },
+                                { value: "ms", label: teamLabels.ms },
+                              ],
+                              onToggle: (value, checked) => {
+                                setTeamFilter((prev) => applyMultiToggle(prev, value, checked));
+                                setOwnerFilter([]);
+                              },
+                              onClear: () => {
+                                setTeamFilter([]);
+                                setOwnerFilter([]);
+                              },
+                            })}
+                            {renderMultiFilter({
+                              label: "Owner",
+                              selected: ownerFilter,
+                              allLabel: "All Owners",
+                              singularLabel: "owner",
+                              summary: ownerFilter.length === 1 ? (filteredOwners.find((o) => o.id === ownerFilter[0])?.name || ownerFilter[0]) : undefined,
+                              options: filteredOwners.map((owner) => ({ value: owner.id, label: owner.name })),
+                              onToggle: (value, checked) => setOwnerFilter((prev) => applyMultiToggle(prev, value, checked)),
+                              onClear: () => setOwnerFilter([]),
+                            })}
+                            {renderMultiFilter({
+                              label: "Phase",
+                              selected: phaseFilter,
+                              allLabel: "All Phases",
+                              singularLabel: "phase",
+                              options: uniquePhaseLabels.map((label) => ({ value: label, label })),
+                              onToggle: (value, checked) => setPhaseFilter((prev) => applyMultiToggle(prev, value, checked)),
+                              onClear: () => setPhaseFilter([]),
+                            })}
+                            {renderMultiFilter({
+                              label: "State",
+                              selected: stateFilter,
+                              allLabel: "All States",
+                              singularLabel: "state",
+                              summary: stateFilter.length === 1 ? (stateLabelsFromCtx[stateFilter[0] as ProjectState] || projectStateLabels[stateFilter[0] as ProjectState] || stateFilter[0]) : undefined,
+                              options: (Object.keys(projectStateLabels) as ProjectState[]).map((s) => ({ value: s, label: stateLabelsFromCtx[s] || projectStateLabels[s] })),
+                              onToggle: (value, checked) => setStateFilter((prev) => applyMultiToggle(prev, value, checked)),
+                              onClear: () => setStateFilter([]),
+                            })}
+                            {renderMultiFilter({
+                              label: "Platform",
+                              selected: platformFilter,
+                              allLabel: "All Platforms",
+                              singularLabel: "platform",
+                              options: uniquePlatforms.map((platform) => ({ value: platform, label: platform })),
+                              onToggle: (value, checked) => setPlatformFilter((prev) => applyMultiToggle(prev, value, checked)),
+                              onClear: () => setPlatformFilter([]),
+                            })}
+                            {renderMultiFilter({
+                              label: "Category",
+                              selected: categoryFilter,
+                              allLabel: "All Categories",
+                              singularLabel: "category",
+                              options: uniqueCategories.map((category) => ({ value: category, label: category })),
+                              onToggle: (value, checked) => setCategoryFilter((prev) => applyMultiToggle(prev, value, checked)),
+                              onClear: () => setCategoryFilter([]),
+                            })}
+                            {renderMultiFilter({
+                              label: "Responsibility",
+                              selected: responsibilityFilter,
+                              allLabel: "All",
+                              singularLabel: "responsibility",
+                              summary: responsibilityFilter.length === 1 ? (responsibilityLabels[responsibilityFilter[0] as "gokwik" | "merchant" | "neutral"] || responsibilityFilter[0]) : undefined,
+                              options: [
+                                { value: "gokwik", label: responsibilityLabels.gokwik },
+                                { value: "merchant", label: responsibilityLabels.merchant },
+                                { value: "neutral", label: "Neutral" },
+                              ],
+                              onToggle: (value, checked) => setResponsibilityFilter((prev) => applyMultiToggle(prev, value, checked)),
+                              onClear: () => setResponsibilityFilter([]),
+                            })}
                             <div className="space-y-1">
                               <label className="text-xs text-muted-foreground font-medium">ARR Range (Cr)</label>
                               <div className="flex gap-1">
@@ -1924,9 +2014,20 @@ export const ManagerDashboard = () => {
                               case "category": return project.category || "—";
                               case "merchantState": return getProjectPhaseLabel(project);
                               case "phase": return phaseLabels[project.currentPhase] || project.currentPhase;
+                              case "responsibility": return responsibilityLabels[project.currentResponsibility] || project.currentResponsibility;
                               case "checklist": return `${project.checklist.filter(c => c.completed).length}/${project.checklist.length} checklist`;
+                              case "txnsPerDay": return `${project.txnsPerDay}`;
+                              case "aov": return `${project.aov}`;
+                              case "pendingAcceptance": return project.pendingAcceptance ? "Yes" : "No";
                               case "mintComment": return project.notes?.currentPhaseComment || project.notes?.mintNotes || "—";
+                              case "mintNotes": return project.notes?.mintNotes || "—";
+                              case "projectNotes": return project.notes?.projectNotes || "—";
+                              case "currentPhaseComment": return project.notes?.currentPhaseComment || "—";
                               case "liveDate": return project.dates.goLiveDate || project.dates.expectedGoLiveDate || "—";
+                              case "brandUrl": return project.links?.brandUrl || "—";
+                              case "jiraLink": return project.links?.jiraLink || "—";
+                              case "brdLink": return project.links?.brdLink || "—";
+                              case "transferCount": return `${project.transferHistory.length}`;
                               case "recentComments": {
                                 const comments = project.checklist
                                   .filter(c => c.comment)
