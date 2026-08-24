@@ -11,6 +11,7 @@ import { useLabels } from "@/contexts/LabelsContext";
 export const LoginScreen = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [name, setName] = useState("");
   const [isSignup, setIsSignup] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const { login, signup } = useAuth();
