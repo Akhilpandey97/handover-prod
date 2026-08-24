@@ -25,7 +25,12 @@ export const LoginScreen = () => {
     setIsLoading(true);
 
     if (isSignup) {
-      const result = await signup(email, password, "", "mint");
+      if (!name.trim()) {
+        toast.error("Please enter your name");
+        setIsLoading(false);
+        return;
+      }
+      const result = await signup(email, password, name, "mint");
       if (result.success) {
         toast.success("Account created. Sign in to continue.");
         setIsSignup(false);
