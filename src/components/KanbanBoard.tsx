@@ -28,20 +28,6 @@ const KANBAN_FIELD_OPTIONS = [
   { key: "assignedOwnerName", label: "Assigned Owner" },
 ];
 
-const STATE_COLORS: Record<string, { color: string; bg: string }> = {
-  not_started: { color: "text-muted-foreground", bg: "bg-muted/40" },
-  in_progress: { color: "text-blue-600", bg: "bg-blue-500/5" },
-  on_hold: { color: "text-amber-600", bg: "bg-amber-500/5" },
-  blocked: { color: "text-destructive", bg: "bg-destructive/5" },
-  live: { color: "text-emerald-600", bg: "bg-emerald-500/5" },
-};
-
-const PHASE_COLORS: Record<string, { color: string; bg: string }> = {
-  mint: { color: "text-purple-600", bg: "bg-purple-500/5" },
-  integration: { color: "text-blue-600", bg: "bg-blue-500/5" },
-  ms: { color: "text-amber-600", bg: "bg-amber-500/5" },
-  completed: { color: "text-emerald-600", bg: "bg-emerald-500/5" },
-};
 
 const SORT_OPTIONS = [
   { key: "none", label: "Default" },
@@ -83,20 +69,6 @@ function getFieldLabel(value: string, field: string, labels: any): string {
     case "currentResponsibility": return labels.responsibilityLabels[value] || value;
     default: return value;
   }
-}
-
-function getColumnStyle(value: string, field: string): { color: string; bg: string } {
-  if (field === "projectState") return STATE_COLORS[value] || { color: "text-muted-foreground", bg: "bg-muted/40" };
-  if (field === "currentPhase") return PHASE_COLORS[value] || { color: "text-muted-foreground", bg: "bg-muted/40" };
-  const hash = value.split("").reduce((a, c) => a + c.charCodeAt(0), 0);
-  const colors = [
-    { color: "text-blue-600", bg: "bg-blue-500/5" },
-    { color: "text-emerald-600", bg: "bg-emerald-500/5" },
-    { color: "text-amber-600", bg: "bg-amber-500/5" },
-    { color: "text-purple-600", bg: "bg-purple-500/5" },
-    { color: "text-rose-600", bg: "bg-rose-500/5" },
-  ];
-  return colors[hash % colors.length];
 }
 
 function sortProjects(projects: Project[], sortField: string, sortDirection: "asc" | "desc"): Project[] {
@@ -206,7 +178,6 @@ export const KanbanBoard = ({ filteredProjects }: KanbanBoardProps) => {
         key,
         label: getFieldLabel(key, groupField, labels),
         projects: groupProjects,
-        ...getColumnStyle(key, groupField),
       }))
       .sort((a, b) => {
         const aIndex = order.indexOf(a.key);
@@ -456,10 +427,10 @@ export const KanbanBoard = ({ filteredProjects }: KanbanBoardProps) => {
               setDraggedProjectId(null);
             }}
           >
-            <Card className={cn("h-full", col.bg)}>
+            <Card className="h-full border-border/70 bg-card">
               <CardHeader className="pb-3 pt-4 px-4">
                 <CardTitle className="flex items-center justify-between text-sm">
-                  <span className={cn("font-semibold", col.color)}>
+                  <span className="font-semibold text-foreground">
                     {col.label}
                   </span>
                   <Badge variant="secondary" className="font-bold text-xs">
