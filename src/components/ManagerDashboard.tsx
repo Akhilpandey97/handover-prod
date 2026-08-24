@@ -1128,22 +1128,6 @@ export const ManagerDashboard = () => {
           {/* ========= OVERVIEW TAB ========= */}
           {activeTab === "dashboard" && <div className="mx-auto max-w-7xl space-y-5">
             <section className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
-              <div className="flex flex-col gap-4 border-b border-slate-200 bg-slate-50/80 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-sky-700">Portfolio command center</p>
-                  <h3 className="mt-1 text-xl font-semibold text-slate-950">Delivery at a glance</h3>
-                  <p className="mt-1 text-sm text-slate-500">Monitor pipeline, workload, and delivery risk across every team.</p>
-                </div>
-                <div className="flex shrink-0 items-center gap-3 rounded-md border border-slate-200 bg-white px-3 py-2">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-md bg-sky-100 text-sky-700">
-                    <TrendingUp className="h-4 w-4" />
-                  </div>
-                  <div>
-                    <p className="text-[11px] font-medium uppercase tracking-wide text-slate-500">Pipeline value</p>
-                    <p className="text-sm font-semibold text-slate-950">{totalArr.toFixed(2)} Cr</p>
-                  </div>
-                </div>
-              </div>
               <div className="grid grid-cols-2 gap-px bg-slate-200 lg:grid-cols-4">
               {(() => {
                 const kpiCards = [

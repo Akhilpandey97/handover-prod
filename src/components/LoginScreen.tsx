@@ -18,7 +18,6 @@ export const LoginScreen = () => {
   const { labels } = useLabels();
 
   const brandName = labels.app_title || "Handover";
-  const orgName = labels.org_name?.toLowerCase().includes("gokwik") ? "Enterprise" : labels.org_name || "Enterprise";
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -59,7 +58,6 @@ export const LoginScreen = () => {
           </div>
           <div>
             <h1 className="text-xl font-bold tracking-tight text-foreground">{brandName}</h1>
-            <p className="text-xs text-muted-foreground">{orgName}</p>
           </div>
         </div>
 
