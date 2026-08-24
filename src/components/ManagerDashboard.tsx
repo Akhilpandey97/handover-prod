@@ -143,12 +143,6 @@ export const ManagerDashboard = () => {
   const [reportsExpanded, setReportsExpanded] = useState(false);
   const [settingsExpanded, setSettingsExpanded] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [settingsGroupExpanded, setSettingsGroupExpanded] = useState<Record<string, boolean>>({
-    General: false,
-    "Data & Forms": false,
-    Communication: false,
-    Administration: false,
-  });
 
   // List view column selection
   const LIST_VIEW_COLUMNS = [
@@ -680,13 +674,6 @@ export const ManagerDashboard = () => {
     users: { label: "Users" },
   };
 
-  const SETTINGS_GROUPS: Array<{ label: string; items: string[] }> = [
-    { label: "General", items: ["general", "workflows", "activity-log"] },
-    { label: "Data & Forms", items: ["custom-fields", "checklist"] },
-    { label: "Communication", items: ["email"] },
-    { label: "Administration", items: ["users"] },
-  ];
-
   const REPORTS_SUB_CONFIG: Record<string, { label: string; icon?: string }> = {
     predefined: { label: "Pre Defined" },
     builder: { label: "Report Builder" },
@@ -871,51 +858,20 @@ export const ManagerDashboard = () => {
 
         {/* Settings sub-menu */}
         {isSettings && settingsExpanded && (
-          <div className="ml-6 mt-1 mb-1 space-y-3 pl-4">
-            {SETTINGS_GROUPS.map((group) => (
-              <div key={group.label} className="space-y-1">
-                <button
-                  type="button"
-                  onClick={() =>
-                    setSettingsGroupExpanded((prev) => ({
-                      ...prev,
-                      [group.label]: !prev[group.label],
-                    }))
-                  }
-                  className="flex w-full items-center justify-between rounded-lg px-3 py-1.5 text-left hover:bg-sidebar-accent/45 transition-colors"
-                >
-                  <span className="text-xs font-semibold uppercase tracking-[0.14em] text-sidebar-foreground">
-                    {group.label}
-                  </span>
-                  <ChevronDown
-                    className={cn(
-                      "h-4 w-4 text-sidebar-foreground transition-transform",
-                      settingsGroupExpanded[group.label] ? "rotate-180" : ""
-                    )}
-                  />
-                </button>
-                {settingsGroupExpanded[group.label] && (
-                  <div className="space-y-1">
-                    {group.items.map((key) => {
-                      const label = SETTINGS_SUB_CONFIG[key]?.label || key;
-                      return (
-                        <button
-                          key={key}
-                          onClick={() => { setActiveTab("settings"); setSettingsSubTab(key); }}
-                          className={cn(
-                            "w-full flex items-center gap-2.5 text-left px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150",
-                            settingsSubTab === key && activeTab === "settings"
-                              ? "bg-primary text-primary-foreground shadow-md"
-                              : "text-sidebar-foreground hover:text-sidebar-foreground hover:bg-sidebar-accent/60"
-                          )}
-                        >
-                          {label}
-                        </button>
-                      );
-                    })}
-                  </div>
+          <div className="ml-6 mt-1 mb-1 space-y-1 pl-4">
+            {Object.entries(SETTINGS_SUB_CONFIG).map(([key, config]) => (
+              <button
+                key={key}
+                onClick={() => { setActiveTab("settings"); setSettingsSubTab(key); }}
+                className={cn(
+                  "w-full rounded-xl px-3 py-2.5 text-left text-sm font-medium transition-all duration-150",
+                  settingsSubTab === key && activeTab === "settings"
+                    ? "bg-primary text-primary-foreground shadow-md"
+                    : "text-sidebar-foreground hover:bg-sidebar-accent/60 hover:text-sidebar-foreground"
                 )}
-              </div>
+              >
+                {config.label}
+              </button>
             ))}
           </div>
         )}

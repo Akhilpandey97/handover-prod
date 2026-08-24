@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Project } from "@/data/projectsData";
 import { TeamRole } from "@/data/teams";
+import { useAuth } from "@/contexts/AuthContext";
 import { useLabels } from "@/contexts/LabelsContext";
 import { supabase } from "@/integrations/supabase/client";
 import { sendNotification } from "@/utils/sendNotification";
@@ -38,6 +39,7 @@ export interface AssignOwnerDialogProps {
 
 export const AssignOwnerDialog = ({ project, open, onOpenChange, projectIds, onAssigned }: AssignOwnerDialogProps) => {
   const queryClient = useQueryClient();
+  const { currentUser } = useAuth();
   const { teamLabels } = useLabels();
   const isBulk = !!projectIds && projectIds.length > 0;
   const [targetTeam, setTargetTeam] = useState<TeamRole>(project?.currentOwnerTeam || "mint");
@@ -152,6 +154,7 @@ export const AssignOwnerDialog = ({ project, open, onOpenChange, projectIds, onA
             accepted_by: owner?.name || null,
             accepted_at: new Date().toISOString(),
             notes: `OWNER_CHANGE:${ownerLabel}`,
+            tenant_id: currentUser?.tenantId || null,
           });
 
         if (ownerLogError) throw ownerLogError;
