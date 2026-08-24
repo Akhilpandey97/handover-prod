@@ -791,15 +791,17 @@ export const ProjectWorkspaceView = ({ projectId: projectIdProp, inModal = false
               <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-md ${risk.label === "Low risk" ? "bg-emerald-50 text-emerald-600" : "bg-rose-50 text-rose-600"}`}>
                 <ShieldAlert className="h-4 w-4" />
               </div>
-              <div className="min-w-0">
+              <div className="min-w-0 flex-1">
                 <p className="text-xs font-bold uppercase tracking-[0.1em] text-slate-500">Risk</p>
-                <p className={cn("mt-1 text-sm font-semibold", risk.label === "Low risk" ? "text-emerald-700" : "text-rose-700")}>{risk.label}</p>
+                <div className="mt-1 flex items-center gap-2">
+                  <Badge className={cn("border text-xs font-semibold", risk.tone)}>{risk.label}</Badge>
+                  <span className="text-sm font-semibold text-slate-500">Score {risk.score}</span>
+                </div>
               </div>
             </div>
-            <div className="mt-3 flex items-center gap-3">
-              <span className="text-xs font-medium text-slate-500">Go-live progress {project.goLivePercent}%</span>
-              <Progress value={project.goLivePercent} className="h-2 flex-1 bg-slate-100" />
-            </div>
+            <p className="mt-2 text-sm text-slate-500">
+              {risk.drivers[0]?.label || "No material delivery or ownership risks detected."}
+            </p>
           </div>
         </div>
       </div>
@@ -970,21 +972,6 @@ export const ProjectWorkspaceView = ({ projectId: projectIdProp, inModal = false
                         <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Merchant</p>
                       </div>
                     </div>
-                  </div>
-                ),
-              },
-              {
-                key: "risk",
-                title: "Risk",
-                content: (
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <Badge className={cn("border text-xs font-semibold", risk.tone)}>{risk.label}</Badge>
-                      <span className="text-xs font-semibold text-muted-foreground">Score {risk.score}</span>
-                    </div>
-                    {risk.drivers[0]?.points > 0 ? (
-                      <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{risk.drivers[0].label}</p>
-                    ) : null}
                   </div>
                 ),
               },
