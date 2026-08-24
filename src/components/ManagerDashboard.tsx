@@ -908,9 +908,9 @@ export const ManagerDashboard = () => {
               </div>
             )}
             {!sidebarCollapsed && (
-              <div>
-                <h1 className="font-bold text-sm text-sidebar-foreground">{sidebarTitle}</h1>
-                <p className="text-[11px] tracking-[0.08em] text-sidebar-foreground/60">{sidebarSubtitle}</p>
+              <div className="min-w-0">
+                <h1 className="font-semibold text-[15px] leading-tight text-sidebar-foreground truncate">{sidebarTitle}</h1>
+                <p className="text-[11px] leading-tight tracking-[0.04em] text-sidebar-foreground/65 line-clamp-2">{sidebarSubtitle}</p>
               </div>
             )}
           </div>
@@ -1534,12 +1534,12 @@ export const ManagerDashboard = () => {
           {activeTab === "projects" && projectView === "list" && <div className="space-y-4">
             <Card className="border-border/60 bg-card/90 enterprise-shadow">
               <CardHeader className="sticky top-0 z-10 border-b bg-card/95 backdrop-blur-sm py-3">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                   <CardTitle className="text-lg flex items-center gap-2">
                     <List className="h-5 w-5 text-primary" />
                     List View
                   </CardTitle>
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2 lg:justify-end">
                     <div className="flex items-center gap-2 rounded-md border border-border/60 bg-muted/35 px-2 py-1.5">
                       <Checkbox
                         checked={allFilteredSelected ? true : selectedFilteredCount > 0 ? "indeterminate" : false}
@@ -1588,10 +1588,14 @@ export const ManagerDashboard = () => {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="w-72 p-0">
-                          <DropdownMenuLabel>Visible Columns</DropdownMenuLabel>
+                          <DropdownMenuLabel className="pb-1">Visible Columns</DropdownMenuLabel>
+                          <p className="px-2 pb-2 text-[11px] text-muted-foreground">Drag to reorder active columns</p>
                           <DropdownMenuSeparator />
                           <div className="max-h-[340px] overflow-y-auto p-1">
                             {/* Active columns - draggable to reorder */}
+                            {listViewColumns.length > 0 && (
+                              <p className="px-2 pb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Active</p>
+                            )}
                             {listViewColumns.map((colKey, idx) => {
                               const col = LIST_VIEW_COLUMNS.find(c => c.key === colKey);
                               if (!col) return null;
@@ -1613,7 +1617,7 @@ export const ManagerDashboard = () => {
                                   }}
                                   className="flex items-center gap-2 px-2 py-1.5 text-sm cursor-grab hover:bg-accent/50 rounded-md transition-colors"
                                 >
-                                  <GripVertical className="h-3.5 w-3.5 text-muted-foreground/50 shrink-0" />
+                                  <GripVertical className="h-4 w-4 text-muted-foreground/60 shrink-0" />
                                   <Checkbox
                                     checked={true}
                                     onCheckedChange={() => {
@@ -1630,7 +1634,7 @@ export const ManagerDashboard = () => {
                                       setListViewColumns(newCols);
                                       localStorage.setItem("listview_columns", JSON.stringify(newCols));
                                     }}
-                                    className="flex-1 text-left"
+                                    className="flex-1 text-left hover:text-foreground"
                                   >
                                     {col.label}
                                   </button>
@@ -1638,6 +1642,9 @@ export const ManagerDashboard = () => {
                               );
                             })}
                             {/* Inactive columns */}
+                            {LIST_VIEW_COLUMNS.some(col => !listViewColumns.includes(col.key)) && (
+                              <p className="px-2 pt-1 pb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Hidden</p>
+                            )}
                             {LIST_VIEW_COLUMNS.filter(col => !listViewColumns.includes(col.key)).map((col) => (
                               <div key={col.key} className="flex items-center gap-2 px-2 py-1.5 text-sm rounded-md hover:bg-accent/40">
                                 <div className="w-3.5 shrink-0" />
