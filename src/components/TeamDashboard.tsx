@@ -242,7 +242,15 @@ export const TeamDashboard = () => {
                 </p>
               </div>
             ) : (
-              <div className="space-y-4">
+              <div className="space-y-2">
+                <div className="hidden grid-cols-[minmax(0,1fr)_120px_180px_130px_90px_150px] gap-3 pl-4 pr-3 pb-1 text-[11px] font-bold uppercase tracking-[0.14em] text-muted-foreground lg:grid">
+                  <span>Project</span>
+                  <span>State</span>
+                  <span>My checklist</span>
+                  <span>Waiting on</span>
+                  <span>Go-live</span>
+                  <span />
+                </div>
                 {displayProjects.map((project) => (
                   <ProjectCardNew key={project.id} project={project} />
                 ))}

@@ -102,6 +102,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     let isMounted = true;
+    let loadedUserId: string | null = null;
 
     const syncFromSession = async (nextSession: Session | null) => {
       if (!isMounted) return;
@@ -109,7 +110,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setSession(nextSession);
 
       if (!nextSession?.user) {
+        loadedUserId = null;
         setCurrentUser(null);
+        setIsLoading(false);
+        return;
+      }
+
+      // Token refreshes / tab focus re-emit the same user — don't re-fetch or
+      // flip the app back into its loading state.
+      if (loadedUserId === nextSession.user.id) {
         setIsLoading(false);
         return;
       }
@@ -119,6 +128,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       if (!isMounted) return;
 
+      loadedUserId = nextSession.user.id;
       setCurrentUser(userProfile);
       setIsLoading(false);
     };
@@ -138,6 +148,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       subscription.unsubscribe();
     };
   }, []);
+
 
   const login = async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
     try {

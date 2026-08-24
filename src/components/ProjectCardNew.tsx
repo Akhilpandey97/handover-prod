@@ -76,75 +76,101 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
     toast.success(`Transferred ${project.merchantName} to ${assigneeName}`);
   };
 
+  const total = project.checklist.length;
+  const pct = total === 0 ? 0 : Math.round((completedChecklist / total) * 100);
+
+  const accent =
+    project.projectState === "blocked" || isRejected
+      ? "bg-destructive"
+      : isPending || project.projectState === "on_hold"
+      ? "bg-warning"
+      : project.projectState === "live"
+      ? "bg-success"
+      : pct > 0
+      ? "bg-primary-glow"
+      : "bg-transparent";
+
+  const waitingOn =
+    project.currentResponsibility === "merchant"
+      ? "Merchant"
+      : project.currentResponsibility === "gokwik"
+      ? teamLabels[project.currentOwnerTeam] || project.currentOwnerTeam
+      : "—";
+
+  const goLive = project.dates.expectedGoLiveDate
+    ? new Date(project.dates.expectedGoLiveDate).toLocaleDateString("en-GB", { day: "numeric", month: "short" })
+    : "—";
+
+  const subLine = isRejected
+    ? `Sent back${lastTransfer?.notes ? ` — ${lastTransfer.notes.replace("REJECTED:", "").trim()}` : ""}`
+    : isPending
+    ? "Waiting for you to accept"
+    : project.projectState === "blocked"
+    ? "Blocked — needs attention"
+    : null;
+
   return (
     <>
-      <Card
-        className="overflow-hidden w-full surface-card border-0 bg-card"
-      >
-        <div className="flex flex-wrap items-center gap-2 px-3 py-2">
-          {/* Project strip */}
-          <Link
-            to={`/projects/${project.id}`}
-            className="relative flex min-w-0 flex-1 items-center gap-2 rounded-lg px-1.5 py-1.5 transition-colors overflow-hidden group hover:bg-accent/70"
-          >
-            {/* Completion percentage pill */}
-            {(() => {
-              const totalItems = project.checklist.length;
-              if (totalItems === 0) return null;
-              const pct = Math.round((project.checklist.filter(c => c.completed).length / totalItems) * 100);
-              return (
-                <span className={cn(
-                  "relative z-10 shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold tabular-nums",
-                  pct === 100
-                    ? "bg-success/15 text-success"
-                    : pct >= 50
-                    ? "bg-primary/10 text-primary"
-                    : "bg-muted text-muted-foreground"
-                )}>
-                  {pct}%
-                </span>
-              );
-            })()}
-            <div className="relative min-w-0 flex-1 flex flex-wrap items-center gap-1.5 z-10">
-              <h3 className="truncate text-[13px] font-semibold tracking-tight text-foreground">{project.merchantName}</h3>
-              <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-[18px] font-medium">MID {project.mid}</Badge>
-              <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-[18px]">{teamLabels[project.currentOwnerTeam] || project.currentOwnerTeam}</Badge>
-              <Badge className={cn("text-[10px] px-1.5 py-0 h-[18px]", projectStateColors[project.projectState])}>
-                {stateLabels[project.projectState] || projectStateLabels[project.projectState]}
-              </Badge>
-              {project.assignedOwnerName && (
-                <Badge variant="outline" className="gap-1 text-[10px] px-1.5 py-0 h-[18px]">
-                  <User className="h-2.5 w-2.5" />
-                  {project.assignedOwnerName}
-                </Badge>
-              )}
-              {isPending && <Badge className="text-[10px] px-1.5 py-0 h-[18px]">Pending</Badge>}
-              {isRejected && <Badge variant="destructive" className="text-[10px] px-1.5 py-0 h-[18px]">Action needed</Badge>}
-              {healthScore.label !== "Healthy" && (
-                <Badge
-                  variant="outline"
-                  className="text-[9px] px-1.5 py-0 h-[18px] border-current"
-                  style={{ color: healthScore.color }}
-                  title={healthScore.factors.join("; ")}
-                >
-                  {healthScore.label} {healthScore.score}
-                </Badge>
-              )}
-            </div>
-            <ArrowUpRight className="relative h-3.5 w-3.5 text-primary shrink-0 z-10 opacity-0 group-hover:opacity-100 transition-opacity" />
+      <Card className="relative w-full overflow-hidden rounded-lg border border-border bg-card shadow-none transition-colors hover:border-primary/40">
+        <span className={cn("absolute inset-y-0 left-0 w-[3px]", accent)} />
+        <div className="grid grid-cols-1 items-center gap-3 py-3 pl-4 pr-3 lg:grid-cols-[minmax(0,1fr)_120px_180px_130px_90px_150px]">
+          {/* Project */}
+          <Link to={`/projects/${project.id}`} className="group min-w-0">
+            <h3 className="truncate font-display text-[15px] font-bold tracking-tight text-primary group-hover:underline">
+              {project.merchantName}
+            </h3>
+            <p className="font-mono text-[11px] text-muted-foreground">MID {project.mid}</p>
+            {subLine && (
+              <p className="mt-1 text-[12px] font-semibold leading-snug text-destructive">{subLine}</p>
+            )}
           </Link>
 
+          {/* State */}
+          <div>
+            <Badge className={cn("rounded-md px-2 py-0.5 text-[11px] font-semibold", projectStateColors[project.projectState])}>
+              {isPending ? "To accept" : isRejected ? "Sent back" : stateLabels[project.projectState] || projectStateLabels[project.projectState]}
+            </Badge>
+          </div>
 
-          <div className="flex items-center gap-1 shrink-0">
+          {/* Checklist */}
+          <div className="min-w-0">
+            <div className="flex items-baseline justify-between gap-2">
+              <span className="font-mono text-[13px] text-foreground">{completedChecklist}/{total}</span>
+              <span className="font-mono text-[12px] text-muted-foreground">{pct}%</span>
+            </div>
+            <div className="mt-1 h-[5px] w-full overflow-hidden rounded-full bg-muted">
+              <div
+                className={cn("h-full rounded-full transition-all", pct === 100 ? "bg-success" : "bg-primary-glow")}
+                style={{ width: `${pct}%` }}
+              />
+            </div>
+          </div>
+
+          {/* Waiting on */}
+          <div className="truncate text-[13px] font-semibold text-foreground">{waitingOn}</div>
+
+          {/* Go-live */}
+          <div className={cn("text-[13px] font-semibold", project.projectState === "blocked" ? "text-destructive" : "text-foreground")}>
+            {goLive}
+          </div>
+
+          {/* Actions */}
+          <div className="flex items-center justify-end gap-2">
+            {project.assignedOwnerName && !isPending && !canTransfer && (
+              <span className="flex items-center gap-1 truncate text-[12px] text-muted-foreground">
+                <User className="h-3 w-3" />
+                {project.assignedOwnerName}
+              </span>
+            )}
             {isPending && (
-              <Button size="sm" className="gap-0.5 h-6 text-[10px] px-1.5" onClick={handleAccept}>
-                <CheckCircle2 className="h-3 w-3" />
+              <Button size="sm" className="h-8 gap-1 rounded-md text-[12px]" onClick={handleAccept}>
+                <CheckCircle2 className="h-3.5 w-3.5" />
                 Accept
               </Button>
             )}
             {canReject && (
-              <Button size="sm" variant="destructive" className="gap-0.5 h-6 text-[10px] px-1.5" onClick={() => setRejectOpen(true)}>
-                <XCircle className="h-3 w-3" />
+              <Button size="sm" variant="outline" className="h-8 gap-1 rounded-md border-destructive/40 text-[12px] text-destructive hover:bg-destructive/10" onClick={() => setRejectOpen(true)}>
+                <XCircle className="h-3.5 w-3.5" />
                 Reject
               </Button>
             )}
@@ -152,26 +178,31 @@ export const ProjectCardNew = ({ project }: ProjectCardNewProps) => {
               <Button
                 size="sm"
                 variant={isTransferReady ? "default" : "outline"}
-                className="gap-0.5 h-6 text-[10px] px-1.5"
+                className="h-8 gap-1 rounded-md text-[12px]"
                 onClick={() => isTransferReady && setTransferOpen(true)}
                 disabled={!isTransferReady}
               >
-                <ArrowRight className="h-3 w-3" />
-                Transfer
+                {isTransferReady ? (
+                  <>
+                    <ArrowRight className="h-3.5 w-3.5" />
+                    Transfer
+                  </>
+                ) : (
+                  <>Transfer — {total - completedChecklist} left</>
+                )}
               </Button>
             )}
+            {!isPending && !canTransfer && !canReject && project.projectState === "live" && (
+              <span className="text-[12px] font-semibold text-success">Handed over</span>
+            )}
+            <ArrowUpRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
           </div>
-        </div>
-        <div className="flex items-center gap-3 px-4 pb-2 text-[11px] text-muted-foreground">
-          <span>Checklist {completedChecklist}/{project.checklist.length}</span>
-          <span className="h-1 w-1 rounded-full bg-border" />
-          <span>{project.dates.expectedGoLiveDate ? `Go-live ${project.dates.expectedGoLiveDate}` : "No go-live date"}</span>
         </div>
       </Card>
 
       <TransferDialog project={project} open={transferOpen} onOpenChange={setTransferOpen} onTransfer={handleTransfer} />
       <RejectTransferDialog project={project} open={rejectOpen} onOpenChange={setRejectOpen} onReject={handleReject} />
-
     </>
   );
 };
+
