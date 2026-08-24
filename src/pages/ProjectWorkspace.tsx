@@ -728,7 +728,7 @@ export const ProjectWorkspaceView = ({ projectId: projectIdProp, inModal = false
                     >
                       <ArrowLeft className="h-3.5 w-3.5" />
                     </Button>
-                    <span className="text-[10px] text-muted-foreground px-1 tabular-nums">{currentIndex + 1}/{projectIds.length}</span>
+                    <span className="px-1 text-xs text-muted-foreground tabular-nums">{currentIndex + 1}/{projectIds.length}</span>
                     <Button
                       variant="outline"
                       size="sm"
@@ -751,16 +751,16 @@ export const ProjectWorkspaceView = ({ projectId: projectIdProp, inModal = false
               </Button>
             ) : null}
             {currentUser?.team === "manager" ? (
-              <Button variant="outline" size="sm" className="h-9 rounded-lg border-border/70 bg-background px-3 text-sm" onClick={() => setAssignOpen(true)}>
+              <Button variant="outline" size="sm" className="h-9 rounded-lg border-border/70 bg-background px-3 text-sm font-semibold" onClick={() => setAssignOpen(true)}>
                 <UserRound className="h-3 w-3 mr-1" />
                 Assign owner
               </Button>
             ) : null}
-            <Button variant="outline" size="sm" className="h-9 gap-1.5 rounded-md border-slate-200 bg-white px-4 text-xs font-semibold text-slate-700 shadow-sm hover:bg-slate-50" onClick={() => setEditOpen(true)}>
+            <Button variant="outline" size="sm" className="h-9 gap-1.5 rounded-md border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50" onClick={() => setEditOpen(true)}>
               <Pencil className="h-3.5 w-3.5" />
               Edit project
             </Button>
-            <Button size="sm" className="h-9 rounded-md bg-sky-800 px-3 text-xs font-semibold hover:bg-sky-900" onClick={() => isTransferReady && setTransferOpen(true)} disabled={!isTransferReady}>
+            <Button size="sm" className="h-9 rounded-md bg-sky-800 px-3 text-sm font-semibold hover:bg-sky-900" onClick={() => isTransferReady && setTransferOpen(true)} disabled={!isTransferReady}>
               <ArrowRight className="h-3 w-3 mr-1" />
               Transfer
             </Button>
@@ -780,9 +780,9 @@ export const ProjectWorkspaceView = ({ projectId: projectIdProp, inModal = false
                 <summary.icon className="h-4 w-4" />
               </div>
               <div className="min-w-0">
-                <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-slate-500">{summary.label}</p>
+                <p className="text-xs font-bold uppercase tracking-[0.1em] text-slate-500">{summary.label}</p>
                 <p className="mt-1 truncate text-sm font-semibold text-slate-900" title={summary.value}>{summary.value}</p>
-                <p className="mt-1 truncate text-[11px] text-slate-500">{summary.sub}</p>
+                <p className="mt-1 truncate text-xs text-slate-500">{summary.sub}</p>
               </div>
             </div>
           ))}
@@ -792,12 +792,12 @@ export const ProjectWorkspaceView = ({ projectId: projectIdProp, inModal = false
                 <ShieldAlert className="h-4 w-4" />
               </div>
               <div className="min-w-0">
-                <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-slate-500">Risk</p>
+                <p className="text-xs font-bold uppercase tracking-[0.1em] text-slate-500">Risk</p>
                 <p className={cn("mt-1 text-sm font-semibold", risk.label === "Low risk" ? "text-emerald-700" : "text-rose-700")}>{risk.label}</p>
               </div>
             </div>
             <div className="mt-3 flex items-center gap-3">
-              <span className="text-[11px] font-medium text-slate-500">Go-live progress {project.goLivePercent}%</span>
+              <span className="text-xs font-medium text-slate-500">Go-live progress {project.goLivePercent}%</span>
               <Progress value={project.goLivePercent} className="h-2 flex-1 bg-slate-100" />
             </div>
           </div>
@@ -876,38 +876,38 @@ export const ProjectWorkspaceView = ({ projectId: projectIdProp, inModal = false
             </div>
             <div className="border-b border-slate-200 p-4">
               <div className="mb-3 flex items-center justify-between gap-2">
-                <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">Needs attention</p>
-                <span className="text-[10px] font-semibold text-slate-400">{actionRecommendations.length} items</span>
+                <p className="text-xs font-bold uppercase tracking-[0.1em] text-slate-500">Needs attention</p>
+                <span className="text-xs font-semibold text-slate-400">{actionRecommendations.length} items</span>
               </div>
               <div className="space-y-2">
                 {actionRecommendations.slice(0, 3).map((action, index) => (
                   action.href ? (
                     <a key={action.label} href={action.href} target="_blank" rel="noreferrer" className="flex items-center gap-2 rounded-md border border-slate-200 bg-slate-50 px-3 py-2.5 transition hover:border-sky-200 hover:bg-sky-50">
                       <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-md ${index === 0 ? "bg-rose-50 text-rose-600" : index === 1 ? "bg-amber-50 text-amber-600" : "bg-blue-50 text-blue-600"}`}><ChevronRight className="h-3.5 w-3.5" /></span>
-                      <span className="min-w-0 flex-1"><span className="block truncate text-xs font-semibold text-slate-800">{action.label}</span><span className="block truncate text-[10px] text-slate-500">{action.sublabel}</span></span>
+                      <span className="min-w-0 flex-1"><span className="block truncate text-sm font-semibold text-slate-800">{action.label}</span><span className="block truncate text-xs text-slate-500">{action.sublabel}</span></span>
                     </a>
                   ) : (
                     <button key={action.label} type="button" onClick={action.onClick} className="flex w-full items-center gap-2 rounded-md border border-slate-200 bg-slate-50 px-3 py-2.5 text-left transition hover:border-sky-200 hover:bg-sky-50">
                       <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-md ${index === 0 ? "bg-rose-50 text-rose-600" : index === 1 ? "bg-amber-50 text-amber-600" : "bg-blue-50 text-blue-600"}`}><ChevronRight className="h-3.5 w-3.5" /></span>
-                      <span className="min-w-0 flex-1"><span className="block truncate text-xs font-semibold text-slate-800">{action.label}</span><span className="block truncate text-[10px] text-slate-500">{action.sublabel}</span></span>
+                      <span className="min-w-0 flex-1"><span className="block truncate text-sm font-semibold text-slate-800">{action.label}</span><span className="block truncate text-xs text-slate-500">{action.sublabel}</span></span>
                     </button>
                   )
                 ))}
               </div>
             </div>
             <div className="border-b border-slate-200 px-4 py-3">
-              <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">Project overview</p>
+              <p className="text-xs font-bold uppercase tracking-[0.1em] text-slate-500">Project overview</p>
               <div className="mt-3 space-y-2">
-                <div className="flex items-center justify-between text-[11px]"><span className="text-slate-500">Project ID</span><Badge variant="outline" className="max-w-[175px] truncate px-1.5 py-0 text-[9px] font-semibold">MID {project.mid}</Badge></div>
-                <div className="flex items-center justify-between text-[11px]"><span className="text-slate-500">State</span><span className="font-semibold text-sky-700">{stateLabels[project.projectState] || projectStateLabels[project.projectState]}</span></div>
-                <div className="flex items-center justify-between text-[11px]"><span className="text-slate-500">Risk</span><span className={cn("font-semibold", risk.label === "Low risk" ? "text-emerald-600" : "text-rose-600")}>{risk.label}</span></div>
-                <div className="flex items-center justify-between text-[11px]"><span className="text-slate-500">Go-live</span><span className="font-semibold text-slate-700">{project.dates.expectedGoLiveDate || "—"}</span></div>
+                <div className="flex items-center justify-between text-xs"><span className="text-slate-500">Project ID</span><Badge variant="outline" className="max-w-[175px] truncate px-1.5 py-0.5 text-[10px] font-semibold">MID {project.mid}</Badge></div>
+                <div className="flex items-center justify-between text-xs"><span className="text-slate-500">State</span><span className="font-semibold text-sky-700">{stateLabels[project.projectState] || projectStateLabels[project.projectState]}</span></div>
+                <div className="flex items-center justify-between text-xs"><span className="text-slate-500">Risk</span><span className={cn("font-semibold", risk.label === "Low risk" ? "text-emerald-600" : "text-rose-600")}>{risk.label}</span></div>
+                <div className="flex items-center justify-between text-xs"><span className="text-slate-500">Go-live</span><span className="font-semibold text-slate-700">{project.dates.expectedGoLiveDate || "—"}</span></div>
               </div>
             </div>
             <div className="px-4 py-3">
-              <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">Update state</p>
+              <p className="mb-2 text-xs font-bold uppercase tracking-[0.1em] text-slate-500">Update state</p>
               <Select value={project.projectState} onValueChange={(v) => handleStateChange(v as ProjectState)}>
-                <SelectTrigger className={cn("h-9 rounded-md text-xs font-semibold border", stateSelectToneMap[project.projectState])}>
+                <SelectTrigger className={cn("h-9 rounded-md text-sm font-semibold border", stateSelectToneMap[project.projectState])}>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent className={cn(inModal && "z-[90]")}>
@@ -936,8 +936,8 @@ export const ProjectWorkspaceView = ({ projectId: projectIdProp, inModal = false
                       ["Sales SPOC", project.salesSpoc || "—"],
                     ].map(([label, value]) => (
                       <div key={label} className="flex items-baseline justify-between gap-2">
-                        <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
-                        <p className="text-xs font-semibold text-foreground text-right truncate max-w-[120px]">{value}</p>
+                        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
+                        <p className="text-sm font-semibold text-foreground text-right truncate max-w-[120px]">{value}</p>
                       </div>
                     ))}
                   </div>
@@ -949,12 +949,12 @@ export const ProjectWorkspaceView = ({ projectId: projectIdProp, inModal = false
                 content: (
                   <div className="space-y-2">
                     <div className="flex items-baseline justify-between gap-2">
-                      <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Responsibility</p>
-                      <p className="text-xs font-semibold text-foreground">{responsibilityLabels[pendingOn] || pendingOn}</p>
+                      <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Responsibility</p>
+                      <p className="text-sm font-semibold text-foreground">{responsibilityLabels[pendingOn] || pendingOn}</p>
                     </div>
                     <div className="flex items-baseline justify-between gap-2">
-                      <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Checklist</p>
-                      <p className="text-xs font-semibold text-foreground">{completedChecklist}/{project.checklist.length}</p>
+                      <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Checklist</p>
+                      <p className="text-sm font-semibold text-foreground">{completedChecklist}/{project.checklist.length}</p>
                     </div>
                     <Progress
                       value={project.checklist.length ? (completedChecklist / project.checklist.length) * 100 : 0}
@@ -963,11 +963,11 @@ export const ProjectWorkspaceView = ({ projectId: projectIdProp, inModal = false
                     <div className="grid grid-cols-2 gap-1.5 pt-1">
                       <div className="rounded-md border border-border/60 bg-card/80 px-2 py-1.5 text-center">
                         <p className="text-xs font-bold text-foreground">{formatDuration(timeByParty.gokwik)}</p>
-                        <p className="text-[8px] uppercase tracking-widest text-muted-foreground">Internal</p>
+                        <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Internal</p>
                       </div>
                       <div className="rounded-md border border-border/60 bg-card/80 px-2 py-1.5 text-center">
                         <p className="text-xs font-bold text-foreground">{formatDuration(timeByParty.merchant)}</p>
-                        <p className="text-[8px] uppercase tracking-widest text-muted-foreground">Merchant</p>
+                        <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Merchant</p>
                       </div>
                     </div>
                   </div>
@@ -979,11 +979,11 @@ export const ProjectWorkspaceView = ({ projectId: projectIdProp, inModal = false
                 content: (
                   <div>
                     <div className="flex items-center gap-2">
-                      <Badge className={cn("border text-[10px] font-semibold", risk.tone)}>{risk.label}</Badge>
-                      <span className="text-[10px] font-semibold text-muted-foreground">Score {risk.score}</span>
+                      <Badge className={cn("border text-xs font-semibold", risk.tone)}>{risk.label}</Badge>
+                      <span className="text-xs font-semibold text-muted-foreground">Score {risk.score}</span>
                     </div>
                     {risk.drivers[0]?.points > 0 ? (
-                      <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">{risk.drivers[0].label}</p>
+                      <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{risk.drivers[0].label}</p>
                     ) : null}
                   </div>
                 ),
@@ -1000,8 +1000,8 @@ export const ProjectWorkspaceView = ({ projectId: projectIdProp, inModal = false
                       ["Last update", getLastUpdated(project)],
                     ].map(([label, value]) => (
                       <div key={label} className="flex items-baseline justify-between gap-2">
-                        <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
-                        <p className="text-[11px] font-semibold text-foreground text-right truncate max-w-[110px]">{value}</p>
+                        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
+                        <p className="text-sm font-semibold text-foreground text-right truncate max-w-[110px]">{value}</p>
                       </div>
                     ))}
                   </div>
@@ -1022,8 +1022,8 @@ export const ProjectWorkspaceView = ({ projectId: projectIdProp, inModal = false
                       ["PG onboarding", project.pgOnboarding || "—"],
                     ].map(([label, value]) => (
                       <div key={label} className="flex items-baseline justify-between gap-2">
-                        <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
-                        <p className="text-[11px] font-semibold text-foreground text-right truncate max-w-[110px]">{value}</p>
+                        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
+                        <p className="text-sm font-semibold text-foreground text-right truncate max-w-[110px]">{value}</p>
                       </div>
                     ))}
                   </div>
@@ -1041,7 +1041,7 @@ export const ProjectWorkspaceView = ({ projectId: projectIdProp, inModal = false
                           href={link.href}
                           target="_blank"
                           rel="noreferrer"
-                          className="flex items-center justify-between rounded-md border border-border/60 bg-card/80 px-2.5 py-1.5 text-[11px] font-semibold text-foreground transition hover:bg-accent/60"
+                          className="flex items-center justify-between rounded-md border border-border/60 bg-card/80 px-2.5 py-2 text-xs font-semibold text-foreground transition hover:bg-accent/60"
                         >
                           <div className="flex items-center gap-1.5">
                             <link.icon className="h-3 w-3" />
@@ -1051,7 +1051,7 @@ export const ProjectWorkspaceView = ({ projectId: projectIdProp, inModal = false
                         </a>
                       ))
                     ) : (
-                      <p className="text-[11px] text-muted-foreground">No links attached.</p>
+                      <p className="text-xs text-muted-foreground">No links attached.</p>
                     )}
                   </div>
                 ),
@@ -1064,7 +1064,7 @@ export const ProjectWorkspaceView = ({ projectId: projectIdProp, inModal = false
                     onClick={() => setExpandedSections(prev => ({ ...prev, [section.key]: !prev[section.key] }))}
                     className="flex w-full items-center justify-between group"
                   >
-                    <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">{section.title}</p>
+                    <p className="text-xs font-bold uppercase tracking-[0.1em] text-slate-500">{section.title}</p>
                     <ChevronDown className={cn("h-3 w-3 text-slate-400 transition-transform", expandedSections[section.key] ? "rotate-0" : "-rotate-90")} />
                   </button>
                   {expandedSections[section.key] && (
