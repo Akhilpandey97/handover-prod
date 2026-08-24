@@ -187,7 +187,7 @@ export const ChecklistDialog = ({
 
   const checklistBody = (
     <>
-      <div className="bg-muted/30 rounded-lg p-3 space-y-2">
+      <div className="rounded-lg border border-border/60 bg-card/85 p-3 space-y-2 enterprise-shadow">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <span className="text-sm font-medium text-muted-foreground">Progress</span>
@@ -269,7 +269,7 @@ export const ChecklistDialog = ({
                               ? "bg-emerald-500/5 border-emerald-200 dark:border-emerald-800" 
                               : isLocked 
                                 ? "bg-muted/30 border-border/50 opacity-60" 
-                                : "bg-card border-border hover:border-primary/30 hover:shadow-md"
+                                : "bg-card/90 border-border/70 hover:border-primary/35 hover:shadow-md"
                           }`}
                         >
                           <div className="flex items-start gap-4">
@@ -430,7 +430,7 @@ export const ChecklistDialog = ({
   if (variant === "inline") {
     return (
       <>
-        <div className="flex h-full min-h-0 flex-col rounded-2xl border border-border/70 bg-background p-5">
+        <div className="flex h-full min-h-0 flex-col rounded-2xl border border-border/70 bg-[hsl(var(--surface-2))] p-5">
           {checklistBody}
         </div>
 
@@ -454,7 +454,7 @@ export const ChecklistDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[95vw] max-w-[95vw] h-[95vh] max-h-[95vh] flex flex-col overflow-hidden">
+      <DialogContent className="w-[95vw] max-w-[95vw] h-[95vh] max-h-[95vh] flex flex-col overflow-hidden border-border/70 bg-[hsl(var(--surface-2))]">
         {checklistBody}
 
         {/* Checklist Form Dialog */}

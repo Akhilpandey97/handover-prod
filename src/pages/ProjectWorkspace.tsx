@@ -673,9 +673,9 @@ export const ProjectWorkspaceView = ({ projectId: projectIdProp, inModal = false
   };
 
   return (
-    <div className={cn("flex flex-col overflow-hidden bg-background", inModal ? "h-full rounded-2xl border border-border/60" : "h-screen")}>
+    <div className={cn("flex flex-col overflow-hidden bg-[hsl(var(--surface-2))]", inModal ? "h-full rounded-2xl border border-border/60" : "h-screen")}>
       {/* Unified header */}
-      <div className="shrink-0 border-b border-border/60 bg-card/80 px-4 py-2">
+      <div className="shrink-0 border-b border-border/60 bg-card/85 backdrop-blur-sm px-4 py-2">
         <div className="mx-auto flex max-w-[1680px] items-center justify-between gap-3">
           <div className="flex items-center gap-3 min-w-0">
             {inModal ? (
@@ -752,7 +752,7 @@ export const ProjectWorkspaceView = ({ projectId: projectIdProp, inModal = false
         </div>
       </div>
 
-      <div className="grid shrink-0 border-b border-border/60 bg-card/60 px-4 py-4 sm:grid-cols-2 lg:grid-cols-4 lg:px-6">
+      <div className="grid shrink-0 border-b border-border/60 bg-card/70 px-4 py-4 sm:grid-cols-2 lg:grid-cols-4 lg:px-6">
         <div className="border-border/60 px-2 sm:border-r sm:pr-5">
           <p className="text-xs text-muted-foreground">Waiting on</p>
           <p className="mt-1 text-lg font-semibold text-foreground">{waitingOnLabel}</p>
@@ -778,7 +778,7 @@ export const ProjectWorkspaceView = ({ projectId: projectIdProp, inModal = false
       </div>
 
       {/* 3-panel body */}
-      <div className="mx-auto flex min-h-0 w-full max-w-[1680px] flex-1">
+      <div className="mx-auto flex min-h-0 w-full max-w-[1680px] flex-1 app-shell-surface">
         {/* LEFT PANEL — Actions & AI */}
         <ScrollArea className="hidden">
           <div className="p-3 space-y-3">
@@ -834,7 +834,7 @@ export const ProjectWorkspaceView = ({ projectId: projectIdProp, inModal = false
         </ScrollArea>
 
         {/* RIGHT PANEL — Ownership & Context */}
-        <ScrollArea className="order-3 hidden w-[322px] shrink-0 border-l border-border/60 bg-card/50 lg:block">
+        <ScrollArea className="order-3 hidden w-[322px] shrink-0 border-l border-border/60 bg-card/65 lg:block">
           <div className="space-y-1">
             <div className="border-b border-border/60 p-4">
               <div className="flex items-center gap-3">
@@ -1050,7 +1050,7 @@ export const ProjectWorkspaceView = ({ projectId: projectIdProp, inModal = false
         {/* CENTER PANEL — Tabs */}
         <main className="flex min-w-0 flex-1 flex-col overflow-hidden">
           <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as WorkspaceTab)} className="flex flex-1 flex-col overflow-hidden">
-            <div className="shrink-0 border-b border-border/60 px-4 py-1.5">
+            <div className="shrink-0 border-b border-border/60 bg-card/65 px-4 py-1.5">
               <TabsList className="h-auto gap-1 rounded-none bg-transparent p-0">
                 {tabOptions.map((tab) => (
                   <TabsTrigger

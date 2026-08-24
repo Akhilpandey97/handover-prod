@@ -6,7 +6,7 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
+    --background: 205 38% 98%;
     --foreground: 212 55% 15%;
 
     --card: 0 0% 100%;
@@ -47,8 +47,8 @@
     --teal: 177 42% 55%;
     --teal-foreground: 212 55% 15%;
 
-    --border: 202 28% 89%;
-    --input: 202 28% 89%;
+    --border: 202 24% 86%;
+    --input: 202 24% 86%;
     --ring: 190 56% 40%;
 
     --radius: 0.55rem;
@@ -62,8 +62,8 @@
     --sidebar-border: 206 40% 24%;
     --sidebar-ring: 190 56% 45%;
 
-    --surface: 0 0% 100%;
-    --surface-2: 200 33% 97%;
+    --surface: 205 42% 99%;
+    --surface-2: 202 34% 96%;
     --hero: 212 55% 15%;
     --hero-foreground: 190 45% 96%;
 
@@ -153,8 +153,11 @@
     @apply bg-background text-foreground antialiased;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    background-image: none;
-    background-color: hsl(var(--background));
+    background-image:
+      radial-gradient(circle at 18% 0%, hsl(var(--primary) / 0.08), transparent 34%),
+      linear-gradient(180deg, hsl(var(--surface)) 0%, hsl(var(--background)) 46%, hsl(var(--surface-2)) 100%);
+    background-attachment: fixed;
+    background-color: hsl(var(--surface));
   }
 
   h1,
@@ -212,6 +215,10 @@
     background: hsl(var(--card));
     border: 1px solid hsl(var(--border));
     box-shadow: var(--shadow-soft);
+  }
+
+  .app-shell-surface {
+    background: linear-gradient(180deg, hsl(var(--surface)) 0%, hsl(var(--surface-2)) 100%);
   }
 
   .surface-card {

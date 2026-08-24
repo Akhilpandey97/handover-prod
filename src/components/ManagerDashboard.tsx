@@ -882,7 +882,7 @@ export const ManagerDashboard = () => {
   };
 
   return (
-    <div className="h-screen overflow-hidden bg-[hsl(var(--surface-2))] flex">
+    <div className="h-screen overflow-hidden bg-[hsl(var(--surface-2))] text-foreground flex">
       {/* Left Sidebar — collapsible */}
       <aside className={cn(
         "bg-sidebar text-sidebar-foreground flex flex-col shrink-0 transition-all duration-300 relative",
@@ -1036,7 +1036,7 @@ export const ManagerDashboard = () => {
         </header>
 
         {/* Content Area */}
-        <div className="flex-1 min-h-0 overflow-y-auto">
+        <div className="flex-1 min-h-0 overflow-y-auto app-shell-surface">
           <div
             className={cn(
               ["projects", "reports", "settings", "calendar"].includes(activeTab)
@@ -1540,7 +1540,7 @@ export const ManagerDashboard = () => {
 
           {/* ========= LIST VIEW TAB ========= */}
           {activeTab === "projects" && projectView === "list" && <div className="space-y-4">
-            <Card className="shadow-xl border-border/50">
+            <Card className="border-border/60 bg-card/90 enterprise-shadow">
               <CardHeader className="sticky top-0 z-10 border-b bg-card/95 backdrop-blur-sm py-3">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-lg flex items-center gap-2">
@@ -1821,7 +1821,7 @@ export const ManagerDashboard = () => {
               <CardContent className="p-0">
                 <div className="overflow-auto">
                   <Table className="border-separate border-spacing-y-1">
-                    <TableHeader className="sticky top-0 z-10 bg-muted/60 backdrop-blur-sm">
+                    <TableHeader className="sticky top-0 z-10 bg-muted/75 backdrop-blur-sm">
                       <TableRow className="border-b-2 border-border/60 hover:bg-transparent">
                         <TableHead className="w-10 py-3 pl-3 pr-0" />
                         {listViewColumns.map((colKey, colIdx) => {
@@ -1918,7 +1918,7 @@ export const ManagerDashboard = () => {
                           return (
                             <TableRow
                               key={project.id}
-                              className="cursor-pointer hover:bg-accent/40 transition-colors border-b-4 border-background [&>td:first-child]:rounded-l-lg [&>td:last-child]:rounded-r-lg bg-card"
+                              className="cursor-pointer border-b border-border/45 bg-card/90 transition-colors hover:bg-accent/35 [&>td:first-child]:rounded-l-lg [&>td:last-child]:rounded-r-lg"
                               onClick={() => openProjectWorkspaceTab(project.id)}
                             >
                               <TableCell className="w-10 py-3 pl-3 pr-0" onClick={(e) => e.stopPropagation()}>
