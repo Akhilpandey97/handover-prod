@@ -21,7 +21,7 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { ChecklistCommentThread } from "@/components/ChecklistCommentThread";
 import { ChecklistFormDialog } from "@/components/ChecklistFormDialog";
-import { CheckCircle2, Building2, Users, Minus, Lock, AlertCircle, FileText } from "lucide-react";
+import { CheckCircle2, Building2, Users, Minus, Lock, FileText } from "lucide-react";
 
 interface ChecklistDialogProps {
   project: Project | null;
@@ -103,10 +103,6 @@ export const ChecklistDialog = ({
   }, []);
 
   const checklist = project?.checklist || [];
-  const completedCount = checklist.filter((c) => c.completed).length;
-  const totalCount = checklist.length;
-  const progress = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
-
   // Check if all current team's checklist items are completed for transfer unlock notification
   const currentTeamChecklist = project ? checklist.filter(c => c.ownerTeam === project.currentOwnerTeam) : [];
   const allCurrentTeamDone = currentTeamChecklist.length > 0 && currentTeamChecklist.every(c => c.completed);
@@ -187,42 +183,6 @@ export const ChecklistDialog = ({
 
   const checklistBody = (
     <>
-      <div className="rounded-lg border border-border/60 bg-card/85 p-3 space-y-2 enterprise-shadow">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <span className="text-sm font-medium text-muted-foreground">Progress</span>
-            <span className="font-bold text-sm">{completedCount}/{totalCount}</span>
-          </div>
-          <div className="flex gap-1.5 flex-wrap">
-            {orderedTeams.map((team) => {
-              const count = teamCounts[team];
-              const isComplete = count?.completed === count?.total;
-              return (
-                <Badge
-                  key={team}
-                  variant={team === userTeam ? "default" : "outline"}
-                  className={`px-2 py-0.5 text-xs ${team === userTeam ? "" : "opacity-70"} ${isComplete ? "bg-emerald-500 text-white border-emerald-500" : ""}`}
-                >
-                  {ownerTeamLabelsFromCtx[team] || team}: {count?.completed || 0}/{count?.total || 0}
-                  {isComplete && <CheckCircle2 className="h-3 w-3 ml-1" />}
-                </Badge>
-              );
-            })}
-          </div>
-        </div>
-        <Progress value={progress} className="h-2" />
-        <div className="flex items-center gap-4 text-xs text-muted-foreground">
-          <div className="flex items-center gap-1.5 bg-amber-500/10 rounded px-2 py-1">
-            <AlertCircle className="h-3 w-3 text-amber-500" />
-            <span>Tasks must be completed in order</span>
-          </div>
-          <div className="flex items-center gap-1.5 bg-indigo-500/10 rounded px-2 py-1">
-            <Lock className="h-3 w-3 text-indigo-500" />
-            <span>Complete all team items to unlock <strong>Transfer</strong></span>
-          </div>
-        </div>
-      </div>
-
       <ScrollArea className="flex-1 min-h-0 pr-4">
         <div className="space-y-8">
           {orderedTeams.map((team) => {

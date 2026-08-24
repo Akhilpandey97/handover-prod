@@ -1070,7 +1070,7 @@ export const ProjectWorkspaceView = ({ projectId: projectIdProp, inModal = false
                   <TabsTrigger
                     key={tab.value}
                     value={tab.value}
-                    className="rounded-none border-b-2 border-transparent px-3 py-3 text-base font-semibold text-foreground data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground data-[state=active]:shadow-none"
+                    className="rounded-none border-b-2 border-transparent px-3 py-3 text-base font-semibold text-slate-900 data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-slate-950 data-[state=active]:shadow-none"
                   >
                     {tab.label}
                   </TabsTrigger>
