@@ -32,7 +32,6 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   DropdownMenu,
-  DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuLabel,
   DropdownMenuSeparator,
@@ -701,6 +700,14 @@ export const ManagerDashboard = () => {
     ? `Reports — ${REPORTS_SUB_CONFIG[reportSubTab]?.label || "Pre Defined"}`
     : TAB_CONFIG[activeTab]?.label || "Dashboard";
 
+  const toTitleCase = (value: string) => value.replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.slice(1).toLowerCase());
+  const sidebarTitle = (appLabels.app_title || "Command Centre").trim() || "Command Centre";
+  const rawSubtitle = (appLabels.app_subtitle || "Enterprise Delivery Operations").trim() || "Enterprise Delivery Operations";
+  const sidebarSubtitle = rawSubtitle.toLowerCase() === "enterprise delivery operations"
+    ? "Enterprise Delivery Operations"
+    : toTitleCase(rawSubtitle);
+  const selectedFilteredCount = filteredProjectIds.filter(id => selectedProjects.has(id)).length;
+
   // Render a single nav item
   const renderNavItem = (tab: string) => {
     const isReports = tab === "reports";
@@ -902,8 +909,8 @@ export const ManagerDashboard = () => {
             )}
             {!sidebarCollapsed && (
               <div>
-                <h1 className="font-bold text-sm text-sidebar-foreground">{appLabels.app_title}</h1>
-                <p className="text-[10px] uppercase tracking-[0.16em] text-sidebar-foreground/55">{appLabels.app_subtitle}</p>
+                <h1 className="font-bold text-sm text-sidebar-foreground">{sidebarTitle}</h1>
+                <p className="text-[11px] tracking-[0.08em] text-sidebar-foreground/60">{sidebarSubtitle}</p>
               </div>
             )}
           </div>
@@ -957,7 +964,7 @@ export const ManagerDashboard = () => {
               <h2 className="text-xl font-bold">{activeTabLabel}</h2>
             </div>
             <span className="text-xs text-muted-foreground">
-              {activeTab === "projects" ? `${filteredProjects.length} project${filteredProjects.length !== 1 ? "s" : ""} found` : appLabels.app_subtitle}
+              {activeTab === "projects" ? `${filteredProjects.length} project${filteredProjects.length !== 1 ? "s" : ""} found` : sidebarSubtitle}
             </span>
           </div>
 
@@ -1050,27 +1057,22 @@ export const ManagerDashboard = () => {
             {/* KPI Cards */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
               {(() => {
-                const kpiColor = (key: string, fallback: string) => appLabels[key] || fallback;
-                const totalC = kpiColor("color_kpi_total", "#3b82f6");
-                const pendingC = kpiColor("color_kpi_pending", "#f59e0b");
-                const activeC = kpiColor("color_kpi_active", "#3b82f6");
-                const liveC = kpiColor("color_kpi_live", "#10b981");
                 const kpiCards = [
-                  { label: "Total", value: totalProjects, color: totalC, icon: FolderKanban, sub: `Pipeline ARR: ${totalArr.toFixed(2)} Cr` },
-                  { label: "Pending", value: pendingProjects, color: pendingC, icon: AlertCircle, sub: "Awaiting acceptance" },
-                  { label: "Active", value: activeProjects, color: activeC, icon: Rocket, sub: `${blockedProjects} blocked, ${onHoldProjects} on hold` },
-                  { label: "Live", value: completedProjects, color: liveC, icon: CheckCircle2, sub: `Live ARR: ${liveArr.toFixed(2)} Cr` },
+                  { label: "Total", value: totalProjects, icon: FolderKanban, sub: `Pipeline ARR: ${totalArr.toFixed(2)} Cr` },
+                  { label: "Pending", value: pendingProjects, icon: AlertCircle, sub: "Awaiting acceptance" },
+                  { label: "Active", value: activeProjects, icon: Rocket, sub: `${blockedProjects} blocked, ${onHoldProjects} on hold` },
+                  { label: "Live", value: completedProjects, icon: CheckCircle2, sub: `Live ARR: ${liveArr.toFixed(2)} Cr` },
                 ];
                 return kpiCards.map((kpi) => (
-                  <Card key={kpi.label} className="hover:shadow-lg transition-shadow" style={{ background: `linear-gradient(135deg, ${kpi.color}15 0%, ${kpi.color}08 100%)`, borderColor: `${kpi.color}33` }}>
+                  <Card key={kpi.label} className="border-border/70 bg-card hover:shadow-lg transition-shadow">
                     <CardContent className="p-5">
                       <div className="flex items-start justify-between">
                         <div>
                           <p className="text-sm font-medium text-muted-foreground mb-1">{kpi.label}</p>
-                          <p className="text-3xl font-bold" style={{ color: kpi.color }}>{kpi.value}</p>
+                          <p className="text-3xl font-bold text-foreground">{kpi.value}</p>
                         </div>
-                        <div className="h-12 w-12 rounded-2xl flex items-center justify-center" style={{ backgroundColor: `${kpi.color}20` }}>
-                          <kpi.icon className="h-6 w-6" style={{ color: kpi.color }} />
+                        <div className="h-12 w-12 rounded-2xl flex items-center justify-center bg-muted/70 border border-border/60">
+                          <kpi.icon className="h-6 w-6 text-muted-foreground" />
                         </div>
                       </div>
                       <p className="text-xs text-muted-foreground mt-2">{kpi.sub}</p>
@@ -1115,21 +1117,17 @@ export const ManagerDashboard = () => {
                             </div>
                           </div>
                           {(() => {
-                            const tpTotal = appLabels.color_team_perf_total || "#6b7280";
-                            const tpPending = appLabels.color_team_perf_pending || "#f59e0b";
-                            const tpActive = appLabels.color_team_perf_active || "#3b82f6";
-                            const tpCompleted = appLabels.color_team_perf_completed || "#10b981";
                             const miniCards = [
-                              { label: "Total", value: totalCount, color: tpTotal },
-                              { label: "Pending", value: pendingCount, color: tpPending },
-                              { label: "Active", value: activeCount, color: tpActive },
-                              { label: "Completed", value: completedCount, color: tpCompleted },
+                              { label: "Total", value: totalCount },
+                              { label: "Pending", value: pendingCount },
+                              { label: "Active", value: activeCount },
+                              { label: "Completed", value: completedCount },
                             ];
                             return (
                               <div className="grid grid-cols-4 gap-2 text-center">
                                 {miniCards.map(mc => (
-                                  <div key={mc.label} className="rounded-lg p-2" style={{ backgroundColor: `${mc.color}15` }}>
-                                    <p className="text-lg font-bold" style={{ color: mc.color }}>{mc.value}</p>
+                                  <div key={mc.label} className="rounded-lg p-2 bg-muted/45 border border-border/40">
+                                    <p className="text-lg font-bold text-foreground">{mc.value}</p>
                                     <p className="text-[10px] text-muted-foreground">{mc.label}</p>
                                   </div>
                                 ))}
@@ -1158,24 +1156,18 @@ export const ManagerDashboard = () => {
                 </CardHeader>
                 <CardContent className="p-6">
                   <div className="space-y-6">
-                    {(() => {
-                      const intColor = appLabels.color_time_internal || "#3b82f6";
-                      const extColor = appLabels.color_time_external || "#f59e0b";
-                      return (
-                        <div className="grid grid-cols-2 gap-6">
-                          <div className="rounded-xl p-6 text-center" style={{ background: `linear-gradient(135deg, ${intColor}18 0%, ${intColor}08 100%)` }}>
-                            <Building2 className="h-8 w-8 mx-auto mb-3" style={{ color: intColor }} />
-                            <p className="text-3xl font-bold" style={{ color: intColor }}>{formatDuration(totalGokwikTime)}</p>
-                            <p className="text-sm text-muted-foreground mt-1">{responsibilityLabels.gokwik} Time</p>
-                          </div>
-                          <div className="rounded-xl p-6 text-center" style={{ background: `linear-gradient(135deg, ${extColor}18 0%, ${extColor}08 100%)` }}>
-                            <Users className="h-8 w-8 mx-auto mb-3" style={{ color: extColor }} />
-                            <p className="text-3xl font-bold" style={{ color: extColor }}>{formatDuration(totalMerchantTime)}</p>
-                            <p className="text-sm text-muted-foreground mt-1">{responsibilityLabels.merchant} Time</p>
-                          </div>
-                        </div>
-                      );
-                    })()}
+                    <div className="grid grid-cols-2 gap-6">
+                      <div className="rounded-xl p-6 text-center bg-muted/45 border border-border/50">
+                        <Building2 className="h-8 w-8 mx-auto mb-3 text-muted-foreground" />
+                        <p className="text-3xl font-bold text-foreground">{formatDuration(totalGokwikTime)}</p>
+                        <p className="text-sm text-muted-foreground mt-1">{responsibilityLabels.gokwik} Time</p>
+                      </div>
+                      <div className="rounded-xl p-6 text-center bg-muted/45 border border-border/50">
+                        <Users className="h-8 w-8 mx-auto mb-3 text-muted-foreground" />
+                        <p className="text-3xl font-bold text-foreground">{formatDuration(totalMerchantTime)}</p>
+                        <p className="text-sm text-muted-foreground mt-1">{responsibilityLabels.merchant} Time</p>
+                      </div>
+                    </div>
                     <div className="space-y-2">
                       <div className="flex items-center justify-between text-sm">
                         <span className="text-muted-foreground">Distribution</span>
@@ -1548,6 +1540,41 @@ export const ManagerDashboard = () => {
                     List View
                   </CardTitle>
                   <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 rounded-md border border-border/60 bg-muted/35 px-2 py-1.5">
+                      <Checkbox
+                        checked={allFilteredSelected ? true : selectedFilteredCount > 0 ? "indeterminate" : false}
+                        onCheckedChange={() => toggleSelectAll(filteredProjectIds)}
+                        aria-label="Select all filtered projects"
+                      />
+                      <span className="text-xs text-muted-foreground">
+                        {selectedFilteredCount > 0 ? `${selectedFilteredCount} selected` : "Select all"}
+                      </span>
+                    </div>
+                    {selectedFilteredCount > 0 && (
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="outline" size="sm" className="gap-2">
+                            <Pencil className="h-4 w-4" />
+                            Bulk Actions ({selectedFilteredCount})
+                            <ChevronDown className="h-3 w-3" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-52">
+                          <button className="w-full text-left px-2 py-2 text-sm hover:bg-accent rounded-sm" onClick={() => setBulkAssignDialogOpen(true)}>
+                            Assign Owner
+                          </button>
+                          <button className="w-full text-left px-2 py-2 text-sm hover:bg-accent rounded-sm" onClick={() => setBulkEditDialogOpen(true)}>
+                            Bulk Edit
+                          </button>
+                          <button className="w-full text-left px-2 py-2 text-sm hover:bg-accent rounded-sm" onClick={() => setBulkStateDialogOpen(true)}>
+                            Update State
+                          </button>
+                          <button className="w-full text-left px-2 py-2 text-sm text-destructive hover:bg-destructive/10 rounded-sm" onClick={() => setBulkDeleteDialogOpen(true)}>
+                            Delete
+                          </button>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    )}
                     <div className="relative">
                       <DropdownMenu open={listColumnsOpen} onOpenChange={setListColumnsOpen}>
                         <DropdownMenuTrigger asChild>
@@ -1560,10 +1587,10 @@ export const ManagerDashboard = () => {
                             <ChevronDown className={cn("h-3 w-3 transition-transform", listColumnsOpen && "rotate-180")} />
                           </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-56">
+                        <DropdownMenuContent align="end" className="w-72 p-0">
                           <DropdownMenuLabel>Visible Columns</DropdownMenuLabel>
                           <DropdownMenuSeparator />
-                          <div className="max-h-[320px] overflow-y-auto">
+                          <div className="max-h-[340px] overflow-y-auto p-1">
                             {/* Active columns - draggable to reorder */}
                             {listViewColumns.map((colKey, idx) => {
                               const col = LIST_VIEW_COLUMNS.find(c => c.key === colKey);
@@ -1587,35 +1614,53 @@ export const ManagerDashboard = () => {
                                   className="flex items-center gap-2 px-2 py-1.5 text-sm cursor-grab hover:bg-accent/50 rounded-md transition-colors"
                                 >
                                   <GripVertical className="h-3.5 w-3.5 text-muted-foreground/50 shrink-0" />
-                                  <DropdownMenuCheckboxItem
+                                  <Checkbox
                                     checked={true}
                                     onCheckedChange={() => {
                                       const newCols = listViewColumns.filter((key) => key !== col.key);
                                       setListViewColumns(newCols);
                                       localStorage.setItem("listview_columns", JSON.stringify(newCols));
                                     }}
-                                    className="flex-1 p-0 focus:bg-transparent"
+                                    aria-label={`Toggle ${col.label}`}
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const newCols = listViewColumns.filter((key) => key !== col.key);
+                                      setListViewColumns(newCols);
+                                      localStorage.setItem("listview_columns", JSON.stringify(newCols));
+                                    }}
+                                    className="flex-1 text-left"
                                   >
                                     {col.label}
-                                  </DropdownMenuCheckboxItem>
+                                  </button>
                                 </div>
                               );
                             })}
                             {/* Inactive columns */}
                             {LIST_VIEW_COLUMNS.filter(col => !listViewColumns.includes(col.key)).map((col) => (
-                              <div key={col.key} className="flex items-center gap-2 px-2 py-1.5 text-sm opacity-60">
+                              <div key={col.key} className="flex items-center gap-2 px-2 py-1.5 text-sm rounded-md hover:bg-accent/40">
                                 <div className="w-3.5 shrink-0" />
-                                <DropdownMenuCheckboxItem
+                                <Checkbox
                                   checked={false}
                                   onCheckedChange={() => {
                                     const newCols = [...listViewColumns, col.key];
                                     setListViewColumns(newCols);
                                     localStorage.setItem("listview_columns", JSON.stringify(newCols));
                                   }}
-                                  className="flex-1 p-0 focus:bg-transparent"
+                                  aria-label={`Toggle ${col.label}`}
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const newCols = [...listViewColumns, col.key];
+                                    setListViewColumns(newCols);
+                                    localStorage.setItem("listview_columns", JSON.stringify(newCols));
+                                  }}
+                                  className="flex-1 text-left text-muted-foreground"
                                 >
                                   {col.label}
-                                </DropdownMenuCheckboxItem>
+                                </button>
                               </div>
                             ))}
                           </div>
@@ -1823,7 +1868,13 @@ export const ManagerDashboard = () => {
                   <Table className="border-separate border-spacing-y-1">
                     <TableHeader className="sticky top-0 z-10 bg-muted/75 backdrop-blur-sm">
                       <TableRow className="border-b-2 border-border/60 hover:bg-transparent">
-                        <TableHead className="w-10 py-3 pl-3 pr-0" />
+                        <TableHead className="w-10 py-3 pl-3 pr-0">
+                          <Checkbox
+                            checked={allFilteredSelected ? true : selectedFilteredCount > 0 ? "indeterminate" : false}
+                            onCheckedChange={() => toggleSelectAll(filteredProjectIds)}
+                            aria-label="Select all filtered projects"
+                          />
+                        </TableHead>
                         {listViewColumns.map((colKey, colIdx) => {
                           const col = LIST_VIEW_COLUMNS.find(c => c.key === colKey);
                           return col ? (
