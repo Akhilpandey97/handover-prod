@@ -956,9 +956,11 @@ export const ManagerDashboard = () => {
             <div className="flex items-center gap-2">
               <h2 className="text-xl font-bold">{activeTabLabel}</h2>
             </div>
-            <span className="text-xs text-muted-foreground">
-              {activeTab === "projects" ? `${filteredProjects.length} project${filteredProjects.length !== 1 ? "s" : ""} found` : "Handover"}
-            </span>
+            {activeTab === "projects" ? (
+              <span className="text-xs text-muted-foreground">
+                {`${filteredProjects.length} project${filteredProjects.length !== 1 ? "s" : ""} found`}
+              </span>
+            ) : null}
           </div>
 
           <div className="flex items-center gap-3">
