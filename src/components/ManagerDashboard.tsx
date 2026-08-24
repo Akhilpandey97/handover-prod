@@ -67,7 +67,6 @@ import {
   ChevronLeft,
   Upload,
   Plus,
-  Target,
   Timer,
   Settings,
   PieChart,
@@ -102,7 +101,7 @@ import { ReportsBuilder } from "./reports/ReportsBuilder";
 import { ReportScheduler } from "./reports/ReportScheduler";
 
 // Sub-tab keys for reports and settings
-const REPORTS_SUB_TABS = ["predefined", "builder", "pivot", "scheduler"];
+const REPORTS_SUB_TABS = ["predefined", "builder", "scheduler"];
 const SETTINGS_SUB_TABS = ["general", "workflow", "fields", "custom-fields", "checklist-forms", "colours", "email"];
 const PREDEFINED_REPORT_TYPES = ["executive", "operational", "merchant", "tactical", "project", "team"];
 
@@ -600,7 +599,6 @@ export const ManagerDashboard = () => {
   const REPORTS_SUB_CONFIG: Record<string, { label: string; icon?: string }> = {
     predefined: { label: "Pre Defined" },
     builder: { label: "Report Builder" },
-    pivot: { label: "Pivot Table" },
     scheduler: { label: "Scheduler" },
   };
 
@@ -695,7 +693,7 @@ export const ManagerDashboard = () => {
     .filter(tab => navVisibility[tab] !== false || tab === "tenants" || tab === "settings");
 
   const activeTabLabel = activeTab === "settings" 
-    ? `Settings — ${SETTINGS_SUB_CONFIG[settingsSubTab]?.label || "General"}`
+    ? "Settings"
     : activeTab === "reports"
     ? `Reports — ${REPORTS_SUB_CONFIG[reportSubTab]?.label || "Pre Defined"}`
     : TAB_CONFIG[activeTab]?.label || "Dashboard";
@@ -2332,11 +2330,6 @@ export const ManagerDashboard = () => {
                   {/* Sub-tab: Report Builder */}
                   {reportSubTab === "builder" && (
                     <ReportsBuilder projects={displayProjects} customFields={customFields} customValuesMap={customValuesMap} />
-                  )}
-
-                  {/* Sub-tab: Pivot Table */}
-                  {reportSubTab === "pivot" && (
-                    <ReportsBuilder projects={displayProjects} customFields={customFields} customValuesMap={customValuesMap} initialPivot />
                   )}
 
                   {/* Sub-tab: Scheduler */}

@@ -5,10 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Progress } from "@/components/ui/progress";
-import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { ChevronDown, ChevronRight, TrendingUp, BarChart3, Rocket, DollarSign, Sparkles, Loader2 } from "lucide-react";
-import { fetchAiInsights } from "@/utils/aiInsights";
+import { ChevronDown, ChevronRight, TrendingUp, BarChart3, Rocket, DollarSign } from "lucide-react";
 
 interface Props {
   projects: Project[];
@@ -18,8 +16,6 @@ const phaseOrder = ["mint", "integration", "ms", "completed"];
 
 export const ExecutiveDashboard = ({ projects }: Props) => {
   const { phaseLabels, getLabel } = useLabels();
-  const [aiInsight, setAiInsight] = useState<string | null>(null);
-  const [aiLoading, setAiLoading] = useState(false);
   const [expandedSection, setExpandedSection] = useState<string | null>("revenue");
 
   // Revenue Realization Forecast
@@ -81,56 +77,8 @@ export const ExecutiveDashboard = ({ projects }: Props) => {
       .map(([, v]) => v);
   }, [projects]);
 
-  const fetchAiInsight = async () => {
-    setAiLoading(true);
-    try {
-      const result = await fetchAiInsights({
-        type: "insights",
-        project: {
-          merchantName: `Executive Summary: ${projects.length} projects, ${totalPipelineArr.toFixed(2)} Cr pipeline ${getLabel("field_arr")}, Funnel: ${pipelineFunnel.map(f => `${f.label}: ${f.count}`).join(", ")}`,
-          mid: "ALL",
-          currentPhase: "overview",
-          projectState: "overview",
-          arr: totalPipelineArr,
-          platform: "All",
-          dates: { kickOffDate: "N/A" },
-          currentOwnerTeam: "All",
-          currentResponsibility: "N/A",
-          checklist: [],
-          transferHistory: [],
-        },
-      });
-      setAiInsight(result);
-    } catch {
-      setAiInsight("Failed to generate AI insights.");
-    } finally {
-      setAiLoading(false);
-    }
-  };
-
   return (
     <div className="space-y-6">
-      {/* AI Insights */}
-      <Card className="border-primary/20 bg-gradient-to-r from-primary/5 to-accent/5">
-        <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-base flex items-center gap-2">
-              <Sparkles className="h-4 w-4 text-primary" />
-              AI Executive Insights
-            </CardTitle>
-            <Button size="sm" variant="outline" onClick={fetchAiInsight} disabled={aiLoading} className="gap-2">
-              {aiLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
-              {aiInsight ? "Refresh" : "Generate"}
-            </Button>
-          </div>
-        </CardHeader>
-        {aiInsight && (
-          <CardContent className="pt-0">
-            <div className="text-sm space-y-1 whitespace-pre-line">{aiInsight}</div>
-          </CardContent>
-        )}
-      </Card>
-
       {/* Revenue Realization Forecast */}
       <Collapsible open={expandedSection === "revenue"} onOpenChange={() => setExpandedSection(expandedSection === "revenue" ? null : "revenue")}>
         <Card>
