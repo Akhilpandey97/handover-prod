@@ -542,14 +542,45 @@ export const ManagerDashboard = () => {
   const completedProjects = displayProjects.filter((p) => p.projectState === "live").length;
   const activeProjects = totalProjects - pendingProjects - completedProjects;
 
-  // Time distribution - use checklist-level aggregation
-  let totalGokwikTime = 0;
-  let totalMerchantTime = 0;
-  displayProjects.forEach((p) => {
-    const time = calculateTimeFromChecklist(p.checklist);
-    totalGokwikTime += time.gokwik;
-    totalMerchantTime += time.merchant;
-  });
+  const tatBooklet = useMemo(() => {
+    const now = new Date();
+    const millisecondsPerDay = 1000 * 60 * 60 * 24;
+    const validProjects = displayProjects.flatMap((project) => {
+      const kickOff = project.dates.kickOffDate ? new Date(project.dates.kickOffDate) : null;
+      if (!kickOff || Number.isNaN(kickOff.getTime())) return [];
+
+      const end = project.dates.goLiveDate ? new Date(project.dates.goLiveDate) : now;
+      const target = project.dates.expectedGoLiveDate ? new Date(project.dates.expectedGoLiveDate) : null;
+      const elapsedDays = Math.max(0, Math.ceil((end.getTime() - kickOff.getTime()) / millisecondsPerDay));
+      const targetDays = target && !Number.isNaN(target.getTime())
+        ? Math.max(0, Math.ceil((target.getTime() - kickOff.getTime()) / millisecondsPerDay))
+        : null;
+      const isOverdue = project.projectState !== "live" && target !== null && target.getTime() < now.getTime();
+
+      return [{ project, elapsedDays, targetDays, isOverdue }];
+    });
+
+    const average = (values: number[]) => values.length > 0 ? Math.round(values.reduce((sum, value) => sum + value, 0) / values.length) : 0;
+    const byTeam = (["mint", "integration", "ms"] as TeamRole[]).map((team) => {
+      const teamProjects = validProjects.filter((entry) => entry.project.currentOwnerTeam === team);
+      return {
+        team,
+        label: teamLabels[team],
+        projectCount: teamProjects.length,
+        averageElapsed: average(teamProjects.map((entry) => entry.elapsedDays)),
+        averageTarget: average(teamProjects.flatMap((entry) => entry.targetDays === null ? [] : [entry.targetDays])),
+        overdueCount: teamProjects.filter((entry) => entry.isOverdue).length,
+      };
+    });
+
+    return {
+      averageElapsed: average(validProjects.map((entry) => entry.elapsedDays)),
+      averageTarget: average(validProjects.flatMap((entry) => entry.targetDays === null ? [] : [entry.targetDays])),
+      overdueCount: validProjects.filter((entry) => entry.isOverdue).length,
+      trackedCount: validProjects.length,
+      byTeam,
+    };
+  }, [displayProjects, teamLabels]);
 
   // Pipeline stats for overview
   const totalArr = displayProjects.reduce((s, p) => s + p.arr, 0);
@@ -1186,46 +1217,47 @@ export const ManagerDashboard = () => {
                 </div>
               </section>
 
-              <section className="rounded-lg border border-slate-200 bg-slate-950 text-white shadow-sm xl:min-h-[306px]">
-                <div className="border-b border-white/10 px-5 py-4">
+              <section className="rounded-lg border border-slate-200 bg-white shadow-sm xl:min-h-[306px]">
+                <div className="border-b border-slate-200 px-5 py-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-semibold">Effort balance</p>
-                      <p className="mt-0.5 text-xs text-slate-400">Tracked checklist time across delivery</p>
+                      <p className="text-sm font-semibold text-slate-950">TAT booklet</p>
+                      <p className="mt-0.5 text-xs text-slate-500">Turnaround from kick-off to go-live target</p>
                     </div>
-                    <Timer className="h-5 w-5 text-cyan-300" />
+                    <Clock className="h-5 w-5 text-sky-700" />
                   </div>
                 </div>
-                <div className="space-y-5 p-5">
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="rounded-md border border-white/10 bg-white/5 p-3">
-                        <Building2 className="h-4 w-4 text-cyan-300" />
-                        <p className="mt-4 text-2xl font-semibold tracking-tight">{formatDuration(totalGokwikTime)}</p>
-                        <p className="mt-1 text-xs text-slate-400">{responsibilityLabels.gokwik}</p>
+                <div className="space-y-4 p-5">
+                    <div className="grid grid-cols-3 gap-2">
+                      <div className="rounded-md bg-sky-50 p-3">
+                        <p className="text-[10px] font-semibold uppercase tracking-wide text-sky-700">Average TAT</p>
+                        <p className="mt-1 text-2xl font-semibold tracking-tight text-sky-900">{tatBooklet.averageElapsed}d</p>
+                        <p className="mt-0.5 text-[10px] text-sky-700">elapsed</p>
                       </div>
-                      <div className="rounded-md border border-white/10 bg-white/5 p-3">
-                        <Users className="h-4 w-4 text-amber-300" />
-                        <p className="mt-4 text-2xl font-semibold tracking-tight">{formatDuration(totalMerchantTime)}</p>
-                        <p className="mt-1 text-xs text-slate-400">{responsibilityLabels.merchant}</p>
+                      <div className="rounded-md bg-slate-100 p-3">
+                        <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-600">Target TAT</p>
+                        <p className="mt-1 text-2xl font-semibold tracking-tight text-slate-900">{tatBooklet.averageTarget}d</p>
+                        <p className="mt-0.5 text-[10px] text-slate-600">planned</p>
                       </div>
-                    </div>
-                    <div>
-                      <div className="mb-2 flex items-center justify-between text-xs text-slate-300">
-                        <span>Effort split</span>
-                        <span className="font-semibold text-white">
-                          {Math.round((totalGokwikTime / (totalGokwikTime + totalMerchantTime || 1)) * 100)}% / {Math.round((totalMerchantTime / (totalGokwikTime + totalMerchantTime || 1)) * 100)}%
-                        </span>
-                      </div>
-                      <div className="flex h-2.5 overflow-hidden rounded-full bg-white/10">
-                        <div className="transition-all" style={{ width: `${(totalGokwikTime / (totalGokwikTime + totalMerchantTime || 1)) * 100}%`, backgroundColor: appLabels.color_time_internal || "#3b82f6" }} />
-                        <div className="transition-all" style={{ width: `${(totalMerchantTime / (totalGokwikTime + totalMerchantTime || 1)) * 100}%`, backgroundColor: appLabels.color_time_external || "#f59e0b" }} />
+                      <div className="rounded-md bg-rose-50 p-3">
+                        <p className="text-[10px] font-semibold uppercase tracking-wide text-rose-700">Overdue</p>
+                        <p className="mt-1 text-2xl font-semibold tracking-tight text-rose-900">{tatBooklet.overdueCount}</p>
+                        <p className="mt-0.5 text-[10px] text-rose-700">projects</p>
                       </div>
                     </div>
-                    <div className="rounded-md border border-cyan-300/20 bg-cyan-300/10 px-3 py-2.5 text-xs text-cyan-100">
-                      {totalGokwikTime + totalMerchantTime > 0
-                        ? `${formatDuration(totalGokwikTime + totalMerchantTime)} recorded across all delivery checklists.`
-                        : "No checklist time has been tracked yet."}
+                    <div className="divide-y divide-slate-100 rounded-md border border-slate-200">
+                      {tatBooklet.byTeam.map((team) => (
+                        <div key={team.team} className="grid grid-cols-[1fr_auto_auto] items-center gap-3 px-3 py-2">
+                          <div className="flex min-w-0 items-center gap-2">
+                            <div className={`flex h-6 w-6 shrink-0 items-center justify-center rounded ${teamColors[team.team]} text-[10px] font-bold text-white`}>{team.label.charAt(0)}</div>
+                            <span className="truncate text-xs font-semibold text-slate-700">{team.label}</span>
+                          </div>
+                          <span className="text-xs font-semibold text-slate-700">{team.averageElapsed}d <span className="font-normal text-slate-400">/ {team.averageTarget}d</span></span>
+                          <span className={cn("text-[10px] font-semibold", team.overdueCount > 0 ? "text-rose-600" : "text-emerald-600")}>{team.overdueCount > 0 ? `${team.overdueCount} overdue` : "on track"}</span>
+                        </div>
+                      ))}
                     </div>
+                    <p className="text-xs text-slate-500">Based on {tatBooklet.trackedCount} project{tatBooklet.trackedCount === 1 ? "" : "s"} with a kick-off date.</p>
                 </div>
               </section>
             </div>

@@ -690,7 +690,7 @@ export const ProjectWorkspaceView = ({ projectId: projectIdProp, inModal = false
   };
 
   return (
-    <div className={cn("flex flex-col overflow-hidden bg-slate-50", inModal ? "h-full rounded-lg border border-slate-200" : "h-screen")}>
+    <div className={cn("flex flex-col overflow-hidden bg-[#f4f8fc]", inModal ? "h-full rounded-lg border border-slate-200" : "h-screen")}>
       {/* Unified header */}
       <div className="shrink-0 border-b border-slate-200 bg-white px-5 py-3">
         <div className="mx-auto flex max-w-[1680px] items-center justify-between gap-3">
@@ -1081,7 +1081,7 @@ export const ProjectWorkspaceView = ({ projectId: projectIdProp, inModal = false
               </TabsList>
             </div>
 
-            <div className="flex-1 overflow-y-auto bg-slate-50 px-4 py-4">
+            <div className="flex-1 overflow-y-auto bg-[#f4f8fc] px-4 py-4">
               {/* OVERVIEW TAB — Rich dashboard */}
               <TabsContent value="overview" className="m-0">
                 <div className="space-y-3">
