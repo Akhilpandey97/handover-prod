@@ -734,8 +734,8 @@ export const ManagerDashboard = () => {
             isActive && !isReports && !isSettings
               ? "gradient-primary text-primary-foreground shadow-[var(--shadow-soft)]"
               : isParentActive
-              ? "bg-accent text-accent-foreground font-semibold"
-              : "hover:bg-sidebar-accent/60 text-sidebar-foreground/70 hover:text-sidebar-foreground",
+              ? "bg-primary/20 text-sidebar-foreground font-semibold"
+              : "hover:bg-sidebar-accent/60 text-sidebar-foreground",
             draggedTab === tab ? "opacity-50" : ""
           )}
         >
@@ -745,7 +745,7 @@ export const ManagerDashboard = () => {
               ? "bg-primary-foreground/20 text-primary-foreground"
               : isParentActive
               ? "bg-primary/10 text-primary"
-              : "bg-sidebar-accent text-sidebar-foreground/70 group-hover:text-sidebar-foreground"
+              : "bg-sidebar-accent text-sidebar-foreground group-hover:text-sidebar-foreground"
           )}>
             {TAB_CONFIG[tab].icon}
           </span>
@@ -770,7 +770,7 @@ export const ManagerDashboard = () => {
                   "w-full flex items-center gap-2.5 text-left px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150",
                   reportSubTab === key && activeTab === "reports"
                     ? "bg-primary text-primary-foreground shadow-md"
-                    : "text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent/60"
+                    : "text-sidebar-foreground hover:text-sidebar-foreground hover:bg-sidebar-accent/60"
                 )}
               >
                 {cfg.icon && <span className="text-base">{cfg.icon}</span>}
@@ -795,12 +795,12 @@ export const ManagerDashboard = () => {
                   }
                   className="flex w-full items-center justify-between rounded-lg px-3 py-1.5 text-left hover:bg-sidebar-accent/45 transition-colors"
                 >
-                  <span className="text-xs font-semibold uppercase tracking-[0.14em] text-sidebar-foreground/85">
+                  <span className="text-xs font-semibold uppercase tracking-[0.14em] text-sidebar-foreground">
                     {group.label}
                   </span>
                   <ChevronDown
                     className={cn(
-                      "h-4 w-4 text-sidebar-foreground/80 transition-transform",
+                      "h-4 w-4 text-sidebar-foreground transition-transform",
                       settingsGroupExpanded[group.label] ? "rotate-180" : ""
                     )}
                   />
@@ -817,7 +817,7 @@ export const ManagerDashboard = () => {
                             "w-full flex items-center gap-2.5 text-left px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150",
                             settingsSubTab === key && activeTab === "settings"
                               ? "bg-primary text-primary-foreground shadow-md"
-                              : "text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent/60"
+                              : "text-sidebar-foreground hover:text-sidebar-foreground hover:bg-sidebar-accent/60"
                           )}
                         >
                           {label}
@@ -892,7 +892,7 @@ export const ManagerDashboard = () => {
         sidebarCollapsed ? "w-16" : "w-[212px]"
       )}>
         {/* Logo & Title */}
-        <div className="px-4 py-4 border-b border-border">
+        <div className="px-4 py-4">
           <div className="flex items-center gap-3">
 
             {appLabels.org_logo_url ? (
@@ -914,7 +914,7 @@ export const ManagerDashboard = () => {
         {/* Navigation */}
         <nav className="flex-1 px-2 py-4 overflow-y-auto">
           {!sidebarCollapsed && (
-            <p className="text-[11px] font-semibold text-muted-foreground/60 uppercase tracking-widest mb-3 px-4">
+            <p className="text-[11px] font-semibold text-sidebar-foreground uppercase tracking-widest mb-3 px-4">
               Navigation
             </p>
           )}
@@ -931,7 +931,7 @@ export const ManagerDashboard = () => {
                   "w-full flex items-center justify-center p-3 rounded-xl transition-all duration-200",
                   activeTab === tab
                     ? "bg-primary text-primary-foreground shadow-lg shadow-primary/25"
-                    : "hover:bg-sidebar-accent/60 text-sidebar-foreground/70 hover:text-sidebar-foreground"
+                    : "hover:bg-sidebar-accent/60 text-sidebar-foreground"
                 )}
                 title={TAB_CONFIG[tab]?.label}
               >
