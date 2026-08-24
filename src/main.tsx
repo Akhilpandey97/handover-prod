@@ -6,7 +6,7 @@ const rootElement = document.getElementById("root");
 
 const showBootError = () => {
 	if (!rootElement || rootElement.dataset.appMounted === "true") return;
-	rootElement.innerHTML = "<div style=\"min-height:100vh;display:grid;place-items:center;padding:24px;text-align:center;font-family:Georgia,serif;color:#17324d\"><div><h1>Command Centre could not load</h1><p>Refresh the page to try again.</p></div></div>";
+	rootElement.innerHTML = "<div style=\"min-height:100vh;display:grid;place-items:center;padding:24px;text-align:center;font-family:Georgia,serif;color:#17324d\"><div><h1>Handover could not load</h1><p>Refresh the page to try again.</p></div></div>";
 };
 
 try {

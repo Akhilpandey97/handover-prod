@@ -17,7 +17,7 @@ export const LoginScreen = () => {
   const { login, signup } = useAuth();
   const { labels } = useLabels();
 
-  const brandName = labels.app_title || "Command Centre";
+  const brandName = labels.app_title || "Handover";
   const orgName = labels.org_name?.toLowerCase().includes("gokwik") ? "Enterprise" : labels.org_name || "Enterprise";
 
   const handleSubmit = async (e: React.FormEvent) => {

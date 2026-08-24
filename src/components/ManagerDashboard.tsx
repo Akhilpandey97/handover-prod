@@ -542,7 +542,7 @@ export const ManagerDashboard = () => {
   const completedProjects = displayProjects.filter((p) => p.projectState === "live").length;
   const activeProjects = totalProjects - pendingProjects - completedProjects;
 
-  const tatBooklet = useMemo(() => {
+  const tatBooklet = (() => {
     const now = new Date();
     const millisecondsPerDay = 1000 * 60 * 60 * 24;
     const validProjects = displayProjects.flatMap((project) => {
@@ -580,7 +580,7 @@ export const ManagerDashboard = () => {
       trackedCount: validProjects.length,
       byTeam,
     };
-  }, [displayProjects, teamLabels]);
+  })();
 
   // Pipeline stats for overview
   const totalArr = displayProjects.reduce((s, p) => s + p.arr, 0);

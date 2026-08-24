@@ -4,7 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 
 // Default labels - used as fallback when DB has no overrides
 const DEFAULT_LABELS: Record<string, string> = {
-  app_title: "Command Centre",
+  app_title: "Handover",
   app_subtitle: "Enterprise delivery operations",
   org_name: "GoKwik",
   team_mint: "MINT (Presales)",
