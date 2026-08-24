@@ -42,6 +42,7 @@ import {
   ArrowRight,
   ArrowUpRight,
   Bot,
+  CalendarDays,
   CheckCheck,
   CheckCircle2,
   ChevronDown,
@@ -52,6 +53,7 @@ import {
   FileStack,
   Globe,
   Loader2,
+  ListTodo,
   MessageSquareText,
   Pencil,
   ShieldAlert,
@@ -687,9 +689,9 @@ export const ProjectWorkspaceView = ({ projectId: projectIdProp, inModal = false
   };
 
   return (
-    <div className={cn("flex flex-col overflow-hidden bg-background", inModal ? "h-full rounded-2xl border border-border/60" : "h-screen")}>
+    <div className={cn("flex flex-col overflow-hidden bg-slate-50", inModal ? "h-full rounded-lg border border-slate-200" : "h-screen")}>
       {/* Unified header */}
-      <div className="shrink-0 border-b border-border/60 bg-card px-4 py-2.5">
+      <div className="shrink-0 border-b border-slate-200 bg-white px-5 py-3">
         <div className="mx-auto flex max-w-[1680px] items-center justify-between gap-3">
           <div className="flex items-center gap-3 min-w-0">
             {inModal ? (
@@ -702,14 +704,13 @@ export const ProjectWorkspaceView = ({ projectId: projectIdProp, inModal = false
                 Kanban
               </button>
             ) : (
-              <Link to="/" className="inline-flex items-center gap-1 rounded-md px-1.5 py-1 text-sm font-medium text-muted-foreground hover:bg-accent/60 hover:text-foreground shrink-0">
-                <ArrowLeft className="h-3.5 w-3.5" />
+              <Link to="/" className="inline-flex items-center gap-1 rounded-md px-1.5 py-1 text-xs font-semibold text-slate-500 hover:bg-slate-100 hover:text-slate-900 shrink-0">
                 Projects
               </Link>
             )}
-            <ChevronRight className="h-3 w-3 text-muted-foreground shrink-0" />
+            <ChevronRight className="h-3.5 w-3.5 text-slate-400 shrink-0" />
             <div className="flex items-center gap-2 min-w-0">
-              <h1 className="max-w-[34vw] truncate text-[34px] font-semibold leading-none tracking-tight text-foreground">{project.merchantName}</h1>
+              <h1 className="max-w-[34vw] truncate text-2xl font-semibold leading-none tracking-tight text-slate-950">{project.merchantName}</h1>
               {/* Prev/Next navigation inline */}
               {inModal && projectIds && projectIds.length > 1 && onNavigate && (() => {
                 const currentIndex = projectIds.indexOf(project.id);
@@ -754,11 +755,11 @@ export const ProjectWorkspaceView = ({ projectId: projectIdProp, inModal = false
                 Assign owner
               </Button>
             ) : null}
-            <Button variant="outline" size="sm" className="h-9 gap-1.5 rounded-lg border-border/70 bg-background px-4 text-sm font-semibold" onClick={() => setEditOpen(true)}>
+            <Button variant="outline" size="sm" className="h-9 gap-1.5 rounded-md border-slate-200 bg-white px-4 text-xs font-semibold text-slate-700 shadow-sm hover:bg-slate-50" onClick={() => setEditOpen(true)}>
               <Pencil className="h-3.5 w-3.5" />
               Edit project
             </Button>
-            <Button size="sm" className="h-9 rounded-lg px-3 text-sm" onClick={() => isTransferReady && setTransferOpen(true)} disabled={!isTransferReady}>
+            <Button size="sm" className="h-9 rounded-md bg-sky-800 px-3 text-xs font-semibold hover:bg-sky-900" onClick={() => isTransferReady && setTransferOpen(true)} disabled={!isTransferReady}>
               <ArrowRight className="h-3 w-3 mr-1" />
               Transfer
             </Button>
@@ -766,33 +767,44 @@ export const ProjectWorkspaceView = ({ projectId: projectIdProp, inModal = false
         </div>
       </div>
 
-      <div className="grid shrink-0 border-b border-border/60 bg-card px-4 py-4 sm:grid-cols-2 lg:grid-cols-4 lg:px-6">
-        <div className="border-border/60 px-2 sm:border-r sm:pr-5">
-          <p className="text-xs text-muted-foreground">Waiting on</p>
-          <p className="mt-1 text-lg font-semibold text-foreground">{waitingOnLabel}</p>
-          <p className="text-xs text-muted-foreground">{waitingOnSub}</p>
-        </div>
-        <div className="border-border/60 px-2 pt-3 sm:pl-5 sm:pt-0 lg:border-r">
-          <p className="text-xs text-muted-foreground">Next step</p>
-          <p className="mt-1 truncate text-lg font-semibold text-foreground">{nextStepLabel}</p>
-          <p className="text-xs text-muted-foreground">{phaseLabels[project.currentPhase] || project.currentPhase}</p>
-        </div>
-        <div className="border-border/60 px-2 pt-3 sm:pr-5 lg:border-r lg:pl-5 lg:pt-0">
-          <p className="text-xs text-muted-foreground">Expected go-live</p>
-          <p className="mt-1 text-lg font-semibold text-foreground">{project.dates.expectedGoLiveDate || "Not set"}</p>
-          <p className={cn("text-xs", risk.label === "Low risk" ? "text-muted-foreground" : "font-semibold text-destructive")}>{risk.label}</p>
-        </div>
-        <div className="px-2 pt-3 lg:pl-5 lg:pt-0">
-          <div className="flex items-center gap-2">
-            <span className={cn("h-1.5 w-1.5 rounded-full", risk.label === "Low risk" ? "bg-success" : "bg-destructive")} />
-            <p className={cn("text-sm font-semibold", risk.label === "Low risk" ? "text-success" : "text-destructive")}>{risk.label}</p>
+      <div className="shrink-0 border-b border-slate-200 bg-slate-50 px-5 py-3">
+        <div className="mx-auto grid max-w-[1680px] gap-3 sm:grid-cols-2 lg:grid-cols-[1fr_1fr_1fr_1.75fr]">
+          {[
+            { label: "Waiting on", value: waitingOnLabel, sub: waitingOnSub, icon: Users, tone: "bg-emerald-50 text-emerald-600" },
+            { label: "Next step", value: nextStepLabel, sub: phaseLabels[project.currentPhase] || project.currentPhase, icon: ListTodo, tone: "bg-violet-50 text-violet-600" },
+            { label: "Go-live", value: project.dates.expectedGoLiveDate || "Not set", sub: project.dates.expectedGoLiveDate ? "Delivery target" : "Target date needed", icon: CalendarDays, tone: "bg-blue-50 text-blue-600" },
+          ].map((summary) => (
+            <div key={summary.label} className="flex min-w-0 items-start gap-3 rounded-lg border border-slate-200 bg-white px-4 py-3 shadow-sm">
+              <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-md ${summary.tone}`}>
+                <summary.icon className="h-4 w-4" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-slate-500">{summary.label}</p>
+                <p className="mt-1 truncate text-sm font-semibold text-slate-900" title={summary.value}>{summary.value}</p>
+                <p className="mt-1 truncate text-[11px] text-slate-500">{summary.sub}</p>
+              </div>
+            </div>
+          ))}
+          <div className="rounded-lg border border-slate-200 bg-white px-4 py-3 shadow-sm">
+            <div className="flex items-center gap-3">
+              <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-md ${risk.label === "Low risk" ? "bg-emerald-50 text-emerald-600" : "bg-rose-50 text-rose-600"}`}>
+                <ShieldAlert className="h-4 w-4" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-slate-500">Risk</p>
+                <p className={cn("mt-1 text-sm font-semibold", risk.label === "Low risk" ? "text-emerald-700" : "text-rose-700")}>{risk.label}</p>
+              </div>
+            </div>
+            <div className="mt-3 flex items-center gap-3">
+              <span className="text-[11px] font-medium text-slate-500">Go-live progress {project.goLivePercent}%</span>
+              <Progress value={project.goLivePercent} className="h-2 flex-1 bg-slate-100" />
+            </div>
           </div>
-          <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{risk.drivers[0]?.label || "No major delivery risk detected."}</p>
         </div>
       </div>
 
       {/* 3-panel body */}
-      <div className="mx-auto flex min-h-0 w-full max-w-[1680px] flex-1 bg-background">
+      <div className="mx-auto flex min-h-0 w-full max-w-[1680px] flex-1 bg-white">
         {/* LEFT PANEL — Actions & AI */}
         <ScrollArea className="hidden">
           <div className="p-3 space-y-3">
@@ -848,11 +860,11 @@ export const ProjectWorkspaceView = ({ projectId: projectIdProp, inModal = false
         </ScrollArea>
 
         {/* RIGHT PANEL — Ownership & Context */}
-        <ScrollArea className="order-3 hidden w-[332px] shrink-0 border-l border-border/60 bg-card lg:block">
+        <ScrollArea className="order-3 hidden w-[332px] shrink-0 border-l border-slate-200 bg-white lg:block">
           <div className="space-y-1">
-            <div className="border-b border-border/60 p-4">
+            <div className="border-b border-slate-200 p-4">
               <div className="flex items-center gap-3">
-                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-xs font-bold text-primary-foreground">
+                <div className="flex h-9 w-9 items-center justify-center rounded-md bg-sky-800 text-xs font-bold text-white">
                   {(project.assignedOwnerName || project.currentOwnerTeam).slice(0, 2).toUpperCase()}
                 </div>
                 <div className="min-w-0">
@@ -861,37 +873,40 @@ export const ProjectWorkspaceView = ({ projectId: projectIdProp, inModal = false
                 </div>
               </div>
             </div>
-            <div className="border-b border-border/60 p-4">
-              <div className="mb-2 flex items-center justify-between gap-2">
-                <p className="text-xs font-semibold text-muted-foreground">Action centre</p>
-                <span className="text-[11px] text-muted-foreground">{risk.label}</span>
+            <div className="border-b border-slate-200 p-4">
+              <div className="mb-3 flex items-center justify-between gap-2">
+                <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">Needs attention</p>
+                <span className="text-[10px] font-semibold text-slate-400">{actionRecommendations.length} items</span>
               </div>
-              <div className="space-y-1.5">
-                {actionRecommendations.map((action) => (
+              <div className="space-y-2">
+                {actionRecommendations.slice(0, 3).map((action, index) => (
                   action.href ? (
-                    <a key={action.label} href={action.href} target="_blank" rel="noreferrer" className="flex items-start gap-2 rounded-lg border border-border/60 bg-card px-3 py-2.5 transition hover:border-primary/40 hover:bg-accent/50">
-                      <span className={cn("mt-1 h-1.5 w-1.5 shrink-0 rounded-full", action.label === actionRecommendations[0]?.label ? "bg-destructive" : "bg-border")} />
-                      <span><span className="block text-xs font-semibold text-foreground">{action.label}</span><span className="block text-[11px] text-muted-foreground">{action.sublabel}</span></span>
+                    <a key={action.label} href={action.href} target="_blank" rel="noreferrer" className="flex items-center gap-2 rounded-md border border-slate-200 bg-slate-50 px-3 py-2.5 transition hover:border-sky-200 hover:bg-sky-50">
+                      <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-md ${index === 0 ? "bg-rose-50 text-rose-600" : index === 1 ? "bg-amber-50 text-amber-600" : "bg-blue-50 text-blue-600"}`}><ChevronRight className="h-3.5 w-3.5" /></span>
+                      <span className="min-w-0 flex-1"><span className="block truncate text-xs font-semibold text-slate-800">{action.label}</span><span className="block truncate text-[10px] text-slate-500">{action.sublabel}</span></span>
                     </a>
                   ) : (
-                    <button key={action.label} type="button" onClick={action.onClick} className="flex w-full items-start gap-2 rounded-lg border border-border/60 bg-card px-3 py-2.5 text-left transition hover:border-primary/40 hover:bg-accent/50">
-                      <span className={cn("mt-1 h-1.5 w-1.5 shrink-0 rounded-full", action.label === actionRecommendations[0]?.label ? "bg-destructive" : "bg-border")} />
-                      <span><span className="block text-xs font-semibold text-foreground">{action.label}</span><span className="block text-[11px] text-muted-foreground">{action.sublabel}</span></span>
+                    <button key={action.label} type="button" onClick={action.onClick} className="flex w-full items-center gap-2 rounded-md border border-slate-200 bg-slate-50 px-3 py-2.5 text-left transition hover:border-sky-200 hover:bg-sky-50">
+                      <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-md ${index === 0 ? "bg-rose-50 text-rose-600" : index === 1 ? "bg-amber-50 text-amber-600" : "bg-blue-50 text-blue-600"}`}><ChevronRight className="h-3.5 w-3.5" /></span>
+                      <span className="min-w-0 flex-1"><span className="block truncate text-xs font-semibold text-slate-800">{action.label}</span><span className="block truncate text-[10px] text-slate-500">{action.sublabel}</span></span>
                     </button>
                   )
                 ))}
               </div>
             </div>
-            <div className="p-4">
-              <p className="text-xs font-semibold text-muted-foreground">Project facts</p>
-            </div>
-            <div className="px-4 pb-3 space-y-3">
-              <div className="flex flex-wrap gap-1.5">
-                <Badge variant="outline" className="text-[10px] px-2 py-0.5 font-semibold">MID {project.mid}</Badge>
+            <div className="border-b border-slate-200 px-4 py-3">
+              <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">Project overview</p>
+              <div className="mt-3 space-y-2">
+                <div className="flex items-center justify-between text-[11px]"><span className="text-slate-500">Project ID</span><Badge variant="outline" className="max-w-[175px] truncate px-1.5 py-0 text-[9px] font-semibold">MID {project.mid}</Badge></div>
+                <div className="flex items-center justify-between text-[11px]"><span className="text-slate-500">State</span><span className="font-semibold text-sky-700">{stateLabels[project.projectState] || projectStateLabels[project.projectState]}</span></div>
+                <div className="flex items-center justify-between text-[11px]"><span className="text-slate-500">Risk</span><span className={cn("font-semibold", risk.label === "Low risk" ? "text-emerald-600" : "text-rose-600")}>{risk.label}</span></div>
+                <div className="flex items-center justify-between text-[11px]"><span className="text-slate-500">Go-live</span><span className="font-semibold text-slate-700">{project.dates.expectedGoLiveDate || "—"}</span></div>
               </div>
-              <p className="mb-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">Project state</p>
+            </div>
+            <div className="px-4 py-3">
+              <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">Update state</p>
               <Select value={project.projectState} onValueChange={(v) => handleStateChange(v as ProjectState)}>
-                <SelectTrigger className={cn("h-11 rounded-full text-base font-semibold border-2", stateSelectToneMap[project.projectState])}>
+                <SelectTrigger className={cn("h-9 rounded-md text-xs font-semibold border", stateSelectToneMap[project.projectState])}>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent className={cn(inModal && "z-[90]")}>
@@ -904,7 +919,7 @@ export const ProjectWorkspaceView = ({ projectId: projectIdProp, inModal = false
               </Select>
             </div>
 
-            <div className="h-px bg-border/50" />
+            <div className="h-px bg-slate-200" />
 
             {/* Collapsible sections */}
             {[
@@ -1048,29 +1063,29 @@ export const ProjectWorkspaceView = ({ projectId: projectIdProp, inModal = false
                     onClick={() => setExpandedSections(prev => ({ ...prev, [section.key]: !prev[section.key] }))}
                     className="flex w-full items-center justify-between group"
                   >
-                    <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary">{section.title}</p>
-                    <ChevronDown className={cn("h-3 w-3 text-muted-foreground transition-transform", expandedSections[section.key] ? "rotate-0" : "-rotate-90")} />
+                    <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">{section.title}</p>
+                    <ChevronDown className={cn("h-3 w-3 text-slate-400 transition-transform", expandedSections[section.key] ? "rotate-0" : "-rotate-90")} />
                   </button>
                   {expandedSections[section.key] && (
                     <div className="mt-2">{section.content}</div>
                   )}
                 </div>
-                <div className="h-px bg-border/50" />
+                <div className="h-px bg-slate-200" />
               </div>
             ))}
           </div>
         </ScrollArea>
 
         {/* CENTER PANEL — Tabs */}
-        <main className="flex min-w-0 flex-1 flex-col overflow-hidden bg-background">
+        <main className="flex min-w-0 flex-1 flex-col overflow-hidden bg-white">
           <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as WorkspaceTab)} className="flex flex-1 flex-col overflow-hidden">
-            <div className="shrink-0 border-b border-border/60 bg-card px-4 py-0">
+            <div className="shrink-0 border-b border-slate-200 bg-white px-4 py-0">
               <TabsList className="h-auto gap-1 rounded-none bg-transparent p-0">
                 {tabOptions.map((tab) => (
                   <TabsTrigger
                     key={tab.value}
                     value={tab.value}
-                    className="rounded-none border-b-2 border-transparent px-3 py-3 text-base font-semibold text-slate-900 data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-slate-950 data-[state=active]:shadow-none"
+                    className="rounded-none border-b-2 border-transparent px-3 py-3 text-sm font-semibold text-slate-500 data-[state=active]:border-sky-700 data-[state=active]:bg-transparent data-[state=active]:text-slate-950 data-[state=active]:shadow-none"
                   >
                     {tab.label}
                   </TabsTrigger>
@@ -1078,7 +1093,7 @@ export const ProjectWorkspaceView = ({ projectId: projectIdProp, inModal = false
               </TabsList>
             </div>
 
-            <div className="flex-1 overflow-y-auto px-4 py-3">
+            <div className="flex-1 overflow-y-auto bg-slate-50 px-4 py-4">
               {/* OVERVIEW TAB — Rich dashboard */}
               <TabsContent value="overview" className="m-0">
                 <div className="space-y-3">
