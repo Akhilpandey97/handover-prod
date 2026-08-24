@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useProjects } from "@/contexts/ProjectContext";
 import { useLabels } from "@/contexts/LabelsContext";
 import { useCustomFields, useAllCustomFieldValues } from "@/hooks/useCustomFields";
@@ -98,9 +98,22 @@ export const KanbanBoard = ({ filteredProjects }: KanbanBoardProps) => {
   const { projects: allProjects, updateProject } = useProjects();
   const labels = useLabels();
   const { fields: customFields } = useCustomFields();
-  const [groupField, setGroupField] = useState("projectState");
+  const [groupField, setGroupField] = useState("currentOwnerTeam");
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [draggedProjectId, setDraggedProjectId] = useState<string | null>(null);
+  const [draggedColumnKey, setDraggedColumnKey] = useState<string | null>(null);
+  const [columnOrderByField, setColumnOrderByField] = useState<Record<string, string[]>>(() => {
+    try {
+      const saved = localStorage.getItem("kanban_column_orders");
+      return saved ? JSON.parse(saved) : {};
+    } catch {
+      return {};
+    }
+  });
+
+  useEffect(() => {
+    localStorage.setItem("kanban_column_orders", JSON.stringify(columnOrderByField));
+  }, [columnOrderByField]);
 
   // Local filters
   const [searchQuery, setSearchQuery] = useState("");
@@ -172,7 +185,8 @@ export const KanbanBoard = ({ filteredProjects }: KanbanBoardProps) => {
       groupMap.set(val, existing);
     });
 
-    const order = GROUP_ORDER[groupField] || [];
+    const savedOrder = columnOrderByField[groupField] || [];
+    const order = savedOrder.length > 0 ? savedOrder : (GROUP_ORDER[groupField] || []);
     return Array.from(groupMap.entries())
       .map(([key, groupProjects]) => ({
         key,
@@ -182,12 +196,12 @@ export const KanbanBoard = ({ filteredProjects }: KanbanBoardProps) => {
       .sort((a, b) => {
         const aIndex = order.indexOf(a.key);
         const bIndex = order.indexOf(b.key);
-        if (aIndex === -1 && bIndex === -1) return a.label.localeCompare(b.label);
+          if (aIndex === -1 && bIndex === -1) return a.label.localeCompare(b.label);
         if (aIndex === -1) return 1;
         if (bIndex === -1) return -1;
         return aIndex - bIndex;
       });
-  }, [sortedProjects, groupField, labels, customValuesMap]);
+        }, [sortedProjects, groupField, labels, customValuesMap, columnOrderByField]);
 
   const standardOptions = allFieldOptions.filter(o => !o.key.startsWith("custom_field_"));
   const customOptions = allFieldOptions.filter(o => o.key.startsWith("custom_field_"));
@@ -409,13 +423,28 @@ export const KanbanBoard = ({ filteredProjects }: KanbanBoardProps) => {
             key={col.key}
             className="min-w-0"
             onDragOver={(event) => {
-              if (!supportsDragMove) return;
               event.preventDefault();
               event.dataTransfer.dropEffect = "move";
             }}
             onDrop={(event) => {
-              if (!supportsDragMove) return;
               event.preventDefault();
+              const sourceColumn = event.dataTransfer.getData("application/x-kanban-column") || draggedColumnKey;
+              if (sourceColumn) {
+                if (sourceColumn !== col.key) {
+                  const currentOrder = columns.map((column) => column.key);
+                  const fromIndex = currentOrder.indexOf(sourceColumn);
+                  const toIndex = currentOrder.indexOf(col.key);
+                  if (fromIndex !== -1 && toIndex !== -1) {
+                    const nextOrder = [...currentOrder];
+                    const [moved] = nextOrder.splice(fromIndex, 1);
+                    nextOrder.splice(toIndex, 0, moved);
+                    setColumnOrderByField((prev) => ({ ...prev, [groupField]: nextOrder }));
+                  }
+                }
+                setDraggedColumnKey(null);
+                return;
+              }
+              if (!supportsDragMove) return;
               const projectId = event.dataTransfer.getData("text/plain") || draggedProjectId;
               if (projectId) {
                 handleProjectDrop(projectId, col.key);
@@ -424,7 +453,16 @@ export const KanbanBoard = ({ filteredProjects }: KanbanBoardProps) => {
             }}
           >
             <Card className="h-full border-border/70 bg-card">
-              <CardHeader className="pb-3 pt-4 px-4">
+              <CardHeader
+                className="pb-3 pt-4 px-4 cursor-grab active:cursor-grabbing"
+                draggable
+                onDragStart={(event) => {
+                  event.dataTransfer.effectAllowed = "move";
+                  event.dataTransfer.setData("application/x-kanban-column", col.key);
+                  setDraggedColumnKey(col.key);
+                }}
+                onDragEnd={() => setDraggedColumnKey(null)}
+              >
                 <CardTitle className="flex items-center justify-between text-sm">
                   <span className="font-semibold text-foreground">
                     {col.label}
