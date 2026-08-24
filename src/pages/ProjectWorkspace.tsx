@@ -720,7 +720,7 @@ export const ProjectWorkspaceView = ({ projectId: projectIdProp, inModal = false
                     <Button
                       variant="outline"
                       size="sm"
-                      className="h-7 w-7 p-0"
+                      className="h-7 w-7 border-blue-200 bg-blue-50/70 p-0 text-blue-800 hover:bg-blue-100"
                       disabled={!hasPrev}
                       onClick={() => hasPrev && onNavigate(projectIds[currentIndex - 1])}
                     >
@@ -730,7 +730,7 @@ export const ProjectWorkspaceView = ({ projectId: projectIdProp, inModal = false
                     <Button
                       variant="outline"
                       size="sm"
-                      className="h-7 w-7 p-0"
+                      className="h-7 w-7 border-blue-200 bg-blue-50/70 p-0 text-blue-800 hover:bg-blue-100"
                       disabled={!hasNext}
                       onClick={() => hasNext && onNavigate(projectIds[currentIndex + 1])}
                     >
@@ -749,16 +749,16 @@ export const ProjectWorkspaceView = ({ projectId: projectIdProp, inModal = false
               </Button>
             ) : null}
             {currentUser?.team === "manager" ? (
-              <Button variant="outline" size="sm" className="h-9 rounded-lg border-border/70 bg-background px-3 text-sm" onClick={() => setAssignOpen(true)}>
+              <Button variant="outline" size="sm" className="h-9 rounded-lg border-blue-300 bg-blue-50 px-3 text-sm text-blue-900 hover:bg-blue-100" onClick={() => setAssignOpen(true)}>
                 <UserRound className="h-3 w-3 mr-1" />
                 Assign owner
               </Button>
             ) : null}
-            <Button variant="outline" size="sm" className="h-9 gap-1.5 rounded-lg border-border/70 bg-background px-4 text-sm font-semibold" onClick={() => setEditOpen(true)}>
+            <Button variant="outline" size="sm" className="h-9 gap-1.5 rounded-lg border-blue-300 bg-blue-50 px-4 text-sm font-semibold text-blue-900 hover:bg-blue-100" onClick={() => setEditOpen(true)}>
               <Pencil className="h-3.5 w-3.5" />
               Edit project
             </Button>
-            <Button size="sm" className="h-9 rounded-lg px-3 text-sm" onClick={() => isTransferReady && setTransferOpen(true)} disabled={!isTransferReady}>
+            <Button size="sm" className="h-9 rounded-lg bg-blue-700 px-3 text-sm text-white hover:bg-blue-800 disabled:bg-blue-200 disabled:text-blue-500" onClick={() => isTransferReady && setTransferOpen(true)} disabled={!isTransferReady}>
               <ArrowRight className="h-3 w-3 mr-1" />
               Transfer
             </Button>
