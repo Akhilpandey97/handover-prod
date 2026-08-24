@@ -848,48 +848,48 @@ export const ProjectWorkspaceView = ({ projectId: projectIdProp, inModal = false
         </ScrollArea>
 
         {/* RIGHT PANEL — Ownership & Context */}
-        <ScrollArea className="order-3 hidden w-[332px] shrink-0 border-l border-sidebar-border/70 bg-sidebar text-sidebar-foreground lg:block">
+        <ScrollArea className="order-3 hidden w-[332px] shrink-0 border-l border-border/60 bg-card lg:block">
           <div className="space-y-1">
-            <div className="border-b border-sidebar-border/70 p-4">
+            <div className="border-b border-border/60 p-4">
               <div className="flex items-center gap-3">
-                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-sidebar-accent text-xs font-bold text-sidebar-accent-foreground">
+                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-xs font-bold text-primary-foreground">
                   {(project.assignedOwnerName || project.currentOwnerTeam).slice(0, 2).toUpperCase()}
                 </div>
                 <div className="min-w-0">
-                  <p className="truncate text-sm font-semibold text-sidebar-accent-foreground">{project.assignedOwnerName || "Unassigned"}</p>
-                  <p className="text-xs text-sidebar-foreground/85">Owner · {teamLabels[project.currentOwnerTeam] || project.currentOwnerTeam}</p>
+                  <p className="truncate text-sm font-semibold text-foreground">{project.assignedOwnerName || "Unassigned"}</p>
+                  <p className="text-xs text-muted-foreground">Owner · {teamLabels[project.currentOwnerTeam] || project.currentOwnerTeam}</p>
                 </div>
               </div>
             </div>
-            <div className="border-b border-sidebar-border/70 p-4">
+            <div className="border-b border-border/60 p-4">
               <div className="mb-2 flex items-center justify-between gap-2">
-                <p className="text-xs font-semibold text-sidebar-foreground/90">Action centre</p>
-                <span className="text-[11px] text-sidebar-foreground/80">{risk.label}</span>
+                <p className="text-xs font-semibold text-muted-foreground">Action centre</p>
+                <span className="text-[11px] text-muted-foreground">{risk.label}</span>
               </div>
               <div className="space-y-1.5">
                 {actionRecommendations.map((action) => (
                   action.href ? (
-                    <a key={action.label} href={action.href} target="_blank" rel="noreferrer" className="flex items-start gap-2 rounded-lg border border-sidebar-border bg-sidebar-accent/70 px-3 py-2.5 transition hover:border-sidebar-ring/60 hover:bg-sidebar-accent">
-                      <span className={cn("mt-1 h-1.5 w-1.5 shrink-0 rounded-full", action.label === actionRecommendations[0]?.label ? "bg-destructive" : "bg-sidebar-ring")} />
-                      <span><span className="block text-xs font-semibold text-sidebar-accent-foreground">{action.label}</span><span className="block text-[11px] text-sidebar-foreground/85">{action.sublabel}</span></span>
+                    <a key={action.label} href={action.href} target="_blank" rel="noreferrer" className="flex items-start gap-2 rounded-lg border border-border/60 bg-card px-3 py-2.5 transition hover:border-primary/40 hover:bg-accent/50">
+                      <span className={cn("mt-1 h-1.5 w-1.5 shrink-0 rounded-full", action.label === actionRecommendations[0]?.label ? "bg-destructive" : "bg-border")} />
+                      <span><span className="block text-xs font-semibold text-foreground">{action.label}</span><span className="block text-[11px] text-muted-foreground">{action.sublabel}</span></span>
                     </a>
                   ) : (
-                    <button key={action.label} type="button" onClick={action.onClick} className="flex w-full items-start gap-2 rounded-lg border border-sidebar-border bg-sidebar-accent/70 px-3 py-2.5 text-left transition hover:border-sidebar-ring/60 hover:bg-sidebar-accent">
-                      <span className={cn("mt-1 h-1.5 w-1.5 shrink-0 rounded-full", action.label === actionRecommendations[0]?.label ? "bg-destructive" : "bg-sidebar-ring")} />
-                      <span><span className="block text-xs font-semibold text-sidebar-accent-foreground">{action.label}</span><span className="block text-[11px] text-sidebar-foreground/85">{action.sublabel}</span></span>
+                    <button key={action.label} type="button" onClick={action.onClick} className="flex w-full items-start gap-2 rounded-lg border border-border/60 bg-card px-3 py-2.5 text-left transition hover:border-primary/40 hover:bg-accent/50">
+                      <span className={cn("mt-1 h-1.5 w-1.5 shrink-0 rounded-full", action.label === actionRecommendations[0]?.label ? "bg-destructive" : "bg-border")} />
+                      <span><span className="block text-xs font-semibold text-foreground">{action.label}</span><span className="block text-[11px] text-muted-foreground">{action.sublabel}</span></span>
                     </button>
                   )
                 ))}
               </div>
             </div>
             <div className="p-4">
-              <p className="text-xs font-semibold text-sidebar-foreground/90">Project facts</p>
+              <p className="text-xs font-semibold text-muted-foreground">Project facts</p>
             </div>
             <div className="px-4 pb-3 space-y-3">
               <div className="flex flex-wrap gap-1.5">
-                <Badge variant="outline" className="border-sidebar-ring/50 bg-sidebar-accent text-[10px] px-2 py-0.5 font-semibold text-sidebar-foreground">MID {project.mid}</Badge>
+                <Badge variant="outline" className="text-[10px] px-2 py-0.5 font-semibold">MID {project.mid}</Badge>
               </div>
-              <p className="mb-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-sidebar-foreground/80">Project state</p>
+              <p className="mb-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">Project state</p>
               <Select value={project.projectState} onValueChange={(v) => handleStateChange(v as ProjectState)}>
                 <SelectTrigger className={cn("h-11 rounded-full text-base font-semibold border-2", stateSelectToneMap[project.projectState])}>
                   <SelectValue />
@@ -904,7 +904,7 @@ export const ProjectWorkspaceView = ({ projectId: projectIdProp, inModal = false
               </Select>
             </div>
 
-            <div className="h-px bg-sidebar-border/70" />
+            <div className="h-px bg-border/50" />
 
             {/* Collapsible sections */}
             {[
@@ -920,8 +920,8 @@ export const ProjectWorkspaceView = ({ projectId: projectIdProp, inModal = false
                       ["Sales SPOC", project.salesSpoc || "—"],
                     ].map(([label, value]) => (
                       <div key={label} className="flex items-baseline justify-between gap-2">
-                        <p className="text-[10px] font-medium uppercase tracking-wide text-sidebar-foreground/75">{label}</p>
-                        <p className="text-xs font-semibold text-sidebar-accent-foreground text-right truncate max-w-[120px]">{value}</p>
+                        <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
+                        <p className="text-xs font-semibold text-foreground text-right truncate max-w-[120px]">{value}</p>
                       </div>
                     ))}
                   </div>
@@ -933,25 +933,25 @@ export const ProjectWorkspaceView = ({ projectId: projectIdProp, inModal = false
                 content: (
                   <div className="space-y-2">
                     <div className="flex items-baseline justify-between gap-2">
-                      <p className="text-[10px] font-medium uppercase tracking-wide text-sidebar-foreground/75">Responsibility</p>
-                      <p className="text-xs font-semibold text-sidebar-accent-foreground">{responsibilityLabels[pendingOn] || pendingOn}</p>
+                      <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Responsibility</p>
+                      <p className="text-xs font-semibold text-foreground">{responsibilityLabels[pendingOn] || pendingOn}</p>
                     </div>
                     <div className="flex items-baseline justify-between gap-2">
-                      <p className="text-[10px] font-medium uppercase tracking-wide text-sidebar-foreground/75">Checklist</p>
-                      <p className="text-xs font-semibold text-sidebar-accent-foreground">{completedChecklist}/{project.checklist.length}</p>
+                      <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Checklist</p>
+                      <p className="text-xs font-semibold text-foreground">{completedChecklist}/{project.checklist.length}</p>
                     </div>
                     <Progress
                       value={project.checklist.length ? (completedChecklist / project.checklist.length) * 100 : 0}
                       className="h-1.5 rounded-full bg-secondary"
                     />
                     <div className="grid grid-cols-2 gap-1.5 pt-1">
-                      <div className="rounded-md border border-sidebar-border bg-sidebar-accent/70 px-2 py-1.5 text-center">
-                        <p className="text-xs font-bold text-sidebar-accent-foreground">{formatDuration(timeByParty.gokwik)}</p>
-                        <p className="text-[8px] uppercase tracking-widest text-sidebar-foreground/75">Internal</p>
+                      <div className="rounded-md border border-border/60 bg-card/80 px-2 py-1.5 text-center">
+                        <p className="text-xs font-bold text-foreground">{formatDuration(timeByParty.gokwik)}</p>
+                        <p className="text-[8px] uppercase tracking-widest text-muted-foreground">Internal</p>
                       </div>
-                      <div className="rounded-md border border-sidebar-border bg-sidebar-accent/70 px-2 py-1.5 text-center">
-                        <p className="text-xs font-bold text-sidebar-accent-foreground">{formatDuration(timeByParty.merchant)}</p>
-                        <p className="text-[8px] uppercase tracking-widest text-sidebar-foreground/75">Merchant</p>
+                      <div className="rounded-md border border-border/60 bg-card/80 px-2 py-1.5 text-center">
+                        <p className="text-xs font-bold text-foreground">{formatDuration(timeByParty.merchant)}</p>
+                        <p className="text-[8px] uppercase tracking-widest text-muted-foreground">Merchant</p>
                       </div>
                     </div>
                   </div>
@@ -964,10 +964,10 @@ export const ProjectWorkspaceView = ({ projectId: projectIdProp, inModal = false
                   <div>
                     <div className="flex items-center gap-2">
                       <Badge className={cn("border text-[10px] font-semibold", risk.tone)}>{risk.label}</Badge>
-                      <span className="text-[10px] font-semibold text-sidebar-foreground/80">Score {risk.score}</span>
+                      <span className="text-[10px] font-semibold text-muted-foreground">Score {risk.score}</span>
                     </div>
                     {risk.drivers[0]?.points > 0 ? (
-                      <p className="mt-1 text-[11px] leading-relaxed text-sidebar-foreground/80">{risk.drivers[0].label}</p>
+                      <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">{risk.drivers[0].label}</p>
                     ) : null}
                   </div>
                 ),
@@ -984,8 +984,8 @@ export const ProjectWorkspaceView = ({ projectId: projectIdProp, inModal = false
                       ["Last update", getLastUpdated(project)],
                     ].map(([label, value]) => (
                       <div key={label} className="flex items-baseline justify-between gap-2">
-                        <p className="text-[10px] font-medium uppercase tracking-wide text-sidebar-foreground/75">{label}</p>
-                        <p className="text-[11px] font-semibold text-sidebar-accent-foreground text-right truncate max-w-[110px]">{value}</p>
+                        <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
+                        <p className="text-[11px] font-semibold text-foreground text-right truncate max-w-[110px]">{value}</p>
                       </div>
                     ))}
                   </div>
@@ -1006,8 +1006,8 @@ export const ProjectWorkspaceView = ({ projectId: projectIdProp, inModal = false
                       ["PG onboarding", project.pgOnboarding || "—"],
                     ].map(([label, value]) => (
                       <div key={label} className="flex items-baseline justify-between gap-2">
-                        <p className="text-[10px] font-medium uppercase tracking-wide text-sidebar-foreground/75">{label}</p>
-                        <p className="text-[11px] font-semibold text-sidebar-accent-foreground text-right truncate max-w-[110px]">{value}</p>
+                        <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
+                        <p className="text-[11px] font-semibold text-foreground text-right truncate max-w-[110px]">{value}</p>
                       </div>
                     ))}
                   </div>
@@ -1025,17 +1025,17 @@ export const ProjectWorkspaceView = ({ projectId: projectIdProp, inModal = false
                           href={link.href}
                           target="_blank"
                           rel="noreferrer"
-                          className="flex items-center justify-between rounded-md border border-sidebar-border bg-sidebar-accent/70 px-2.5 py-1.5 text-[11px] font-semibold text-sidebar-accent-foreground transition hover:border-sidebar-ring/60 hover:bg-sidebar-accent"
+                          className="flex items-center justify-between rounded-md border border-border/60 bg-card/80 px-2.5 py-1.5 text-[11px] font-semibold text-foreground transition hover:bg-accent/60"
                         >
                           <div className="flex items-center gap-1.5">
                             <link.icon className="h-3 w-3" />
                             <span>{link.label}</span>
                           </div>
-                          <ExternalLink className="h-2.5 w-2.5 text-sidebar-foreground/80" />
+                          <ExternalLink className="h-2.5 w-2.5 text-muted-foreground" />
                         </a>
                       ))
                     ) : (
-                      <p className="text-[11px] text-sidebar-foreground/80">No links attached.</p>
+                      <p className="text-[11px] text-muted-foreground">No links attached.</p>
                     )}
                   </div>
                 ),
@@ -1048,14 +1048,14 @@ export const ProjectWorkspaceView = ({ projectId: projectIdProp, inModal = false
                     onClick={() => setExpandedSections(prev => ({ ...prev, [section.key]: !prev[section.key] }))}
                     className="flex w-full items-center justify-between group"
                   >
-                    <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-sidebar-foreground">{section.title}</p>
-                    <ChevronDown className={cn("h-3 w-3 text-sidebar-foreground/80 transition-transform", expandedSections[section.key] ? "rotate-0" : "-rotate-90")} />
+                    <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary">{section.title}</p>
+                    <ChevronDown className={cn("h-3 w-3 text-muted-foreground transition-transform", expandedSections[section.key] ? "rotate-0" : "-rotate-90")} />
                   </button>
                   {expandedSections[section.key] && (
                     <div className="mt-2">{section.content}</div>
                   )}
                 </div>
-                <div className="h-px bg-sidebar-border/70" />
+                <div className="h-px bg-border/50" />
               </div>
             ))}
           </div>

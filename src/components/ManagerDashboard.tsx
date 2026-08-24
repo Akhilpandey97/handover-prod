@@ -578,22 +578,17 @@ export const ManagerDashboard = () => {
     general: { label: "General" },
     workflows: { label: "Workflow Management" },
     "activity-log": { label: "Activity Log" },
-    fields: { label: "Field Labels" },
     "custom-fields": { label: "Custom Fields" },
     checklist: { label: "Checklist" },
-    "checklist-forms": { label: "Checklist Forms" },
     email: { label: "Email Settings" },
-    emails: { label: "Parsed Emails" },
-    colours: { label: "Appearance" },
-    navigation: { label: "Navigation" },
     users: { label: "Users" },
   };
 
   const SETTINGS_GROUPS: Array<{ label: string; items: string[] }> = [
     { label: "General", items: ["general", "workflows", "activity-log"] },
-    { label: "Data & Forms", items: ["fields", "custom-fields", "checklist", "checklist-forms"] },
-    { label: "Communication", items: ["email", "emails"] },
-    { label: "Administration", items: ["colours", "navigation", "users"] },
+    { label: "Data & Forms", items: ["custom-fields", "checklist"] },
+    { label: "Communication", items: ["email"] },
+    { label: "Administration", items: ["users"] },
   ];
 
   const REPORTS_SUB_CONFIG: Record<string, { label: string; icon?: string }> = {
