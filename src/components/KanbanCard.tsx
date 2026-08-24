@@ -36,6 +36,7 @@ export const KanbanCard = ({
 
   const completedChecklist = project.checklist.filter(c => c.completed).length;
   const totalChecklist = project.checklist.length;
+  const checklistRatio = totalChecklist > 0 ? completedChecklist / totalChecklist : 0;
   const healthScore = computeHealthScore(project);
   const isOverdue = Boolean(
     project.dates.expectedGoLiveDate &&
@@ -43,6 +44,22 @@ export const KanbanCard = ({
     project.projectState !== "live",
   );
   const riskLabel = isOverdue ? "Go-live date passed" : healthScore.label !== "Healthy" ? healthScore.label : null;
+
+  const stateToneClass = cn(
+    "text-[10px] px-1.5 py-0 border",
+    project.projectState === "in_progress" || project.projectState === "live"
+      ? "border-blue-300 bg-blue-50 text-blue-900"
+      : project.projectState === "on_hold" || project.projectState === "blocked"
+        ? "border-amber-300 bg-amber-50 text-amber-900"
+        : "border-border bg-background text-foreground",
+  );
+
+  const phaseToneClass = cn(
+    "text-[10px] px-1.5 py-0 border",
+    project.currentPhase === "integration" || project.currentPhase === "ms"
+      ? "border-blue-200 bg-blue-50/70 text-blue-800"
+      : "border-border bg-background text-foreground",
+  );
 
   return (
     <>
@@ -85,17 +102,29 @@ export const KanbanCard = ({
 
         {/* Status and ownership */}
         <div className="flex items-center gap-1.5 flex-wrap">
-          <Badge variant="outline" className="text-[10px] px-1.5 py-0">{stateLabel}</Badge>
-          <Badge variant="outline" className="text-[10px] px-1.5 py-0">{phaseLabel}</Badge>
+          <Badge variant="outline" className={stateToneClass}>{stateLabel}</Badge>
+          <Badge variant="outline" className={phaseToneClass}>{phaseLabel}</Badge>
           {project.platform && project.platform !== "Custom" && <Badge variant="outline" className="text-[10px] px-1.5 py-0 gap-0.5"><Globe className="h-2.5 w-2.5" />{project.platform}</Badge>}
-          {project.assignedOwnerName && <span className="ml-auto flex h-6 w-6 items-center justify-center rounded-md bg-muted text-[9px] font-bold text-foreground" title={project.assignedOwnerName}>{project.assignedOwnerName.split(" ").map((part) => part[0]).join("").slice(0, 2).toUpperCase()}</span>}
+          {project.assignedOwnerName && <span className="ml-auto flex h-6 w-6 items-center justify-center rounded-md bg-blue-100 text-[9px] font-bold text-blue-900" title={project.assignedOwnerName}>{project.assignedOwnerName.split(" ").map((part) => part[0]).join("").slice(0, 2).toUpperCase()}</span>}
         </div>
 
-        {riskLabel && <div className="flex items-center gap-1.5 rounded-md bg-muted px-2 py-1 text-[11px] font-semibold text-foreground"><span className="h-1.5 w-1.5 rounded-full bg-current" />{riskLabel}</div>}
+        {riskLabel && (
+          <div className="flex items-center gap-1.5 rounded-md border border-amber-200 bg-amber-50 px-2 py-1 text-[11px] font-semibold text-amber-900">
+            <span className="h-1.5 w-1.5 rounded-full bg-current" />
+            {riskLabel}
+          </div>
+        )}
 
         <div className="flex items-center justify-between gap-3 text-[11px] text-muted-foreground">
-          <span className="font-mono">{completedChecklist}/{totalChecklist} checklist</span>
-          <span className="flex items-center gap-1"><Calendar className="h-3 w-3" />{project.dates.expectedGoLiveDate || "No date"}</span>
+          <span
+            className={cn(
+              "font-mono",
+              checklistRatio > 0 && checklistRatio < 0.5 ? "text-amber-800" : "text-blue-900",
+            )}
+          >
+            {completedChecklist}/{totalChecklist} checklist
+          </span>
+          <span className={cn("flex items-center gap-1", isOverdue ? "text-amber-800" : "text-muted-foreground")}><Calendar className="h-3 w-3" />{project.dates.expectedGoLiveDate || "No date"}</span>
         </div>
 
       </div>

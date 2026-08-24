@@ -176,6 +176,7 @@ export const ReportsBuilder = ({ projects, customFields = [], customValuesMap = 
   const [recipients, setRecipients] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
+  const [columnsPanelOpen, setColumnsPanelOpen] = useState(true);
 
   const [groupByColumn, setGroupByColumn] = useState<string>("none");
 
@@ -658,7 +659,20 @@ export const ReportsBuilder = ({ projects, customFields = [], customValuesMap = 
       <Card>
         <CardHeader className="py-3 px-4">
           <div className="flex items-center justify-between flex-wrap gap-2">
-            <CardTitle className="text-sm">Select Columns ({selectedColumns.length} selected) <span className="text-[10px] text-muted-foreground font-normal ml-1">— drag groups to reorder</span></CardTitle>
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="h-7 px-2 text-xs"
+                onClick={() => setColumnsPanelOpen((prev) => !prev)}
+                aria-expanded={columnsPanelOpen}
+                aria-label={columnsPanelOpen ? "Collapse select columns" : "Expand select columns"}
+              >
+                <ChevronDown className={cn("h-3.5 w-3.5 transition-transform", columnsPanelOpen ? "rotate-0" : "-rotate-90")} />
+              </Button>
+              <CardTitle className="text-sm">Select Columns ({selectedColumns.length} selected) <span className="text-[10px] text-muted-foreground font-normal ml-1">— drag groups to reorder</span></CardTitle>
+            </div>
             <div className="flex gap-2 items-center flex-wrap">
               <div className="flex items-center gap-1.5">
                 <Label className="text-xs text-muted-foreground whitespace-nowrap">Agg:</Label>
@@ -695,31 +709,33 @@ export const ReportsBuilder = ({ projects, customFields = [], customValuesMap = 
             </div>
           </div>
         </CardHeader>
-        <CardContent className="px-4 pb-3 pt-0">
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-x-4 gap-y-1">
-            {groupOrder.filter(g => columnGroups[g]).map(group => (
-              <div
-                key={group}
-                draggable
-                onDragStart={() => handleGroupDragStart(group)}
-                onDragOver={(e) => handleGroupDragOver(e, group)}
-                onDragEnd={handleGroupDragEnd}
-                className={`cursor-grab active:cursor-grabbing rounded-md p-1.5 transition-opacity ${draggedGroup === group ? "opacity-50 bg-primary/10" : "hover:bg-muted/40"}`}
-              >
-                <div className="flex items-center gap-1 mb-1">
-                  <GripVertical className="h-3 w-3 text-muted-foreground/50" />
-                  <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">{group}</p>
+        {columnsPanelOpen && (
+          <CardContent className="px-4 pb-3 pt-0">
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-x-4 gap-y-1">
+              {groupOrder.filter(g => columnGroups[g]).map(group => (
+                <div
+                  key={group}
+                  draggable
+                  onDragStart={() => handleGroupDragStart(group)}
+                  onDragOver={(e) => handleGroupDragOver(e, group)}
+                  onDragEnd={handleGroupDragEnd}
+                  className={`cursor-grab active:cursor-grabbing rounded-md p-1.5 transition-opacity ${draggedGroup === group ? "opacity-50 bg-primary/10" : "hover:bg-muted/40"}`}
+                >
+                  <div className="flex items-center gap-1 mb-1">
+                    <GripVertical className="h-3 w-3 text-muted-foreground/50" />
+                    <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">{group}</p>
+                  </div>
+                  {columnGroups[group].map(col => (
+                    <label key={col.key} className="flex items-center gap-1.5 py-0.5 cursor-pointer text-xs hover:text-primary transition-colors">
+                      <Checkbox checked={selectedColumns.includes(col.key)} onCheckedChange={() => toggleColumn(col.key)} className="h-3.5 w-3.5" />
+                      {col.label}
+                    </label>
+                  ))}
                 </div>
-                {columnGroups[group].map(col => (
-                  <label key={col.key} className="flex items-center gap-1.5 py-0.5 cursor-pointer text-xs hover:text-primary transition-colors">
-                    <Checkbox checked={selectedColumns.includes(col.key)} onCheckedChange={() => toggleColumn(col.key)} className="h-3.5 w-3.5" />
-                    {col.label}
-                  </label>
-                ))}
-              </div>
-            ))}
-          </div>
-        </CardContent>
+              ))}
+            </div>
+          </CardContent>
+        )}
       </Card>
 
       {/* Report Preview */}
