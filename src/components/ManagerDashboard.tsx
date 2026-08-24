@@ -1113,6 +1113,7 @@ export const ManagerDashboard = () => {
                   </div>
                 </div>
               </div>
+              <div className="grid grid-cols-2 gap-px bg-slate-200 lg:grid-cols-4">
               {(() => {
                 const kpiCards = [
                   { label: "All projects", value: totalProjects, icon: FolderKanban, sub: "Across the portfolio", tone: "text-slate-700 bg-slate-100" },
@@ -1121,7 +1122,7 @@ export const ManagerDashboard = () => {
                   { label: "Live", value: completedProjects, icon: CheckCircle2, sub: `${liveArr.toFixed(2)} Cr realized`, tone: "text-emerald-700 bg-emerald-100" },
                 ];
                 return kpiCards.map((kpi) => (
-                  <div key={kpi.label} className="group border-b border-slate-200 p-5 last:border-b-0 sm:border-b-0 sm:border-r sm:last:border-r-0">
+                  <div key={kpi.label} className="group min-h-[136px] bg-white p-5 transition-colors hover:bg-slate-50">
                       <div className="flex items-start justify-between">
                         <div>
                           <p className="text-xs font-medium text-slate-500">{kpi.label}</p>
@@ -1135,10 +1136,11 @@ export const ManagerDashboard = () => {
                   </div>
                 ));
               })()}
+              </div>
             </section>
 
-            <div className="grid gap-5 xl:grid-cols-[minmax(0,1.45fr)_minmax(320px,0.85fr)]">
-              <section className="rounded-lg border border-slate-200 bg-white shadow-sm">
+            <div className="grid items-stretch gap-5 xl:grid-cols-[minmax(0,1.45fr)_minmax(320px,0.85fr)]">
+              <section className="rounded-lg border border-slate-200 bg-white shadow-sm xl:min-h-[306px]">
                 <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
                   <div>
                     <p className="text-sm font-semibold text-slate-950">Team workload</p>
@@ -1184,7 +1186,7 @@ export const ManagerDashboard = () => {
                 </div>
               </section>
 
-              <section className="rounded-lg border border-slate-200 bg-slate-950 text-white shadow-sm">
+              <section className="rounded-lg border border-slate-200 bg-slate-950 text-white shadow-sm xl:min-h-[306px]">
                 <div className="border-b border-white/10 px-5 py-4">
                   <div className="flex items-center justify-between">
                     <div>
@@ -1228,7 +1230,7 @@ export const ManagerDashboard = () => {
               </section>
             </div>
 
-            <div className="grid gap-5 lg:grid-cols-2">
+            <div className="grid items-stretch gap-5 lg:grid-cols-2">
               <section className="rounded-lg border border-slate-200 bg-white shadow-sm">
                 <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
                   <div>
@@ -2167,32 +2169,6 @@ export const ManagerDashboard = () => {
                     {/* Merged Project + Checklist Report */}
                     {reportType === "project" && (
                       <div className="space-y-3">
-                        {/* AI Insights + Download */}
-                        <Card className="border-primary/20 bg-gradient-to-r from-primary/5 to-accent/5">
-                          <CardHeader className="pb-3">
-                            <div className="flex items-center justify-between">
-                              <CardTitle className="text-base flex items-center gap-2">
-                                <Sparkles className="h-4 w-4 text-primary" />
-                                AI Project & Checklist Insights
-                              </CardTitle>
-                              <div className="flex gap-2">
-                                <Button size="sm" variant="outline" onClick={() => exportProjectChecklistCSV(displayProjects, { teamLabels, responsibilityLabels, phaseLabels, stateLabels: stateLabelsFromCtx, getLabel: (k: string) => k })} className="gap-2">
-                                  <Download className="h-3 w-3" />
-                                  Export CSV
-                                </Button>
-                                <Button size="sm" variant="outline" onClick={fetchProjectAiInsight} disabled={projectAiLoading} className="gap-2">
-                                  {projectAiLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
-                                  {projectAiInsight ? "Refresh" : "Generate"}
-                                </Button>
-                              </div>
-                            </div>
-                          </CardHeader>
-                          {projectAiInsight && (
-                            <CardContent className="pt-0">
-                              <div className="text-sm space-y-1 whitespace-pre-line">{projectAiInsight}</div>
-                            </CardContent>
-                          )}
-                        </Card>
                         {projectChecklistReport.map((project) => (
                           <Collapsible key={project.id} open={expandedProjects.has(project.id)} onOpenChange={() => toggleProjectExpand(project.id)}>
                             <CollapsibleTrigger asChild>
@@ -2276,32 +2252,6 @@ export const ManagerDashboard = () => {
                     {/* Merged Team + Owner Report */}
                     {reportType === "team" && (
                       <div className="space-y-6">
-                        {/* AI Insights + Download */}
-                        <Card className="border-primary/20 bg-gradient-to-r from-primary/5 to-accent/5">
-                          <CardHeader className="pb-3">
-                            <div className="flex items-center justify-between">
-                              <CardTitle className="text-base flex items-center gap-2">
-                                <Sparkles className="h-4 w-4 text-primary" />
-                                AI Team & Owner Insights
-                              </CardTitle>
-                              <div className="flex gap-2">
-                                <Button size="sm" variant="outline" onClick={() => exportTeamOwnerCSV(teamOwnerReport)} className="gap-2">
-                                  <Download className="h-3 w-3" />
-                                  Export CSV
-                                </Button>
-                                <Button size="sm" variant="outline" onClick={fetchTeamAiInsight} disabled={teamAiLoading} className="gap-2">
-                                  {teamAiLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
-                                  {teamAiInsight ? "Refresh" : "Generate"}
-                                </Button>
-                              </div>
-                            </div>
-                          </CardHeader>
-                          {teamAiInsight && (
-                            <CardContent className="pt-0">
-                              <div className="text-sm space-y-1 whitespace-pre-line">{teamAiInsight}</div>
-                            </CardContent>
-                          )}
-                        </Card>
                         {teamOwnerReport.map((team) => (
                           <Card key={team.team} className="bg-muted/30">
                             <CardContent className="p-6">

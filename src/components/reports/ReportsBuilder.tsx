@@ -177,7 +177,7 @@ export const ReportsBuilder = ({ projects, customFields = [], customValuesMap = 
   const [recipients, setRecipients] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
-  const [columnsPanelOpen, setColumnsPanelOpen] = useState(true);
+  const [columnsPanelOpen, setColumnsPanelOpen] = useState(false);
 
   const [groupByColumn, setGroupByColumn] = useState<string>("none");
 
