@@ -118,8 +118,11 @@ serve(async (req) => {
     const profileData = await profileRes.json();
     console.log("Gmail profile:", JSON.stringify(profileData));
 
-    // Step 2: Search for matching emails (last 30 days, from specific sender, matching subject)
-    const query = `from:${monitorEmail} subject:(${subjectKeywords.join(" OR ")}) newer_than:30d`;
+    // Step 2: Search for matching emails (last 30 days, matching subject).
+    // Sender filter is optional — set email_monitor_address to "any" to match all senders.
+    const subjectClause = subjectKeywords.map((k: string) => `"${k}"`).join(" OR ");
+    const fromClause = monitorEmail && monitorEmail.toLowerCase() !== "any" ? `from:${monitorEmail} ` : "";
+    const query = `${fromClause}subject:(${subjectClause}) newer_than:30d`;
     const searchUrl = `https://gmail.googleapis.com/gmail/v1/users/me/messages?q=${encodeURIComponent(query)}&maxResults=50`;
 
     console.log("Gmail search query:", query);
