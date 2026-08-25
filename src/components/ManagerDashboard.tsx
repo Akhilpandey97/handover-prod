@@ -11,6 +11,7 @@ import { BulkEditDialog, BulkFieldUpdates } from "./BulkEditDialog";
 import { ProjectCalendar } from "./ProjectCalendar";
 import { ParsedEmailsTab } from "./ParsedEmailsTab";
 import { KanbanBoard } from "./KanbanBoard";
+import { MonthlyGoLiveTracker } from "./MonthlyGoLiveTracker";
 import { ActivityLog } from "./settings/ActivityLog";
 import { WorkflowManager } from "./settings/WorkflowManager";
 import { CSVUploadDialog } from "./CSVUploadDialog";
@@ -54,6 +55,7 @@ import {
   Clock,
   Download,
   FolderKanban,
+  CalendarRange,
   LogOut,
   Search,
   Users,
@@ -137,7 +139,7 @@ export const ManagerDashboard = () => {
   const [expandedProjects, setExpandedProjects] = useState<Set<string>>(new Set());
   const [csvDialogOpen, setCsvDialogOpen] = useState(false);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
-  const [projectView, setProjectView] = useState<"list" | "kanban">("kanban");
+  const [projectView, setProjectView] = useState<"list" | "kanban" | "tracker">("kanban");
 
   // Sidebar expand state for sub-menus
   const [reportsExpanded, setReportsExpanded] = useState(false);
@@ -1066,6 +1068,17 @@ export const ManagerDashboard = () => {
                   <List className="h-3.5 w-3.5" />
                   List
                 </Button>
+                <Button
+                  type="button"
+                  variant={projectView === "tracker" ? "default" : "ghost"}
+                  size="sm"
+                  className="h-8 gap-1.5 px-3 text-xs"
+                  onClick={() => setProjectView("tracker")}
+                  aria-pressed={projectView === "tracker"}
+                >
+                  <CalendarRange className="h-3.5 w-3.5" />
+                  Go-Live
+                </Button>
               </div>
             )}
             {/* Search */}
@@ -1314,7 +1327,9 @@ export const ManagerDashboard = () => {
 
           {/* ========= PROJECTS TAB ========= */}
           {activeTab === "projects" && <div>
-            {projectView === "kanban" ? (
+            {projectView === "tracker" ? (
+              <MonthlyGoLiveTracker projects={filteredProjects} />
+            ) : projectView === "kanban" ? (
               <div className="px-6 py-5">
                 <KanbanBoard filteredProjects={filteredProjects} />
               </div>

@@ -1,1 +1,4 @@
 project_id = "nxewwtlivapytsnhqqof"
+
+[functions.merchant-portal-data]
+verify_jwt = false

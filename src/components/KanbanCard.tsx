@@ -38,6 +38,11 @@ export const KanbanCard = ({
   const totalChecklist = project.checklist.length;
   const checklistRatio = totalChecklist > 0 ? completedChecklist / totalChecklist : 0;
   const healthScore = computeHealthScore(project);
+  const tatEnd = project.dates.goLiveDate ? new Date(project.dates.goLiveDate) : new Date();
+  const tatDays = Math.max(
+    0,
+    Math.round((tatEnd.getTime() - new Date(project.dates.kickOffDate).getTime()) / 86400000),
+  );
   const isOverdue = Boolean(
     project.dates.expectedGoLiveDate &&
     new Date(project.dates.expectedGoLiveDate) < new Date() &&
@@ -115,17 +120,59 @@ export const KanbanCard = ({
           </div>
         )}
 
-        <div className="flex items-center justify-between gap-3 text-[11px] text-muted-foreground">
-          <span
-            className={cn(
-              "font-mono",
-              checklistRatio > 0 && checklistRatio < 0.5 ? "text-amber-800" : "text-blue-900",
-            )}
-          >
-            {completedChecklist}/{totalChecklist} checklist
-          </span>
-          <span className={cn("flex items-center gap-1", isOverdue ? "text-amber-800" : "text-muted-foreground")}><Calendar className="h-3 w-3" />{project.dates.expectedGoLiveDate || "No date"}</span>
+        {/* Go-live progress */}
+        <div className="space-y-1">
+          <div className="flex items-center justify-between text-[10px] font-medium text-muted-foreground">
+            <span>Go-Live</span>
+            <span className="font-mono text-foreground">{project.goLivePercent || 0}%</span>
+          </div>
+          <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+            <div
+              className={cn(
+                "h-full rounded-full transition-all",
+                (project.goLivePercent || 0) >= 80 ? "bg-emerald-500" : (project.goLivePercent || 0) >= 40 ? "bg-blue-500" : "bg-amber-500",
+              )}
+              style={{ width: `${Math.min(100, Math.max(0, project.goLivePercent || 0))}%` }}
+            />
+          </div>
         </div>
+
+        {/* Metrics grid */}
+        <div className="grid grid-cols-2 gap-x-3 gap-y-1 border-t border-border pt-2 text-[10px]">
+          <div className="flex items-center justify-between gap-1">
+            <span className="text-muted-foreground">ARR</span>
+            <span className="font-mono font-semibold text-foreground">{project.arr ? `${project.arr} Cr` : "—"}</span>
+          </div>
+          <div className="flex items-center justify-between gap-1">
+            <span className="text-muted-foreground">TAT</span>
+            <span className={cn("font-mono font-semibold", tatDays > 60 ? "text-amber-800" : "text-foreground")}>{tatDays}d</span>
+          </div>
+          <div className="flex items-center justify-between gap-1">
+            <span className="text-muted-foreground">Checklist</span>
+            <span
+              className={cn(
+                "font-mono font-semibold",
+                checklistRatio > 0 && checklistRatio < 0.5 ? "text-amber-800" : "text-foreground",
+              )}
+            >
+              {completedChecklist}/{totalChecklist}
+            </span>
+          </div>
+          <div className="flex items-center justify-between gap-1">
+            <span className="text-muted-foreground">Waiting</span>
+            <span className="font-semibold capitalize text-foreground">{project.currentResponsibility}</span>
+          </div>
+        </div>
+
+        <div className={cn("flex items-center gap-1 text-[10px]", isOverdue ? "text-amber-800" : "text-muted-foreground")}>
+          <Calendar className="h-3 w-3" />
+          {project.dates.goLiveDate
+            ? `Live ${project.dates.goLiveDate}`
+            : project.dates.expectedGoLiveDate
+              ? `Expected ${project.dates.expectedGoLiveDate}`
+              : "No go-live date"}
+        </div>
+
 
       </div>
     </>

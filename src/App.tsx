@@ -8,6 +8,7 @@ import { LabelsProvider } from "@/contexts/LabelsContext";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import Index from "./pages/Index";
 import ProjectWorkspace from "./pages/ProjectWorkspace";
+import MerchantPortal from "./pages/MerchantPortal";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient({
@@ -34,6 +35,7 @@ const App = () => (
               <BrowserRouter>
                 <Routes>
                   <Route path="/" element={<Index />} />
+                  <Route path="/portal/:token" element={<MerchantPortal />} />
                   <Route path="/projects/:projectId" element={<ProjectWorkspace />} />
                   <Route path="*" element={<NotFound />} />
                 </Routes>

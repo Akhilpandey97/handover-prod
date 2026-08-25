@@ -14,6 +14,7 @@ import { ChecklistFormsManager } from "./settings/ChecklistFormsManager";
 import { ThemePresets } from "./settings/ThemePresets";
 import { SecretsManager } from "./settings/SecretsManager";
 import { WorkflowManager } from "./settings/WorkflowManager";
+import { PhaseRulesManager } from "./settings/PhaseRulesManager";
 import { ActivityLog } from "./settings/ActivityLog";
 
 interface LabelGroup {
@@ -457,9 +458,18 @@ export const SettingsPanel = ({ activeSubTab }: SettingsPanelProps) => {
         </TabsContent>
 
         {/* Workflows Tab */}
-        <TabsContent value="workflows">
+        <TabsContent value="workflows" className="space-y-8">
           <WorkflowManager />
+          <div className="border-t border-border pt-6">
+            <PhaseRulesManager />
+          </div>
         </TabsContent>
+
+        {/* Phase Rules (direct deep-link) */}
+        <TabsContent value="phase-rules">
+          <PhaseRulesManager />
+        </TabsContent>
+
 
         {/* Activity Log Tab */}
         <TabsContent value="activity-log">
