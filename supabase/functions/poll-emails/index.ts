@@ -31,10 +31,15 @@ function parseEmailTable(html: string): Record<string, string> {
   return fields;
 }
 
-// Extract brand name from subject like "New Brand On Board - Sirphire- Storefront"
+// Extract brand name from handover subjects.
+// Handles "New Brand On Board - X" and "Sales to MINT Handover for Scoping - X - Storefront"
 function extractBrandFromSubject(subject: string): string {
-  const match = subject.match(/New Brand On Board\s*[-–—]\s*(.*)/i);
-  return match ? match[1].trim() : "";
+  let m = subject.match(/Sales to MINT Handover for Scoping\s*[-–—]\s*(.+?)\s*[-–—]\s*Storefront/i);
+  if (m) return m[1].trim();
+  m = subject.match(/Handover for Scoping\s*[-–—]\s*(.+?)(?:\s*[-–—].*)?$/i);
+  if (m) return m[1].trim();
+  m = subject.match(/New Brand On Board\s*[-–—]\s*(.*)/i);
+  return m ? m[1].trim() : "";
 }
 
 serve(async (req) => {
