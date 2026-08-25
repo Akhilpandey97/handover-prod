@@ -8,6 +8,7 @@ import { LabelsProvider } from "@/contexts/LabelsContext";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import Index from "./pages/Index";
 import ProjectWorkspace from "./pages/ProjectWorkspace";
+import MerchantPortal from "./pages/MerchantPortal";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient({
