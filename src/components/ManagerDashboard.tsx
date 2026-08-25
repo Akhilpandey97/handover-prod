@@ -1066,6 +1066,17 @@ export const ManagerDashboard = () => {
                   <List className="h-3.5 w-3.5" />
                   List
                 </Button>
+                <Button
+                  type="button"
+                  variant={projectView === "tracker" ? "default" : "ghost"}
+                  size="sm"
+                  className="h-8 gap-1.5 px-3 text-xs"
+                  onClick={() => setProjectView("tracker")}
+                  aria-pressed={projectView === "tracker"}
+                >
+                  <CalendarRange className="h-3.5 w-3.5" />
+                  Go-Live
+                </Button>
               </div>
             )}
             {/* Search */}
