@@ -391,6 +391,21 @@ serve(async (req) => {
       }
     }
 
+    // Persist the round-robin cursor so the next poll continues where we left off.
+    if (assignmentMode === "round_robin" && assignmentPool.length > 0) {
+      await supabase.from("app_settings").upsert(
+        {
+          key: "email_assignment_rr_index",
+          value: String(rrIndex % assignmentPool.length),
+          category: "email",
+          tenant_id: tenantId,
+        },
+        { onConflict: "key,tenant_id" },
+      );
+    }
+
+
+
     return new Response(
       JSON.stringify({
         message: `Processed ${results.length} new email(s)`,
