@@ -54,6 +54,7 @@ import {
   Clock,
   Download,
   FolderKanban,
+  CalendarRange,
   LogOut,
   Search,
   Users,
