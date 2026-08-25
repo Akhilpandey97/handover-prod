@@ -1326,7 +1326,9 @@ export const ManagerDashboard = () => {
 
           {/* ========= PROJECTS TAB ========= */}
           {activeTab === "projects" && <div>
-            {projectView === "kanban" ? (
+            {projectView === "tracker" ? (
+              <MonthlyGoLiveTracker projects={filteredProjects} />
+            ) : projectView === "kanban" ? (
               <div className="px-6 py-5">
                 <KanbanBoard filteredProjects={filteredProjects} />
               </div>
