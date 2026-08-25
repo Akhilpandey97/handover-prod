@@ -457,9 +457,18 @@ export const SettingsPanel = ({ activeSubTab }: SettingsPanelProps) => {
         </TabsContent>
 
         {/* Workflows Tab */}
-        <TabsContent value="workflows">
+        <TabsContent value="workflows" className="space-y-8">
           <WorkflowManager />
+          <div className="border-t border-border pt-6">
+            <PhaseRulesManager />
+          </div>
         </TabsContent>
+
+        {/* Phase Rules (direct deep-link) */}
+        <TabsContent value="phase-rules">
+          <PhaseRulesManager />
+        </TabsContent>
+
 
         {/* Activity Log Tab */}
         <TabsContent value="activity-log">
