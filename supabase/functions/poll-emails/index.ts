@@ -31,15 +31,24 @@ function parseEmailTable(html: string): Record<string, string> {
   return fields;
 }
 
-// Extract brand name from handover subjects.
-// Handles "New Brand On Board - X" and "Sales to MINT Handover for Scoping - X - Storefront"
-function extractBrandFromSubject(subject: string): string {
-  let m = subject.match(/Sales to MINT Handover for Scoping\s*[-–—]\s*(.+?)\s*[-–—]\s*Storefront/i);
-  if (m) return m[1].trim();
-  m = subject.match(/Handover for Scoping\s*[-–—]\s*(.+?)(?:\s*[-–—].*)?$/i);
-  if (m) return m[1].trim();
-  m = subject.match(/New Brand On Board\s*[-–—]\s*(.*)/i);
-  return m ? m[1].trim() : "";
+const FALLBACK_BRAND_PATTERNS = [
+  "Sales to MINT Handover for Scoping\\s*[-–—]\\s*(.+?)\\s*[-–—]\\s*Storefront",
+  "Handover for Scoping\\s*[-–—]\\s*(.+?)(?:\\s*[-–—].*)?$",
+  "New Brand On Board\\s*[-–—]\\s*(.*)",
+];
+
+// Extract brand name from handover subjects using tenant-configured regex patterns.
+function extractBrandFromSubject(subject: string, patterns: string[]): string {
+  const list = patterns.length > 0 ? patterns : FALLBACK_BRAND_PATTERNS;
+  for (const raw of list) {
+    try {
+      const m = subject.match(new RegExp(raw, "i"));
+      if (m && m[1]) return m[1].trim();
+    } catch (e) {
+      console.warn("Invalid brand regex skipped:", raw, e);
+    }
+  }
+  return "";
 }
 
 serve(async (req) => {
