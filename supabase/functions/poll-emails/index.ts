@@ -83,21 +83,50 @@ serve(async (req) => {
       );
     }
 
-    // Fetch email settings from app_settings for this tenant
+    // Fetch email intake settings from app_settings for this tenant
     const { data: settings } = await supabase
       .from("app_settings")
       .select("key, value")
       .eq("tenant_id", tenantId)
-      .in("key", ["email_monitor_address", "email_subject_keywords"]);
+      .in("key", [
+        "email_monitor_address",
+        "email_subject_keywords",
+        "email_brand_regex",
+        "email_lookback_days",
+        "email_auto_create_project",
+        "email_assignment_mode",
+        "email_assignment_pool",
+        "email_assignment_rr_index",
+      ]);
 
     const settingsMap: Record<string, string> = {};
     (settings || []).forEach((s: any) => { settingsMap[s.key] = s.value; });
 
-    const monitorEmail = settingsMap.email_monitor_address || "cwupdates@gokwik.co";
+    const monitorEmail = settingsMap.email_monitor_address || "any";
     const subjectKeywords = (settingsMap.email_subject_keywords || "New Brand On Board, Sales to MINT Handover for Scoping")
       .split(",")
       .map((k: string) => k.trim())
       .filter(Boolean);
+    const brandPatterns = (settingsMap.email_brand_regex || "")
+      .split("\n")
+      .map((p: string) => p.trim())
+      .filter(Boolean);
+    const lookbackDays = Math.max(1, Math.min(90, parseInt(settingsMap.email_lookback_days || "30") || 30));
+    const autoCreate = (settingsMap.email_auto_create_project ?? "true") !== "false";
+    const assignmentMode = settingsMap.email_assignment_mode || "none";
+    const assignmentPool = (settingsMap.email_assignment_pool || "")
+      .split(",")
+      .map((id: string) => id.trim())
+      .filter(Boolean);
+    let rrIndex = parseInt(settingsMap.email_assignment_rr_index || "0") || 0;
+
+    const pickOwner = (): string | null => {
+      if (assignmentPool.length === 0 || assignmentMode === "none") return null;
+      if (assignmentMode === "fixed") return assignmentPool[0];
+      const owner = assignmentPool[rrIndex % assignmentPool.length];
+      rrIndex += 1;
+      return owner;
+    };
 
     // Step 1: Get access token using refresh token
     const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
