@@ -291,10 +291,14 @@ serve(async (req) => {
         } else {
           results.push(inserted);
 
+          if (!autoCreate) continue;
+
           // Auto-create project from the parsed email
           try {
-            const autoProject = {
+            const assignedOwner = pickOwner();
+            const autoProject: Record<string, unknown> = {
               tenant_id: tenantId,
+              assigned_owner: assignedOwner,
               merchant_name: brandName || `Email-${msg.id.substring(0, 8)}`,
               mid: `AUTO-${msg.id.substring(0, 8)}`,
               current_phase: "mint",
