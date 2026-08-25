@@ -31,15 +31,24 @@ function parseEmailTable(html: string): Record<string, string> {
   return fields;
 }
 
-// Extract brand name from handover subjects.
-// Handles "New Brand On Board - X" and "Sales to MINT Handover for Scoping - X - Storefront"
-function extractBrandFromSubject(subject: string): string {
-  let m = subject.match(/Sales to MINT Handover for Scoping\s*[-–—]\s*(.+?)\s*[-–—]\s*Storefront/i);
-  if (m) return m[1].trim();
-  m = subject.match(/Handover for Scoping\s*[-–—]\s*(.+?)(?:\s*[-–—].*)?$/i);
-  if (m) return m[1].trim();
-  m = subject.match(/New Brand On Board\s*[-–—]\s*(.*)/i);
-  return m ? m[1].trim() : "";
+const FALLBACK_BRAND_PATTERNS = [
+  "Sales to MINT Handover for Scoping\\s*[-–—]\\s*(.+?)\\s*[-–—]\\s*Storefront",
+  "Handover for Scoping\\s*[-–—]\\s*(.+?)(?:\\s*[-–—].*)?$",
+  "New Brand On Board\\s*[-–—]\\s*(.*)",
+];
+
+// Extract brand name from handover subjects using tenant-configured regex patterns.
+function extractBrandFromSubject(subject: string, patterns: string[]): string {
+  const list = patterns.length > 0 ? patterns : FALLBACK_BRAND_PATTERNS;
+  for (const raw of list) {
+    try {
+      const m = subject.match(new RegExp(raw, "i"));
+      if (m && m[1]) return m[1].trim();
+    } catch (e) {
+      console.warn("Invalid brand regex skipped:", raw, e);
+    }
+  }
+  return "";
 }
 
 serve(async (req) => {
@@ -74,21 +83,50 @@ serve(async (req) => {
       );
     }
 
-    // Fetch email settings from app_settings for this tenant
+    // Fetch email intake settings from app_settings for this tenant
     const { data: settings } = await supabase
       .from("app_settings")
       .select("key, value")
       .eq("tenant_id", tenantId)
-      .in("key", ["email_monitor_address", "email_subject_keywords"]);
+      .in("key", [
+        "email_monitor_address",
+        "email_subject_keywords",
+        "email_brand_regex",
+        "email_lookback_days",
+        "email_auto_create_project",
+        "email_assignment_mode",
+        "email_assignment_pool",
+        "email_assignment_rr_index",
+      ]);
 
     const settingsMap: Record<string, string> = {};
     (settings || []).forEach((s: any) => { settingsMap[s.key] = s.value; });
 
-    const monitorEmail = settingsMap.email_monitor_address || "cwupdates@gokwik.co";
+    const monitorEmail = settingsMap.email_monitor_address || "any";
     const subjectKeywords = (settingsMap.email_subject_keywords || "New Brand On Board, Sales to MINT Handover for Scoping")
       .split(",")
       .map((k: string) => k.trim())
       .filter(Boolean);
+    const brandPatterns = (settingsMap.email_brand_regex || "")
+      .split("\n")
+      .map((p: string) => p.trim())
+      .filter(Boolean);
+    const lookbackDays = Math.max(1, Math.min(90, parseInt(settingsMap.email_lookback_days || "30") || 30));
+    const autoCreate = (settingsMap.email_auto_create_project ?? "true") !== "false";
+    const assignmentMode = settingsMap.email_assignment_mode || "none";
+    const assignmentPool = (settingsMap.email_assignment_pool || "")
+      .split(",")
+      .map((id: string) => id.trim())
+      .filter(Boolean);
+    let rrIndex = parseInt(settingsMap.email_assignment_rr_index || "0") || 0;
+
+    const pickOwner = (): string | null => {
+      if (assignmentPool.length === 0 || assignmentMode === "none") return null;
+      if (assignmentMode === "fixed") return assignmentPool[0];
+      const owner = assignmentPool[rrIndex % assignmentPool.length];
+      rrIndex += 1;
+      return owner;
+    };
 
     // Step 1: Get access token using refresh token
     const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
@@ -123,7 +161,7 @@ serve(async (req) => {
     // Sender filter is optional — set email_monitor_address to "any" to match all senders.
     const subjectClause = subjectKeywords.map((k: string) => `"${k}"`).join(" OR ");
     const fromClause = monitorEmail && monitorEmail.toLowerCase() !== "any" ? `from:${monitorEmail} ` : "";
-    const query = `${fromClause}subject:(${subjectClause}) newer_than:30d`;
+    const query = `${fromClause}subject:(${subjectClause}) newer_than:${lookbackDays}d`;
     const searchUrl = `https://gmail.googleapis.com/gmail/v1/users/me/messages?q=${encodeURIComponent(query)}&maxResults=50`;
 
     console.log("Gmail search query:", query);
@@ -209,7 +247,7 @@ serve(async (req) => {
 
         // Parse the HTML table
         const fields = parseEmailTable(htmlBody);
-        const brandName = fields["Brand Name"] || extractBrandFromSubject(subject);
+        const brandName = fields["Brand Name"] || extractBrandFromSubject(subject, brandPatterns);
         const brandUrl = fields["URL_1"] || "";
         const platform = fields["Platform"] || "";
         const subPlatform = fields["Sub Platform"] || "";
@@ -253,10 +291,14 @@ serve(async (req) => {
         } else {
           results.push(inserted);
 
+          if (!autoCreate) continue;
+
           // Auto-create project from the parsed email
           try {
-            const autoProject = {
+            const assignedOwner = pickOwner();
+            const autoProject: Record<string, unknown> = {
               tenant_id: tenantId,
+              assigned_owner: assignedOwner,
               merchant_name: brandName || `Email-${msg.id.substring(0, 8)}`,
               mid: `AUTO-${msg.id.substring(0, 8)}`,
               current_phase: "mint",
@@ -348,6 +390,21 @@ serve(async (req) => {
         console.error(`Error processing message ${msg.id}:`, err);
       }
     }
+
+    // Persist the round-robin cursor so the next poll continues where we left off.
+    if (assignmentMode === "round_robin" && assignmentPool.length > 0) {
+      await supabase.from("app_settings").upsert(
+        {
+          key: "email_assignment_rr_index",
+          value: String(rrIndex % assignmentPool.length),
+          category: "email",
+          tenant_id: tenantId,
+        },
+        { onConflict: "key,tenant_id" },
+      );
+    }
+
+
 
     return new Response(
       JSON.stringify({
