@@ -458,6 +458,7 @@ export type Database = {
             | Database["public"]["Enums"]["responsibility_party"]
             | null
           id: string
+          is_task: boolean
           owner_team: Database["public"]["Enums"]["team_role"]
           phase: Database["public"]["Enums"]["project_phase"]
           project_id: string
@@ -477,6 +478,7 @@ export type Database = {
             | Database["public"]["Enums"]["responsibility_party"]
             | null
           id?: string
+          is_task?: boolean
           owner_team: Database["public"]["Enums"]["team_role"]
           phase: Database["public"]["Enums"]["project_phase"]
           project_id: string
@@ -496,6 +498,7 @@ export type Database = {
             | Database["public"]["Enums"]["responsibility_party"]
             | null
           id?: string
+          is_task?: boolean
           owner_team?: Database["public"]["Enums"]["team_role"]
           phase?: Database["public"]["Enums"]["project_phase"]
           project_id?: string
@@ -705,6 +708,108 @@ export type Database = {
           },
         ]
       }
+      merchant_portal_tokens: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          expires_at: string | null
+          id: string
+          is_active: boolean
+          last_accessed_at: string | null
+          project_id: string
+          tenant_id: string | null
+          token: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          last_accessed_at?: string | null
+          project_id: string
+          tenant_id?: string | null
+          token?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          last_accessed_at?: string | null
+          project_id?: string
+          tenant_id?: string | null
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "merchant_portal_tokens_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "merchant_portal_tokens_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      merchant_portal_visits: {
+        Row: {
+          created_at: string
+          email: string | null
+          id: string
+          page: string
+          project_id: string
+          session_id: string | null
+          tenant_id: string | null
+          user_agent: string | null
+          visited_at: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          page: string
+          project_id: string
+          session_id?: string | null
+          tenant_id?: string | null
+          user_agent?: string | null
+          visited_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          page?: string
+          project_id?: string
+          session_id?: string | null
+          tenant_id?: string | null
+          user_agent?: string | null
+          visited_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "merchant_portal_visits_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "merchant_portal_visits_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       parsed_emails: {
         Row: {
           aov: number | null
@@ -798,6 +903,56 @@ export type Database = {
           },
         ]
       }
+      phase_rules: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          is_active: boolean
+          match_mode: string
+          name: string
+          priority: number
+          required_titles: string[]
+          target_phase: Database["public"]["Enums"]["project_phase"]
+          tenant_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          match_mode?: string
+          name: string
+          priority?: number
+          required_titles?: string[]
+          target_phase: Database["public"]["Enums"]["project_phase"]
+          tenant_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          match_mode?: string
+          name?: string
+          priority?: number
+          required_titles?: string[]
+          target_phase?: Database["public"]["Enums"]["project_phase"]
+          tenant_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "phase_rules_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string | null
@@ -829,6 +984,72 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "profiles_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_ai_insights: {
+        Row: {
+          blocked_on: string | null
+          blocker: string | null
+          confidence: string | null
+          created_at: string
+          csm_alignment: string | null
+          db_walkthrough: string | null
+          deadline: string | null
+          id: string
+          manual_overrides: Json
+          month: string
+          pg_creds: string | null
+          project_id: string
+          tenant_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          blocked_on?: string | null
+          blocker?: string | null
+          confidence?: string | null
+          created_at?: string
+          csm_alignment?: string | null
+          db_walkthrough?: string | null
+          deadline?: string | null
+          id?: string
+          manual_overrides?: Json
+          month: string
+          pg_creds?: string | null
+          project_id: string
+          tenant_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          blocked_on?: string | null
+          blocker?: string | null
+          confidence?: string | null
+          created_at?: string
+          csm_alignment?: string | null
+          db_walkthrough?: string | null
+          deadline?: string | null
+          id?: string
+          manual_overrides?: Json
+          month?: string
+          pg_creds?: string | null
+          project_id?: string
+          tenant_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_ai_insights_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_ai_insights_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
@@ -920,6 +1141,7 @@ export type Database = {
           project_state: Database["public"]["Enums"]["project_state"] | null
           sales_spoc: string | null
           tenant_id: string | null
+          tracker_month: string | null
           txns_per_day: number | null
           updated_at: string | null
         }
@@ -958,6 +1180,7 @@ export type Database = {
           project_state?: Database["public"]["Enums"]["project_state"] | null
           sales_spoc?: string | null
           tenant_id?: string | null
+          tracker_month?: string | null
           txns_per_day?: number | null
           updated_at?: string | null
         }
@@ -996,6 +1219,7 @@ export type Database = {
           project_state?: Database["public"]["Enums"]["project_state"] | null
           sales_spoc?: string | null
           tenant_id?: string | null
+          tracker_month?: string | null
           txns_per_day?: number | null
           updated_at?: string | null
         }

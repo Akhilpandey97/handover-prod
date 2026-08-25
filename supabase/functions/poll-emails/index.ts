@@ -31,10 +31,15 @@ function parseEmailTable(html: string): Record<string, string> {
   return fields;
 }
 
-// Extract brand name from subject like "New Brand On Board - Sirphire- Storefront"
+// Extract brand name from handover subjects.
+// Handles "New Brand On Board - X" and "Sales to MINT Handover for Scoping - X - Storefront"
 function extractBrandFromSubject(subject: string): string {
-  const match = subject.match(/New Brand On Board\s*[-–—]\s*(.*)/i);
-  return match ? match[1].trim() : "";
+  let m = subject.match(/Sales to MINT Handover for Scoping\s*[-–—]\s*(.+?)\s*[-–—]\s*Storefront/i);
+  if (m) return m[1].trim();
+  m = subject.match(/Handover for Scoping\s*[-–—]\s*(.+?)(?:\s*[-–—].*)?$/i);
+  if (m) return m[1].trim();
+  m = subject.match(/New Brand On Board\s*[-–—]\s*(.*)/i);
+  return m ? m[1].trim() : "";
 }
 
 serve(async (req) => {
@@ -80,9 +85,10 @@ serve(async (req) => {
     (settings || []).forEach((s: any) => { settingsMap[s.key] = s.value; });
 
     const monitorEmail = settingsMap.email_monitor_address || "cwupdates@gokwik.co";
-    const subjectKeywords = (settingsMap.email_subject_keywords || "New Brand On Board")
+    const subjectKeywords = (settingsMap.email_subject_keywords || "New Brand On Board, Sales to MINT Handover for Scoping")
       .split(",")
-      .map((k: string) => k.trim().toLowerCase());
+      .map((k: string) => k.trim())
+      .filter(Boolean);
 
     // Step 1: Get access token using refresh token
     const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
@@ -113,8 +119,11 @@ serve(async (req) => {
     const profileData = await profileRes.json();
     console.log("Gmail profile:", JSON.stringify(profileData));
 
-    // Step 2: Search for matching emails (last 30 days, from specific sender, matching subject)
-    const query = `from:${monitorEmail} subject:(${subjectKeywords.join(" OR ")}) newer_than:30d`;
+    // Step 2: Search for matching emails (last 30 days, matching subject).
+    // Sender filter is optional — set email_monitor_address to "any" to match all senders.
+    const subjectClause = subjectKeywords.map((k: string) => `"${k}"`).join(" OR ");
+    const fromClause = monitorEmail && monitorEmail.toLowerCase() !== "any" ? `from:${monitorEmail} ` : "";
+    const query = `${fromClause}subject:(${subjectClause}) newer_than:30d`;
     const searchUrl = `https://gmail.googleapis.com/gmail/v1/users/me/messages?q=${encodeURIComponent(query)}&maxResults=50`;
 
     console.log("Gmail search query:", query);
@@ -183,7 +192,7 @@ serve(async (req) => {
 
         // Verify subject matches keywords
         const subjectLower = subject.toLowerCase();
-        const matches = subjectKeywords.some((kw: string) => subjectLower.includes(kw));
+        const matches = subjectKeywords.some((kw: string) => subjectLower.includes(kw.toLowerCase()));
         if (!matches) continue;
 
         // Extract HTML body
