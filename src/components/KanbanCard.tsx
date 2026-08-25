@@ -38,6 +38,11 @@ export const KanbanCard = ({
   const totalChecklist = project.checklist.length;
   const checklistRatio = totalChecklist > 0 ? completedChecklist / totalChecklist : 0;
   const healthScore = computeHealthScore(project);
+  const tatEnd = project.dates.goLiveDate ? new Date(project.dates.goLiveDate) : new Date();
+  const tatDays = Math.max(
+    0,
+    Math.round((tatEnd.getTime() - new Date(project.dates.kickOffDate).getTime()) / 86400000),
+  );
   const isOverdue = Boolean(
     project.dates.expectedGoLiveDate &&
     new Date(project.dates.expectedGoLiveDate) < new Date() &&
