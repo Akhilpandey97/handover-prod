@@ -11,6 +11,7 @@ import { BulkEditDialog, BulkFieldUpdates } from "./BulkEditDialog";
 import { ProjectCalendar } from "./ProjectCalendar";
 import { ParsedEmailsTab } from "./ParsedEmailsTab";
 import { KanbanBoard } from "./KanbanBoard";
+import { MonthlyGoLiveTracker } from "./MonthlyGoLiveTracker";
 import { ActivityLog } from "./settings/ActivityLog";
 import { WorkflowManager } from "./settings/WorkflowManager";
 import { CSVUploadDialog } from "./CSVUploadDialog";
