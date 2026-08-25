@@ -613,7 +613,49 @@ export const useUpdateChecklist = () => {
         .eq("id", checklistId);
 
       if (error) throw error;
+
+      // Apply tenant-defined phase rules based on the new checklist state
+      try {
+        const [{ data: ruleRows }, { data: itemRows }] = await Promise.all([
+          supabase.from("phase_rules").select("*").eq("is_active", true),
+          supabase.from("checklist_items").select("title, completed").eq("project_id", projectId),
+        ]);
+
+        if (ruleRows?.length && itemRows) {
+          const nextPhase = evaluatePhaseRules(
+            itemRows.map((item) => ({
+              title: item.title,
+              completed: Boolean(item.completed),
+            })) as never,
+            ruleRows.map((row) => ({
+              id: row.id,
+              name: row.name,
+              requiredTitles: row.required_titles || [],
+              matchMode: row.match_mode === "any" ? "any" : "all",
+              targetPhase: row.target_phase,
+              priority: row.priority,
+              isActive: row.is_active,
+            })),
+          );
+
+          if (nextPhase) {
+            const { data: current } = await supabase
+              .from("projects")
+              .select("current_phase")
+              .eq("id", projectId)
+              .maybeSingle();
+            if (current && current.current_phase !== nextPhase) {
+              await supabase.from("projects").update({ current_phase: nextPhase }).eq("id", projectId);
+              toast.success(`Phase auto-updated to ${nextPhase}`);
+            }
+          }
+        }
+      } catch (ruleError) {
+        console.error("Phase rule evaluation failed:", ruleError);
+      }
+
       return { projectId, checklistId, completed };
+
     },
     onSuccess: async () => {
       await processWorkflowEvents();
