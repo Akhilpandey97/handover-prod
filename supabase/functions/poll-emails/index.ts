@@ -161,7 +161,7 @@ serve(async (req) => {
     // Sender filter is optional — set email_monitor_address to "any" to match all senders.
     const subjectClause = subjectKeywords.map((k: string) => `"${k}"`).join(" OR ");
     const fromClause = monitorEmail && monitorEmail.toLowerCase() !== "any" ? `from:${monitorEmail} ` : "";
-    const query = `${fromClause}subject:(${subjectClause}) newer_than:30d`;
+    const query = `${fromClause}subject:(${subjectClause}) newer_than:${lookbackDays}d`;
     const searchUrl = `https://gmail.googleapis.com/gmail/v1/users/me/messages?q=${encodeURIComponent(query)}&maxResults=50`;
 
     console.log("Gmail search query:", query);
