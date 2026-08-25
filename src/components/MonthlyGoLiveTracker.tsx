@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { ChevronLeft, ChevronRight, CalendarRange, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -21,8 +22,11 @@ export const MonthlyGoLiveTracker = ({
   onOpenWorkspace,
 }: {
   projects: Project[];
-  onOpenWorkspace: (projectId: string) => void;
+  onOpenWorkspace?: (projectId: string) => void;
 }) => {
+  const navigate = useNavigate();
+  const openProject = (projectId: string) =>
+    onOpenWorkspace ? onOpenWorkspace(projectId) : navigate(`/projects/${projectId}`);
   const { stateLabels, phaseLabels } = useLabels();
   const [cursor, setCursor] = useState(() => new Date());
 
@@ -99,9 +103,9 @@ export const MonthlyGoLiveTracker = ({
                 key={project.id}
                 role="button"
                 tabIndex={0}
-                onClick={() => onOpenWorkspace(project.id)}
+                onClick={() => openProject(project.id)}
                 onKeyDown={(event) => {
-                  if (event.key === "Enter") onOpenWorkspace(project.id);
+                  if (event.key === "Enter") openProject(project.id);
                 }}
                 className={cn(
                   "cursor-pointer space-y-3 border-l-4 p-4 transition hover:shadow-md",
