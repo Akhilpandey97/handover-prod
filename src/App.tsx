@@ -35,6 +35,7 @@ const App = () => (
               <BrowserRouter>
                 <Routes>
                   <Route path="/" element={<Index />} />
+                  <Route path="/portal/:token" element={<MerchantPortal />} />
                   <Route path="/projects/:projectId" element={<ProjectWorkspace />} />
                   <Route path="*" element={<NotFound />} />
                 </Routes>
