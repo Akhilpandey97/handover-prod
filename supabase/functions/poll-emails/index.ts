@@ -247,7 +247,7 @@ serve(async (req) => {
 
         // Parse the HTML table
         const fields = parseEmailTable(htmlBody);
-        const brandName = fields["Brand Name"] || extractBrandFromSubject(subject);
+        const brandName = fields["Brand Name"] || extractBrandFromSubject(subject, brandPatterns);
         const brandUrl = fields["URL_1"] || "";
         const platform = fields["Platform"] || "";
         const subPlatform = fields["Sub Platform"] || "";
