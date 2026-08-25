@@ -810,6 +810,116 @@ export type Database = {
           },
         ]
       }
+      movement_report_executions: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          email_count: number | null
+          error_message: string | null
+          id: string
+          recipients: string[] | null
+          schedule_id: string | null
+          status: string
+          tenant_id: string | null
+          triggered_at: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          email_count?: number | null
+          error_message?: string | null
+          id?: string
+          recipients?: string[] | null
+          schedule_id?: string | null
+          status?: string
+          tenant_id?: string | null
+          triggered_at?: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          email_count?: number | null
+          error_message?: string | null
+          id?: string
+          recipients?: string[] | null
+          schedule_id?: string | null
+          status?: string
+          tenant_id?: string | null
+          triggered_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "movement_report_executions_schedule_id_fkey"
+            columns: ["schedule_id"]
+            isOneToOne: false
+            referencedRelation: "movement_report_schedules"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "movement_report_executions_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      movement_report_schedules: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          days: string[]
+          enabled: boolean
+          id: string
+          last_sent_at: string | null
+          name: string
+          recipients: string[]
+          subject_prefix: string | null
+          tenant_id: string | null
+          time_ist: string
+          timeframe: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          days?: string[]
+          enabled?: boolean
+          id?: string
+          last_sent_at?: string | null
+          name: string
+          recipients?: string[]
+          subject_prefix?: string | null
+          tenant_id?: string | null
+          time_ist?: string
+          timeframe?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          days?: string[]
+          enabled?: boolean
+          id?: string
+          last_sent_at?: string | null
+          name?: string
+          recipients?: string[]
+          subject_prefix?: string | null
+          tenant_id?: string | null
+          time_ist?: string
+          timeframe?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "movement_report_schedules_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       parsed_emails: {
         Row: {
           aov: number | null
