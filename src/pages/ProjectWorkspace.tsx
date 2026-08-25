@@ -756,6 +756,7 @@ export const ProjectWorkspaceView = ({ projectId: projectIdProp, inModal = false
                 Assign owner
               </Button>
             ) : null}
+            <PortalLinkButton projectId={project.id} />
             <Button variant="outline" size="sm" className="h-9 gap-1.5 rounded-md border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50" onClick={() => setEditOpen(true)}>
               <Pencil className="h-3.5 w-3.5" />
               Edit project
