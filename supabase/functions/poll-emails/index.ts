@@ -85,9 +85,10 @@ serve(async (req) => {
     (settings || []).forEach((s: any) => { settingsMap[s.key] = s.value; });
 
     const monitorEmail = settingsMap.email_monitor_address || "cwupdates@gokwik.co";
-    const subjectKeywords = (settingsMap.email_subject_keywords || "New Brand On Board")
+    const subjectKeywords = (settingsMap.email_subject_keywords || "New Brand On Board, Sales to MINT Handover for Scoping")
       .split(",")
-      .map((k: string) => k.trim().toLowerCase());
+      .map((k: string) => k.trim())
+      .filter(Boolean);
 
     // Step 1: Get access token using refresh token
     const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
