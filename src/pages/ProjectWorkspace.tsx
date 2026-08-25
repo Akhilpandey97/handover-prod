@@ -5,6 +5,7 @@ import { AssignOwnerDialog } from "@/components/AssignOwnerDialog";
 import { ChecklistDialog } from "@/components/ChecklistDialog";
 import { EditProjectDialog } from "@/components/EditProjectDialog";
 import { TransferDialog } from "@/components/TransferDialog";
+import { PortalLinkButton } from "@/components/PortalLinkButton";
 import {
   AlertDialog,
   AlertDialogAction,
