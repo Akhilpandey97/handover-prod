@@ -7,6 +7,7 @@ import type { TeamRole } from "@/data/teams";
 import { teamLabels } from "@/data/teams";
 import { sendNotification } from "@/utils/sendNotification";
 import { processWorkflowEvents } from "@/utils/processWorkflowEvents";
+import { evaluatePhaseRules } from "@/hooks/usePhaseRules";
 
 // Transform database row to Project type
 const transformDbProject = (row: any): Project => ({
