@@ -192,7 +192,7 @@ serve(async (req) => {
 
         // Verify subject matches keywords
         const subjectLower = subject.toLowerCase();
-        const matches = subjectKeywords.some((kw: string) => subjectLower.includes(kw));
+        const matches = subjectKeywords.some((kw: string) => subjectLower.includes(kw.toLowerCase()));
         if (!matches) continue;
 
         // Extract HTML body
