@@ -2373,6 +2373,12 @@ export const ManagerDashboard = () => {
                   {reportSubTab === "scheduler" && (
                     <ReportScheduler />
                   )}
+
+                  {/* Sub-tab: AI Movement Report */}
+                  {reportSubTab === "movement" && (
+                    <MovementReport />
+                  )}
+
                 </div>
               </CardContent>
             </Card>
