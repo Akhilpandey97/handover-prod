@@ -16,6 +16,8 @@ import { SecretsManager } from "./settings/SecretsManager";
 import { WorkflowManager } from "./settings/WorkflowManager";
 import { PhaseRulesManager } from "./settings/PhaseRulesManager";
 import { ActivityLog } from "./settings/ActivityLog";
+import { EmailIntakeSettings } from "./settings/EmailIntakeSettings";
+
 
 interface LabelGroup {
   title: string;
