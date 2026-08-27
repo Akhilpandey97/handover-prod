@@ -102,6 +102,8 @@ import { MerchantResponsibility } from "./reports/MerchantResponsibility";
 import { TacticalLists } from "./reports/TacticalLists";
 import { ReportsBuilder } from "./reports/ReportsBuilder";
 import { ReportScheduler } from "./reports/ReportScheduler";
+import { MovementReport } from "./reports/MovementReport";
+
 
 // Sub-tab keys for reports and settings
 const REPORTS_SUB_TABS = ["predefined", "builder", "scheduler"];
@@ -711,7 +713,9 @@ export const ManagerDashboard = () => {
     predefined: { label: "Pre Defined" },
     builder: { label: "Report Builder" },
     scheduler: { label: "Scheduler" },
+    movement: { label: "Movement (AI)" },
   };
+
 
   const handleTabDragStart = (tab: string) => setDraggedTab(tab);
   const handleTabDragOver = (e: React.DragEvent, targetTab: string) => {
@@ -2371,6 +2375,12 @@ export const ManagerDashboard = () => {
                   {reportSubTab === "scheduler" && (
                     <ReportScheduler />
                   )}
+
+                  {/* Sub-tab: AI Movement Report */}
+                  {reportSubTab === "movement" && (
+                    <MovementReport />
+                  )}
+
                 </div>
               </CardContent>
             </Card>
