@@ -101,7 +101,7 @@ import { OperationalReports } from "./reports/OperationalReports";
 import { MerchantResponsibility } from "./reports/MerchantResponsibility";
 import { TacticalLists } from "./reports/TacticalLists";
 import { ReportsBuilder } from "./reports/ReportsBuilder";
-import { ReportScheduler } from "./reports/ReportScheduler";
+import { MovementReport } from "./reports/MovementReport";
 
 // Sub-tab keys for reports and settings
 const REPORTS_SUB_TABS = ["predefined", "builder", "scheduler"];
