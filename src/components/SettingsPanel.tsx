@@ -445,17 +445,19 @@ export const SettingsPanel = ({ activeSubTab }: SettingsPanelProps) => {
         </TabsContent>
 
         {/* Email Tab */}
-        <TabsContent value="email">
+        <TabsContent value="email" className="space-y-6">
+          <EmailIntakeSettings />
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Mail className="h-5 w-5" />Email Monitoring
+                <Mail className="h-5 w-5" />Email Labels
               </CardTitle>
-              <CardDescription>Configure email parsing for auto-creating projects from emails</CardDescription>
+              <CardDescription>Rename the email intake fields shown across the product</CardDescription>
             </CardHeader>
             <CardContent>{renderLabelGroups(EMAIL_GROUPS)}</CardContent>
           </Card>
         </TabsContent>
+
 
         {/* Workflows Tab */}
         <TabsContent value="workflows" className="space-y-8">
