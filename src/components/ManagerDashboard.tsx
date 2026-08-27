@@ -711,7 +711,9 @@ export const ManagerDashboard = () => {
     predefined: { label: "Pre Defined" },
     builder: { label: "Report Builder" },
     scheduler: { label: "Scheduler" },
+    movement: { label: "Movement (AI)" },
   };
+
 
   const handleTabDragStart = (tab: string) => setDraggedTab(tab);
   const handleTabDragOver = (e: React.DragEvent, targetTab: string) => {
