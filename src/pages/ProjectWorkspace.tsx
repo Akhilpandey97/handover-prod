@@ -497,7 +497,7 @@ export const ProjectWorkspaceView = ({ projectId: projectIdProp, inModal = false
     deleteProject,
     transferProject,
   } = useProjects();
-  const { teamLabels, stateLabels, phaseLabels, responsibilityLabels } = useLabels();
+  const { teamLabels, stateLabels, phaseLabels, responsibilityLabels, getLabel } = useLabels();
 
   const [activeTab, setActiveTab] = useState<WorkspaceTab>("checklists");
   const [editOpen, setEditOpen] = useState(false);
@@ -580,34 +580,34 @@ export const ProjectWorkspaceView = ({ projectId: projectIdProp, inModal = false
   );
 
   const projectDetails = [
-    ["MID", project.mid],
-    ["Platform", project.platform],
-    ["Category", project.category || "—"],
-    ["ARR", `${project.arr} Cr`],
-    ["Txn / day", `${project.txnsPerDay}`],
-    ["AOV", `₹${project.aov.toLocaleString()}`],
-    ["Sales SPOC", project.salesSpoc || "—"],
-    ["Integration", project.integrationType || "—"],
-    ["PG onboarding", project.pgOnboarding || "—"],
-    ["Kick-off", project.dates.kickOffDate || "—"],
-    ["Expected go-live", project.dates.expectedGoLiveDate || "—"],
-    ["Responsibility", responsibilityLabels[pendingOn] || pendingOn],
+    [getLabel("field_mid"), project.mid],
+    [getLabel("field_platform"), project.platform],
+    [getLabel("field_category"), project.category || "—"],
+    [getLabel("field_arr"), `${project.arr} Cr`],
+    [getLabel("field_txns_per_day"), `${project.txnsPerDay}`],
+    [getLabel("field_aov"), `₹${project.aov.toLocaleString()}`],
+    [getLabel("field_sales_spoc"), project.salesSpoc || "—"],
+    [getLabel("field_integration_type"), project.integrationType || "—"],
+    [getLabel("field_pg_onboarding"), project.pgOnboarding || "—"],
+    [getLabel("field_kick_off_date"), project.dates.kickOffDate || "—"],
+    [getLabel("field_expected_go_live_date"), project.dates.expectedGoLiveDate || "—"],
+    [getLabel("field_current_responsibility"), responsibilityLabels[pendingOn] || pendingOn],
   ];
 
   const detailRows = [
-    ["Assignee", project.assignedOwnerName || "Unassigned"],
+    [getLabel("field_assigned_owner"), project.assignedOwnerName || "Unassigned"],
     ["Reporter", project.salesSpoc || currentUser?.name || "—"],
     ["Current team", teamLabels[project.currentOwnerTeam] || project.currentOwnerTeam],
-    ["Phase", phaseLabels[project.currentPhase] || project.currentPhase],
+    [getLabel("field_current_phase"), phaseLabels[project.currentPhase] || project.currentPhase],
     ["Risk", risk.label],
     ["Last update", getLastUpdated(project)],
-    ["Responsibility", responsibilityLabels[pendingOn] || pendingOn],
+    [getLabel("field_current_responsibility"), responsibilityLabels[pendingOn] || pendingOn],
     ["Original estimate", formatDuration(timeByParty.gokwik + timeByParty.merchant)],
     ["Merchant time", formatDuration(timeByParty.merchant)],
     ["Internal time", formatDuration(timeByParty.gokwik)],
-    ["ARR", `${project.arr} Cr`],
-    ["Platform", project.platform],
-    ["Expected go-live", project.dates.expectedGoLiveDate || "—"],
+    [getLabel("field_arr"), `${project.arr} Cr`],
+    [getLabel("field_platform"), project.platform],
+    [getLabel("field_expected_go_live_date"), project.dates.expectedGoLiveDate || "—"],
   ];
 
   const noteSections = [
@@ -936,8 +936,8 @@ export const ProjectWorkspaceView = ({ projectId: projectIdProp, inModal = false
                     {[
                       ["Owner", project.assignedOwnerName || "Unassigned"],
                       ["Team", teamLabels[project.currentOwnerTeam] || project.currentOwnerTeam],
-                      ["Phase", phaseLabels[project.currentPhase] || project.currentPhase],
-                      ["Sales SPOC", project.salesSpoc || "—"],
+                      [getLabel("field_current_phase"), phaseLabels[project.currentPhase] || project.currentPhase],
+                      [getLabel("field_sales_spoc"), project.salesSpoc || "—"],
                     ].map(([label, value]) => (
                       <div key={label} className="flex items-baseline justify-between gap-2">
                         <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
@@ -983,8 +983,8 @@ export const ProjectWorkspaceView = ({ projectId: projectIdProp, inModal = false
                 content: (
                   <div className="space-y-1.5">
                     {[
-                      ["Kick-off", project.dates.kickOffDate || "—"],
-                      ["Expected go-live", project.dates.expectedGoLiveDate || "—"],
+                      [getLabel("field_kick_off_date"), project.dates.kickOffDate || "—"],
+                      [getLabel("field_expected_go_live_date"), project.dates.expectedGoLiveDate || "—"],
                       ["Go-live", project.dates.goLiveDate || "—"],
                       ["Last update", getLastUpdated(project)],
                     ].map(([label, value]) => (
@@ -1002,13 +1002,13 @@ export const ProjectWorkspaceView = ({ projectId: projectIdProp, inModal = false
                 content: (
                   <div className="space-y-1.5">
                     {[
-                      ["Platform", project.platform],
-                      ["Category", project.category || "—"],
-                      ["ARR", `${project.arr} Cr`],
-                      ["Txn / day", `${project.txnsPerDay}`],
-                      ["AOV", `₹${project.aov.toLocaleString()}`],
-                      ["Integration", project.integrationType || "—"],
-                      ["PG onboarding", project.pgOnboarding || "—"],
+                      [getLabel("field_platform"), project.platform],
+                      [getLabel("field_category"), project.category || "—"],
+                      [getLabel("field_arr"), `${project.arr} Cr`],
+                      [getLabel("field_txns_per_day"), `${project.txnsPerDay}`],
+                      [getLabel("field_aov"), `₹${project.aov.toLocaleString()}`],
+                      [getLabel("field_integration_type"), project.integrationType || "—"],
+                      [getLabel("field_pg_onboarding"), project.pgOnboarding || "—"],
                     ].map(([label, value]) => (
                       <div key={label} className="flex items-baseline justify-between gap-2">
                         <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
