@@ -770,43 +770,8 @@ export const ProjectWorkspaceView = ({ projectId: projectIdProp, inModal = false
         </div>
       </div>
 
-      <div className="shrink-0 border-b border-slate-200 bg-slate-50 px-5 py-3">
-        <div className="mx-auto grid max-w-[1680px] gap-3 sm:grid-cols-2 lg:grid-cols-[1fr_1fr_1fr_1.75fr]">
-          {[
-            { label: "Waiting on", value: waitingOnLabel, sub: waitingOnSub, icon: Users, tone: "bg-emerald-50 text-emerald-600" },
-            { label: "Next step", value: nextStepLabel, sub: phaseLabels[project.currentPhase] || project.currentPhase, icon: ListTodo, tone: "bg-violet-50 text-violet-600" },
-            { label: "Go-live", value: project.dates.expectedGoLiveDate || "Not set", sub: project.dates.expectedGoLiveDate ? "Delivery target" : "Target date needed", icon: CalendarDays, tone: "bg-blue-50 text-blue-600" },
-          ].map((summary) => (
-            <div key={summary.label} className="flex min-w-0 items-start gap-3 rounded-lg border border-slate-200 bg-white px-4 py-3 shadow-sm">
-              <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-md ${summary.tone}`}>
-                <summary.icon className="h-4 w-4" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-xs font-bold uppercase tracking-[0.1em] text-slate-500">{summary.label}</p>
-                <p className="mt-1 truncate text-sm font-semibold text-slate-900" title={summary.value}>{summary.value}</p>
-                <p className="mt-1 truncate text-xs text-slate-500">{summary.sub}</p>
-              </div>
-            </div>
-          ))}
-          <div className="rounded-lg border border-slate-200 bg-white px-4 py-3 shadow-sm">
-            <div className="flex items-center gap-3">
-              <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-md ${risk.label === "Low risk" ? "bg-emerald-50 text-emerald-600" : "bg-rose-50 text-rose-600"}`}>
-                <ShieldAlert className="h-4 w-4" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-xs font-bold uppercase tracking-[0.1em] text-slate-500">Risk</p>
-                <div className="mt-1 flex items-center gap-2">
-                  <Badge className={cn("border text-xs font-semibold", risk.tone)}>{risk.label}</Badge>
-                  <span className="text-sm font-semibold text-slate-500">Score {risk.score}</span>
-                </div>
-              </div>
-            </div>
-            <p className="mt-2 text-sm text-slate-500">
-              {risk.drivers[0]?.label || "No material delivery or ownership risks detected."}
-            </p>
-          </div>
-        </div>
-      </div>
+
+
 
       {/* 3-panel body */}
       <div className="mx-auto flex min-h-0 w-full max-w-[1680px] flex-1 bg-white">
