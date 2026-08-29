@@ -25,7 +25,7 @@ export const KanbanCard = ({
   onDragStart?: (projectId: string) => void;
   onDragEnd?: () => void;
 }) => {
-  const { stateLabels } = useLabels();
+  const { stateLabels, getLabel } = useLabels();
 
   const stateLabel =
     stateLabels[project.projectState] ||
@@ -140,7 +140,7 @@ export const KanbanCard = ({
         {/* Metrics grid */}
         <div className="grid grid-cols-2 gap-x-3 gap-y-1 border-t border-border pt-2 text-[10px]">
           <div className="flex items-center justify-between gap-1">
-            <span className="text-muted-foreground">ARR</span>
+            <span className="text-muted-foreground">{getLabel("field_arr")}</span>
             <span className="font-mono font-semibold text-foreground">{project.arr ? `${project.arr} Cr` : "—"}</span>
           </div>
           <div className="flex items-center justify-between gap-1">

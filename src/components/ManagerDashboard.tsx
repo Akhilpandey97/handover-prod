@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useProjects } from "@/contexts/ProjectContext";
 import { useLabels } from "@/contexts/LabelsContext";
+import { localizeColumns } from "@/utils/fieldLabels";
 import { teamLabels as defaultTeamLabels, teamColors, TeamRole } from "@/data/teams";
 import { UserManagement } from "./UserManagement";
 import { TenantManagement } from "./TenantManagement";
@@ -115,7 +116,7 @@ const ALL_NAV_ITEMS = ["dashboard", "projects", "calendar", "reports", "checklis
 
 export const ManagerDashboard = () => {
   const { currentUser, logout } = useAuth();
-  const { labels: appLabels, teamLabels, responsibilityLabels, phaseLabels, stateLabels: stateLabelsFromCtx, updateLabels } = useLabels();
+  const { labels: appLabels, getLabel, teamLabels, responsibilityLabels, phaseLabels, stateLabels: stateLabelsFromCtx, updateLabels } = useLabels();
   const { projects, isLoading, addProject, deleteProject, updateProject } = useProjects();
   const { fields: customFields } = useCustomFields();
   const projectIds = useMemo(() => projects.map(p => p.id), [projects]);
@@ -149,7 +150,7 @@ export const ManagerDashboard = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   // List view column selection
-  const LIST_VIEW_COLUMNS = [
+  const LIST_VIEW_COLUMNS = localizeColumns(getLabel, [
     { key: "merchantName", label: "Merchant Name" },
     { key: "mid", label: "MID" },
     { key: "platform", label: "Platform" },
@@ -177,7 +178,7 @@ export const ManagerDashboard = () => {
     { key: "currentPhaseComment", label: "Phase Comment" },
     { key: "transferCount", label: "Transfer Count" },
     { key: "risk", label: "Risk" },
-  ];
+  ]);
   const [listViewColumns, setListViewColumns] = useState<string[]>(() => {
     try {
       const saved = localStorage.getItem("listview_columns");

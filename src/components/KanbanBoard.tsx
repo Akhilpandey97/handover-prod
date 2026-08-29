@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useProjects } from "@/contexts/ProjectContext";
 import { useLabels } from "@/contexts/LabelsContext";
+import { localizeColumns } from "@/utils/fieldLabels";
 import { useCustomFields, useAllCustomFieldValues } from "@/hooks/useCustomFields";
 import { Project, ProjectPhase, ProjectState, ResponsibilityParty, projectStateLabels } from "@/data/projectsData";
 import { KanbanCard } from "./KanbanCard";
@@ -173,7 +174,7 @@ export const KanbanBoard = ({ filteredProjects }: KanbanBoardProps) => {
   // Build combined group-by options including custom fields
   const allFieldOptions = useMemo(() => {
     const customOptions = customFields.map(f => ({ key: `custom_field_${f.id}`, label: f.field_label }));
-    return [...KANBAN_FIELD_OPTIONS, ...customOptions];
+    return [...localizeColumns(labels.getLabel, KANBAN_FIELD_OPTIONS), ...customOptions];
   }, [customFields]);
 
   const columns = useMemo(() => {
@@ -395,7 +396,7 @@ export const KanbanBoard = ({ filteredProjects }: KanbanBoardProps) => {
               <SelectValue placeholder="Sort" />
             </SelectTrigger>
             <SelectContent>
-              {SORT_OPTIONS.map(opt => (
+              {localizeColumns(labels.getLabel, SORT_OPTIONS).map(opt => (
                 <SelectItem key={opt.key} value={opt.key}>{opt.label}</SelectItem>
               ))}
             </SelectContent>
