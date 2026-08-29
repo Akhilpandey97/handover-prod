@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useCallback } from "react";
 import { Project, projectStateLabels, formatDuration, calculateTimeFromChecklist } from "@/data/projectsData";
 import { CustomField } from "@/hooks/useCustomFields";
 import { useLabels } from "@/contexts/LabelsContext";
+import { localizeColumns } from "@/utils/fieldLabels";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -153,7 +154,7 @@ interface PivotGroup {
 }
 
 export const ReportsBuilder = ({ projects, customFields = [], customValuesMap = {}, initialPivot = false }: { projects: Project[]; customFields?: CustomField[]; customValuesMap?: Record<string, Record<string, string>>; initialPivot?: boolean }) => {
-  const { teamLabels, responsibilityLabels, phaseLabels, stateLabels } = useLabels();
+  const { teamLabels, responsibilityLabels, phaseLabels, stateLabels, getLabel } = useLabels();
   const { currentUser } = useAuth();
   const labels = { teamLabels, responsibilityLabels, phaseLabels, stateLabels, customValuesMap };
 
