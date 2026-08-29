@@ -215,8 +215,8 @@ export const ReportsBuilder = ({ projects, customFields = [], customValuesMap = 
       label: f.field_label,
       group: "Custom Fields",
     }));
-    return [...AVAILABLE_COLUMNS, ...customCols];
-  }, [customFields]);
+    return [...localizeColumns(getLabel, AVAILABLE_COLUMNS), ...customCols];
+  }, [customFields, getLabel]);
 
   const groupableColumns = useMemo(() => {
     const customGroupableColumns = customFields.map(f => `custom_field_${f.id}`);
