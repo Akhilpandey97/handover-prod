@@ -829,8 +829,9 @@ export const ProjectWorkspaceView = ({ projectId: projectIdProp, inModal = false
           </div>
         </ScrollArea>
 
-        {/* LEFT PANEL — Status & Context */}
-        <ScrollArea className="order-1 hidden w-[38%] min-w-[340px] max-w-[520px] shrink-0 border-r border-slate-200 bg-white lg:block">
+        {/* RIGHT PANEL — Status & Context */}
+        <ScrollArea className="order-2 hidden w-[38%] min-w-[340px] max-w-[520px] shrink-0 border-l border-slate-200 bg-white lg:block">
+
           <div className="space-y-1">
             {/* Status summary cards */}
             <div className="space-y-2 border-b border-slate-200 bg-slate-50 p-4">
