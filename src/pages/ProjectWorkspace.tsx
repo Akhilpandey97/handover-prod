@@ -1235,6 +1235,16 @@ export const ProjectWorkspaceView = ({ projectId: projectIdProp, inModal = false
 
               <TabsContent value="details" className="m-0">
                 <div className="max-w-3xl space-y-2">
+                  <div className="mb-4 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
+                    <p className="text-xs font-bold uppercase tracking-[0.1em] text-slate-500">Project overview</p>
+                    <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                      <div className="flex items-center justify-between gap-2 text-xs"><span className="text-slate-500">Project ID</span><Badge variant="outline" className="max-w-[175px] truncate px-1.5 py-0.5 text-[10px] font-semibold">MID {project.mid}</Badge></div>
+                      <div className="flex items-center justify-between gap-2 text-xs"><span className="text-slate-500">State</span><span className="font-semibold text-sky-700">{stateLabels[project.projectState] || projectStateLabels[project.projectState]}</span></div>
+                      <div className="flex items-center justify-between gap-2 text-xs"><span className="text-slate-500">Risk</span><span className={cn("font-semibold", risk.label === "Low risk" ? "text-emerald-600" : "text-rose-600")}>{risk.label}</span></div>
+                      <div className="flex items-center justify-between gap-2 text-xs"><span className="text-slate-500">Go-live</span><span className="font-semibold text-slate-700">{project.dates.expectedGoLiveDate || "—"}</span></div>
+                    </div>
+                  </div>
+
                   {detailRows.map(([label, value]) => (
                     <div key={label} className="flex items-center gap-4 border-b border-border/60 px-3 py-3 last:border-b-0">
                       <span className="w-40 shrink-0 text-xs text-muted-foreground">{label}</span>
