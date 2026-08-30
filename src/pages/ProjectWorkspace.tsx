@@ -830,7 +830,7 @@ export const ProjectWorkspaceView = ({ projectId: projectIdProp, inModal = false
         </ScrollArea>
 
         {/* RIGHT PANEL — Status & Context */}
-        <ScrollArea className="order-2 hidden w-[38%] min-w-[340px] max-w-[520px] shrink-0 border-l border-slate-200 bg-white lg:block">
+        <ScrollArea className="order-1 hidden w-[38%] min-w-[340px] max-w-[520px] shrink-0 border-r border-slate-200 bg-white lg:block">
 
           <div className="space-y-1">
             {/* Status summary cards */}
@@ -906,7 +906,7 @@ export const ProjectWorkspaceView = ({ projectId: projectIdProp, inModal = false
         </ScrollArea>
 
         {/* CENTER PANEL — Tabs */}
-        <main className="order-1 flex min-w-0 flex-1 flex-col overflow-hidden bg-white">
+        <main className="order-2 flex min-w-0 flex-1 flex-col overflow-hidden bg-white">
           {/* Compact status grid for screens below lg (context panel hidden) */}
           <div className="grid shrink-0 grid-cols-2 gap-2 border-b border-slate-200 bg-slate-50 p-3 lg:hidden">
             {[
