@@ -901,16 +901,8 @@ export const ProjectWorkspaceView = ({ projectId: projectIdProp, inModal = false
                 ))}
               </div>
             </div>
-            <div className="border-b border-slate-200 px-4 py-3">
-              <p className="text-xs font-bold uppercase tracking-[0.1em] text-slate-500">Project overview</p>
-              <div className="mt-3 space-y-2">
-                <div className="flex items-center justify-between text-xs"><span className="text-slate-500">Project ID</span><Badge variant="outline" className="max-w-[175px] truncate px-1.5 py-0.5 text-[10px] font-semibold">MID {project.mid}</Badge></div>
-                <div className="flex items-center justify-between text-xs"><span className="text-slate-500">State</span><span className="font-semibold text-sky-700">{stateLabels[project.projectState] || projectStateLabels[project.projectState]}</span></div>
-                <div className="flex items-center justify-between text-xs"><span className="text-slate-500">Risk</span><span className={cn("font-semibold", risk.label === "Low risk" ? "text-emerald-600" : "text-rose-600")}>{risk.label}</span></div>
-                <div className="flex items-center justify-between text-xs"><span className="text-slate-500">Go-live</span><span className="font-semibold text-slate-700">{project.dates.expectedGoLiveDate || "—"}</span></div>
-              </div>
-            </div>
             <div className="px-4 py-3">
+
               <p className="mb-2 text-xs font-bold uppercase tracking-[0.1em] text-slate-500">Update state</p>
               <Select value={project.projectState} onValueChange={(v) => handleStateChange(v as ProjectState)}>
                 <SelectTrigger className={cn("h-9 rounded-md text-sm font-semibold border", stateSelectToneMap[project.projectState])}>
