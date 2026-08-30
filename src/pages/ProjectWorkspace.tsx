@@ -830,7 +830,7 @@ export const ProjectWorkspaceView = ({ projectId: projectIdProp, inModal = false
         </ScrollArea>
 
         {/* RIGHT PANEL — Status & Context */}
-        <ScrollArea className="order-2 hidden w-[38%] min-w-[340px] max-w-[520px] shrink-0 border-l border-slate-200 bg-white lg:block">
+        <ScrollArea className="order-1 hidden w-[38%] min-w-[340px] max-w-[520px] shrink-0 border-r border-slate-200 bg-white lg:block">
 
           <div className="space-y-1">
             {/* Status summary cards */}
@@ -902,167 +902,11 @@ export const ProjectWorkspaceView = ({ projectId: projectIdProp, inModal = false
                 ))}
               </div>
             </div>
-            <div className="px-4 py-3">
-
-              <p className="mb-2 text-xs font-bold uppercase tracking-[0.1em] text-slate-500">Update state</p>
-              <Select value={project.projectState} onValueChange={(v) => handleStateChange(v as ProjectState)}>
-                <SelectTrigger className={cn("h-9 rounded-md text-sm font-semibold border", stateSelectToneMap[project.projectState])}>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className={cn(inModal && "z-[90]")}>
-                  {PROJECT_STATES.map((state) => (
-                    <SelectItem key={state} value={state} className={cn("rounded-2xl my-1 text-base font-medium", stateSelectToneMap[state])}>
-                      {stateLabels[state] || projectStateLabels[state]}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="h-px bg-slate-200" />
-
-            {/* Collapsible sections */}
-            {[
-              {
-                key: "ownership",
-                title: "Ownership",
-                content: (
-                  <div className="space-y-2">
-                    {[
-                      ["Owner", project.assignedOwnerName || "Unassigned"],
-                      ["Team", teamLabels[project.currentOwnerTeam] || project.currentOwnerTeam],
-                      [getLabel("field_current_phase"), phaseLabels[project.currentPhase] || project.currentPhase],
-                      [getLabel("field_sales_spoc"), project.salesSpoc || "—"],
-                    ].map(([label, value]) => (
-                      <div key={label} className="flex items-baseline justify-between gap-2">
-                        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
-                        <p className="text-sm font-semibold text-foreground text-right truncate max-w-[120px]">{value}</p>
-                      </div>
-                    ))}
-                  </div>
-                ),
-              },
-              {
-                key: "execution",
-                title: "Execution",
-                content: (
-                  <div className="space-y-2">
-                    <div className="flex items-baseline justify-between gap-2">
-                      <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Responsibility</p>
-                      <p className="text-sm font-semibold text-foreground">{responsibilityLabels[pendingOn] || pendingOn}</p>
-                    </div>
-                    <div className="flex items-baseline justify-between gap-2">
-                      <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Checklist</p>
-                      <p className="text-sm font-semibold text-foreground">{completedChecklist}/{project.checklist.length}</p>
-                    </div>
-                    <Progress
-                      value={project.checklist.length ? (completedChecklist / project.checklist.length) * 100 : 0}
-                      className="h-1.5 rounded-full bg-secondary"
-                    />
-                    <div className="grid grid-cols-2 gap-1.5 pt-1">
-                      <div className="rounded-md border border-border/60 bg-card/80 px-2 py-1.5 text-center">
-                        <p className="text-xs font-bold text-foreground">{formatDuration(timeByParty.gokwik)}</p>
-                        <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Internal</p>
-                      </div>
-                      <div className="rounded-md border border-border/60 bg-card/80 px-2 py-1.5 text-center">
-                        <p className="text-xs font-bold text-foreground">{formatDuration(timeByParty.merchant)}</p>
-                        <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Merchant</p>
-                      </div>
-                    </div>
-                  </div>
-                ),
-              },
-              {
-                key: "dates",
-                title: "Key dates",
-                content: (
-                  <div className="space-y-1.5">
-                    {[
-                      [getLabel("field_kick_off_date"), project.dates.kickOffDate || "—"],
-                      [getLabel("field_expected_go_live_date"), project.dates.expectedGoLiveDate || "—"],
-                      ["Go-live", project.dates.goLiveDate || "—"],
-                      ["Last update", getLastUpdated(project)],
-                    ].map(([label, value]) => (
-                      <div key={label} className="flex items-baseline justify-between gap-2">
-                        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
-                        <p className="text-sm font-semibold text-foreground text-right truncate max-w-[110px]">{value}</p>
-                      </div>
-                    ))}
-                  </div>
-                ),
-              },
-              {
-                key: "business",
-                title: "Business",
-                content: (
-                  <div className="space-y-1.5">
-                    {[
-                      [getLabel("field_platform"), project.platform],
-                      [getLabel("field_category"), project.category || "—"],
-                      [getLabel("field_arr"), `${project.arr} Cr`],
-                      [getLabel("field_txns_per_day"), `${project.txnsPerDay}`],
-                      [getLabel("field_aov"), `₹${project.aov.toLocaleString()}`],
-                      [getLabel("field_integration_type"), project.integrationType || "—"],
-                      [getLabel("field_pg_onboarding"), project.pgOnboarding || "—"],
-                    ].map(([label, value]) => (
-                      <div key={label} className="flex items-baseline justify-between gap-2">
-                        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
-                        <p className="text-sm font-semibold text-foreground text-right truncate max-w-[110px]">{value}</p>
-                      </div>
-                    ))}
-                  </div>
-                ),
-              },
-              {
-                key: "links",
-                title: "Links",
-                content: (
-                  <div className="space-y-1">
-                    {quickLinks.length > 0 ? (
-                      quickLinks.map((link) => (
-                        <a
-                          key={link.label}
-                          href={link.href}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="flex items-center justify-between rounded-md border border-border/60 bg-card/80 px-2.5 py-2 text-xs font-semibold text-foreground transition hover:bg-accent/60"
-                        >
-                          <div className="flex items-center gap-1.5">
-                            <link.icon className="h-3 w-3" />
-                            <span>{link.label}</span>
-                          </div>
-                          <ExternalLink className="h-2.5 w-2.5 text-muted-foreground" />
-                        </a>
-                      ))
-                    ) : (
-                      <p className="text-xs text-muted-foreground">No links attached.</p>
-                    )}
-                  </div>
-                ),
-              },
-            ].map((section) => (
-              <div key={section.key} className="px-4">
-                <div className="py-3">
-                  <button
-                    type="button"
-                    onClick={() => setExpandedSections(prev => ({ ...prev, [section.key]: !prev[section.key] }))}
-                    className="flex w-full items-center justify-between group"
-                  >
-                    <p className="text-xs font-bold uppercase tracking-[0.1em] text-slate-500">{section.title}</p>
-                    <ChevronDown className={cn("h-3 w-3 text-slate-400 transition-transform", expandedSections[section.key] ? "rotate-0" : "-rotate-90")} />
-                  </button>
-                  {expandedSections[section.key] && (
-                    <div className="mt-2">{section.content}</div>
-                  )}
-                </div>
-                <div className="h-px bg-slate-200" />
-              </div>
-            ))}
           </div>
         </ScrollArea>
 
         {/* CENTER PANEL — Tabs */}
-        <main className="order-1 flex min-w-0 flex-1 flex-col overflow-hidden bg-white">
+        <main className="order-2 flex min-w-0 flex-1 flex-col overflow-hidden bg-white">
           {/* Compact status grid for screens below lg (context panel hidden) */}
           <div className="grid shrink-0 grid-cols-2 gap-2 border-b border-slate-200 bg-slate-50 p-3 lg:hidden">
             {[
@@ -1254,6 +1098,163 @@ export const ProjectWorkspaceView = ({ projectId: projectIdProp, inModal = false
                       <div className="flex items-center justify-between gap-2 text-xs"><span className="text-slate-500">Go-live</span><span className="font-semibold text-slate-700">{project.dates.expectedGoLiveDate || "—"}</span></div>
                     </div>
                   </div>
+
+                  <div className="px-4 py-3">
+
+                    <p className="mb-2 text-xs font-bold uppercase tracking-[0.1em] text-slate-500">Update state</p>
+                    <Select value={project.projectState} onValueChange={(v) => handleStateChange(v as ProjectState)}>
+                      <SelectTrigger className={cn("h-9 rounded-md text-sm font-semibold border", stateSelectToneMap[project.projectState])}>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className={cn(inModal && "z-[90]")}>
+                        {PROJECT_STATES.map((state) => (
+                          <SelectItem key={state} value={state} className={cn("rounded-2xl my-1 text-base font-medium", stateSelectToneMap[state])}>
+                            {stateLabels[state] || projectStateLabels[state]}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="h-px bg-slate-200" />
+
+                  {/* Collapsible sections */}
+                  {[
+                    {
+                      key: "ownership",
+                      title: "Ownership",
+                      content: (
+                        <div className="space-y-2">
+                          {[
+                            ["Owner", project.assignedOwnerName || "Unassigned"],
+                            ["Team", teamLabels[project.currentOwnerTeam] || project.currentOwnerTeam],
+                            [getLabel("field_current_phase"), phaseLabels[project.currentPhase] || project.currentPhase],
+                            [getLabel("field_sales_spoc"), project.salesSpoc || "—"],
+                          ].map(([label, value]) => (
+                            <div key={label} className="flex items-baseline justify-between gap-2">
+                              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
+                              <p className="text-sm font-semibold text-foreground text-right truncate max-w-[120px]">{value}</p>
+                            </div>
+                          ))}
+                        </div>
+                      ),
+                    },
+                    {
+                      key: "execution",
+                      title: "Execution",
+                      content: (
+                        <div className="space-y-2">
+                          <div className="flex items-baseline justify-between gap-2">
+                            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Responsibility</p>
+                            <p className="text-sm font-semibold text-foreground">{responsibilityLabels[pendingOn] || pendingOn}</p>
+                          </div>
+                          <div className="flex items-baseline justify-between gap-2">
+                            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Checklist</p>
+                            <p className="text-sm font-semibold text-foreground">{completedChecklist}/{project.checklist.length}</p>
+                          </div>
+                          <Progress
+                            value={project.checklist.length ? (completedChecklist / project.checklist.length) * 100 : 0}
+                            className="h-1.5 rounded-full bg-secondary"
+                          />
+                          <div className="grid grid-cols-2 gap-1.5 pt-1">
+                            <div className="rounded-md border border-border/60 bg-card/80 px-2 py-1.5 text-center">
+                              <p className="text-xs font-bold text-foreground">{formatDuration(timeByParty.gokwik)}</p>
+                              <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Internal</p>
+                            </div>
+                            <div className="rounded-md border border-border/60 bg-card/80 px-2 py-1.5 text-center">
+                              <p className="text-xs font-bold text-foreground">{formatDuration(timeByParty.merchant)}</p>
+                              <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Merchant</p>
+                            </div>
+                          </div>
+                        </div>
+                      ),
+                    },
+                    {
+                      key: "dates",
+                      title: "Key dates",
+                      content: (
+                        <div className="space-y-1.5">
+                          {[
+                            [getLabel("field_kick_off_date"), project.dates.kickOffDate || "—"],
+                            [getLabel("field_expected_go_live_date"), project.dates.expectedGoLiveDate || "—"],
+                            ["Go-live", project.dates.goLiveDate || "—"],
+                            ["Last update", getLastUpdated(project)],
+                          ].map(([label, value]) => (
+                            <div key={label} className="flex items-baseline justify-between gap-2">
+                              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
+                              <p className="text-sm font-semibold text-foreground text-right truncate max-w-[110px]">{value}</p>
+                            </div>
+                          ))}
+                        </div>
+                      ),
+                    },
+                    {
+                      key: "business",
+                      title: "Business",
+                      content: (
+                        <div className="space-y-1.5">
+                          {[
+                            [getLabel("field_platform"), project.platform],
+                            [getLabel("field_category"), project.category || "—"],
+                            [getLabel("field_arr"), `${project.arr} Cr`],
+                            [getLabel("field_txns_per_day"), `${project.txnsPerDay}`],
+                            [getLabel("field_aov"), `₹${project.aov.toLocaleString()}`],
+                            [getLabel("field_integration_type"), project.integrationType || "—"],
+                            [getLabel("field_pg_onboarding"), project.pgOnboarding || "—"],
+                          ].map(([label, value]) => (
+                            <div key={label} className="flex items-baseline justify-between gap-2">
+                              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
+                              <p className="text-sm font-semibold text-foreground text-right truncate max-w-[110px]">{value}</p>
+                            </div>
+                          ))}
+                        </div>
+                      ),
+                    },
+                    {
+                      key: "links",
+                      title: "Links",
+                      content: (
+                        <div className="space-y-1">
+                          {quickLinks.length > 0 ? (
+                            quickLinks.map((link) => (
+                              <a
+                                key={link.label}
+                                href={link.href}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="flex items-center justify-between rounded-md border border-border/60 bg-card/80 px-2.5 py-2 text-xs font-semibold text-foreground transition hover:bg-accent/60"
+                              >
+                                <div className="flex items-center gap-1.5">
+                                  <link.icon className="h-3 w-3" />
+                                  <span>{link.label}</span>
+                                </div>
+                                <ExternalLink className="h-2.5 w-2.5 text-muted-foreground" />
+                              </a>
+                            ))
+                          ) : (
+                            <p className="text-xs text-muted-foreground">No links attached.</p>
+                          )}
+                        </div>
+                      ),
+                    },
+                  ].map((section) => (
+                    <div key={section.key} className="px-4">
+                      <div className="py-3">
+                        <button
+                          type="button"
+                          onClick={() => setExpandedSections(prev => ({ ...prev, [section.key]: !prev[section.key] }))}
+                          className="flex w-full items-center justify-between group"
+                        >
+                          <p className="text-xs font-bold uppercase tracking-[0.1em] text-slate-500">{section.title}</p>
+                          <ChevronDown className={cn("h-3 w-3 text-slate-400 transition-transform", expandedSections[section.key] ? "rotate-0" : "-rotate-90")} />
+                        </button>
+                        {expandedSections[section.key] && (
+                          <div className="mt-2">{section.content}</div>
+                        )}
+                      </div>
+                      <div className="h-px bg-slate-200" />
+                    </div>
+                  ))}
 
                   {detailRows.map(([label, value]) => (
                     <div key={label} className="flex items-center gap-4 border-b border-border/60 px-3 py-3 last:border-b-0">
