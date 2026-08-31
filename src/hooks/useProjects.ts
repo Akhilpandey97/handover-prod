@@ -67,6 +67,7 @@ const transformDbChecklistItem = (row: any): ProjectChecklist => ({
   comment: row.comment || undefined,
   commentBy: row.comment_by || undefined,
   commentAt: row.comment_at || undefined,
+  dueDate: row.due_date || undefined,
 });
 
 // Fetch all projects with related data

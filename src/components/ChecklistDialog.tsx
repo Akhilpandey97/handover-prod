@@ -21,6 +21,8 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { ChecklistCommentThread } from "@/components/ChecklistCommentThread";
 import { ChecklistFormDialog } from "@/components/ChecklistFormDialog";
+import { ChecklistItemTasks } from "@/components/ChecklistItemTasks";
+import { useChecklistTasks } from "@/hooks/useChecklistTasks";
 import { CheckCircle2, Building2, Users, Minus, Lock, FileText } from "lucide-react";
 
 interface ChecklistDialogProps {
@@ -50,6 +52,8 @@ export const ChecklistDialog = ({
   const { teamLabels, responsibilityLabels } = useLabels();
   const { assignments } = useFormAssignments();
   const { templates: formTemplates } = useFormTemplates();
+  const { data: checklistTasks = [] } = useChecklistTasks(project?.id);
+
 
   // Form dialog state
   const [formDialogState, setFormDialogState] = useState<{
@@ -334,6 +338,15 @@ export const ChecklistDialog = ({
                                   <span>{responsibilityLabels.merchant}: {formatDuration(timeStats.merchant)}</span>
                                 </div>
                               </div>
+
+                              {/* Deadline + sub-tasks */}
+                              <ChecklistItemTasks
+                                projectId={project.id}
+                                checklistItemId={item.id}
+                                dueDate={item.dueDate}
+                                tasks={checklistTasks.filter((task) => task.checklist_item_id === item.id)}
+                                canEdit={canEdit}
+                              />
 
                               {/* Comment Thread */}
                               <ChecklistCommentThread checklistItemId={item.id} />

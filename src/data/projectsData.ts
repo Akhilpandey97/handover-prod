@@ -59,6 +59,7 @@ export interface ProjectChecklist {
   comment?: string;
   commentBy?: string;
   commentAt?: string;
+  dueDate?: string;
 }
 
 export interface ProjectLinks {

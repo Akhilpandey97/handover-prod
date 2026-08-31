@@ -457,6 +457,7 @@ export type Database = {
           current_responsibility:
             | Database["public"]["Enums"]["responsibility_party"]
             | null
+          due_date: string | null
           id: string
           is_task: boolean
           owner_team: Database["public"]["Enums"]["team_role"]
@@ -477,6 +478,7 @@ export type Database = {
           current_responsibility?:
             | Database["public"]["Enums"]["responsibility_party"]
             | null
+          due_date?: string | null
           id?: string
           is_task?: boolean
           owner_team: Database["public"]["Enums"]["team_role"]
@@ -497,6 +499,7 @@ export type Database = {
           current_responsibility?:
             | Database["public"]["Enums"]["responsibility_party"]
             | null
+          due_date?: string | null
           id?: string
           is_task?: boolean
           owner_team?: Database["public"]["Enums"]["team_role"]
@@ -561,6 +564,73 @@ export type Database = {
           },
           {
             foreignKeyName: "checklist_responsibility_logs_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      checklist_tasks: {
+        Row: {
+          assignee: string | null
+          checklist_item_id: string
+          completed: boolean
+          completed_at: string | null
+          completed_by: string | null
+          created_at: string
+          due_date: string | null
+          id: string
+          project_id: string
+          sort_order: number | null
+          tenant_id: string | null
+          title: string
+        }
+        Insert: {
+          assignee?: string | null
+          checklist_item_id: string
+          completed?: boolean
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string
+          due_date?: string | null
+          id?: string
+          project_id: string
+          sort_order?: number | null
+          tenant_id?: string | null
+          title: string
+        }
+        Update: {
+          assignee?: string | null
+          checklist_item_id?: string
+          completed?: boolean
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string
+          due_date?: string | null
+          id?: string
+          project_id?: string
+          sort_order?: number | null
+          tenant_id?: string | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "checklist_tasks_checklist_item_id_fkey"
+            columns: ["checklist_item_id"]
+            isOneToOne: false
+            referencedRelation: "checklist_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "checklist_tasks_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "checklist_tasks_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
