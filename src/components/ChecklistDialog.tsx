@@ -21,6 +21,8 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { ChecklistCommentThread } from "@/components/ChecklistCommentThread";
 import { ChecklistFormDialog } from "@/components/ChecklistFormDialog";
+import { ChecklistItemTasks } from "@/components/ChecklistItemTasks";
+import { useChecklistTasks } from "@/hooks/useChecklistTasks";
 import { CheckCircle2, Building2, Users, Minus, Lock, FileText } from "lucide-react";
 
 interface ChecklistDialogProps {
