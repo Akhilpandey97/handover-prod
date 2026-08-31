@@ -52,6 +52,8 @@ export const ChecklistDialog = ({
   const { teamLabels, responsibilityLabels } = useLabels();
   const { assignments } = useFormAssignments();
   const { templates: formTemplates } = useFormTemplates();
+  const { data: checklistTasks = [] } = useChecklistTasks(project?.id);
+
 
   // Form dialog state
   const [formDialogState, setFormDialogState] = useState<{
