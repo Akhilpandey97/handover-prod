@@ -339,6 +339,15 @@ export const ChecklistDialog = ({
                                 </div>
                               </div>
 
+                              {/* Deadline + sub-tasks */}
+                              <ChecklistItemTasks
+                                projectId={project.id}
+                                checklistItemId={item.id}
+                                dueDate={item.dueDate}
+                                tasks={checklistTasks.filter((task) => task.checklist_item_id === item.id)}
+                                canEdit={canEdit}
+                              />
+
                               {/* Comment Thread */}
                               <ChecklistCommentThread checklistItemId={item.id} />
                             </div>
